@@ -1,0 +1,27 @@
+<plugin id="org.datanucleus.store.appengine" name="DataNucleus App Engine" provider-name="DataNucleus">
+    <!-- STORE MANAGER -->
+    <extension point="org.datanucleus.store_manager">
+        <store-manager class-name="org.datanucleus.store.appengine.DatastoreManager" key="appengine" url-key="appengine"/>
+    </extension>
+
+    <!-- QUERY LANGUAGES -->
+    <extension point="org.datanucleus.store_query_query">
+        <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="javax.jdo.query.JDOQL"/>
+        <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="JDOQL"/>
+        <query class-name="org.datanucleus.store.appengine.JPQLQuery" datastore="appengine" name="JPQL"/>
+    </extension>
+
+    <!-- CONNECTION FACTORY -->
+    <extension point="org.datanucleus.store_connectionfactory">
+        <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
+            datastore="appengine"/>
+    </extension>
+
+    <extension point="org.datanucleus.persistence_properties">
+      <persistence-property name="datanucleus.metadata.annotationManager" value="org.datanucleus.metadata.annotations.AnnotationManagerImpl"/>
+    </extension>
+
+    <extension point="org.datanucleus.classloader_resolver">
+      
+    </extension>
+</plugin>
