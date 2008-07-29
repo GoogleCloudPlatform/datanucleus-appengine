@@ -22,13 +22,16 @@ import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
+import com.google.apphosting.api.DatastoreConfig;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
-  private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+  // TODO(maxr): Get rid of the config arg.
+  private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService(
+      DatastoreConfig.DEFAULT);
   private final DatastoreManager storeMgr;
 
   public DatastorePersistenceHandler(StoreManager storeMgr) {

@@ -2,6 +2,8 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.apphosting.api.ApiProxy;
+import com.google.apphosting.api.AppEngineWebXml;
+import com.google.apphosting.api.DatastoreConfig;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
@@ -22,7 +24,7 @@ import java.io.File;
 import junit.framework.TestCase;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.jdo.JDOQuery;
-import org.datanucleus.store.appengine.Flight;
+import org.datanucleus.test.Flight;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -87,6 +89,14 @@ public class JDOQLQueryTest extends TestCase {
 
       public String getAuthDomain() {
         throw new UnsupportedOperationException();
+      }
+
+      public AppEngineWebXml getAppEngineWebXml() {
+        return new AppEngineWebXml() {
+          public DatastoreConfig getDefaultDatastoreConfig() {
+            return DatastoreConfig.DEFAULT;
+          }
+        };
       }
     });
   }

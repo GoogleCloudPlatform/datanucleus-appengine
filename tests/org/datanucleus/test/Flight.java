@@ -1,5 +1,5 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
-package org.datanucleus.store.appengine;
+package org.datanucleus.test;
 
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.PrimaryKey;

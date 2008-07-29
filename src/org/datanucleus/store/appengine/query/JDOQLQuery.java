@@ -229,8 +229,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
         addExpression(expr.getRight(), q, parameters, path + "-->right");
       } else if(JDO_OP_TO_APPENGINE_OP.get(expr.getOperator()) == null) {
         throw new UnsupportedJDOQLOperatorException(getSingleStringQuery(), expr.getOperator());
-      }
-      if (expr.getLeft() instanceof PrimaryExpression) {
+      } else if (expr.getLeft() instanceof PrimaryExpression) {
         addLeftPrimaryExpression(
             (PrimaryExpression) expr.getLeft(),
             expr.getOperator(),
