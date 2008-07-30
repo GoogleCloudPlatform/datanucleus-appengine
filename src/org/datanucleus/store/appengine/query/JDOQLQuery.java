@@ -18,7 +18,7 @@ import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.appengine.AppEngineFieldManager;
+import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.util.NucleusLogger;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Query;
@@ -131,7 +131,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     ManagedConnection mconn = om.getStoreManager().getConnection(om);
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
-      Query q = new Query(candidateClass.getName());
+      // TODO(maxr): Don't force users to use fqn as the kind.
+      Query q = new Query(candidateClassName);
       addFilters(q, parameters);
       addSorts(q);
       Iterable<Entity> entities = ds.prepare(q).asIterable();
@@ -146,10 +147,10 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       for (final Entity e : entities) {
         FieldValues fv = new FieldValues() {
           public void fetchFields(StateManager sm) {
-            sm.replaceFields(acmd.getAllMemberPositions(), new AppEngineFieldManager(sm, e));
+            sm.replaceFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, e));
           }
           public void fetchNonLoadedFields(StateManager sm) {
-            sm.replaceNonLoadedFields(acmd.getAllMemberPositions(), new AppEngineFieldManager(sm, e));
+            sm.replaceNonLoadedFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, e));
           }
           public FetchPlan getFetchPlanForLoading() {
             return null;
@@ -203,7 +204,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   private void addFilters(Query q, Map parameters) {
     // Just parse by hand for now
     Expression filter = compilation.getExprFilter();
-    addExpression(filter, q, parameters, "");
+    addExpression(filter, q, parameters);
   }
 
   /**
@@ -218,15 +219,15 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    * @TODO(maxr): Get rid of the path param once we have more confidence in
    * this code.
    */
-  private void addExpression(Expression expr, Query q, Map parameters, String path) {
+  private void addExpression(Expression expr, Query q, Map parameters) {
     if (expr == null) {
       return;
     }
     checkForUnsupportedOperator(expr.getOperator());
     if (expr instanceof DyadicExpression) {
       if (expr.getOperator().equals(Expression.OP_AND)) {
-        addExpression(expr.getLeft(), q, parameters, path + "-->left");
-        addExpression(expr.getRight(), q, parameters, path + "-->right");
+        addExpression(expr.getLeft(), q, parameters);
+        addExpression(expr.getRight(), q, parameters);
       } else if(JDO_OP_TO_APPENGINE_OP.get(expr.getOperator()) == null) {
         throw new UnsupportedJDOQLOperatorException(getSingleStringQuery(), expr.getOperator());
       } else if (expr.getLeft() instanceof PrimaryExpression) {
@@ -235,17 +236,16 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
             expr.getOperator(),
             expr.getRight(),
             q,
-            parameters,
-            path);
+            parameters);
       } else {
         // Recurse!
-        addExpression(expr.getLeft(), q, parameters, path + "-->left");
-        addExpression(expr.getRight(), q, parameters, path + "-->right");
+        addExpression(expr.getLeft(), q, parameters);
+        addExpression(expr.getRight(), q, parameters);
       }
     } else if (expr instanceof PrimaryExpression) {
       // Recurse!
-      addExpression(expr.getLeft(), q, parameters, path + "-->left");
-      addExpression(expr.getRight(), q, parameters, path + "-->right");
+      addExpression(expr.getLeft(), q, parameters);
+      addExpression(expr.getRight(), q, parameters);
     } else {
       throw new UnsupportedJDOQLFeatureException("Unexpected expression type while parsing "
           + getSingleStringQuery() + ": " + expr.getClass().getName());
@@ -253,13 +253,12 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left, Expression.Operator operator,
-      Expression right, Query q, Map parameters, String path) {
+      Expression right, Query q, Map parameters) {
     String propName = left.getId();
     Query.FilterOperator op = JDO_OP_TO_APPENGINE_OP.get(operator);
     Object value;
     if (right instanceof PrimaryExpression) {
       value = parameters.get(((PrimaryExpression)right).getId());
-      NucleusLogger.QUERY.info(path + ": param value: " + value);
     } else if (right instanceof Literal) {
       value = ((Literal)right).getLiteral();
     } else {
@@ -278,10 +277,14 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     }
   }
 
+  // Exposed for tests
+  // TODO(maxr): Remove once filters can be retrieved from the Query object
   List<AddedFilter> getAddedFilters() {
     return addedFilters;
   }
 
+  // Exposed for tests
+  // TODO(maxr): Remove once sorts can be retrieved from the Query object
   List<AddedSort> getAddedSorts() {
     return addedSorts;
   }
@@ -289,15 +292,17 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
 
   // Specialization just exists to support tests
   static class UnsupportedJDOQLOperatorException extends UnsupportedOperationException {
+    private final String queryString;
     private final Expression.Operator operator;
 
     UnsupportedJDOQLOperatorException(String queryString, Expression.Operator operator) {
       super(queryString);
+      this.queryString = queryString;
       this.operator = operator;
     }
 
     public String getMessage() {
-      return "Problem with query <" + super.getMessage()
+      return "Problem with query <" + queryString
           + ">: App Engine datastore does not support operator " + operator;
     }
 
@@ -308,12 +313,15 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
 
   // Specialization just exists to support tests
   static class UnsupportedJDOQLFeatureException extends UnsupportedOperationException {
+    private final String queryString;
+
     UnsupportedJDOQLFeatureException(String queryString) {
       super(queryString);
+      this.queryString = queryString;
     }
 
     public String getMessage() {
-      return "Problem with query <" + super.getMessage()
+      return "Problem with query <" + queryString
           + ">: App Engine datastore does not support one or more features of this query.";
     }
   }
