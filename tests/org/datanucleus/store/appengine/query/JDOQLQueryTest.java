@@ -25,6 +25,7 @@ import junit.framework.TestCase;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.test.Flight;
+import org.datanucleus.store.appengine.LocalDatastoreTestHelper;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -51,6 +52,7 @@ public class JDOQLQueryTest extends TestCase {
   private static final AddedSort ORIG_ASC = new AddedSort("origin", Query.SortDirection.ASCENDING);
   private static final AddedSort DESC_DESC = new AddedSort("dest", Query.SortDirection.DESCENDING);
 
+  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
   private PersistenceManagerFactory pmf;
 
   @Override
@@ -64,46 +66,15 @@ public class JDOQLQueryTest extends TestCase {
     properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
+    properties.setProperty(JDOQLQuery.STREAM_QUERY_RESULTS_PROPERTY, Boolean.TRUE.toString());
     pmf = JDOHelper.getPersistenceManagerFactory(properties);
-    ApiProxy.setDelegate(new ApiProxyLocalImpl());
-    ApiProxy.setEnvironmentForCurrentThread(new ApiProxy.Environment() {
-      public String getAppId() {
-        return "test";
-      }
-
-      public String getVersionId() {
-        return "1.0";
-      }
-
-      public String getEmail() {
-        throw new UnsupportedOperationException();
-      }
-
-      public boolean isLoggedIn() {
-        throw new UnsupportedOperationException();
-      }
-
-      public boolean isAdmin() {
-        throw new UnsupportedOperationException();
-      }
-
-      public String getAuthDomain() {
-        throw new UnsupportedOperationException();
-      }
-
-      public AppEngineWebXml getAppEngineWebXml() {
-        return new AppEngineWebXml() {
-          public DatastoreConfig getDefaultDatastoreConfig() {
-            return DatastoreConfig.DEFAULT;
-          }
-        };
-      }
-    });
+    ldth.setUp();
   }
 
   protected void tearDown() throws Exception {
     ApiProxy.clearEnvironmentForCurrentThread();
     pmf.close();
+    ldth.tearDown();
     super.tearDown();
   }
 
