@@ -94,7 +94,7 @@ class StreamingQueryResult extends AbstractQueryResult {
    * @throws NoSuchElementException if there are no more elements
    * to resolve.
    */
-  private void resolveNext() {
+  void resolveNext() {
     resolvedPojos.add(entityToPojoFunc.apply(lazyEntityIterator.next()));
   }
 
