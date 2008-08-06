@@ -26,6 +26,7 @@ import com.google.apphosting.api.datastore.Entity;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import com.google.common.collect.ImmutableMapBuilder;
+import com.google.common.base.Function;
 
 
 /**
@@ -119,9 +120,14 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     super(om, query);
   }
 
-
+  /**
+   * {@inheritDoc}
+   *
+   * We'd like to return {@link Iterable} instead but
+   * {@link javax.persistence.Query#getResultList()} returns {@link List}.
+   */
   @Override
-  protected Iterable<?> performExecute(Map parameters) {
+  protected List<?> performExecute(Map parameters) {
     validate();
 
     long startTime = System.currentTimeMillis();
@@ -140,29 +146,37 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
         NucleusLogger.QUERY.debug(LOCALISER.msg("021074", "JDOQL",
             "" + (System.currentTimeMillis() - startTime)));
       }
-      ClassLoaderResolver clr = om.getClassLoaderResolver();
-      final AbstractClassMetaData acmd = om.getMetaDataManager().getMetaDataForClass(candidateClass, clr);
-      // TODO(maxr): stream the result back
-      List<Object> modelObjects = Lists.newArrayList();
-      for (final Entity e : entities) {
-        FieldValues fv = new FieldValues() {
-          public void fetchFields(StateManager sm) {
-            sm.replaceFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, e));
-          }
-          public void fetchNonLoadedFields(StateManager sm) {
-            sm.replaceNonLoadedFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, e));
-          }
-          public FetchPlan getFetchPlanForLoading() {
-            return null;
-          }
-        };
-        modelObjects.add(om.findObjectUsingAID(
-            clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true));
-      }
-      return modelObjects;
+      final ClassLoaderResolver clr = om.getClassLoaderResolver();
+      final AbstractClassMetaData acmd =
+          om.getMetaDataManager().getMetaDataForClass(candidateClass, clr);
+
+      Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
+        public Object apply(Entity entity) {
+          return entityToPojo(entity, acmd, clr);
+        }
+      };
+      return new StreamingQueryResult(this, entities, entityToPojoFunc);
     } finally {
       mconn.release();
     }
+  }
+
+  private Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
+      final ClassLoaderResolver clr) {
+    FieldValues fv = new FieldValues() {
+      public void fetchFields(StateManager sm) {
+        sm.replaceFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, entity));
+      }
+      public void fetchNonLoadedFields(StateManager sm) {
+        sm.replaceNonLoadedFields(
+            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, entity));
+      }
+      public FetchPlan getFetchPlanForLoading() {
+        return null;
+      }
+    };
+    return om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
+
   }
 
   private void validate() {
