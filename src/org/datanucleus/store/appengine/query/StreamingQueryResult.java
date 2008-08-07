@@ -197,10 +197,9 @@ class StreamingQueryResult extends AbstractQueryResult {
       // Don't update any state until the next() call is successful, that way
       // the iterator is still in a consistent state if someone iterates off the end.
       Object result = super.next();
-      curIndex++;
-      if (curIndex > maxIndex) {
-        maxIndex = curIndex;
-      }
+      // curIndex must be equal to maxIndex or else we would have already
+      // returned, so increment curIndex and set maxIndex to the new value.
+      maxIndex = ++curIndex;
       return result;
     }
 
