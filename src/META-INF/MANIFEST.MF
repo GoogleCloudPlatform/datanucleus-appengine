@@ -9,4 +9,7 @@ Import-Package: javax.jdo,
  javax.jdo.annotations,
  javax.jdo.datastore,
  javax.jdo.identity,
- javax.jdo.listener
+ javax.jdo.listener,
+ javax.persistence,
+ javax.persistence.spi
+

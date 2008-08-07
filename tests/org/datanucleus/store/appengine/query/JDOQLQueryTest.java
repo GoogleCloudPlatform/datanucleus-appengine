@@ -66,7 +66,7 @@ public class JDOQLQueryTest extends TestCase {
     properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
-    properties.setProperty(JDOQLQuery.STREAM_QUERY_RESULTS_PROPERTY, Boolean.TRUE.toString());
+    //properties.setProperty(JDOQLQuery.STREAM_QUERY_RESULTS_PROPERTY, Boolean.TRUE.toString());
     pmf = JDOHelper.getPersistenceManagerFactory(properties);
     ldth.setUp();
   }
@@ -80,12 +80,12 @@ public class JDOQLQueryTest extends TestCase {
 
   public void testUnsupportedFilters() {
     assertQueryUnsupported("select from " + Flight.class.getName()
-        + " where origin == 2 group by dest", JDOQLQuery.GROUP_BY_OP);
+        + " where origin == 2 group by dest", DatastoreQuery.GROUP_BY_OP);
     // can't actually test having because the parser doesn't recognize it unless there is a
     // group by, and the group by gets seen first
     assertQueryUnsupported("select from " + Flight.class.getName()
-        + " where origin == 2 group by dest having dest == 2", JDOQLQuery.GROUP_BY_OP);
-    Set<Expression.Operator> unsupportedOps = Sets.newHashSet(JDOQLQuery.UNSUPPORTED_OPERATORS);
+        + " where origin == 2 group by dest having dest == 2", DatastoreQuery.GROUP_BY_OP);
+    Set<Expression.Operator> unsupportedOps = Sets.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
     assertQueryUnsupported(Flight.class,
         "origin == 2 || dest == 3", Expression.OP_OR, unsupportedOps);
     assertQueryUnsupported(Flight.class, "!origin", Expression.OP_NOT, unsupportedOps);
@@ -134,7 +134,7 @@ public class JDOQLQueryTest extends TestCase {
         NO_FILTERS, Lists.newArrayList(DESC_DESC));
     assertQuerySupported("select from " + Flight.class.getName()
         + " order by origin asc, dest desc", NO_FILTERS, Lists.newArrayList(ORIG_ASC, DESC_DESC));
-    
+
     assertQuerySupported("select from " + Flight.class.getName()
         + " where origin == 2 && dest == 4 order by origin asc, dest desc",
         Lists.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), Lists.newArrayList(ORIG_ASC, DESC_DESC));
@@ -175,7 +175,7 @@ public class JDOQLQueryTest extends TestCase {
     assertEquals("3", result.get(3).getName());
   }
 
-  
+
 
   private static Entity newFlight(String name, String origin, String dest,
       int you, int me) {
@@ -195,7 +195,7 @@ public class JDOQLQueryTest extends TestCase {
     try {
       q.execute();
       fail("expected UnsupportedOperationException for query <" + query + ">");
-    } catch (JDOQLQuery.UnsupportedJDOQLOperatorException uoe) {
+    } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
       // good
       assertEquals(unsupportedOp, uoe.getOperation());
     }
@@ -207,7 +207,7 @@ public class JDOQLQueryTest extends TestCase {
     try {
       q.execute();
       fail("expected UnsupportedOperationException for query <" + query + ">");
-    } catch (JDOQLQuery.UnsupportedJDOQLOperatorException uoe) {
+    } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
       // good
       assertEquals(unsupportedOp, uoe.getOperation());
     }
@@ -238,8 +238,8 @@ public class JDOQLQueryTest extends TestCase {
     } else if (bindVariables.length == 2) {
       q.execute(bindVariables[0], bindVariables[1]);
     }
-    assertEquals(addedFilters, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getAddedFilters());
-    assertEquals(addedSorts, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getAddedSorts());
+    assertEquals(addedFilters, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery().getAddedFilters());
+    assertEquals(addedSorts, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery().getAddedSorts());
   }
 
 }

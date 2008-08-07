@@ -8,7 +8,8 @@
     <extension point="org.datanucleus.store_query_query">
         <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="javax.jdo.query.JDOQL"/>
         <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="JDOQL"/>
-        <query class-name="org.datanucleus.store.appengine.JPQLQuery" datastore="appengine" name="JPQL"/>
+        <query class-name="org.datanucleus.store.appengine.query.JPQLQuery" datastore="appengine" name="javax.jdo.query.JPQL"/>
+        <query class-name="org.datanucleus.store.appengine.query.JPQLQuery" datastore="appengine" name="JPQL"/>
     </extension>
 
     <!-- CONNECTION FACTORY -->
@@ -22,6 +23,6 @@
     </extension>
 
     <extension point="org.datanucleus.classloader_resolver">
-      
+
     </extension>
 </plugin>

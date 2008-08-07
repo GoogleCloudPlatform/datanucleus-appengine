@@ -1,19 +1,17 @@
-// Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
 import java.util.List;
 import java.util.Map;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.store.query.AbstractJDOQLQuery;
-
+import org.datanucleus.store.query.AbstractJPQLQuery;
 
 /**
- * Implementation of JDOQL for the app engine datastore.
+ * Implementation of JPQL for the app engine datastore.
  *
- * @author Max Ross <maxr@google.com>
+ * @author Erick Armbrust <earmbrust@google.com>
  */
-public class JDOQLQuery extends AbstractJDOQLQuery {
+public class JPQLQuery extends AbstractJPQLQuery {
 
   /**
    * The underlying Datastore query implementation.
@@ -25,28 +23,30 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    *
    * @param om The associated ObjectManager for this query.
    */
-  public JDOQLQuery(ObjectManager om) {
-    this(om, (JDOQLQuery) null);
+  public JPQLQuery(ObjectManager om) {
+    this(om, (JPQLQuery) null);
   }
 
   /**
-   * Constructs a new query instance having the same criteria as the given query.
+   * Constructs a new query instance having the same criteria as the given
+   * query.
    *
    * @param om The ObjectManager.
    * @param q The query from which to copy criteria.
    */
-  public JDOQLQuery(ObjectManager om, JDOQLQuery q) {
+  public JPQLQuery(ObjectManager om, JPQLQuery q) {
     super(om, q);
     datastoreQuery = new DatastoreQuery(this);
   }
 
   /**
-   * Constructor for a JDOQL query where the query is specified using the "Single-String" format.
+   * Constructor for a JPQL query where the query is specified using the
+   * "Single-String" format.
    *
    * @param om The object manager.
-   * @param query The JDOQL query string.
+   * @param query The JPQL query string.
    */
-  public JDOQLQuery(ObjectManager om, String query) {
+  public JPQLQuery(ObjectManager om, String query) {
     super(om, query);
     datastoreQuery = new DatastoreQuery(this);
   }
