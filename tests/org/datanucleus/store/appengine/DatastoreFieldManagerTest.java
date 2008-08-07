@@ -44,7 +44,7 @@ public class DatastoreFieldManagerTest extends TestCase {
   public void testFetching() {
     Entity ksEntity = buildKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
-    AppEngineFieldManager fieldManager = new AppEngineFieldManager(null, ksEntity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
       boolean isPK(int fieldNumber) {
         return fieldNumber == PK_FIELD_NUM;
       }
@@ -141,7 +141,7 @@ public class DatastoreFieldManagerTest extends TestCase {
     Entity ks = new Entity("KitchenSink");
     ldth.ds.put(ks);
 
-    AppEngineFieldManager fieldManager = new AppEngineFieldManager(null, ks) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ks) {
       boolean isPK(int fieldNumber) {
         return fieldNumber == PK_FIELD_NUM;
       }
@@ -198,6 +198,5 @@ public class DatastoreFieldManagerTest extends TestCase {
     assertEquals(A_BLOB, ks.getProperty("blobVal"));
     assertEquals(A_TEXT, ks.getProperty("textVal"));
     assertEquals(A_LINK, ks.getProperty("linkVal"));
-
   }
 }
