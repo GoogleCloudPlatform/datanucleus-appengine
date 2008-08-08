@@ -1,36 +1,27 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.ApiProxy;
-import com.google.apphosting.api.AppEngineWebXml;
-import com.google.apphosting.api.DatastoreConfig;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Query;
-import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-import javax.jdo.JDOHelper;
-import javax.jdo.PersistenceManagerFactory;
-
-import java.util.Properties;
 import java.util.List;
 import java.util.Collections;
 import java.util.Set;
-import java.io.File;
 
-import junit.framework.TestCase;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.test.Flight;
 import org.datanucleus.store.appengine.LocalDatastoreTestHelper;
+import org.datanucleus.store.appengine.JDOTestCase;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOQLQueryTest extends TestCase {
+public class JDOQLQueryTest extends JDOTestCase {
 
   private static final List<AddedSort> NO_SORTS = Collections.emptyList();
   private static final List<AddedFilter> NO_FILTERS = Collections.emptyList();
@@ -53,27 +44,14 @@ public class JDOQLQueryTest extends TestCase {
   private static final AddedSort DESC_DESC = new AddedSort("dest", Query.SortDirection.DESCENDING);
 
   private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-  private PersistenceManagerFactory pmf;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    File f = new File("local_db.bin");
-    f.delete();
-    Properties properties = new Properties();
-    properties.setProperty("javax.jdo.PersistenceManagerFactoryClass",
-                    "org.datanucleus.jdo.JDOPersistenceManagerFactory");
-    properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
-    properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
-    properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
-    //properties.setProperty(JDOQLQuery.STREAM_QUERY_RESULTS_PROPERTY, Boolean.TRUE.toString());
-    pmf = JDOHelper.getPersistenceManagerFactory(properties);
     ldth.setUp();
   }
 
   protected void tearDown() throws Exception {
-    ApiProxy.clearEnvironmentForCurrentThread();
-    pmf.close();
     ldth.tearDown();
     super.tearDown();
   }

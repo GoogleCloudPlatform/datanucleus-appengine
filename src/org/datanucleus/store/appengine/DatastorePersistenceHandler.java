@@ -7,22 +7,20 @@ import org.datanucleus.StateManager;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.metadata.IdentityType;
-import org.datanucleus.exceptions.NucleusDataStoreException;
-import org.datanucleus.exceptions.NucleusException;
-
-import javax.naming.directory.DirContext;
-import javax.naming.NamingException;
-import javax.jdo.spi.PersistenceCapable;
 
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Key;
+import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.DatastoreConfig;
+
+import javax.jdo.spi.PersistenceCapable;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -42,11 +40,48 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void insertObject(StateManager sm) {
-    throw new UnsupportedOperationException();
+    // Check if read-only so update not permitted
+    storeMgr.assertReadOnlyForUpdateOfObject(sm);
+
+    ManagedConnection mconn = storeMgr.getConnection(sm.getObjectManager());
+    DatastoreService datastore = (DatastoreService) mconn.getConnection();
+
+    int[] fieldNumbers = sm.getClassMetaData().getAllMemberPositions();
+    // TODO(maxr): Hook into mechanism so that kind is not tied to fqn.
+    // TODO(maxr): Figure out how to deal with ancestors.
+    Entity entity = new Entity(sm.getClassMetaData().getName());
+    sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+    datastore.put(entity);
+
+    AbstractClassMetaData acmd = sm.getClassMetaData();
+    // Set the generated key back on the pojo.
+    // TODO(maxr): Ask Andy if this is a reasonable way to do this
+    sm.setObjectField(
+        (PersistenceCapable) sm.getObject(),
+        acmd.getPKMemberPositions()[0],
+        null,
+        KeyFactory.encodeKey(entity.getKey()));
+    if (storeMgr.getRuntimeManager() != null) {
+      storeMgr.getRuntimeManager().incrementInsertCount();
+    }
   }
 
   public void fetchObject(StateManager sm, int fieldNumbers[]) {
-    throw new UnsupportedOperationException();
+    ManagedConnection mconn = storeMgr.getConnection(sm.getObjectManager());
+    DatastoreService datastore = (DatastoreService) mconn.getConnection();
+    String value = (String) sm.provideField(sm.getClassMetaData().getPKMemberPositions()[0]);
+    Entity entity;
+    try {
+      entity = datastore.get(KeyFactory.decodeKey(value));
+    } catch (EntityNotFoundException e) {
+      throw new NucleusObjectNotFoundException(
+          "Could not retrieve entity of type " + sm.getClassMetaData().getName()
+              + " with key " + value);
+    }
+    sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+    if (storeMgr.getRuntimeManager() != null){
+      storeMgr.getRuntimeManager().incrementFetchCount();
+    }
   }
 
   public void updateObject(StateManager sm, int fieldNumbers[]) {
@@ -64,14 +99,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   public Object findObject(ObjectManager om, Object id) {
     ClassLoaderResolver clr = om.getClassLoaderResolver();
     String className = storeMgr.getClassNameForObjectID(id, clr, om);
-    AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(className, clr);
-    if (cmd.getIdentityType() == IdentityType.APPLICATION) {
-        // Generate a template object with these PK field values
-        Class pcClass = clr.classForName(className, (id instanceof OID) ? null : id.getClass().getClassLoader());
-        StateManager sm = StateManagerFactory.newStateManagerForHollow(om, pcClass, id);
-        locateObject(sm);
-        return sm.getObject();
-    }
-    throw new NucleusException();
+    // Generate a template object with these PK field values
+    Class pcClass = clr.classForName(className,
+        (id instanceof OID) ? null : id.getClass().getClassLoader());
+    StateManager sm = StateManagerFactory.newStateManagerForHollow(om, pcClass, id);
+    locateObject(sm);
+    return sm.getObject();
   }
 }

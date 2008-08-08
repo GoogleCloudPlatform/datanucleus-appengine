@@ -8,6 +8,8 @@ import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.AppEngineWebXml;
 import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 
+import java.io.File;
+
 /**
  * A test helper that sets up a datastore service that can be used in tests.
  *
@@ -17,6 +19,8 @@ public class LocalDatastoreTestHelper {
   
   public DatastoreService ds;
   public void setUp() {
+    File f = new File("local_db.bin");
+    f.delete();
     ds = DatastoreServiceFactory.getDatastoreService(DatastoreConfig.DEFAULT);
     ApiProxy.setDelegate(new ApiProxyLocalImpl());
     ApiProxy.setEnvironmentForCurrentThread(new ApiProxy.Environment() {

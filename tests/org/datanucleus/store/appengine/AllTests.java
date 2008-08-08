@@ -8,6 +8,9 @@ import org.datanucleus.store.appengine.query.JPQLQueryTest;
 import org.datanucleus.store.appengine.query.StreamingQueryResultTest;
 
 /**
+ * All tests for the app engine datanucleus plugin.
+ * This will be difficult to keep in sync but we'l do our best.
+ *
  * @author Max Ross <maxr@google.com>
  */
 public class AllTests {
@@ -17,6 +20,10 @@ public class AllTests {
     suite.addTestSuite(JDOQLQueryTest.class);
     suite.addTestSuite(JPQLQueryTest.class);
     suite.addTestSuite(StreamingQueryResultTest.class);
+    suite.addTestSuite(JDOFetchTest.class);
+    suite.addTestSuite(JDOInsertionTest.class);
+    suite.addTestSuite(JPAFetchTest.class);
+    suite.addTestSuite(JPAInsertionTest.class);
     return suite;
   }
 }

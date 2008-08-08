@@ -1,19 +1,13 @@
 package org.datanucleus.store.appengine.query;
 
-import java.io.File;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-
-import junit.framework.TestCase;
-
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.LocalDatastoreTestHelper;
+import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.test.Book;
 
 import com.google.apphosting.api.datastore.DatastoreService;
@@ -23,7 +17,7 @@ import com.google.apphosting.api.datastore.Query;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 
-public class JPQLQueryTest extends TestCase {
+public class JPQLQueryTest extends JPATestCase {
 
   private static final List<AddedSort> NO_SORTS = Collections.emptyList();
   private static final List<AddedFilter> NO_FILTERS = Collections.emptyList();
@@ -46,17 +40,17 @@ public class JPQLQueryTest extends TestCase {
   private static final AddedSort ISBN_DESC = new AddedSort("isbn", Query.SortDirection.DESCENDING);
 
   private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-  private EntityManagerFactory emf;
-  private EntityManager em;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    File f = new File("local_db.bin");
-    f.delete();
-    emf = Persistence.createEntityManagerFactory("test");
-    em = emf.createEntityManager();
     ldth.setUp();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    ldth.tearDown();
+    super.tearDown();
   }
 
   public void testUnsupportedFilters() {

@@ -1,33 +1,28 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import junit.framework.TestCase;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.JDOClassLoaderResolver;
+import org.datanucleus.jdo.JDOPersistenceManager;
 
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Blob;
 import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.datastore.Link;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.users.User;
+import com.google.common.collect.Lists;
 
-import java.lang.reflect.Field;
+import java.util.Iterator;
 import java.util.Date;
+import java.util.Arrays;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreFieldManagerTest extends TestCase {
-
-  private static final int PK_FIELD_NUM = 0;
-  private static Field[] fields = KitchenSink.class.getDeclaredFields();
-
-  private static final Date A_DATE = new Date(147);
-  private static final User A_USER = new User("a", "b");
-  private static final Blob A_BLOB = new Blob("a blob".getBytes());
-  private static final Text A_TEXT = new Text("some text");
-  private static final Link A_LINK = new Link("www.google.com");
+public class DatastoreFieldManagerTest extends JDOTestCase {
 
   private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
 
@@ -42,161 +37,193 @@ public class DatastoreFieldManagerTest extends TestCase {
   }
 
   public void testFetching() {
-    Entity ksEntity = buildKitchenSinkEntity(null);
+    Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
+    JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
+    ClassLoaderResolver clr = new JDOClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        pm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
-      boolean isPK(int fieldNumber) {
-        return fieldNumber == PK_FIELD_NUM;
-      }
-
-      String getFieldName(int fieldNumber) {
-        return fields[fieldNumber].getName();
+      AbstractClassMetaData getClassMetaData() {
+        return acmd;
       }
     };
-    int i = 1;
-    assertEquals(KeyFactory.encodeKey(ksEntity.getKey()), fieldManager.fetchStringField(PK_FIELD_NUM));
-    assertEquals("strVal", fieldManager.fetchStringField(i++));
-    assertEquals(true, fieldManager.fetchBooleanField(i++));
-    assertEquals(true, fieldManager.fetchBooleanField(i++));
-    assertEquals(4L, fieldManager.fetchLongField(i++));
-    assertEquals(4L, fieldManager.fetchLongField(i++));
-    assertEquals(3, fieldManager.fetchIntField(i++));
-    assertEquals(3, fieldManager.fetchIntField(i++));
-    assertEquals('a', fieldManager.fetchCharField(i++));
-    assertEquals('a', fieldManager.fetchCharField(i++));
-    assertEquals((short) 2, fieldManager.fetchShortField(i++));
-    assertEquals((short) 2, fieldManager.fetchShortField(i++));
-    assertEquals((byte) 0xb, fieldManager.fetchByteField(i++));
-    assertEquals((byte) 0xb, fieldManager.fetchByteField(i++));
-    assertEquals(1.01f, fieldManager.fetchFloatField(i++));
-    assertEquals(1.01f, fieldManager.fetchFloatField(i++));
-    assertEquals(2.22d, fieldManager.fetchDoubleField(i++));
-    assertEquals(2.22d, fieldManager.fetchDoubleField(i++));
-    assertEquals(A_DATE, fieldManager.fetchObjectField(i++));
-    assertEquals(A_USER, fieldManager.fetchObjectField(i++));
-    assertEquals(A_BLOB, fieldManager.fetchObjectField(i++));
-    assertEquals(A_TEXT, fieldManager.fetchObjectField(i++));
-    assertEquals(A_LINK, fieldManager.fetchObjectField(i++));
-  }
 
-  public void testFetchingNulls() {
-  }
+    FieldPositionIterator iter = new FieldPositionIterator(acmd);
+    assertEquals(KeyFactory.encodeKey(ksEntity.getKey()),fieldManager.fetchStringField(iter.next()));
+    assertEquals("strVal", fieldManager.fetchStringField(iter.next()));
+    assertEquals(true, fieldManager.fetchBooleanField(iter.next()));
+    assertEquals(true, fieldManager.fetchBooleanField(iter.next()));
+    assertEquals(4L, fieldManager.fetchLongField(iter.next()));
+    assertEquals(4L, fieldManager.fetchLongField(iter.next()));
+    assertEquals(3, fieldManager.fetchIntField(iter.next()));
+    assertEquals(3, fieldManager.fetchIntField(iter.next()));
+    assertEquals('a', fieldManager.fetchCharField(iter.next()));
+    assertEquals('a', fieldManager.fetchCharField(iter.next()));
+    assertEquals((short) 2, fieldManager.fetchShortField(iter.next()));
+    assertEquals((short) 2, fieldManager.fetchShortField(iter.next()));
+    assertEquals((byte) 0xb, fieldManager.fetchByteField(iter.next()));
+    assertEquals((byte) 0xb, fieldManager.fetchByteField(iter.next()));
+    assertEquals(1.01f, fieldManager.fetchFloatField(iter.next()));
+    assertEquals(1.01f, fieldManager.fetchFloatField(iter.next()));
+    assertEquals(2.22d, fieldManager.fetchDoubleField(iter.next()));
+    assertEquals(2.22d, fieldManager.fetchDoubleField(iter.next()));
+    assertEquals(KitchenSink.DATE1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.USER1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.BLOB1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.TEXT1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.LINK1, fieldManager.fetchObjectField(iter.next()));
+    assertTrue(Arrays.equals(new String[] {"a", "b"},
+        (String[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new int[] {1, 2}, (int[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Integer[] {3, 4},
+        (Integer[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new long[] {5L, 6L},
+        (long[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Long[] {7L, 8L},
+        (Long[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new short[] {(short) 9, (short) 10},
+        (short[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Short[] {(short) 11, (short) 12},
+        (Short[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new char[] {'a', 'b'},
+        (char[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Character[] {'c', 'd'},
+        (Character[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new float[] {1.01f, 1.02f},
+        (float[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Float[] {1.03f, 1.04f},
+        (Float[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new double[] {2.01d, 2.02d},
+        (double[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Double[] {2.03d, 2.04d},
+        (Double[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new byte[] {0xb, 0xc},
+        (byte[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Byte[] {0xe, 0xf},
+        (Byte[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new boolean[] {true, false},
+        (boolean[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Boolean[] {Boolean.FALSE, Boolean.TRUE},
+        (Boolean[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Date[] {KitchenSink.DATE1, KitchenSink.DATE2},
+        (Date[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new User[] {KitchenSink.USER1, KitchenSink.USER2},
+        (User[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Blob[] {KitchenSink.BLOB1, KitchenSink.BLOB2},
+        (Blob[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Text[] {KitchenSink.TEXT1, KitchenSink.TEXT2},
+        (Text[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new Link[] {KitchenSink.LINK1, KitchenSink.LINK2},
+        (Link[]) fieldManager.fetchObjectField(iter.next())));
 
-  private Entity buildKitchenSinkEntity(Key key) {
-    Entity entity = new Entity("KitchenSink", key);
-    entity.setProperty("strVal", "strVal");
-    entity.setProperty("boolVal", Boolean.TRUE);
-    entity.setProperty("boolPrimVal", true);
-    entity.setProperty("longVal", 4L);
-    entity.setProperty("longPrimVal", 4L);
-    entity.setProperty("integerVal", 3L);
-    entity.setProperty("intVal", 3L);
-    entity.setProperty("characterVal", (long)'a');
-    entity.setProperty("charVal", (long)'a');
-    entity.setProperty("shortVal", (long)(short) 2);
-    entity.setProperty("shortPrimVal", (long) (short) 2);
-    entity.setProperty("byteVal", (long) (byte) 0xb);
-    entity.setProperty("bytePrimVal", (long) (byte) 0xb);
-    entity.setProperty("floatVal", (double) 1.01f);
-    entity.setProperty("floatPrimVal", (double) 1.01f);
-    entity.setProperty("doubleVal", 2.22d);
-    entity.setProperty("doublePrimVal", 2.22d);
-    entity.setProperty("doubleVal", 2.22d);
-    entity.setProperty("dateVal", A_DATE);
-    entity.setProperty("userVal", A_USER);
-    entity.setProperty("blobVal", A_BLOB);
-    entity.setProperty("textVal", A_TEXT);
-    entity.setProperty("linkVal", A_LINK);
-    return entity;
-  }
+    assertEquals(Lists.newArrayList("p", "q"), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(11, 12), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(13L, 14L), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList((short) 15, (short) 16),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList('q', 'r'), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList((byte) 0x8, (byte) 0x9),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(22.44d, 23.55d), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(23.44f, 24.55f), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(true, false), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(KitchenSink.USER1, KitchenSink.USER2),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(KitchenSink.BLOB1, KitchenSink.BLOB2),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(KitchenSink.TEXT1, KitchenSink.TEXT2),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Lists.newArrayList(KitchenSink.LINK1, KitchenSink.LINK2),
+        fieldManager.fetchObjectField(iter.next()));
 
-  private KitchenSink buildKitchenSink() {
-    KitchenSink ks = new KitchenSink();
-    ks.strVal = "strVal";
-    ks.boolVal = true;
-    ks.boolPrimVal = true;
-    ks.longVal = 4L;
-    ks.longPrimVal = 4L;
-    ks.integerVal = 3;
-    ks.intVal = 3;
-    ks.characterVal = 'a';
-    ks.charVal = 'a';
-    ks.shortVal = (short) 2;
-    ks.shortPrimVal = (short) 2;
-    ks.byteVal = 0xb;
-    ks.bytePrimVal = 0xb;
-    ks.floatVal = 1.01f;
-    ks.floatPrimVal = 1.01f;
-    ks.doubleVal = 2.22d;
-    ks.doublePrimVal = 2.22d;
-    ks.dateVal = A_DATE;
-    ks.userVal = A_USER;
-    ks.blobVal = A_BLOB;
-    ks.textVal = A_TEXT;
-    ks.linkVal = A_LINK;
-    return ks;
   }
 
   public void testStorage() {
-    Entity ks = new Entity("KitchenSink");
-    ldth.ds.put(ks);
+    Entity ksEntity = new Entity("KitchenSink");
+    ldth.ds.put(ksEntity);
 
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ks) {
-      boolean isPK(int fieldNumber) {
-        return fieldNumber == PK_FIELD_NUM;
-      }
-
-      String getFieldName(int fieldNumber) {
-        return fields[fieldNumber].getName();
+    JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
+    ClassLoaderResolver clr = new JDOClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        pm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
+      AbstractClassMetaData getClassMetaData() {
+        return acmd;
       }
     };
-    int i = 1;
-    fieldManager.storeStringField(PK_FIELD_NUM, KeyFactory.encodeKey(ks.getKey()));
-    fieldManager.storeStringField(i++, "strVal");
-    fieldManager.storeBooleanField(i++, Boolean.TRUE);
-    fieldManager.storeBooleanField(i++, true);
-    fieldManager.storeLongField(i++, 4L);
-    fieldManager.storeLongField(i++, 4L);
-    fieldManager.storeIntField(i++, 3);
-    fieldManager.storeIntField(i++, 3);
-    fieldManager.storeCharField(i++, 'a');
-    fieldManager.storeCharField(i++, 'a');
-    fieldManager.storeShortField(i++, (short) 2);
-    fieldManager.storeShortField(i++, (short) 2);
-    fieldManager.storeByteField(i++, (byte) 0xb);
-    fieldManager.storeByteField(i++, (byte) 0xb);
-    fieldManager.storeFloatField(i++, 1.01f);
-    fieldManager.storeFloatField(i++, 1.01f);
-    fieldManager.storeDoubleField(i++, 2.22d);
-    fieldManager.storeDoubleField(i++, 2.22d);
-    fieldManager.storeObjectField(i++, A_DATE);
-    fieldManager.storeObjectField(i++, A_USER);
-    fieldManager.storeObjectField(i++, A_BLOB);
-    fieldManager.storeObjectField(i++, A_TEXT);
-    fieldManager.storeObjectField(i++, A_LINK);
+    FieldPositionIterator iter = new FieldPositionIterator(acmd);
+    // skip the key field because storing it doesn't do anything
+    iter.next();
+    fieldManager.storeStringField(iter.next(), "strVal");
+    fieldManager.storeObjectField(iter.next(), Boolean.TRUE);
+    fieldManager.storeBooleanField(iter.next(), true);
+    fieldManager.storeObjectField(iter.next(), 4L);
+    fieldManager.storeLongField(iter.next(), 4L);
+    fieldManager.storeObjectField(iter.next(), 3);
+    fieldManager.storeIntField(iter.next(), 3);
+    fieldManager.storeObjectField(iter.next(), 'a');
+    fieldManager.storeCharField(iter.next(), 'a');
+    fieldManager.storeObjectField(iter.next(), (short) 2);
+    fieldManager.storeShortField(iter.next(), (short) 2);
+    fieldManager.storeObjectField(iter.next(), (byte) 0xb);
+    fieldManager.storeByteField(iter.next(), (byte) 0xb);
+    fieldManager.storeObjectField(iter.next(), 1.01f);
+    fieldManager.storeFloatField(iter.next(), 1.01f);
+    fieldManager.storeObjectField(iter.next(), 2.22d);
+    fieldManager.storeDoubleField(iter.next(), 2.22d);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.DATE1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.USER1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.BLOB1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.TEXT1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.LINK1);
 
-    assertEquals(ks.getKey(), ks.getKey());
-    assertEquals("strVal", ks.getProperty("strVal"));
-    assertEquals(true, ks.getProperty("boolVal"));
-    assertEquals(true, ks.getProperty("boolPrimVal"));
-    assertEquals(4L, ks.getProperty("longVal"));
-    assertEquals(4L, ks.getProperty("longPrimVal"));
-    assertEquals(3L, ks.getProperty("integerVal"));
-    assertEquals(3L, ks.getProperty("intVal"));
-    assertEquals(97L, ks.getProperty("characterVal"));
-    assertEquals(97L, ks.getProperty("charVal"));
-    assertEquals(2L, ks.getProperty("shortVal"));
-    assertEquals(2L, ks.getProperty("shortPrimVal"));
-    assertEquals(11L, ks.getProperty("byteVal"));
-    assertEquals(11L, ks.getProperty("bytePrimVal"));
-    assertEquals((double) 1.01f, ks.getProperty("floatVal"));
-    assertEquals((double) 1.01f, ks.getProperty("floatPrimVal"));
-    assertEquals(2.22d, ks.getProperty("doubleVal"));
-    assertEquals(2.22d, ks.getProperty("doublePrimVal"));
-    assertEquals(A_DATE, ks.getProperty("dateVal"));
-    assertEquals(A_USER, ks.getProperty("userVal"));
-    assertEquals(A_BLOB, ks.getProperty("blobVal"));
-    assertEquals(A_TEXT, ks.getProperty("textVal"));
-    assertEquals(A_LINK, ks.getProperty("linkVal"));
+    Iterator<String> fieldIter = KitchenSink.KITCHEN_SINK_FIELDS.iterator();
+    fieldIter.next(); // skip the key field
+    assertEquals("strVal", ksEntity.getProperty(fieldIter.next()));
+    assertEquals(true, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(true, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(4L, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(4L, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(3, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(3, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(97L, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(97L, ksEntity.getProperty(fieldIter.next()));
+    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next()));
+    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next()));
+    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next()));
+    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(KitchenSink.DATE1, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(KitchenSink.USER1, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(KitchenSink.BLOB1, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(KitchenSink.TEXT1, ksEntity.getProperty(fieldIter.next()));
+    assertEquals(KitchenSink.LINK1, ksEntity.getProperty(fieldIter.next()));
+  }
+
+  private static final class FieldPositionIterator implements Iterator<Integer> {
+    private final Iterator<String> inner = KitchenSink.KITCHEN_SINK_FIELDS.iterator();
+    private final AbstractClassMetaData acmd;
+
+    private FieldPositionIterator(AbstractClassMetaData acmd) {
+      this.acmd = acmd;
+    }
+
+    public boolean hasNext() {
+      return inner.hasNext();
+    }
+
+    public Integer next() {
+      return acmd.getRelativePositionOfMember(inner.next());
+    }
+
+    public void remove() {
+      throw new UnsupportedOperationException();
+    }
   }
 }
