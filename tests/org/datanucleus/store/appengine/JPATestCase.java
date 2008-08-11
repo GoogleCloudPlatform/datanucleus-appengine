@@ -15,9 +15,12 @@ public class JPATestCase extends TestCase {
   protected EntityManagerFactory emf;
   protected EntityManager em;
 
+  protected LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
+
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    ldth.setUp();
     emf = Persistence.createEntityManagerFactory("test");
     em = emf.createEntityManager();
   }
@@ -25,6 +28,7 @@ public class JPATestCase extends TestCase {
   protected void tearDown() throws Exception {
     em.close();
     emf.close();
+    ldth.tearDown();
     super.tearDown();
   }
 }

@@ -22,8 +22,12 @@ public class AllTests {
     suite.addTestSuite(StreamingQueryResultTest.class);
     suite.addTestSuite(JDOFetchTest.class);
     suite.addTestSuite(JDOInsertionTest.class);
+    suite.addTestSuite(JDOUpdateTest.class);
+    suite.addTestSuite(JDODeleteTest.class);
     suite.addTestSuite(JPAFetchTest.class);
     suite.addTestSuite(JPAInsertionTest.class);
+    suite.addTestSuite(JPAUpdateTest.class);
+    suite.addTestSuite(JPADeleteTest.class);
     return suite;
   }
 }

@@ -1,8 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Query;
 import com.google.common.collect.Lists;
@@ -15,7 +13,6 @@ import java.util.Set;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.test.Flight;
-import org.datanucleus.store.appengine.LocalDatastoreTestHelper;
 import org.datanucleus.store.appengine.JDOTestCase;
 
 /**
@@ -42,19 +39,6 @@ public class JDOQLQueryTest extends JDOTestCase {
       new AddedFilter("dest", Query.FilterOperator.LESS_THAN_OR_EQUAL, 4L);
   private static final AddedSort ORIG_ASC = new AddedSort("origin", Query.SortDirection.ASCENDING);
   private static final AddedSort DESC_DESC = new AddedSort("dest", Query.SortDirection.DESCENDING);
-
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
 
   public void testUnsupportedFilters() {
     assertQueryUnsupported("select from " + Flight.class.getName()
@@ -133,14 +117,13 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void test2Equals2OrderBy() {
-    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-    ds.put(newFlight("1", "yam", "bam", 1, 2));
-    ds.put(newFlight("2", "yam", "bam", 1, 1));
-    ds.put(newFlight("3", "yam", "bam", 2, 1));
-    ds.put(newFlight("4", "yam", "bam", 2, 2));
-    ds.put(newFlight("5", "notyam", "bam", 2, 2));
-    ds.put(newFlight("5", "yam", "notbam", 2, 2));
-    javax.jdo.Query q = pmf.getPersistenceManager().newQuery(
+    ldth.ds.put(newFlight("1", "yam", "bam", 1, 2));
+    ldth.ds.put(newFlight("2", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlight("3", "yam", "bam", 2, 1));
+    ldth.ds.put(newFlight("4", "yam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "notyam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "yam", "notbam", 2, 2));
+    javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
             + " order by you asc, me desc");
@@ -169,7 +152,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   private void assertQueryUnsupported(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
-    javax.jdo.Query q = pmf.getPersistenceManager().newQuery(clazz, query);
+    javax.jdo.Query q = pm.newQuery(clazz, query);
     try {
       q.execute();
       fail("expected UnsupportedOperationException for query <" + query + ">");
@@ -181,7 +164,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   private void assertQueryUnsupported(String query, Expression.Operator unsupportedOp) {
-    javax.jdo.Query q = pmf.getPersistenceManager().newQuery(query);
+    javax.jdo.Query q = pm.newQuery(query);
     try {
       q.execute();
       fail("expected UnsupportedOperationException for query <" + query + ">");
@@ -195,16 +178,16 @@ public class JDOQLQueryTest extends JDOTestCase {
       List<AddedFilter> addedFilters, List<AddedSort> addedSorts, Object... bindVariables) {
     javax.jdo.Query q;
     if (query.isEmpty()) {
-      q = pmf.getPersistenceManager().newQuery(clazz);
+      q = pm.newQuery(clazz);
     } else {
-      q = pmf.getPersistenceManager().newQuery(clazz, query);
+      q = pm.newQuery(clazz, query);
     }
     assertQuerySupported(q, addedFilters, addedSorts, bindVariables);
   }
 
   private void assertQuerySupported(String query,
       List<AddedFilter> addedFilters, List<AddedSort> addedSorts, Object... bindVariables) {
-    assertQuerySupported(pmf.getPersistenceManager().newQuery(query), addedFilters, addedSorts, bindVariables);
+    assertQuerySupported(pm.newQuery(query), addedFilters, addedSorts, bindVariables);
   }
 
   private void assertQuerySupported(javax.jdo.Query q, List<AddedFilter> addedFilters,

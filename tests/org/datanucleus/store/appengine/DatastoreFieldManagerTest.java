@@ -24,25 +24,13 @@ import java.util.Arrays;
  */
 public class DatastoreFieldManagerTest extends JDOTestCase {
 
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
-
   public void testFetching() {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
-    JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
+    JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
-        pm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -145,10 +133,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     Entity ksEntity = new Entity("KitchenSink");
     ldth.ds.put(ksEntity);
 
-    JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
+    JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
-        pm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
       AbstractClassMetaData getClassMetaData() {
         return acmd;

@@ -113,7 +113,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   @SuppressWarnings("unchecked")
   public void storeObjectField(int fieldNumber, Object value) {
-    if (value != null) {
+    if (value != null ) {
       if (value.getClass().isArray()) {
         // TODO(maxr): Convert byte[] and Byte[] to BLOB
         // Translate all arrays to lists before storing.

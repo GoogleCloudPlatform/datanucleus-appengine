@@ -5,6 +5,7 @@ import junit.framework.TestCase;
 
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManager;
 import java.util.Properties;
 
 /**
@@ -15,10 +16,14 @@ import java.util.Properties;
 public class JDOTestCase extends TestCase {
 
   protected PersistenceManagerFactory pmf;
+  protected PersistenceManager pm;
+
+  protected LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    ldth.setUp();
     Properties properties = new Properties();
     properties.setProperty("javax.jdo.PersistenceManagerFactoryClass",
                     "org.datanucleus.jdo.JDOPersistenceManagerFactory");
@@ -26,9 +31,12 @@ public class JDOTestCase extends TestCase {
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
     pmf = JDOHelper.getPersistenceManagerFactory(properties);
+    pm = pmf.getPersistenceManager();
   }
 
   protected void tearDown() throws Exception {
+    ldth.tearDown();
+    pm.close();
     pmf.close();
     super.tearDown();
   }

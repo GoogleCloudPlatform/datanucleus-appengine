@@ -14,19 +14,6 @@ import com.google.apphosting.api.datastore.KeyFactory;
  * @author Erick Armbrust <earmbrust@google.com>
  */
 public class JPAUpdateTest extends JPATestCase {
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
 
   public void testSimpleUpdate() throws EntityNotFoundException {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));

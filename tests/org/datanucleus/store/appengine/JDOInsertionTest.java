@@ -3,27 +3,18 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.Person;
+import org.datanucleus.test.Name;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Entity;
+
+import java.util.Date;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class JDOInsertionTest extends JDOTestCase {
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }  
 
   public void testSimpleInsert() throws EntityNotFoundException {
     Flight f1 = new Flight();
@@ -33,7 +24,7 @@ public class JDOInsertionTest extends JDOTestCase {
     f1.setYou(4);
     f1.setName("Harold");
     assertNull(f1.getId());
-    pmf.getPersistenceManager().makePersistent(f1);
+    pm.makePersistent(f1);
     assertNotNull(f1.getId());
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(f1.getId()));
     assertNotNull(entity);
@@ -47,7 +38,7 @@ public class JDOInsertionTest extends JDOTestCase {
   public void testKitchenSinkInsert() throws EntityNotFoundException {
     KitchenSink ks = KitchenSink.newKitchenSink();
     assertNull(ks.key);
-    pmf.getPersistenceManager().makePersistent(ks);
+    pm.makePersistent(ks);
     assertNotNull(ks.key);
 
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(ks.key));
@@ -56,4 +47,18 @@ public class JDOInsertionTest extends JDOTestCase {
     Entity sameEntity = KitchenSink.newKitchenSinkEntity(KeyFactory.decodeKey(ks.key));
     assertEquals(sameEntity.getProperties(), entity.getProperties());
   }
+
+//  public void testEmbeddable() throws EntityNotFoundException {
+//    Person p = new Person();
+//    p.setDob(new Date());
+//    p.setName(new Name());
+//    p.getName().setFirstName("jimmy");
+//    p.getName().setSurName("jam");
+//    pm.makePersistent(p);
+//
+//    assertNotNull(p.getId());
+//
+//    Entity entity = ldth.ds.get(KeyFactory.decodeKey(p.getId()));
+//    assertNotNull(entity);
+//  }
 }

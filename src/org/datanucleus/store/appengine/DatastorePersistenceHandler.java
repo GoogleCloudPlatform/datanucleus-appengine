@@ -14,7 +14,6 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
-import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
@@ -112,8 +111,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void deleteObject(StateManager sm) {
-    Key key = (Key) sm.getInternalObjectId();
-    datastoreService.delete(key);
+    StringIdentity ident = (StringIdentity) sm.getInternalObjectId();
+    datastoreService.delete(KeyFactory.decodeKey(ident.getKey()));
   }
 
   public void locateObject(StateManager sm) {

@@ -12,20 +12,6 @@ import javax.persistence.EntityTransaction;
  * @author Max Ross <maxr@google.com>
  */
 public class JPAInsertionTest extends JPATestCase {
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
-
   public void testSimpleInsert() throws EntityNotFoundException {
     Book b1 = new Book();
     b1.setAuthor("jimmy");

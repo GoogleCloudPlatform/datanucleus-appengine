@@ -14,19 +14,6 @@ import com.google.apphosting.api.datastore.KeyFactory;
  * @author Erick Armbrust <earmbrust@google.com>
  */
 public class JDOUpdateTest extends JDOTestCase {
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
 
   public void testSimpleUpdate() throws EntityNotFoundException {
     PersistenceManager pm = pmf.getPersistenceManager();
