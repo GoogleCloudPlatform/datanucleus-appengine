@@ -20,6 +20,7 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.DatastoreConfig;
 
+import javax.jdo.identity.StringIdentity;
 import javax.jdo.spi.PersistenceCapable;
 
 /**
@@ -84,8 +85,30 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
+  /**
+   * TODO (earmbrust): Find a way to get rid of the fetch before the update.
+   */
   public void updateObject(StateManager sm, int fieldNumbers[]) {
-    throw new UnsupportedOperationException();
+    // Check if read-only so update not permitted
+    storeMgr.assertReadOnlyForUpdateOfObject(sm);
+
+    ManagedConnection mconn = storeMgr.getConnection(sm.getObjectManager());
+    DatastoreService datastore = (DatastoreService) mconn.getConnection();
+    StringIdentity ident = (StringIdentity) sm.getInternalObjectId();
+
+    try {
+      Entity entity = datastore.get(KeyFactory.decodeKey(ident.getKey()));
+      sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+      datastore.put(entity);
+    } catch (EntityNotFoundException e) {
+      throw new NucleusObjectNotFoundException(
+          "Could not retrieve entity of type " + sm.getClassMetaData().getName()
+              + " with key " + ident.getKey());
+    }
+
+    if (storeMgr.getRuntimeManager() != null) {
+      storeMgr.getRuntimeManager().incrementUpdateCount();
+    }
   }
 
   public void deleteObject(StateManager sm) {
