@@ -1,8 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.Book;
 
@@ -28,5 +28,6 @@ public class JPAInsertionTest extends JPATestCase {
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
     assertEquals("the title", entity.getProperty("title"));
+    assertEquals(Book.class.getName(), entity.getKind());
   }
 }

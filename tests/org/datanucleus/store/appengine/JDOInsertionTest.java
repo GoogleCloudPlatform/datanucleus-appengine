@@ -1,15 +1,11 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.EntityNotFoundException;
+import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.KitchenSink;
-import org.datanucleus.test.Person;
-import org.datanucleus.test.Name;
-import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.EntityNotFoundException;
-import com.google.apphosting.api.datastore.Entity;
-
-import java.util.Date;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -33,6 +29,7 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals("Harold", entity.getProperty("name"));
     assertEquals(2L, entity.getProperty("me"));
     assertEquals(4L, entity.getProperty("you"));
+    assertEquals(Flight.class.getName(), entity.getKind());
   }
 
   public void testKitchenSinkInsert() throws EntityNotFoundException {
@@ -43,6 +40,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(ks.key));
     assertNotNull(entity);
+    assertEquals(KitchenSink.class.getName(), entity.getKind());
 
     Entity sameEntity = KitchenSink.newKitchenSinkEntity(KeyFactory.decodeKey(ks.key));
     assertEquals(sameEntity.getProperties(), entity.getProperties());

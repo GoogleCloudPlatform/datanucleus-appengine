@@ -1,23 +1,22 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.store.StorePersistenceHandler;
-import org.datanucleus.store.StoreManager;
-import org.datanucleus.StateManager;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.exceptions.NucleusObjectNotFoundException;
-import org.datanucleus.state.StateManagerFactory;
-import org.datanucleus.identity.OID;
-import org.datanucleus.metadata.AbstractClassMetaData;
-
+import com.google.apphosting.api.DatastoreConfig;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
-import com.google.apphosting.api.DatastoreConfig;
+import com.google.apphosting.api.datastore.KeyFactory;
+import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.ManagedConnection;
+import org.datanucleus.ObjectManager;
+import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
+import org.datanucleus.identity.OID;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.state.StateManagerFactory;
+import org.datanucleus.store.StoreManager;
+import org.datanucleus.store.StorePersistenceHandler;
 
 import javax.jdo.identity.StringIdentity;
 import javax.jdo.spi.PersistenceCapable;
@@ -49,7 +48,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     int[] fieldNumbers = sm.getClassMetaData().getAllMemberPositions();
     // TODO(maxr): Hook into mechanism so that kind is not tied to fqn.
     // TODO(maxr): Figure out how to deal with ancestors.
-    Entity entity = new Entity(sm.getClassMetaData().getName());
+    Entity entity = new Entity(sm.getClassMetaData().getFullClassName());
     sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
     datastore.put(entity);
 
@@ -75,7 +74,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       entity = datastore.get(KeyFactory.decodeKey(value));
     } catch (EntityNotFoundException e) {
       throw new NucleusObjectNotFoundException(
-          "Could not retrieve entity of type " + sm.getClassMetaData().getName()
+          "Could not retrieve entity of type " + sm.getClassMetaData().getFullClassName()
               + " with key " + value);
     }
     sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
@@ -101,7 +100,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       datastore.put(entity);
     } catch (EntityNotFoundException e) {
       throw new NucleusObjectNotFoundException(
-          "Could not retrieve entity of type " + sm.getClassMetaData().getName()
+          "Could not retrieve entity of type " + sm.getClassMetaData().getFullClassName()
               + " with key " + ident.getKey());
     }
 
