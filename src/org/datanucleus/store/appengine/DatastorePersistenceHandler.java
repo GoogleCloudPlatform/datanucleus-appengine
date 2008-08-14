@@ -1,7 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.DatastoreConfig;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
@@ -27,8 +26,7 @@ import javax.jdo.spi.PersistenceCapable;
 public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   // TODO(maxr): Get rid of the config arg.
-  private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService(
-      DatastoreConfig.DEFAULT);
+  private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
   private final DatastoreManager storeMgr;
 
   public DatastorePersistenceHandler(StoreManager storeMgr) {

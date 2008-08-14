@@ -1,11 +1,9 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
-import com.google.apphosting.api.DatastoreConfig;
-import com.google.apphosting.api.ApiProxy;
-import com.google.apphosting.api.AppEngineWebXml;
 import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 
 import java.io.File;
@@ -21,7 +19,7 @@ public class LocalDatastoreTestHelper {
   public void setUp() {
     File f = new File("local_db.bin");
     f.delete();
-    ds = DatastoreServiceFactory.getDatastoreService(DatastoreConfig.DEFAULT);
+    ds = DatastoreServiceFactory.getDatastoreService();
     ApiProxy.setDelegate(new ApiProxyLocalImpl());
     ApiProxy.setEnvironmentForCurrentThread(new ApiProxy.Environment() {
       public String getAppId() {
@@ -46,14 +44,6 @@ public class LocalDatastoreTestHelper {
 
       public String getAuthDomain() {
         throw new UnsupportedOperationException();
-      }
-
-      public AppEngineWebXml getAppEngineWebXml() {
-        return new AppEngineWebXml() {
-          public DatastoreConfig getDefaultDatastoreConfig() {
-            return DatastoreConfig.DEFAULT;
-          }
-        };
       }
     });
 

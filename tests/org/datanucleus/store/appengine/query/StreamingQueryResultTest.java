@@ -1,13 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
-import junit.framework.TestCase;
 import com.google.apphosting.api.datastore.Entity;
-import com.google.common.collect.Lists;
 import com.google.common.base.Function;
+import com.google.common.collect.Lists;
+import junit.framework.TestCase;
 
-import java.util.Iterator;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.ListIterator;
 
 /**
@@ -180,25 +180,25 @@ public class StreamingQueryResultTest extends TestCase {
     StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
     assertFalse(sqr.listIterator().hasNext());
 
-    Entity e1 = new Entity("yar");
-    Entity e2 = new Entity("yar");
-    Entity e3 = new Entity("yar");
-    Entity e4 = new Entity("yar");
+    Entity e1 = new Entity("yar1");
+    Entity e2 = new Entity("yar2");
+    Entity e3 = new Entity("yar3");
+    Entity e4 = new Entity("yar4");
     iterable = new CountingIterable(Lists.<Entity>newArrayList(e1, e2, e3, e4));
     sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
 
     ListIterator listIter = sqr.listIterator();
     assertTrue(listIter.hasNext());
-    assertEquals(e1, listIter.next());
+    assertSame(e1, listIter.next());
     assertEquals(1, iterable.nextCount);
-    assertEquals(e1, sqr.get(0));
+    assertSame(e1, sqr.get(0));
     assertEquals(1, iterable.nextCount);
 
     assertEquals(e2, listIter.next());
     assertEquals(2, iterable.nextCount);
     // Calls to the iterator make more data available to get() so nextCount
     // does not increment.
-    assertEquals(e1, sqr.get(1));
+    assertSame(e2, sqr.get(1));
     assertEquals(2, iterable.nextCount);
 
     // now we work our way backwards
@@ -206,28 +206,28 @@ public class StreamingQueryResultTest extends TestCase {
     assertEquals(1, listIter.previousIndex());
     assertTrue(listIter.hasPrevious());
     assertTrue(listIter.hasNext());
-    assertEquals(e2, listIter.previous());
+    assertSame(e2, listIter.previous());
     assertTrue(listIter.hasNext());
     assertEquals(3, iterable.nextCount);
     assertTrue(listIter.hasPrevious());
 
     assertEquals(1, listIter.nextIndex());
     assertEquals(0, listIter.previousIndex());
-    assertEquals(e1, listIter.previous());
+    assertSame(e1, listIter.previous());
     assertEquals(3, iterable.nextCount);
     assertFalse(listIter.hasPrevious());
     assertTrue(listIter.hasNext());
     assertEquals(-1, listIter.previousIndex());
 
     // now we go forwards again
-    assertEquals(e1, listIter.next());
+    assertSame(e1, listIter.next());
     assertEquals(1, listIter.nextIndex());
     assertEquals(0, listIter.previousIndex());
     assertEquals(3, iterable.nextCount);
     assertTrue(listIter.hasPrevious());
     assertTrue(listIter.hasNext());
 
-    assertEquals(e2, listIter.next());
+    assertSame(e2, listIter.next());
     assertEquals(2, listIter.nextIndex());
     assertEquals(1, listIter.previousIndex());
     assertEquals(3, iterable.nextCount);
@@ -235,7 +235,7 @@ public class StreamingQueryResultTest extends TestCase {
     assertTrue(listIter.hasNext());
     assertEquals(3, iterable.nextCount);
 
-    assertEquals(e3, listIter.next());
+    assertSame(e3, listIter.next());
     assertEquals(3, iterable.nextCount);
     assertEquals(3, listIter.nextIndex());
     assertEquals(2, listIter.previousIndex());
@@ -244,7 +244,7 @@ public class StreamingQueryResultTest extends TestCase {
     // the call to hasNext() results in a fetch
     assertEquals(4, iterable.nextCount);
 
-    assertEquals(e4, listIter.next());
+    assertSame(e4, listIter.next());
     assertEquals(4, listIter.nextIndex());
     assertEquals(3, listIter.previousIndex());
     assertEquals(4, iterable.nextCount);
@@ -262,7 +262,7 @@ public class StreamingQueryResultTest extends TestCase {
     sqr.get(1);
     assertEquals(2, iterable.nextCount);
     assertTrue(listIter.hasNext());
-    assertEquals(e2, listIter.next());
+    assertSame(e2, listIter.next());
     assertEquals(2, iterable.nextCount);
   }
 
