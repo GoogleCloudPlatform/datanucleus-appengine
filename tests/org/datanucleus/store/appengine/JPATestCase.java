@@ -21,7 +21,7 @@ public class JPATestCase extends TestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ldth.setUp();
-    emf = Persistence.createEntityManagerFactory("test");
+    emf = Persistence.createEntityManagerFactory("nontransactional");
     em = emf.createEntityManager();
   }
 

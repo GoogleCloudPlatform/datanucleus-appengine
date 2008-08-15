@@ -24,10 +24,12 @@ public class AllTests {
     suite.addTestSuite(JDOInsertionTest.class);
     suite.addTestSuite(JDOUpdateTest.class);
     suite.addTestSuite(JDODeleteTest.class);
+    suite.addTestSuite(JDOTransactionTest.class);
     suite.addTestSuite(JPAFetchTest.class);
     suite.addTestSuite(JPAInsertionTest.class);
     suite.addTestSuite(JPAUpdateTest.class);
     suite.addTestSuite(JPADeleteTest.class);
+    suite.addTestSuite(JPATransactionTest.class);
     return suite;
   }
 }
