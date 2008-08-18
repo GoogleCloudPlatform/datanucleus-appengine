@@ -1,0 +1,8 @@
+This jar contains the Google App Engine plugin for datanucleus.
+
+VERSION 0.1
+- Initial release
+- JDO and JPA support for insert, update, delete, retrieve
+- JDOQL and JPQL queries.  Predicates may only use '=', '<', '<=', '>=', '>', '&&' as
+  well as sort clauses.
+- Basic Transaction support.

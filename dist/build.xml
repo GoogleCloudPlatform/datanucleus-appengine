@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="ISO-8859-1"?>
+<project name="gae" default="dist">
+
+  <property name="version.major" value="0"/>
+  <property name="version.minor" value="1"/>
+  <property name="version" value="${version.major}.${version.minor}"/>
+  <property name="orm.source.jar" value="datanucleus-appengine-${version}-sources.jar"/>
+  <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
+  <property name="dist.target" value="appengine-orm-${version}.jar"/>
+  <target name="dist" depends="split" description="Build the datanucleus appengine distribution">
+    <jar destfile="${orm.source.jar}">
+      <fileset dir="../src" includes="**/*"/>
+    </jar>
+    <copy file="../datanucleus-appengine-SNAPSHOT.jar" tofile="datanucleus-appengine-${version}.jar"/>
+    <copy file="../lib/external-api.jar" todir="../demos/lib"/>
+    <copy file="../lib/external-dev-appserver.jar" todir="../demos/lib"/>
+    <jar destfile="${dist.target}">
+      <fileset dir="../lib">
+        <include name="asm-3.1.jar"/>
+        <include name="jdo2-api-2.1.jar"/>
+        <include name="jta.jar"/>
+        <include name="persistence-api-1.0.2.jar"/>
+        <include name="datanucleus-enhancer-*SNAPSHOT*.jar"/>
+        <include name="datanucleus-java5-*SNAPSHOT*.jar"/>
+        <include name="datanucleus-core-*SNAPSHOT-sources.jar"/>
+      </fileset>
+      <fileset dir="../lib/split">
+        <include name="*.jar"/>
+      </fileset>
+      <fileset file="${orm.jar}"/>
+      <fileset file="${orm.source.jar}"/>
+      <fileset file="README"/>
+      <fileset dir="..">
+        <include name="demos/**"/>
+      </fileset>
+    </jar>
+    <delete dir="../lib/split"/>
+    <delete file="${orm.jar}"/>
+    <delete file="${orm.source.jar}"/>
+    <delete file="../demos/lib/external-api.jar"/>
+    <delete file="../demos/lib/external-dev-appserver.jar"/>
+  </target>
+
+  <target name="split" description="Split the datanucleus jars into chunks smaller than 1MB.
+                                    Typically we would let the appcfg script do this for us,
+                                    but because of some special requirements that datanucleus
+                                    has we need to do this ourselves.">
+    <mkdir dir="../lib/split"/>
+    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
+      <arg value="--input_jar=datanucleus-core-1.0-SNAPSHOT.jar"/>
+      <arg value="--output_directory=split"/>
+      <arg value="--max_file_size=1000000"/>
+      <arg value="--replicate_manifests=true"/>
+    </java>
+  </target>
+
+  <property name="tmp.dir" value="/tmp/testdist"/>
+
+  <target name="testdist" description="Unzip the dist, launch one of the sample apps, and hit it
+                                       with curl to make sure it is functioning properly.">
+    <delete dir="${tmp.dir}"/>
+    <mkdir dir="${tmp.dir}"/>
+    <unzip src="${dist.target}" dest="${tmp.dir}"/>
+    <parallel>
+      <daemons>
+        <exec executable="ant" dir="${tmp.dir}/demos/helloorm"/>
+      </daemons>
+      <sequential>
+        <sleep seconds="5"/>
+        <exec executable="curl" failifexecutionfails="true" failonerror="true">
+          <arg value="-d"/>
+          <arg value="orig=BOS&amp;dest=LAX"/>
+          <arg value="http://localhost:8080/addFlight"/>
+        </exec>
+        <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.result">
+          <arg value="http://localhost:8080"/>
+        </exec>
+        <echo message="${curl.result}"/>
+      </sequential>
+    </parallel>
+    <condition property="expected.response">
+      <contains string="${curl.result}" substring="agU6c2VsZnIqCxIkY29tLmdvb2dsZS5hcHBlbmdpbmUuaGVsbG9vcm0uRmxpZ2h0GAEM"/>
+    </condition>
+    <fail unless="expected.response" message="Did not get the expected response: ${curl.result}"/>
+  </target>
+</project>
