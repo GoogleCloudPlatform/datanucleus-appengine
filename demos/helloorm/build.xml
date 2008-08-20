@@ -2,6 +2,7 @@
 <project name="helloorm" default="launch" basedir=".">
 
   <property name="orm.lib.dir" value="../.."/>
+  <property name="demos.lib.dir" value="../lib"/>
 
   <target name="clean" description="clean up">
     <delete dir="classes"/>
@@ -11,7 +12,7 @@
   </target>
 
   <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" jar="../lib/external-dev-appserver.jar">
+    <java fork="true" jar="${demos.lib.dir}/external-dev-appserver.jar">
       <arg value="exploded"/>
     </java>
   </target>
@@ -21,44 +22,55 @@
     <mkdir dir="exploded"/>
     <unwar src="helloorm.war" dest="exploded"/>
   </target>
-	
+
   <target name="war" description="build the war" depends="enhance">
-  <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
-    <fileset dir="src">
-      <include name="**/*.properties"/>
-    </fileset>
-    <lib dir="${orm.lib.dir}">
-      <include name="datanucleus-appengine-0.1.jar"/>
-      <include name="datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
-      <include name="datanucleus-core-1.0-SNAPSHOT-0001.jar"/>
-      <include name="datanucleus-core-1.0-SNAPSHOT-0002.jar"/>
-      <include name="datanucleus-core-1.0-SNAPSHOT-0003.jar"/>
-      <include name="datanucleus-java5-1.0-SNAPSHOT.jar"/>
-      <include name="persistence-api-1.0.2.jar"/>
-      <include name="asm-3.1.jar"/>
-      <include name="jdo2-api-2.1.jar"/>
-      <include name="jta.jar"/>
-      <include name="persistence-api-1.0.2.jar"/>
-    </lib>
-    <classes dir="classes"/>
-    <webinf dir="src/WEB-INF">
-      <include name="appengine-web.xml"/>
-    </webinf>
-    <metainf dir="src/META-INF">
-      <include name="persistence.xml"/>
-    </metainf>
-  </war>
+    <!--
+    The contents of src/META-INF need to go in the classes
+    directory of the war, not the top-level META-INF
+    directory of the war.
+    -->
+    <copy todir="classes">
+      <fileset dir="src">
+        <include name="META-INF/*"/>
+      </fileset>
+    </copy>
+    <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
+      <fileset dir="src">
+        <include name="**/*.properties"/>
+      </fileset>
+      <lib dir="${orm.lib.dir}">
+        <include name="datanucleus-appengine-0.1.jar"/>
+        <include name="datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
+        <include name="datanucleus-core-1.0-SNAPSHOT-0001.jar"/>
+        <include name="datanucleus-core-1.0-SNAPSHOT-0002.jar"/>
+        <include name="datanucleus-core-1.0-SNAPSHOT-0003.jar"/>
+        <include name="datanucleus-java5-1.0-SNAPSHOT.jar"/>
+        <include name="persistence-api-1.0.2.jar"/>
+        <include name="asm-3.1.jar"/>
+        <include name="jdo2-api-2.1.jar"/>
+        <include name="jta.jar"/>
+        <include name="persistence-api-1.0.2.jar"/>
+      </lib>
+      <lib dir="${demos.lib.dir}">
+        <include name="servlet-api-2.4.jar"/>
+        <include name="external-api.jar"/>
+      </lib>
+      <classes dir="classes"/>
+      <webinf dir="src/WEB-INF">
+        <include name="appengine-web.xml"/>
+      </webinf>
+    </war>
   </target>
 
   <path id="helloorm.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.1.jar"/>
     <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="../lib/servlet-api-2.4.jar"/>
-    <pathelement location="../lib/external-api.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0001.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0002.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0003.jar"/>
+    <pathelement location="${demos.lib.dir}/servlet-api-2.4.jar"/>
+    <pathelement location="${demos.lib.dir}/external-api.jar"/>
   </path>
 
   <target name="compile" description="compile the webapp">
@@ -81,7 +93,7 @@
   <target name="enhance" description="enhance" depends="compile">
     <taskdef name="datanucleusenhancer" classpathref="enhancer.classpath"
              classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
-  
+
     <datanucleusenhancer classpathref="enhancer.classpath" failonerror="true">
       <fileset dir="classes">
         <include name="**/*.class"/>
