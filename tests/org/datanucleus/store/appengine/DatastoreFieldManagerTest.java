@@ -138,6 +138,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
+      @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
       }

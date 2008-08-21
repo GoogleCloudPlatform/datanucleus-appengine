@@ -15,10 +15,12 @@ import java.io.IOException;
 public class GetFlight extends HttpServlet {
 
   private ServletConfig config;
+  @Override
   public void init(ServletConfig config) {
     this.config = config;
   }
 
+  @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     String key = req.getParameter("key");
     if (key == null) {

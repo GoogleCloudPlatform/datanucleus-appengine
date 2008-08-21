@@ -7,6 +7,8 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.KitchenSink;
 
+import java.lang.reflect.Field;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -30,6 +32,21 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals(2L, entity.getProperty("me"));
     assertEquals(4L, entity.getProperty("you"));
     assertEquals(Flight.class.getName(), entity.getKind());
+  }
+
+  public void testInsertObjectWithPKAlreadySet() throws NoSuchFieldException,
+      IllegalAccessException {
+    Flight f = new Flight();
+    Field idField = Flight.class.getDeclaredField("id");
+    idField.setAccessible(true);
+    idField.set(f, "99");
+    assertNotNull(f.getId());
+    try {
+      pm.makePersistent(f);
+      fail("expected uoe");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
   }
 
   public void testKitchenSinkInsert() throws EntityNotFoundException {

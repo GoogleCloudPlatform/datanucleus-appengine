@@ -12,8 +12,8 @@
     <servlet-class>com.google.appengine.helloorm.GetFlight</servlet-class>
   </servlet>
   <servlet>
-    <servlet-name>getAllFlights</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.GetAllFlights</servlet-class>
+    <servlet-name>getFlights</servlet-name>
+    <servlet-class>com.google.appengine.helloorm.GetFlights</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>deleteFlight</servlet-name>
@@ -44,7 +44,7 @@
     <url-pattern>/updatePersistenceStandard</url-pattern>
   </servlet-mapping>
   <servlet-mapping>
-    <servlet-name>getAllFlights</servlet-name>
+    <servlet-name>getFlights</servlet-name>
     <url-pattern>/*</url-pattern>
   </servlet-mapping>
 </web-app>

@@ -16,10 +16,12 @@ import java.io.IOException;
 public class UpdateFlight extends HttpServlet {
 
   private ServletConfig config;
+  @Override
   public void init(ServletConfig config) {
     this.config = config;
   }
 
+  @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     String key = req.getParameter("key");
     String orig = req.getParameter("orig");

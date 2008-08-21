@@ -59,10 +59,12 @@ class StreamingQueryResult extends AbstractQueryResult {
     this.entityToPojoFunc = entityToPojoFunc;
   }
 
+  @Override
   protected void closingConnection() {
     // If you close the connection before all results are returned, that's fine.
   }
 
+  @Override
   protected void closeResults() {
     // Do we need to actually close anything?
   }
@@ -72,6 +74,7 @@ class StreamingQueryResult extends AbstractQueryResult {
     return this == o;
   }
 
+  @Override
   public Object get(int index) {
     // See if we've resolved the pojo at this index.  If we have we just return
     // the pojo at that index.  If we haven't and our iterator still has more
@@ -98,11 +101,13 @@ class StreamingQueryResult extends AbstractQueryResult {
     resolvedPojos.add(entityToPojoFunc.apply(lazyEntityIterator.next()));
   }
 
-  public Iterator iterator() {
+  @Override
+  public Iterator<?> iterator() {
     return listIterator();
   }
 
-  public ListIterator listIterator() {
+  @Override
+  public ListIterator<?> listIterator() {
     if (!lazyEntityIterator.hasNext()) {
       return resolvedPojos.listIterator();
     }
@@ -110,6 +115,7 @@ class StreamingQueryResult extends AbstractQueryResult {
       // The index member in our parent means something slightly different
       // so we maintain our own.
       private int curIndex = 0;
+      @Override
       protected Object computeNext() {
         if (curIndex >= resolvedPojos.size()) {
           // We have not yet resolved an Entity at the current index
@@ -125,6 +131,7 @@ class StreamingQueryResult extends AbstractQueryResult {
     };
   }
 
+  @Override
   public int size() {
     // We're forced to resolve everything.
     while (lazyEntityIterator.hasNext()) {
@@ -176,6 +183,7 @@ class StreamingQueryResult extends AbstractQueryResult {
       return curIndex - 1;
     }
 
+    @Override
     public boolean hasNext() {
       // If the current index isn't as far forward as we've ever been
       // we know we have more data ahead of us.  If the current index
@@ -184,6 +192,7 @@ class StreamingQueryResult extends AbstractQueryResult {
       return curIndex < maxIndex || super.hasNext();
     }
 
+    @Override
     public Object next() {
       if (curIndex < maxIndex) {
         // It the current index isn't as far forward as we've ever been

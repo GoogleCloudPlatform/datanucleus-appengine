@@ -6,6 +6,8 @@ import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.Book;
 
+import java.lang.reflect.Field;
+
 import javax.persistence.EntityTransaction;
 
 /**
@@ -29,5 +31,23 @@ public class JPAInsertionTest extends JPATestCase {
     assertEquals("isbn", entity.getProperty("isbn"));
     assertEquals("the title", entity.getProperty("title"));
     assertEquals(Book.class.getName(), entity.getKind());
+  }
+
+  public void testInsertObjectWithPKAlreadySet() throws NoSuchFieldException,
+      IllegalAccessException {
+    Book b = new Book();
+    Field idField = Book.class.getDeclaredField("id");
+    idField.setAccessible(true);
+    idField.set(b, "99");
+    assertNotNull(b.getId());
+    EntityTransaction txn = em.getTransaction();
+    txn.begin();
+    em.persist(b);
+    try {
+      txn.commit();
+      fail("expected uoe");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
   }
 }

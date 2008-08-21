@@ -18,10 +18,6 @@
             datastore="appengine"/>
     </extension>
 
-    <extension point="org.datanucleus.persistence_properties">
-      <persistence-property name="datanucleus.metadata.annotationManager" value="org.datanucleus.metadata.annotations.AnnotationManagerImpl"/>
-    </extension>
-
     <extension point="org.datanucleus.classloader_resolver">
 
     </extension>

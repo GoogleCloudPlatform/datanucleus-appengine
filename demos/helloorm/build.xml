@@ -80,6 +80,7 @@
 
   <path id="enhancer.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.1.jar"/>
+    <pathelement location="persistence-api-1.0.2.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0001.jar"/>

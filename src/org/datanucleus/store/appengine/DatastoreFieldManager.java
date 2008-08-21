@@ -99,8 +99,11 @@ public class DatastoreFieldManager implements FieldManager {
     // We assume pks are of type String.
     if (isPK(fieldNumber)) {
       if (value != null) {
-        // TODO(maxr) Figure out if we need to consider this case.
-        throw new UnsupportedOperationException();
+        throw new UnsupportedOperationException(
+            "It looks like you've tried to set the primary key of your object by hand, but "
+                + "the App Engine datastore only supports datastore-generated primary keys.  "
+                + "Please leave the primary key field of your object blank when making it "
+                + "persistent.");
       }
     } else {
       storeObjectField(fieldNumber, value);

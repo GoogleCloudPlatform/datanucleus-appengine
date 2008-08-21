@@ -13,10 +13,12 @@ import java.io.IOException;
 public class UpdatePersistenceStandard extends HttpServlet {
 
   private ServletConfig config;
+  @Override
   public void init(ServletConfig config) {
     this.config = config;
   }
 
+  @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     PersistenceStandard ps = PersistenceStandard.valueOf(req.getParameter("persistenceStandard"));
     PersistenceStandard.set(ps);

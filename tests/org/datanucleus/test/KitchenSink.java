@@ -48,10 +48,10 @@ public class KitchenSink {
   @Persistent public Double doubleVal;
   @Persistent public double doublePrimVal;
   @Persistent public Date dateVal;
-  @Persistent public User userVal;
-  @Persistent public Blob blobVal;
-  @Persistent public Text textVal;
-  @Persistent public Link linkVal;
+  @Persistent(defaultFetchGroup = "true") public User userVal;
+  @Persistent(defaultFetchGroup = "true") public Blob blobVal;
+  @Persistent(defaultFetchGroup = "true") public Text textVal;
+  @Persistent(defaultFetchGroup = "true") public Link linkVal;
 
   @Persistent(defaultFetchGroup = "true") public String[] strArray;
   @Persistent(defaultFetchGroup = "true") public int[] primitiveIntArray;
