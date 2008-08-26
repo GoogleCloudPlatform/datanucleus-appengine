@@ -17,7 +17,7 @@
     <jar destfile="${dist.target}">
       <fileset dir="../lib">
         <include name="asm-3.1.jar"/>
-        <include name="jdo2-api-2.1.jar"/>
+        <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer-*SNAPSHOT*.jar"/>

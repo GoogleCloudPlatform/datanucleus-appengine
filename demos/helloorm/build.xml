@@ -47,7 +47,7 @@
         <include name="datanucleus-java5-1.0-SNAPSHOT.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
-        <include name="jdo2-api-2.1.jar"/>
+        <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
       </lib>
@@ -63,7 +63,7 @@
   </target>
 
   <path id="helloorm.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.1.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0001.jar"/>
@@ -79,7 +79,7 @@
   </target>
 
   <path id="enhancer.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.1.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
     <pathelement location="persistence-api-1.0.2.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.0-SNAPSHOT-0000.jar"/>
