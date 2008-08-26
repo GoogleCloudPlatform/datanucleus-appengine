@@ -3,16 +3,19 @@ package org.datanucleus.test;
 
 import com.google.apphosting.api.datastore.Entity;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Version;
+import javax.jdo.annotations.VersionStrategy;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
+@Version(strategy = VersionStrategy.VERSION_NUMBER)
 public class Flight {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -72,6 +75,7 @@ public class Flight {
     return id;
   }
 
+  @Override
   public String toString() {
     return "\n\nid: " + id + "\norigin: " + origin + "\ndest: " + dest
         + "\nname: " + name + "\nyou: " + you + "\nme: " + me;
@@ -85,6 +89,7 @@ public class Flight {
     e.setProperty("dest", dest);
     e.setProperty("you", you);
     e.setProperty("me", me);
+    e.setProperty("version", 1L);
     return e;
   }
 

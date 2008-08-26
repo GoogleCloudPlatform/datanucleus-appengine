@@ -1,23 +1,24 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.Blob;
-import com.google.apphosting.api.datastore.Text;
-import com.google.apphosting.api.datastore.Link;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.Key;
+import com.google.apphosting.api.datastore.Link;
+import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.users.User;
 import com.google.common.collect.Lists;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.IdGeneratorStrategy;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Arrays;
-import java.lang.reflect.Field;
+
+import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 /**
  * A class that contains members of all the types we know how to map.
@@ -48,8 +49,8 @@ public class KitchenSink {
   @Persistent public Double doubleVal;
   @Persistent public double doublePrimVal;
   @Persistent public Date dateVal;
-  @Persistent(defaultFetchGroup = "true") public User userVal;
-  @Persistent(defaultFetchGroup = "true") public Blob blobVal;
+  @Persistent public User userVal;
+  @Persistent public Blob blobVal;
   @Persistent(defaultFetchGroup = "true") public Text textVal;
   @Persistent(defaultFetchGroup = "true") public Link linkVal;
 
