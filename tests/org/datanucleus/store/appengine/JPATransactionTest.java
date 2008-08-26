@@ -12,7 +12,6 @@ import org.datanucleus.test.Book;
 import org.easymock.EasyMock;
 
 import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
@@ -32,14 +31,14 @@ public class JPATransactionTest extends TestCase {
   protected void setUp() throws Exception {
     ldth.setUp();
     recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds);
-    DatastoreServiceFactory.setDefaultDatastoreService(recordingImpl);
+    DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
     ldth.tearDown();
-    DatastoreServiceFactory.setDefaultDatastoreService(null);
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
   }
 
   /**
@@ -60,12 +59,13 @@ public class JPATransactionTest extends TestCase {
    */
   private void setMockTransactionRecordingImpl() {
     recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds) {
+      @Override
       public com.google.apphosting.api.datastore.Transaction beginTransaction() {
         delegate.beginTransaction();
         return recorder.beginTransaction();
       }
     };
-    DatastoreServiceFactory.setDefaultDatastoreService(recordingImpl);
+    DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   public void testTransactionalWrite() throws Exception {

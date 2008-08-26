@@ -1,7 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,7 +14,7 @@ import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 
 import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
+import com.google.common.collect.Lists;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -47,9 +46,9 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
   static class DatastoreManagedConnection implements ManagedConnection {
     private boolean managed = false;
     private boolean locked = false;
-    private final List<ManagedConnectionResourceListener> listeners = new ArrayList<ManagedConnectionResourceListener>();
-    private final DatastoreService datastoreService = DatastoreServiceFactory
-        .getDatastoreService();
+    private final List<ManagedConnectionResourceListener> listeners = Lists.newArrayList();
+    private final DatastoreService datastoreService =
+        DatastoreServiceFactoryInternal.getDatastoreService();
     private final XAResource emulatedXAResource = new EmulatedXAResource(datastoreService);
 
     public Object getConnection() {

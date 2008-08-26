@@ -1,32 +1,32 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
-import org.datanucleus.exceptions.NucleusObjectNotFoundException;
-import org.datanucleus.exceptions.NucleusOptimisticException;
-import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.metadata.VersionMetaData;
-import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.StorePersistenceHandler;
-
 import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
 
+import org.datanucleus.ManagedConnection;
+import org.datanucleus.ObjectManager;
+import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
+import org.datanucleus.exceptions.NucleusOptimisticException;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.VersionMetaData;
+import org.datanucleus.store.StoreManager;
+import org.datanucleus.store.StorePersistenceHandler;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
-  private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
+  private final DatastoreService datastoreService =
+      DatastoreServiceFactoryInternal.getDatastoreService();
   private final DatastoreManager storeMgr;
 
   public DatastorePersistenceHandler(StoreManager storeMgr) {

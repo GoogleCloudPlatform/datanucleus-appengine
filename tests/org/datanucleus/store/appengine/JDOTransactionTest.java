@@ -34,14 +34,14 @@ public class JDOTransactionTest extends TestCase {
   protected void setUp() throws Exception {
     ldth.setUp();
     recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds);
-    DatastoreServiceFactory.setDefaultDatastoreService(recordingImpl);
+    DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
     ldth.tearDown();
-    DatastoreServiceFactory.setDefaultDatastoreService(null);
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
   }
 
   /**
@@ -58,8 +58,7 @@ public class JDOTransactionTest extends TestCase {
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
     PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory(properties);
-    PersistenceManager pm = pmf.getPersistenceManager();
-    return pm;
+    return pmf.getPersistenceManager();
   }
 
   /**
@@ -69,12 +68,13 @@ public class JDOTransactionTest extends TestCase {
    */
   private void setMockTransactionRecordingImpl() {
     recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds) {
+      @Override
       public com.google.apphosting.api.datastore.Transaction beginTransaction() {
         delegate.beginTransaction();
         return recorder.beginTransaction();
       }
     };
-    DatastoreServiceFactory.setDefaultDatastoreService(recordingImpl);
+    DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   public void testTransactionalWrite() throws Exception {
