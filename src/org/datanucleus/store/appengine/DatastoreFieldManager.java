@@ -9,6 +9,7 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
 
 import java.util.List;
+import java.util.Map;
 
 /**
  * FieldManager for converting app engine datastore entities into POJOs and
@@ -35,11 +36,30 @@ import java.util.List;
 public class DatastoreFieldManager implements FieldManager {
 
   private final StateManager sm;
-  private final Entity datastoreEntity;
+  private final boolean createdWithoutEntity;
+  // Not final because we will reallocate if we hit an ancestor pk field
+  // and the key of the current value does not have a parent.
+  private Entity datastoreEntity;
 
-  public DatastoreFieldManager(StateManager sm, Entity datastoreEntity) {
+  private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity, Entity datastoreEntity) {
     this.sm = sm;
+    this.createdWithoutEntity = createdWithoutEntity;
     this.datastoreEntity = datastoreEntity;
+  }
+
+  /**
+   * Creates a DatastoreFieldManager using the given StateManager and Entity.
+   * Only use this overload when you have been provided with an Entity object
+   * that already has a well-formed Key.  This will be the case when the entity
+   * has been returned by the datastore (get or query), or after the entity has
+   * been put into the datastore.
+   */
+  public DatastoreFieldManager(StateManager sm, Entity datastoreEntity) {
+    this(sm, false, datastoreEntity);
+  }
+
+  public DatastoreFieldManager(StateManager sm) {
+    this(sm, true, new Entity(sm.getClassMetaData().getFullClassName()));
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -48,6 +68,8 @@ public class DatastoreFieldManager implements FieldManager {
     if (isPK(fieldNumber)) {
       // If this is pk field, transform the Key into its String representation.
       return KeyFactory.encodeKey(datastoreEntity.getKey());
+    } else if (isAncestorPK(fieldNumber)) {
+      return KeyFactory.encodeKey(datastoreEntity.getKey().getParent());
     }
     return (String) fetchObjectField(fieldNumber);
   }
@@ -105,16 +127,40 @@ public class DatastoreFieldManager implements FieldManager {
                 + "Please leave the primary key field of your object blank when making it "
                 + "persistent.");
       }
+    } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
+      if (value == null) {
+        throw new IllegalArgumentException("Cannot have a null ancestor PK.");
+      }
+
+      if (!createdWithoutEntity) {
+        // Shouldn't even happen.
+        throw new IllegalStateException("You can only rely on this class to properly handle "
+            + "ancestor pks if you instantiated the class without providing a datastore "
+            + "entity to the constructor.");
+      }
+
+      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
+      // the value of this field as an arg to the Entity constructor and then moving all
+      // properties on the old entity to the new entity.
+      Entity old = datastoreEntity;
+      datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+      for (Map.Entry<String, Object> entry : old.getProperties().entrySet()) {
+        datastoreEntity.setProperty(entry.getKey(), entry.getValue());
+      }
     } else {
       storeObjectField(fieldNumber, value);
     }
+  }
+
+  private boolean isAncestorPK(int fieldNumber) {
+    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+    return ammd.hasExtension("ancestor-pk");
   }
 
   public void storeShortField(int fieldNumber, short value) {
     storeObjectField(fieldNumber, value);
   }
 
-  @SuppressWarnings("unchecked")
   public void storeObjectField(int fieldNumber, Object value) {
     if (value != null ) {
       if (value.getClass().isArray()) {
@@ -177,5 +223,9 @@ public class DatastoreFieldManager implements FieldManager {
 
   AbstractClassMetaData getClassMetaData() {
     return sm.getClassMetaData();
+  }
+
+  Entity getEntity() {
+    return datastoreEntity;
   }
 }

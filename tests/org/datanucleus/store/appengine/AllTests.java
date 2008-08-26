@@ -30,6 +30,8 @@ public class AllTests {
     suite.addTestSuite(JPAUpdateTest.class);
     suite.addTestSuite(JPADeleteTest.class);
     suite.addTestSuite(JPATransactionTest.class);
+    suite.addTestSuite(JDOAncestorTest.class);
+    suite.addTestSuite(JPAAncestorTest.class);
     return suite;
   }
 }

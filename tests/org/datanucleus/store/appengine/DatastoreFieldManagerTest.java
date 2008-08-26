@@ -2,10 +2,13 @@
 package org.datanucleus.store.appengine;
 
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.JDOClassLoaderResolver;
+import org.datanucleus.StateManager;
 import org.datanucleus.jdo.JDOPersistenceManager;
+import org.easymock.EasyMock;
 
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.KeyFactory;
@@ -18,13 +21,14 @@ import com.google.common.collect.Lists;
 import java.util.Iterator;
 import java.util.Date;
 import java.util.Arrays;
+import java.lang.reflect.Field;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreFieldManagerTest extends JDOTestCase {
 
-  public void testFetching() {
+  public void testFetching() throws ClassNotFoundException {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
@@ -32,6 +36,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
+      @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
       }
@@ -129,7 +134,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
   }
 
-  public void testStorage() {
+  public void testStorage() throws ClassNotFoundException {
     Entity ksEntity = new Entity("KitchenSink");
     ldth.ds.put(ksEntity);
 
@@ -169,38 +174,96 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     fieldManager.storeObjectField(iter.next(), KitchenSink.TEXT1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.LINK1);
 
-    Iterator<String> fieldIter = KitchenSink.KITCHEN_SINK_FIELDS.iterator();
+    Iterator<Field> fieldIter = Arrays.asList(KitchenSink.class.getDeclaredFields()).iterator();
     fieldIter.next(); // skip the key field
-    assertEquals("strVal", ksEntity.getProperty(fieldIter.next()));
-    assertEquals(true, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(true, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(4L, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(4L, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(3, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(3, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(97L, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(97L, ksEntity.getProperty(fieldIter.next()));
-    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next()));
-    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next()));
-    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next()));
-    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(KitchenSink.DATE1, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(KitchenSink.USER1, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(KitchenSink.BLOB1, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(KitchenSink.TEXT1, ksEntity.getProperty(fieldIter.next()));
-    assertEquals(KitchenSink.LINK1, ksEntity.getProperty(fieldIter.next()));
+    assertEquals("strVal", ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(true, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(true, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(4L, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(4L, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(3, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(3, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(97L, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(97L, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals((short) 2, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals((byte) 11, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(1.01f, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(2.22d, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.DATE1, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.USER1, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.BLOB1, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.TEXT1, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.LINK1, ksEntity.getProperty(fieldIter.next().getName()));
+  }
+
+  public void testAncestorValues() throws ClassNotFoundException {
+    Entity entity = new Entity("my kind");
+    JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
+    ClassLoaderResolver clr = new JDOClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(HasAncestorJDO.class, clr);
+    StateManager sm = EasyMock.createMock(StateManager.class);
+    EasyMock.expect(sm.getClassMetaData()).andReturn(acmd);
+    EasyMock.replay(sm);
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, entity) {
+      @Override
+      AbstractClassMetaData getClassMetaData() {
+        return acmd;
+      }
+    };
+
+    FieldPositionIterator iter = new FieldPositionIterator(acmd);
+    int ancestorPkFieldPos = iter.next();
+    try {
+      fieldManager.storeStringField(ancestorPkFieldPos, null);
+      fail("Expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+    try {
+      fieldManager.storeStringField(ancestorPkFieldPos, "a val");
+      fail("Expected ise");
+    } catch (IllegalStateException ise) {
+      // good
+    }
+
+    // now we create a field manager where we don't provide the entity
+    // in the constructor
+    fieldManager = new DatastoreFieldManager(sm) {
+      @Override
+      AbstractClassMetaData getClassMetaData() {
+        return acmd;
+      }
+    };
+
+    // null value is still not ok
+    try {
+      fieldManager.storeStringField(ancestorPkFieldPos, null);
+      fail("Expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+
+    Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
+    ldth.ds.put(ksEntity);
+    // non-null value is ok
+    fieldManager.storeStringField(ancestorPkFieldPos, KeyFactory.encodeKey(ksEntity.getKey()));
+    Entity newEntity = fieldManager.getEntity();
+    assertEquals(ksEntity.getKey(), newEntity.getParent());
   }
 
   private static final class FieldPositionIterator implements Iterator<Integer> {
-    private final Iterator<String> inner = KitchenSink.KITCHEN_SINK_FIELDS.iterator();
     private final AbstractClassMetaData acmd;
+    private final Iterator<Field> inner;
 
-    private FieldPositionIterator(AbstractClassMetaData acmd) {
+    private FieldPositionIterator(AbstractClassMetaData acmd) throws ClassNotFoundException {
       this.acmd = acmd;
+      this.inner =
+          Arrays.asList(Class.forName(acmd.getFullClassName()).getDeclaredFields()).iterator();
     }
 
     public boolean hasNext() {
@@ -208,7 +271,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     }
 
     public Integer next() {
-      return acmd.getRelativePositionOfMember(inner.next());
+      return acmd.getRelativePositionOfMember(inner.next().getName());
     }
 
     public void remove() {

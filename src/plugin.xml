@@ -17,8 +17,4 @@
         <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
             datastore="appengine"/>
     </extension>
-
-    <extension point="org.datanucleus.classloader_resolver">
-
-    </extension>
 </plugin>

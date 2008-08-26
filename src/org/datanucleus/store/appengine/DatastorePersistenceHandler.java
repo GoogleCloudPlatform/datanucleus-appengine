@@ -1,6 +1,18 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import org.datanucleus.ManagedConnection;
+import org.datanucleus.ObjectManager;
+import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
+import org.datanucleus.exceptions.NucleusOptimisticException;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.VersionMetaData;
+import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.store.StoreManager;
+import org.datanucleus.store.StorePersistenceHandler;
+
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
@@ -8,18 +20,6 @@ import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
-
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
-import org.datanucleus.exceptions.NucleusObjectNotFoundException;
-import org.datanucleus.exceptions.NucleusOptimisticException;
-import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.metadata.VersionMetaData;
-import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.StorePersistenceHandler;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -89,10 +89,12 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
     int[] fieldNumbers = sm.getClassMetaData().getAllMemberPositions();
-    // TODO(maxr): Hook into mechanism so that kind is not tied to fqn.
-    // TODO(maxr): Figure out how to deal with ancestors.
-    Entity entity = new Entity(sm.getClassMetaData().getFullClassName());
-    sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+    // For inserts we let the field manager create the Entity and then
+    // retrieve it afterwards.  We do this because the entity isn't
+    // 'fixed' until after provideFields has been called.
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm);
+    sm.provideFields(fieldNumbers, fieldMgr);
+    Entity entity = fieldMgr.getEntity();
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     // TODO(earmbrust): Allow for non-transactional read/write.
     put(sm, entity);
@@ -186,7 +188,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       sm.setAssociatedValue(pk, entity);
     }
     sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
-    
+
     AbstractClassMetaData cmd = sm.getClassMetaData();
     if (cmd.hasVersionStrategy()) {
       sm.setTransactionalVersion(getVersionFromEntity(cmd.getVersionMetaData(), entity));
@@ -239,9 +241,5 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void close() {
-  }
-
-  public static void main(String[] args) {
-    System.out.println(Long.MAX_VALUE);
   }
 }
