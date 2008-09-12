@@ -77,7 +77,7 @@ public class Flight {
 
   /**
    * You really shouldn't call this unless you're looking for trouble.
-   * Useful for tests that verify the trouble. 
+   * Useful for tests that verify the trouble.
    */
   public void setId(String id) {
     this.id = id;
@@ -92,16 +92,16 @@ public class Flight {
   public static Entity newFlightEntity(String keyName, String name, String origin, String dest, int you, int me) {
     Entity e;
     if (keyName == null) {
-      e = new Entity(Flight.class.getName());
+      e = new Entity(Flight.class.getSimpleName());
     } else {
-      e = new Entity(Flight.class.getName(), keyName);
+      e = new Entity(Flight.class.getSimpleName(), keyName);
     }
     e.setProperty("name", name);
     e.setProperty("origin", origin);
     e.setProperty("dest", dest);
     e.setProperty("you", you);
     e.setProperty("me", me);
-    e.setProperty("version", 1L);
+    e.setProperty("OPT_VERSION", 1L);
     return e;
   }
 

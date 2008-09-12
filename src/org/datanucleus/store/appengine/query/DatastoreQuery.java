@@ -26,6 +26,8 @@ import org.datanucleus.query.expression.ParameterExpression;
 import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.query.AbstractJavaQuery;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -60,8 +62,8 @@ public class DatastoreQuery implements Serializable {
   static final Expression.Operator HAVING_OP = new Expression.Operator(
       "HAVING", Integer.MAX_VALUE);
 
-  static final Set<Expression.Operator> UNSUPPORTED_OPERATORS = Sets
-      .newHashSet((Expression.Operator) Expression.OP_ADD,
+  static final Set<Expression.Operator> UNSUPPORTED_OPERATORS =
+      Sets.newHashSet((Expression.Operator) Expression.OP_ADD,
           (Expression.Operator) Expression.OP_BETWEEN,
           (Expression.Operator) Expression.OP_COM,
           (Expression.Operator) Expression.OP_CONCAT,
@@ -117,15 +119,16 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
-    final ClassLoaderResolver clr = om.getClassLoaderResolver();
-    final AbstractClassMetaData acmd =
-        om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
-    ManagedConnection mconn = om.getStoreManager().getConnection(om);
+    MappedStoreManager sm = (MappedStoreManager) om.getStoreManager();
+    ManagedConnection mconn = sm.getConnection(om);
+    IdentifierFactory idFactory = sm.getIdentifierFactory();
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
-      // TODO(maxr): Don't force users to use fqn as the kind.
-      String candidateClassName = query.getCandidateClass().getName();
-      mostRecentDatastoreQuery = new Query(candidateClassName);
+      final ClassLoaderResolver clr = om.getClassLoaderResolver();
+      final AbstractClassMetaData acmd =
+          om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+      String kind = idFactory.newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
+      mostRecentDatastoreQuery = new Query(kind);
       QueryData qd = addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd);
       if (qd.keyValue != null) {
         return performExecuteForKeyQuery(ds, clr, acmd, qd.keyValue);

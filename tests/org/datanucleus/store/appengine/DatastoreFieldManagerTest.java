@@ -7,7 +7,10 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.JDOClassLoaderResolver;
 import org.datanucleus.StateManager;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.easymock.EasyMock;
 
 import com.google.apphosting.api.datastore.Entity;
@@ -39,6 +42,11 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
+      }
+
+      @Override
+      IdentifierFactory getIdentifierFactory() {
+        return DatastoreFieldManagerTest.this.getIdentifierFactory();
       }
     };
 
@@ -147,6 +155,11 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       AbstractClassMetaData getClassMetaData() {
         return acmd;
       }
+
+      @Override
+      IdentifierFactory getIdentifierFactory() {
+        return DatastoreFieldManagerTest.this.getIdentifierFactory();
+      }
     };
     FieldPositionIterator iter = new FieldPositionIterator(acmd);
     // skip the key field because storing it doesn't do anything
@@ -233,7 +246,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
     // now we create a field manager where we don't provide the entity
     // in the constructor
-    fieldManager = new DatastoreFieldManager(sm) {
+    fieldManager = new DatastoreFieldManager(sm, "my kind") {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -278,4 +291,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       throw new UnsupportedOperationException();
     }
   }
+
+  private IdentifierFactory getIdentifierFactory() {
+    return ((MappedStoreManager)((JDOPersistenceManagerFactory)pmf).getOMFContext()
+        .getStoreManager()).getIdentifierFactory();
+  }
+
 }

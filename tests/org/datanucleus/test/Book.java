@@ -19,7 +19,7 @@ public class Book {
   }
 
   public Book() {
-    this(null);    
+    this(null);
   }
 
   public String getId() {
@@ -58,9 +58,9 @@ public class Book {
       String author, String isbn, String title) {
     com.google.apphosting.api.datastore.Entity e;
     if (namedKey != null) {
-      e = new com.google.apphosting.api.datastore.Entity(Book.class.getName(), namedKey);
+      e = new com.google.apphosting.api.datastore.Entity(Book.class.getSimpleName(), namedKey);
     } else {
-      e = new com.google.apphosting.api.datastore.Entity(Book.class.getName());
+      e = new com.google.apphosting.api.datastore.Entity(Book.class.getSimpleName());
     }
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);

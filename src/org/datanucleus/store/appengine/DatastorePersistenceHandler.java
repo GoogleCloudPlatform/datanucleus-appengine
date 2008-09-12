@@ -11,6 +11,7 @@ import com.google.apphosting.api.datastore.Transaction;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -19,6 +20,8 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
+import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.IdentifierFactory;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -88,12 +91,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    int[] fieldNumbers = sm.getClassMetaData().getAllMemberPositions();
+    String kind = determineKind(sm);
+
     // For inserts we let the field manager create the Entity and then
     // retrieve it afterwards.  We do this because the entity isn't
     // 'fixed' until after provideFields has been called.
-    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm);
-    sm.provideFields(fieldNumbers, fieldMgr);
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind);
+    AbstractClassMetaData acmd = sm.getClassMetaData();
+    sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
     Entity entity = fieldMgr.getEntity();
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     // TODO(earmbrust): Allow for non-transactional read/write.
@@ -104,6 +109,23 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementInsertCount();
     }
+  }
+
+  private String determineKind(StateManager sm) {
+    AbstractClassMetaData acmd = sm.getClassMetaData();
+    if (acmd.getTable() != null) {
+      // User specified a table name as part of the mapping so use that as the
+      // kind.
+      return acmd.getTable();
+    }
+    // No table name provided so use the identifier factory to convert the
+    // class name into the kind.
+    ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+    return getIdentifierFactory(sm).newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
+  }
+
+  IdentifierFactory getIdentifierFactory(StateManager sm) {
+    return ((MappedStoreManager)sm.getObjectManager().getStoreManager()).getIdentifierFactory();
   }
 
   private NucleusOptimisticException newNucleusOptimisticException(
@@ -131,7 +153,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
           throw newNucleusOptimisticException(
               cmd, entity, "The underlying entity had already been deleted.");
         }
-        if (!getVersionFromEntity(vmd, refreshedEntity).equals(curVersion)) {
+        if (!getVersionFromEntity(sm, vmd, refreshedEntity).equals(curVersion)) {
           throw newNucleusOptimisticException(
               cmd, entity, "The underlying entity had already been updated.");
         }
@@ -139,7 +161,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       Object nextVersion = cmd.getVersionMetaData().getNextVersion(curVersion);
 
       sm.setTransactionalVersion(nextVersion);
-      String versionPropertyName = getVersionPropertyName(vmd);
+      String versionPropertyName = getVersionPropertyName(sm, vmd);
       entity.setProperty(versionPropertyName, nextVersion);
 
       // Version field - update the version on the object
@@ -151,19 +173,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
-  // TODO(maxr): Give users a way to provide their own default version
-  // property name so that they're not stuck with this value and they
-  // don't need to specify it for every versioned class.
-  static final String DEFAULT_VERSION_PROPERTY_NAME = "version";
-
-  private Object getVersionFromEntity(VersionMetaData vmd, Entity entity) {
-    return entity.getProperty(getVersionPropertyName(vmd));
+  private Object getVersionFromEntity(StateManager sm, VersionMetaData vmd, Entity entity) {
+    return entity.getProperty(getVersionPropertyName(sm, vmd));
   }
 
-  private String getVersionPropertyName(VersionMetaData vmd) {
+  private String getVersionPropertyName(StateManager sm, VersionMetaData vmd) {
     ColumnMetaData[] columnMetaData = vmd.getColumnMetaData();
     if (columnMetaData == null || columnMetaData.length == 0) {
-      return DEFAULT_VERSION_PROPERTY_NAME;
+      return getIdentifierFactory(sm).newVersionFieldIdentifier().getIdentifier();
     }
     if (columnMetaData.length != 1) {
       throw new IllegalArgumentException(
@@ -191,16 +208,13 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
     AbstractClassMetaData cmd = sm.getClassMetaData();
     if (cmd.hasVersionStrategy()) {
-      sm.setTransactionalVersion(getVersionFromEntity(cmd.getVersionMetaData(), entity));
+      sm.setTransactionalVersion(getVersionFromEntity(sm, cmd.getVersionMetaData(), entity));
     }
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementFetchCount();
     }
   }
 
-  /**
-   * TODO (earmbrust): Find a way to get rid of the fetch before the update.
-   */
   public void updateObject(StateManager sm, int fieldNumbers[]) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);

@@ -14,7 +14,6 @@ import org.datanucleus.test.Flight;
 import org.easymock.EasyMock;
 
 import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
@@ -57,6 +56,7 @@ public class JDOTransactionTest extends TestCase {
     properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
+    properties.setProperty("datanucleus.identifier.case", "PreserveCase");
     PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory(properties);
     return pmf.getPersistenceManager();
   }

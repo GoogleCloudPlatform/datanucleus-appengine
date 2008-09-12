@@ -1,15 +1,16 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import junit.framework.TestSuite;
 import junit.framework.Test;
+import junit.framework.TestSuite;
+
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
 import org.datanucleus.store.appengine.query.StreamingQueryResultTest;
 
 /**
  * All tests for the app engine datanucleus plugin.
- * This will be difficult to keep in sync but we'l do our best.
+ * This will be difficult to keep in sync but we'll do our best.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -32,6 +33,7 @@ public class AllTests {
     suite.addTestSuite(JPATransactionTest.class);
     suite.addTestSuite(JDOAncestorTest.class);
     suite.addTestSuite(JPAAncestorTest.class);
+    suite.addTestSuite(JDOTableAndColumnTest.class);
     return suite;
   }
 }

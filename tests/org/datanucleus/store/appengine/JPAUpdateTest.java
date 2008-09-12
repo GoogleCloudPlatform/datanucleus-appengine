@@ -6,7 +6,6 @@ import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 
-import static org.datanucleus.store.appengine.DatastorePersistenceHandler.DEFAULT_VERSION_PROPERTY_NAME;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasVersionJPA;
 
@@ -18,6 +17,8 @@ import javax.persistence.RollbackException;
  * @author Erick Armbrust <earmbrust@google.com>
  */
 public class JPAUpdateTest extends JPATestCase {
+
+  private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
 
   public void testSimpleUpdate() throws EntityNotFoundException {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));
@@ -42,7 +43,7 @@ public class JPAUpdateTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Update() {
-    Entity entity = new Entity(HasVersionJPA.class.getName());
+    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
@@ -76,7 +77,7 @@ public class JPAUpdateTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Delete() {
-    Entity entity = new Entity(HasVersionJPA.class.getName());
+    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 

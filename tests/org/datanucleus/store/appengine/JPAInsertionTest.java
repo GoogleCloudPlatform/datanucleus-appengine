@@ -30,7 +30,7 @@ public class JPAInsertionTest extends JPATestCase {
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
     assertEquals("the title", entity.getProperty("title"));
-    assertEquals(Book.class.getName(), entity.getKind());
+    assertEquals(Book.class.getSimpleName(), entity.getKind());
   }
 
   public void testSimpleInsertWithNamedKey() throws EntityNotFoundException {
@@ -48,7 +48,7 @@ public class JPAInsertionTest extends JPATestCase {
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
     assertEquals("the title", entity.getProperty("title"));
-    assertEquals(Book.class.getName(), entity.getKind());
+    assertEquals(Book.class.getSimpleName(), entity.getKind());
     assertEquals("named key", entity.getKey().getName());
   }
 

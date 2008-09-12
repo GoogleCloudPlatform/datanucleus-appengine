@@ -206,7 +206,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testAncestorQuery() {
     Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
     ldth.ds.put(bookEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getName(), bookEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getSimpleName(), bookEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
@@ -242,7 +242,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private static Entity newBook(String title, String author, String isbn) {
-    Entity e = new Entity(Book.class.getName());
+    Entity e = new Entity(Book.class.getSimpleName());
     e.setProperty("title", title);
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);

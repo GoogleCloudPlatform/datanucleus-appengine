@@ -24,7 +24,7 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
-    Query q = new Query(ha.getClass().getName());
+    Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(flightKey);
     Entity result = ldth.ds.prepare(q).asSingleEntity();
     assertEquals(flightKey, result.getKey().getParent());
@@ -40,7 +40,7 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
-    Query q = new Query(ha.getClass().getName());
+    Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(flightKey);
     Entity result = ldth.ds.prepare(q).asSingleEntity();
     assertEquals(flightKey, result.getKey().getParent());

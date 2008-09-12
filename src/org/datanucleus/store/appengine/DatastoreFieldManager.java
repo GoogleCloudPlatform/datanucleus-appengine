@@ -8,6 +8,8 @@ import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
 
 import java.util.List;
 import java.util.Map;
@@ -60,8 +62,8 @@ public class DatastoreFieldManager implements FieldManager {
     this(sm, false, datastoreEntity);
   }
 
-  public DatastoreFieldManager(StateManager sm) {
-    this(sm, true, new Entity(sm.getClassMetaData().getFullClassName()));
+  public DatastoreFieldManager(StateManager sm, String kind) {
+    this(sm, true, new Entity(kind));
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -138,8 +140,13 @@ public class DatastoreFieldManager implements FieldManager {
           datastoreEntity = new Entity(old.getKind(), value);
         }
         copyProperties(old, datastoreEntity);
-      } else {
-        // TODO(maxr): What if someone nulls out the PK value?  Can we throw?
+      } else if (getMetaData(fieldNumber).getColumn() != null) {
+        // The pk doesn't get stored as a property so the fact that the user is
+        // trying to customize the name of the property is concerning.  We
+        // could log here, but that's going to annoy the heck out of people
+        // who are porting existing code.  Instead we should....
+        // TODO(maxr): Log a warning at startup or add a reasonably threadsafe way
+        // to just log the warning once.
       }
     } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
       if (value == null) {
@@ -237,7 +244,23 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private String getFieldName(int fieldNumber) {
-    return getClassMetaData().getMetaDataForMemberAtRelativePosition(fieldNumber).getName();
+    AbstractClassMetaData acmd = getClassMetaData();
+    AbstractMemberMetaData ammd = acmd.getMetaDataForMemberAtRelativePosition(fieldNumber);
+    // If a column name was explicitly provided, use that as the property name.
+    if (ammd.getColumn() != null) {
+      return ammd.getColumn();
+    }
+    // Use the IdentifierFactory to convert from the name of the field into
+    // a property name.  Be careful, if the field is a version field
+    // we need to invoke a different method on the id factory.
+    IdentifierFactory idFactory = getIdentifierFactory();
+    // TODO(maxr): See if there is a better way than field name comparison to
+    // determine if this is a version field
+    if (acmd.hasVersionStrategy() &&
+        ammd.getName().equals(acmd.getVersionMetaData().getFieldName())) {
+      return idFactory.newVersionFieldIdentifier().getIdentifier();
+    }
+    return idFactory.newDatastoreFieldIdentifier(ammd.getName()).getIdentifier();
   }
 
   private AbstractMemberMetaData getMetaData(int fieldNumber) {
@@ -250,5 +273,9 @@ public class DatastoreFieldManager implements FieldManager {
 
   Entity getEntity() {
     return datastoreEntity;
+  }
+
+  IdentifierFactory getIdentifierFactory() {
+    return ((MappedStoreManager)sm.getObjectManager().getStoreManager()).getIdentifierFactory();
   }
 }

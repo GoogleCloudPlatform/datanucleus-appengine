@@ -30,10 +30,12 @@ public class JDOTestCase extends TestCase {
     properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
     properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
     properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
+    properties.setProperty("datanucleus.identifier.case", "PreserveCase");
     pmf = JDOHelper.getPersistenceManagerFactory(properties);
     pm = pmf.getPersistenceManager();
   }
 
+  @Override
   protected void tearDown() throws Exception {
     ldth.tearDown();
     pm.close();

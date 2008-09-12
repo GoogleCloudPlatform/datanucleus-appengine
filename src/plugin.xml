@@ -17,4 +17,11 @@
         <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
             datastore="appengine"/>
     </extension>
+
+    <!-- IDENTIFIER FACTORIES -->
+    <extension point="org.datanucleus.store_identifierfactory">
+      <identifierfactory name="jpa" class-name="org.datanucleus.store.rdbms.sqlidentifier.JPAIdentifierFactory"/>
+      <identifierfactory name="jpox" class-name="org.datanucleus.store.rdbms.sqlidentifier.JPOXIdentifierFactory"/>
+      <identifierfactory name="jpox2" class-name="org.datanucleus.store.rdbms.sqlidentifier.JPOX2IdentifierFactory"/>
+    </extension>
 </plugin>

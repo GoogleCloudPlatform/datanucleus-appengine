@@ -5,7 +5,6 @@ import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 
-import static org.datanucleus.store.appengine.DatastorePersistenceHandler.DEFAULT_VERSION_PROPERTY_NAME;
 import org.datanucleus.test.HasVersionJPA;
 import org.datanucleus.test.KitchenSink;
 
@@ -17,6 +16,8 @@ import javax.persistence.RollbackException;
  * @author Max Ross <maxr@google.com>
  */
 public class JPADeleteTest extends JPATestCase {
+
+  private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
 
   public void testSimpleDelete() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
@@ -45,7 +46,7 @@ public class JPADeleteTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Update() {
-    Entity entity = new Entity(HasVersionJPA.class.getName());
+    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
@@ -79,7 +80,7 @@ public class JPADeleteTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Delete() {
-    Entity entity = new Entity(HasVersionJPA.class.getName());
+    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 

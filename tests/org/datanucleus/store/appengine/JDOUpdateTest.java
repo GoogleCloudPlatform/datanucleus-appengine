@@ -6,7 +6,6 @@ import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 
-import static org.datanucleus.store.appengine.DatastorePersistenceHandler.DEFAULT_VERSION_PROPERTY_NAME;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 
@@ -16,6 +15,8 @@ import javax.jdo.JDOOptimisticVerificationException;
  * @author Erick Armbrust <earmbrust@google.com>
  */
 public class JDOUpdateTest extends JDOTestCase {
+
+  private static final String DEFAULT_VERSION_PROPERTY_NAME = "OPT_VERSION";
 
   public void testSimpleUpdate() throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));

@@ -25,6 +25,7 @@ public class JPATestCase extends TestCase {
     em = emf.createEntityManager();
   }
 
+  @Override
   protected void tearDown() throws Exception {
     em.close();
     emf.close();

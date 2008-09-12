@@ -15,6 +15,8 @@ import org.datanucleus.test.KitchenSink;
  */
 public class JDOInsertionTest extends JDOTestCase {
 
+  private static final String DEFAULT_VERSION_PROPERTY_NAME = "OPT_VERSION";
+
   public void testSimpleInsert() throws EntityNotFoundException {
     Flight f1 = new Flight();
     f1.setOrigin("BOS");
@@ -32,8 +34,8 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals("Harold", entity.getProperty("name"));
     assertEquals(2L, entity.getProperty("me"));
     assertEquals(4L, entity.getProperty("you"));
-    assertEquals(1L, entity.getProperty(DatastorePersistenceHandler.DEFAULT_VERSION_PROPERTY_NAME));
-    assertEquals(Flight.class.getName(), entity.getKind());
+    assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
+    assertEquals(Flight.class.getSimpleName(), entity.getKind());
   }
 
   public void testSimpleInsertWithNamedKey() throws EntityNotFoundException {
@@ -54,7 +56,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(ks.key));
     assertNotNull(entity);
-    assertEquals(KitchenSink.class.getName(), entity.getKind());
+    assertEquals(KitchenSink.class.getSimpleName(), entity.getKind());
 
     Entity sameEntity = KitchenSink.newKitchenSinkEntity(KeyFactory.decodeKey(ks.key));
     assertEquals(sameEntity.getProperties(), entity.getProperties());
@@ -72,7 +74,7 @@ public class JDOInsertionTest extends JDOTestCase {
     pm.makePersistent(hvwf);
     entity = ldth.ds.get(KeyFactory.decodeKey(hvwf.getId()));
     assertNotNull(entity);
-    assertEquals(1L, entity.getProperty(DatastorePersistenceHandler.DEFAULT_VERSION_PROPERTY_NAME));
+    assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
     assertEquals(1L, hvwf.getVersion());
   }
 

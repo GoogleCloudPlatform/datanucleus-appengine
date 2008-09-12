@@ -189,7 +189,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName()
-            + " where id == key parameters String key order by id");
+            + " where id == key parameters String key order by id asc");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
     assertEquals(1, flights.size());
@@ -242,7 +242,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAncestorQuery() {
     Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getSimpleName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     javax.jdo.Query q = pm.newQuery(
@@ -296,7 +296,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private static Entity newFlight(String name, String origin, String dest,
       int you, int me) {
-    Entity e = new Entity(Flight.class.getName());
+    Entity e = new Entity(Flight.class.getSimpleName());
     e.setProperty("name", name);
     e.setProperty("origin", origin);
     e.setProperty("dest", dest);
