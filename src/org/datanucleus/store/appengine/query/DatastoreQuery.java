@@ -110,8 +110,18 @@ public class DatastoreQuery implements Serializable {
   /**
    * We'd like to return {@link Iterable} instead but
    * {@link javax.persistence.Query#getResultList()} returns {@link List}.
+   *
+   * @param localiser The localiser to use.
+   * @param compilation The compiled query.
+   * @param fromInclNo The index of the first result the user wants returned.
+   * @param toExclNo The index of the last result the user wants returned.
+   * @param parameters Parameter values for the query.
+   *
+   * @return The result of executing the query.
    */
-  public List<?> performExecute(Localiser localiser, QueryCompilation compilation, Map parameters) {
+  public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
+      long fromInclNo, long toExclNo, Map<String, ?> parameters) {
+
     validate();
 
     ObjectManager om = query.getObjectManager();
@@ -134,7 +144,15 @@ public class DatastoreQuery implements Serializable {
         return performExecuteForKeyQuery(ds, clr, acmd, qd.keyValue);
       }
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
-      Iterable<Entity> entities = ds.prepare(mostRecentDatastoreQuery).asIterable();
+      Iterable<Entity> entities;
+      // Datanucleus passes MAX_VALUE if no value was set by the user.
+      if (toExclNo < Long.MAX_VALUE) {
+        // datastore api expects an int because we cap you at 1000 anyway.
+        entities = ds.prepare(mostRecentDatastoreQuery).asIterable(
+            (int)Math.min(Integer.MAX_VALUE, toExclNo));
+      } else {
+        entities = ds.prepare(mostRecentDatastoreQuery).asIterable();
+      }
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         NucleusLogger.QUERY.debug(localiser.msg("021074", "DATASTORE",
             "" + (System.currentTimeMillis() - startTime)));
@@ -193,6 +211,9 @@ public class DatastoreQuery implements Serializable {
       throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
           HAVING_OP);
     }
+
+    // TODO(maxr): Add checks for subqueries, joins, and anything else we don't
+    // allow.
   }
 
   /**

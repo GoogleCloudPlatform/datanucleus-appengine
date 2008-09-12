@@ -1,10 +1,10 @@
 package org.datanucleus.store.appengine.query;
 
-import java.util.List;
-import java.util.Map;
-
 import org.datanucleus.ObjectManager;
 import org.datanucleus.store.query.AbstractJPQLQuery;
+
+import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of JPQL for the app engine datastore.
@@ -56,7 +56,9 @@ public class JPQLQuery extends AbstractJPQLQuery {
    */
   @Override
   protected List<?> performExecute(Map parameters) {
-    return datastoreQuery.performExecute(LOCALISER, compilation, parameters);
+    @SuppressWarnings("unchecked")
+    Map<String, ?> params = parameters;
+    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
   }
 
   // Exposed for tests.

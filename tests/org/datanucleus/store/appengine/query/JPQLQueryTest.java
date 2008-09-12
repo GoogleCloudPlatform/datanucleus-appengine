@@ -15,8 +15,12 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJPA;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -106,6 +110,7 @@ public class JPQLQueryTest extends JPATestCase {
         Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), Lists.newArrayList(TITLE_ASC, ISBN_DESC));
   }
 
+  @SuppressWarnings("unchecked")
   public void test2Equals2OrderBy() {
     DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
     ds.put(newBook("Bar Book", "Joe Blow", "67890"));
@@ -127,6 +132,38 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("11111", result.get(1).getIsbn());
     assertEquals("67890", result.get(2).getIsbn());
     assertEquals("54321", result.get(3).getIsbn());
+  }
+
+  public void testLimitQuery() {
+    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+    ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+
+    Query q = em.createQuery("SELECT FROM " +
+        Book.class.getName() +
+        " WHERE author = 'Joe Blow'" +
+        " ORDER BY title DESC, isbn ASC");
+    q.setMaxResults(1);
+
+    @SuppressWarnings("unchecked")
+    List<Book> result = (List<Book>) q.getResultList();
+
+    assertEquals(1, result.size());
+    assertEquals("12345", result.get(0).getIsbn());
+  }
+
+  public void testSerialization() throws IOException {
+    Query q = em.createQuery("select from " + Flight.class.getName());
+    q.getResultList();
+
+    JPQLQuery innerQuery = (JPQLQuery)((JPAQuery)q).getInternalQuery();
+    ByteArrayOutputStream baos = new ByteArrayOutputStream();
+    ObjectOutputStream oos = new ObjectOutputStream(baos);
+    // the fact that this doesn't blow up is the test
+    oos.writeObject(innerQuery);
   }
 
   public void testBindVariables() {

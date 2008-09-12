@@ -160,6 +160,25 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("3", result.get(3).getName());
   }
 
+  public void testLimitQuery() {
+    ldth.ds.put(newFlight("1", "yam", "bam", 1, 2));
+    ldth.ds.put(newFlight("2", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlight("3", "yam", "bam", 2, 1));
+    ldth.ds.put(newFlight("4", "yam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "notyam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "yam", "notbam", 2, 2));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName()
+            + " where origin == \"yam\" && dest == \"bam\""
+            + " order by you asc, me desc");
+    q.setRange(0, 1);
+    @SuppressWarnings("unchecked")
+    List<Flight> result = (List<Flight>) q.execute();
+    assertEquals(1, result.size());
+
+    assertEquals("1", result.get(0).getName());
+  }
+
   public void testSerialization() throws IOException {
     Query q = pm.newQuery("select from " + Flight.class.getName());
     q.execute();

@@ -1,11 +1,11 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
-import java.util.List;
-import java.util.Map;
-
 import org.datanucleus.ObjectManager;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
+
+import java.util.List;
+import java.util.Map;
 
 
 /**
@@ -56,7 +56,9 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    */
   @Override
   protected List<?> performExecute(Map parameters) {
-    return datastoreQuery.performExecute(LOCALISER, compilation, parameters);
+    @SuppressWarnings("unchecked")
+    Map<String, ?> params = parameters;
+    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
   }
 
   // Exposed for tests.
