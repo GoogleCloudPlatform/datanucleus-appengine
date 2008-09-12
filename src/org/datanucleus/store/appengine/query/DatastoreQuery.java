@@ -3,6 +3,8 @@ package org.datanucleus.store.appengine.query;
 
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.EntityNotFoundException;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMapBuilder;
@@ -14,11 +16,13 @@ import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.query.expression.Literal;
 import org.datanucleus.query.expression.OrderExpression;
+import org.datanucleus.query.expression.ParameterExpression;
 import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
@@ -27,6 +31,7 @@ import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.io.Serializable;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -112,22 +117,25 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
+    final ClassLoaderResolver clr = om.getClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     ManagedConnection mconn = om.getStoreManager().getConnection(om);
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
       // TODO(maxr): Don't force users to use fqn as the kind.
       String candidateClassName = query.getCandidateClass().getName();
       mostRecentDatastoreQuery = new Query(candidateClassName);
-      addFilters(compilation, mostRecentDatastoreQuery, parameters);
-      addSorts(compilation, mostRecentDatastoreQuery);
+      QueryData qd = addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd);
+      if (qd.keyValue != null) {
+        return performExecuteForKeyQuery(ds, clr, acmd, qd.keyValue);
+      }
+      addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities = ds.prepare(mostRecentDatastoreQuery).asIterable();
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         NucleusLogger.QUERY.debug(localiser.msg("021074", "DATASTORE",
             "" + (System.currentTimeMillis() - startTime)));
       }
-      final ClassLoaderResolver clr = om.getClassLoaderResolver();
-      final AbstractClassMetaData acmd =
-          om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
 
       Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
         public Object apply(Entity entity) {
@@ -137,6 +145,18 @@ public class DatastoreQuery implements Serializable {
       return new StreamingQueryResult(query, entities, entityToPojoFunc);
     } finally {
       mconn.release();
+    }
+  }
+
+  /**
+   * We only support key queries that can be fulfilled by doing a simple lookup by id.
+   */
+  private List<?> performExecuteForKeyQuery(DatastoreService ds, ClassLoaderResolver clr, AbstractClassMetaData acmd, String keyValue) {
+    try {
+      return Collections.singletonList(entityToPojo(ds.get(KeyFactory.decodeKey(keyValue)), acmd, clr));
+    } catch (EntityNotFoundException e) {
+      // for a query result this is fine
+      return Collections.emptyList();
     }
   }
 
@@ -176,18 +196,38 @@ public class DatastoreQuery implements Serializable {
    * Adds sorts to the given {@link Query} by examining the compiled order
    * expression.
    */
-  private void addSorts(QueryCompilation compilation, Query q) {
-    // Just parse by hand for now
+  private void addSorts(QueryCompilation compilation, Query q, AbstractClassMetaData acmd) {
     Expression[] orderBys = compilation.getExprOrdering();
     if (orderBys == null) {
       return;
     }
     for (Expression expr : orderBys) {
       OrderExpression oe = (OrderExpression) expr;
-      Query.SortDirection dir = oe.getSortOrder().equals("ascending") ? Query.SortDirection.ASCENDING
-          : Query.SortDirection.DESCENDING;
+      // TODO(maxr): Check JDO/JPA specs to see if we can assume ASC if no
+      // order provided.  Currently we NPE, which is uncool even if we can't
+      // make this assumption.
+      Query.SortDirection dir =
+          oe.getSortOrder().equals("ascending")
+              ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
       String sortProp = ((PrimaryExpression) oe.getLeft()).getId();
-      q.addSort(sortProp, dir);
+      AbstractMemberMetaData ammd = acmd.getMetaDataForMember(sortProp);
+      if (ammd.isPrimaryKey()) {
+        // TODO(maxr): Check with ryan to see if we can sort by key DESC.
+        // Until then, don't allow any sorting by pk.  This isn't as much of a
+        // restriction as it may seem since data is implicitly ordered by
+        // pk ASC.
+        throw new UnsupportedDatastoreFeatureException(
+            "Cannot sort by primary key.", query.getSingleStringQuery());
+      } else if (isAncestorPK(ammd)) {
+        throw new UnsupportedDatastoreFeatureException(
+            "Cannot sort by ancestor.", query.getSingleStringQuery());
+      } else {
+        // TODO(maxr) Hook into default mechanism for column names
+        if (ammd.getColumn() != null) {
+          sortProp = ammd.getColumn();
+        }
+        q.addSort(sortProp, dir);
+      }
     }
   }
 
@@ -195,10 +235,28 @@ public class DatastoreQuery implements Serializable {
    * Adds filters to the given {@link Query} by examining the compiled filter
    * expression.
    */
-  private void addFilters(QueryCompilation compilation, Query q, Map parameters) {
-    // Just parse by hand for now
+  private QueryData addFilters(QueryCompilation compilation, Query q, Map parameters,
+      AbstractClassMetaData acmd) {
     Expression filter = compilation.getExprFilter();
-    addExpression(filter, q, parameters);
+    QueryData qd = new QueryData(q, parameters, acmd);
+    addExpression(filter, qd);
+    return qd;
+  }
+
+  /**
+   * Struct used to represent info about the query we need to fulfill.
+   */
+  private static final class QueryData {
+    private final Query query;
+    private final Map parameters;
+    private final AbstractClassMetaData acmd;
+    private String keyValue = null;
+
+    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd) {
+      this.query = query;
+      this.parameters = parameters;
+      this.acmd = acmd;
+    }
   }
 
   /**
@@ -210,53 +268,108 @@ public class DatastoreQuery implements Serializable {
    * @throws UnsupportedDatastoreFeatureException If the query uses a feature
    *           that we don't support.
    */
-  private void addExpression(Expression expr, Query q, Map parameters) {
+  private void addExpression(Expression expr, QueryData qd) {
     if (expr == null) {
       return;
     }
     checkForUnsupportedOperator(expr.getOperator());
     if (expr instanceof DyadicExpression) {
       if (expr.getOperator().equals(Expression.OP_AND)) {
-        addExpression(expr.getLeft(), q, parameters);
-        addExpression(expr.getRight(), q, parameters);
+        addExpression(expr.getLeft(), qd);
+        addExpression(expr.getRight(), qd);
       } else if (DATANUCLEUS_OP_TO_APPENGINE_OP.get(expr.getOperator()) == null) {
         throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
             expr.getOperator());
       } else if (expr.getLeft() instanceof PrimaryExpression) {
         addLeftPrimaryExpression((PrimaryExpression) expr.getLeft(), expr
-            .getOperator(), expr.getRight(), q, parameters);
+            .getOperator(), expr.getRight(), qd);
       } else {
         // Recurse!
-        addExpression(expr.getLeft(), q, parameters);
-        addExpression(expr.getRight(), q, parameters);
+        addExpression(expr.getLeft(), qd);
+        addExpression(expr.getRight(), qd);
       }
     } else if (expr instanceof PrimaryExpression) {
       // Recurse!
-      addExpression(expr.getLeft(), q, parameters);
-      addExpression(expr.getRight(), q, parameters);
+      addExpression(expr.getLeft(), qd);
+      addExpression(expr.getRight(), qd);
     } else {
       throw new UnsupportedDatastoreFeatureException(
-          "Unexpected expression type while parsing " + query.getSingleStringQuery()
-              + ": " + expr.getClass().getName());
+          "Unexpected expression type while parsing query: "
+              + expr.getClass().getName(), query.getSingleStringQuery());
     }
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
-      Expression.Operator operator, Expression right, Query q, Map parameters) {
+      Expression.Operator operator, Expression right, QueryData qd) {
     String propName = left.getId();
     Query.FilterOperator op = DATANUCLEUS_OP_TO_APPENGINE_OP.get(operator);
+    if (op == null) {
+      throw new UnsupportedDatastoreFeatureException("Operator " + operator + " does not have a "
+          + "corresponding operator in the datastore api.", query.getSingleStringQuery());
+    }
     Object value;
     if (right instanceof PrimaryExpression) {
-      value = parameters.get(((PrimaryExpression) right).getId());
+      value = qd.parameters.get(((PrimaryExpression) right).getId());
     } else if (right instanceof Literal) {
       value = ((Literal) right).getLiteral();
+    } else if (right instanceof ParameterExpression) {
+      value = right.getSymbol().getValue();
     } else {
       // We hit an operator that is not in the unsupported list and does
       // not have an entry in DATANUCLEUS_OP_TO_APPENGINE_OP. Almost certainly
       // a programming error.
-      throw new UnsupportedDatastoreFeatureException(query.getSingleStringQuery());
+      throw new UnsupportedDatastoreFeatureException(
+          "Right side of expression is of unexpected type: " + right.getClass().getName(),
+          query.getSingleStringQuery());
     }
-    q.addFilter(propName, op, value);
+    AbstractMemberMetaData ammd = qd.acmd.getMetaDataForMember(propName);
+    if (ammd.isPrimaryKey()) {
+      addPrimaryKeyFilter(op, qd, value);
+      // Nothing to add to the query.  If we are successful
+      // in fulfilling this it will be because we just looked the
+      // entity up by its Key.
+    } else if (isAncestorPK(ammd)) {
+      addAncestorFilter(op, qd, propName, value);
+    } else {
+      // The property is not the primary key.  If a pk value has been set we
+      // can't fulfill the query.
+      if (qd.keyValue != null) {
+        throw new UnsupportedDatastoreFeatureException(
+            "If you filter by primary key you cannot filter by any other property.",
+            query.getSingleStringQuery());
+      }
+
+      // TODO(maxr) Hook into default mechanism for column names
+      if (ammd.getColumn() != null) {
+        propName = ammd.getColumn();
+      }
+      qd.query.addFilter(propName, op, value);
+    }
+  }
+
+  private void addAncestorFilter(
+      Query.FilterOperator op, QueryData qd, String propName, Object value) {
+    // We only support queries on ancestor if it is an equality filter.
+    if (op != Query.FilterOperator.EQUAL) {
+      throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
+          + "datastore only supports ancestor queries using the equality operator.",
+          query.getSingleStringQuery());
+    }
+    // assumes the key is of type string
+    qd.query.setAncestor(KeyFactory.decodeKey((String) value));
+  }
+
+  private void addPrimaryKeyFilter(Query.FilterOperator op, QueryData qd, Object value) {
+    // We only support queries on key if it is an equality filter and it's
+    // the only filter.
+    if (op != Query.FilterOperator.EQUAL) {
+      throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
+          + "datastore only supports key lookups using the equality operator.",
+          query.getSingleStringQuery());
+    }
+
+    // assumes the key is of type string
+    qd.keyValue = (String) value;
   }
 
   private void checkForUnsupportedOperator(Expression.Operator operator) {
@@ -264,6 +377,10 @@ public class DatastoreQuery implements Serializable {
       throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
           operator);
     }
+  }
+
+  private boolean isAncestorPK(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension("ancestor-pk");
   }
 
   // Exposed for tests
@@ -298,18 +415,9 @@ public class DatastoreQuery implements Serializable {
   // Specialization just exists to support tests
   static class UnsupportedDatastoreFeatureException extends
       UnsupportedOperationException {
-    private final String queryString;
 
-    UnsupportedDatastoreFeatureException(String queryString) {
-      super(queryString);
-      this.queryString = queryString;
-    }
-
-    @Override
-    public String getMessage() {
-      return "Problem with query <"
-          + queryString
-          + ">: App Engine datastore does not support one or more features of this query.";
+    UnsupportedDatastoreFeatureException(String msg, String queryString) {
+      super("Problem with query <" + queryString + ">: " + msg);
     }
   }
 }

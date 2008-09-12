@@ -1,11 +1,9 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
-import javax.transaction.xa.XAResource;
+import com.google.apphosting.api.datastore.DatastoreService;
+import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ManagedConnection;
@@ -13,24 +11,38 @@ import org.datanucleus.ManagedConnectionResourceListener;
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.common.collect.Lists;
+import java.util.List;
+import java.util.Map;
+
+import javax.transaction.xa.XAResource;
 
 /**
+ * Factory for connections to the datastore.
+ *
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
 
   private OMFContext omfContext;
 
-  public DatastoreConnectionFactoryImpl(OMFContext omfContext,
-      String resourceType) {
+  /**
+   * Constructs a connection faotory for the datastore
+   *
+   * @param omfContext The OMFContext
+   * @param resourceType The resource type of the connection.
+   */
+  public DatastoreConnectionFactoryImpl(OMFContext omfContext, String resourceType) {
+    // TODO(maxr): Find out what resourceType is
     this.omfContext = omfContext;
   }
 
-  @SuppressWarnings("unchecked")
-  public ManagedConnection getConnection(ObjectManager om, Map options) {
-    Map addedOptions = new HashMap();
+  /**
+   * {@inheritDoc}
+   */
+  public ManagedConnection getConnection(ObjectManager om, Map o) {
+    @SuppressWarnings("unchecked")
+    Map<Object, Object> options = o;
+    Map<Object, Object> addedOptions = Maps.newHashMap();
     if (options != null) {
       addedOptions.putAll(options);
     }
@@ -38,8 +50,10 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
         addedOptions);
   }
 
-  public ManagedConnection createManagedConnection(ObjectManager om,
-      Map transactionOptions) {
+  /**
+   * {@inheritDoc}
+   */
+  public ManagedConnection createManagedConnection(ObjectManager om, Map transactionOptions) {
     return new DatastoreManagedConnection();
   }
 

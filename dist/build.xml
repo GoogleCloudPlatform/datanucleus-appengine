@@ -21,7 +21,7 @@
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer-*SNAPSHOT*.jar"/>
-        <include name="datanucleus-java5-*SNAPSHOT*.jar"/>
+        <include name="datanucleus-jpa-*SNAPSHOT*.jar"/>
         <include name="datanucleus-core-*SNAPSHOT-sources.jar"/>
       </fileset>
       <fileset dir="../lib/split">
@@ -47,7 +47,7 @@
                                     has we need to do this ourselves.">
     <mkdir dir="../lib/split"/>
     <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
-      <arg value="--input_jar=datanucleus-core-1.0-SNAPSHOT.jar"/>
+      <arg value="--input_jar=datanucleus-core-1.1-SNAPSHOT.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
       <arg value="--replicate_manifests=true"/>

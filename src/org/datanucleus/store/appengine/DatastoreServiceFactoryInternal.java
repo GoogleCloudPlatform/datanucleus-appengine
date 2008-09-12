@@ -28,6 +28,15 @@ public final class DatastoreServiceFactoryInternal {
 
   private static DatastoreService datastoreServiceToReturn = null;
 
+  /**
+   * @return If a {@link DatastoreService} to return has been explicitly provided by a
+   * call to
+   * {@link #setDatastoreService(com.google.apphosting.api.datastore.DatastoreService)},
+   * the explicitly provided instance.  Otherwise a {@link DatastoreService}
+   * constructed by calling.
+   * {@link com.google.apphosting.api.datastore.DatastoreServiceFactory#getDatastoreService()}
+   * .
+   */
   public static DatastoreService getDatastoreService() {
     if (datastoreServiceToReturn != null) {
       return datastoreServiceToReturn;
@@ -35,6 +44,15 @@ public final class DatastoreServiceFactoryInternal {
     return DatastoreServiceFactory.getDatastoreService();
   }
 
+  /**
+   * Provides a specific {@link DatastoreService} instance that will be the
+   * return value of all calls to {@link #getDatastoreService()}.  If
+   * {@code null} is provided, subsequent calls to {@link #getDatastoreService()}
+   * will return to its default behavior.
+   *
+   * @param ds The {@link DatastoreService} to be returned by all calls to
+   * {@link #getDatastoreService()}.  Can be null.
+   */
   public static void setDatastoreService(DatastoreService ds) {
     datastoreServiceToReturn = ds;
   }

@@ -3,6 +3,7 @@ package org.datanucleus.store.appengine.query;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query.FilterOperator;
 import com.google.apphosting.api.datastore.Query.FilterPredicate;
 import com.google.apphosting.api.datastore.Query.SortDirection;
@@ -13,13 +14,9 @@ import com.google.common.collect.Sets;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
-import org.datanucleus.store.appengine.LocalDatastoreTestHelper;
 import org.datanucleus.test.Book;
-import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasAncestorJPA;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.ObjectOutputStream;
 import java.util.Collections;
 import java.util.List;
 import java.util.Set;
@@ -47,20 +44,6 @@ public class JPQLQueryTest extends JPATestCase {
       new FilterPredicate("isbn", FilterOperator.LESS_THAN_OR_EQUAL, 4L);
   private static final SortPredicate TITLE_ASC = new SortPredicate("title", SortDirection.ASCENDING);
   private static final SortPredicate ISBN_DESC = new SortPredicate("isbn", SortDirection.DESCENDING);
-
-  private LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown();
-    super.tearDown();
-  }
 
   public void testUnsupportedFilters() {
     String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
@@ -123,7 +106,6 @@ public class JPQLQueryTest extends JPATestCase {
         Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), Lists.newArrayList(TITLE_ASC, ISBN_DESC));
   }
 
-  @SuppressWarnings("unchecked")
   public void test2Equals2OrderBy() {
     DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
     ds.put(newBook("Bar Book", "Joe Blow", "67890"));
@@ -137,6 +119,7 @@ public class JPQLQueryTest extends JPATestCase {
         " WHERE author = 'Joe Blow'" +
         " ORDER BY title DESC, isbn ASC");
 
+    @SuppressWarnings("unchecked")
     List<Book> result = (List<Book>) q.getResultList();
 
     assertEquals(4, result.size());
@@ -146,17 +129,117 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("54321", result.get(3).getIsbn());
   }
 
-  public void testSerialization() throws IOException {
-    Query q = em.createQuery("select from " + Flight.class.getName());
-    q.getResultList();
+  public void testBindVariables() {
 
-    JPQLQuery innerQuery = (JPQLQuery)((JPAQuery)q).getInternalQuery();
-    ByteArrayOutputStream baos = new ByteArrayOutputStream();
-    ObjectOutputStream oos = new ObjectOutputStream(baos);
-    // the fact that this doesn't blow up is the test
-    oos.writeObject(innerQuery);
+    assertQuerySupported("select from " + Book.class.getName() + " where title = :title",
+        Lists.newArrayList(TITLE_EQ_2), NO_SORTS, "title", 2L);
+
+    assertQuerySupported("select from " + Book.class.getName()
+        + " where title = :title AND isbn = :isbn",
+        Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), NO_SORTS, "title", 2L, "isbn", 4L);
+
+    assertQuerySupported("select from " + Book.class.getName()
+        + " where title = :title AND isbn = :isbn order by title asc, isbn desc",
+        Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
+        Lists.newArrayList(TITLE_ASC, ISBN_DESC), "title", 2L, "isbn", 4L);
   }
 
+  public void testKeyQuery() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName()
+            + " where id = :key");
+    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+  }
+
+  public void testKeyQueryWithSorts() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName()
+            + " where id = :key order by isbn ASC");
+    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+  }
+
+  public void testIllegalKeyQuery_MultipleFilters() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName()
+            + " where id = :key and isbn = \"4\"");
+    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    try {
+      q.getResultList();
+      fail("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testIllegalKeyQuery_NonEqualityFilter() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName()
+            + " where id > :key");
+    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    try {
+      q.getResultList();
+      fail("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+    }
+  }
+
+  public void testAncestorQuery() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getName(), bookEntity.getKey());
+    ldth.ds.put(hasAncestorEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + HasAncestorJPA.class.getName() + " where ancestorId = :ancId");
+    q.setParameter("ancId", KeyFactory.encodeKey(bookEntity.getKey()));
+
+    @SuppressWarnings("unchecked")
+    List<HasAncestorJPA> haList = (List<HasAncestorJPA>) q.getResultList();
+    assertEquals(1, haList.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(haList.get(0).getAncestorId()));
+
+    assertEquals(
+        bookEntity.getKey(), getDatastoreQuery(q).getMostRecentDatastoreQuery().getAncestor());
+    assertEquals(NO_FILTERS, getFilterPredicates(q));
+    assertEquals(NO_SORTS, getSortPredicates(q));
+  }
+
+  public void testIllegalAncestorQuery() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getName(), bookEntity.getKey());
+    ldth.ds.put(hasAncestorEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + HasAncestorJPA.class.getName() + " where ancestorId > :ancId");
+    q.setParameter("ancId", KeyFactory.encodeKey(bookEntity.getKey()));
+    try {
+      q.getResultList();
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
 
   private static Entity newBook(String title, String author, String isbn) {
     Entity e = new Entity(Book.class.getName());
@@ -186,12 +269,32 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private void assertQuerySupported(String query, List<FilterPredicate> addedFilters,
-      List<SortPredicate> addedSorts) {
-    Query q = em.createQuery(query);
+      List<SortPredicate> addedSorts, Object... nameVals) {
+    javax.persistence.Query q = em.createQuery(query);
+    String name = null;
+    for (Object nameOrVal : nameVals) {
+      if (name == null) {
+        name = (String) nameOrVal;
+      } else {
+        q.setParameter(name, nameOrVal);
+        name = null;
+      }
+    }
     q.getResultList();
-    DatastoreQuery dq = ((JPQLQuery)((JPAQuery)q).getInternalQuery()).getDatastoreQuery();
 
-    assertEquals(addedFilters, dq.getMostRecentDatastoreQuery().getFilterPredicates());
-    assertEquals(addedSorts, dq.getMostRecentDatastoreQuery().getSortPredicates());
+    assertEquals(addedFilters, getFilterPredicates(q));
+    assertEquals(addedSorts, getSortPredicates(q));
+  }
+
+  private DatastoreQuery getDatastoreQuery(javax.persistence.Query q) {
+    return ((JPQLQuery)((JPAQuery)q).getInternalQuery()).getDatastoreQuery();
+  }
+
+  private List<FilterPredicate> getFilterPredicates(javax.persistence.Query q) {
+    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getFilterPredicates();
+  }
+
+  private List<SortPredicate> getSortPredicates(javax.persistence.Query q) {
+    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getSortPredicates();
   }
 }

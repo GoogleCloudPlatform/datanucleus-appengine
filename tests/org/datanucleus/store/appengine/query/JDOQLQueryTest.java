@@ -2,6 +2,7 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query.FilterOperator;
 import com.google.apphosting.api.datastore.Query.FilterPredicate;
 import com.google.apphosting.api.datastore.Query.SortDirection;
@@ -13,6 +14,7 @@ import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasAncestorJDO;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -22,6 +24,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.jdo.Query;
+
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -45,8 +48,10 @@ public class JDOQLQueryTest extends JDOTestCase {
       new FilterPredicate("dest", FilterOperator.LESS_THAN, 4L);
   private static final FilterPredicate DEST_LTE_4 =
       new FilterPredicate("dest", FilterOperator.LESS_THAN_OR_EQUAL, 4L);
-  private static final SortPredicate ORIG_ASC = new SortPredicate("origin", SortDirection.ASCENDING);
-  private static final SortPredicate DESC_DESC = new SortPredicate("dest", SortDirection.DESCENDING);
+  private static final SortPredicate ORIG_ASC =
+      new SortPredicate("origin", SortDirection.ASCENDING);
+  private static final SortPredicate DESC_DESC =
+      new SortPredicate("dest", SortDirection.DESCENDING);
 
   public void testUnsupportedFilters() {
     assertQueryUnsupported("select from " + Flight.class.getName()
@@ -82,7 +87,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testSupportedFilters() {
     assertQuerySupported(Flight.class, "", NO_FILTERS, NO_SORTS);
     assertQuerySupported(Flight.class, "origin == 2", Lists.newArrayList(ORIGIN_EQ_2), NO_SORTS);
-    assertQuerySupported(Flight.class, "origin == \"2\"", Lists.newArrayList(ORIGIN_EQ_2STR), NO_SORTS);
+    assertQuerySupported(
+        Flight.class, "origin == \"2\"", Lists.newArrayList(ORIGIN_EQ_2STR), NO_SORTS);
     assertQuerySupported(Flight.class, "(origin == 2)", Lists.newArrayList(ORIGIN_EQ_2), NO_SORTS);
     assertQuerySupported(Flight.class, "origin == 2 && dest == 4", Lists.newArrayList(ORIGIN_EQ_2,
         DEST_EQ_4), NO_SORTS);
@@ -111,17 +117,26 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testBindVariables() {
-    assertQuerySupported("select from " + Flight.class.getName()
-        + " where origin == two parameters String two",
+    String queryStr = "select from " + Flight.class.getName() + " where origin == two ";
+    assertQuerySupported(queryStr + " parameters String two",
         Lists.newArrayList(ORIGIN_EQ_2STR), NO_SORTS, "2");
-    assertQuerySupported("select from " + Flight.class.getName()
-        + " where origin == two && dest == four parameters int two, int four",
+    assertQuerySupportedWithExplicitParams(queryStr,
+        Lists.newArrayList(ORIGIN_EQ_2STR), NO_SORTS, "String two", "2");
+
+    queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
+    assertQuerySupported(queryStr + "parameters int two, int four",
         Lists.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, 2L, 4L);
-    assertQuerySupported("select from " + Flight.class.getName()
-        + " where origin == two && dest == four parameters int two, int four "
-        + "order by origin asc, dest desc",
+    assertQuerySupportedWithExplicitParams(queryStr,
+        Lists.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, "int two, int four", 2L, 4L);
+
+    queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
+    String orderStr = "order by origin asc, dest desc";
+    assertQuerySupported(queryStr + "parameters int two, int four " + orderStr,
         Lists.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
         Lists.newArrayList(ORIG_ASC, DESC_DESC), 2L, 4L);
+    assertQuerySupportedWithExplicitParams(queryStr + orderStr,
+        Lists.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
+        Lists.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2L, 4L);
   }
 
   public void test2Equals2OrderBy() {
@@ -135,6 +150,7 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
             + " order by you asc, me desc");
+    @SuppressWarnings("unchecked")
     List<Flight> result = (List<Flight>) q.execute();
     assertEquals(4, result.size());
 
@@ -153,6 +169,129 @@ public class JDOQLQueryTest extends JDOTestCase {
     ObjectOutputStream oos = new ObjectOutputStream(baos);
     // the fact that this doesn't blow up is the test
     oos.writeObject(innerQuery);
+  }
+
+  public void testKeyQuery() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where id == key parameters String key");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    assertEquals(1, flights.size());
+    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+  }
+
+  public void testKeyQueryWithSorts() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + Flight.class.getName()
+            + " where id == key parameters String key order by id");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    assertEquals(1, flights.size());
+    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+  }
+
+  public void testIllegalKeyQuery_MultipleFilters() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + Flight.class.getName()
+            + " where id == key && origin == \"yam\" parameters String key");
+    try {
+      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testIllegalKeyQuery_NonEqualityFilter() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where id > key parameters String key");
+    try {
+      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testIllegalKeyQuery_SortByKey() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where origin == 4 order by id ASC");
+    try {
+      q.execute();
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testAncestorQuery() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    ldth.ds.put(hasAncestorEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasAncestorJDO.class.getName()
+            + " where ancestorId == ancId parameters String ancId");
+    @SuppressWarnings("unchecked")
+    List<HasAncestorJDO> haList =
+        (List<HasAncestorJDO>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    assertEquals(1, haList.size());
+    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(haList.get(0).getAncestorId()));
+
+    assertEquals(
+        flightEntity.getKey(), getDatastoreQuery(q).getMostRecentDatastoreQuery().getAncestor());
+    assertEquals(NO_FILTERS, getFilterPredicates(q));
+    assertEquals(NO_SORTS, getSortPredicates(q));
+  }
+
+  public void testIllegalAncestorQuery_BadOperator() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    ldth.ds.put(hasAncestorEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasAncestorJDO.class.getName()
+            + " where ancestorId > ancId parameters String ancId");
+    try {
+      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testIllegalAncestorQuery_SortByAncestor() {
+    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    ldth.ds.put(hasAncestorEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasAncestorJDO.class.getName()
+            + " where ancestorId == ancId parameters String ancId order by ancestorId ASC");
+    try {
+      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      fail ("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
   }
 
   private static Entity newFlight(String name, String origin, String dest,
@@ -216,8 +355,35 @@ public class JDOQLQueryTest extends JDOTestCase {
     } else if (bindVariables.length == 2) {
       q.execute(bindVariables[0], bindVariables[1]);
     }
-    assertEquals(addedFilters, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery().getMostRecentDatastoreQuery().getFilterPredicates());
-    assertEquals(addedSorts, ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery().getMostRecentDatastoreQuery().getSortPredicates());
+    assertEquals(addedFilters, getFilterPredicates(q));
+    assertEquals(addedSorts, getSortPredicates(q));
   }
 
+  private DatastoreQuery getDatastoreQuery(javax.jdo.Query q) {
+    return ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery();
+}
+
+  private List<FilterPredicate> getFilterPredicates(javax.jdo.Query q) {
+    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getFilterPredicates();
+  }
+
+  private List<SortPredicate> getSortPredicates(javax.jdo.Query q) {
+    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getSortPredicates();
+  }
+
+  private void assertQuerySupportedWithExplicitParams(String query,
+      List<FilterPredicate> addedFilters, List<SortPredicate> addedSorts, String explicitParams,
+      Object... bindVariables) {
+    javax.jdo.Query q = pm.newQuery(query);
+    q.declareParameters(explicitParams);
+    if (bindVariables.length == 0) {
+      q.execute();
+    } else if (bindVariables.length == 1) {
+      q.execute(bindVariables[0]);
+    } else if (bindVariables.length == 2) {
+      q.execute(bindVariables[0], bindVariables[1]);
+    }
+    assertEquals(addedFilters, getFilterPredicates(q));
+    assertEquals(addedSorts, getSortPredicates(q));
+  }
 }
