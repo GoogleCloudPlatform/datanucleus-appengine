@@ -31,6 +31,19 @@ public class JPADeleteTest extends JPATestCase {
     assertNull(em.find(KitchenSink.class, keyStr));
   }
 
+  public void testSimpleDeleteWithNamedKey() {
+    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
+    assertEquals("named key", key.getName());
+    String keyStr = KeyFactory.encodeKey(key);
+    KitchenSink ks = em.find(KitchenSink.class, keyStr);
+    assertNotNull(ks);
+    EntityTransaction txn = em.getTransaction();
+    txn.begin();
+    em.remove(ks);
+    txn.commit();
+    assertNull(em.find(KitchenSink.class, keyStr));
+  }
+
   public void testOptimisticLocking_Update() {
     Entity entity = new Entity(HasVersionJPA.class.getName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);

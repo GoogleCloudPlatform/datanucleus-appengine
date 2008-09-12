@@ -45,6 +45,66 @@ public class JDOUpdateTest extends JDOTestCase {
         flightCheck.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
   }
 
+  public void testSimpleUpdateWithNamedKey() throws EntityNotFoundException {
+    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+
+    String keyStr = KeyFactory.encodeKey(key);
+    Flight flight = pm.getObjectById(Flight.class, keyStr);
+
+    assertEquals(keyStr, flight.getId());
+    assertEquals("yam", flight.getOrigin());
+    assertEquals("bam", flight.getDest());
+    assertEquals("1", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+
+    pm.currentTransaction().begin();
+    flight.setName("2");
+    pm.currentTransaction().commit();
+
+    Entity flightCheck = ldth.ds.get(key);
+    assertEquals("yam", flightCheck.getProperty("origin"));
+    assertEquals("bam", flightCheck.getProperty("dest"));
+    assertEquals("2", flightCheck.getProperty("name"));
+    assertEquals(1L, flightCheck.getProperty("you"));
+    assertEquals(2L, flightCheck.getProperty("me"));
+    // verify that the version got bumped
+    assertEquals(2L,
+        flightCheck.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
+    assertEquals("named key", flightCheck.getKey().getName());
+  }
+
+  public void testUpdateId()
+      throws EntityNotFoundException {
+    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+
+    String keyStr = KeyFactory.encodeKey(key);
+    Flight flight = pm.getObjectById(Flight.class, keyStr);
+
+    assertEquals(keyStr, flight.getId());
+    assertEquals("yam", flight.getOrigin());
+    assertEquals("bam", flight.getDest());
+    assertEquals("1", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+
+    pm.currentTransaction().begin();
+    flight.setName("2");
+    flight.setId("foo");
+    pm.currentTransaction().commit();
+
+    Entity flightCheck = ldth.ds.get(key);
+    assertEquals("yam", flightCheck.getProperty("origin"));
+    assertEquals("bam", flightCheck.getProperty("dest"));
+    assertEquals("2", flightCheck.getProperty("name"));
+    assertEquals(1L, flightCheck.getProperty("you"));
+    assertEquals(2L, flightCheck.getProperty("me"));
+    // verify that the version got bumped
+    assertEquals(2L,
+        flightCheck.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
+    assertEquals("named key", flightCheck.getKey().getName());
+  }
+
   public void testOptimisticLocking_Update_NoField() {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);

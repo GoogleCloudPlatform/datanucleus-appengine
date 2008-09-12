@@ -1,23 +1,24 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.Blob;
-import com.google.apphosting.api.datastore.Text;
-import com.google.apphosting.api.datastore.Link;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.Key;
+import com.google.apphosting.api.datastore.Link;
+import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.users.User;
 import com.google.common.collect.Lists;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.IdGeneratorStrategy;
+import java.lang.reflect.Field;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
-import java.util.Arrays;
-import java.lang.reflect.Field;
+
+import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 /**
  * A class that contains members of all the types we know how to map.
@@ -176,8 +177,13 @@ public class KitchenSink {
    * Creates a KitchenSink Entity as it would be created by the DatastoreService.
    * This means that ints are longs and floats are doubles.
    */
-  public static Entity newKitchenSinkEntity(Key key) {
-    Entity entity = new Entity("KitchenSink", key);
+  public static Entity newKitchenSinkEntity(String keyName, Key parentKey) {
+    Entity entity;
+    if (keyName != null) {
+      entity = new Entity("KitchenSink", keyName, parentKey);
+    } else {
+      entity = new Entity("KitchenSink", parentKey);
+    }
     entity.setProperty("strVal", "strVal");
     entity.setProperty("boolVal", Boolean.TRUE);
     entity.setProperty("boolPrimVal", true);
@@ -239,6 +245,14 @@ public class KitchenSink {
     entity.setProperty("textList", Lists.newArrayList(TEXT1, TEXT2));
     entity.setProperty("linkList", Lists.newArrayList(LINK1, LINK2));
     return entity;
+  }
+
+  /**
+   * Creates a KitchenSink Entity as it would be created by the DatastoreService.
+   * This means that ints are longs and floats are doubles.
+   */
+  public static Entity newKitchenSinkEntity(Key parentKey) {
+    return newKitchenSinkEntity(null, parentKey);
   }
 
   public static final List<String> KITCHEN_SINK_FIELDS = getKitchenSinkFields();

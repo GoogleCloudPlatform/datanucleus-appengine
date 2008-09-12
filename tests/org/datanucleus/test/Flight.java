@@ -75,15 +75,27 @@ public class Flight {
     return id;
   }
 
+  /**
+   * You really shouldn't call this unless you're looking for trouble.
+   * Useful for tests that verify the trouble. 
+   */
+  public void setId(String id) {
+    this.id = id;
+  }
+
   @Override
   public String toString() {
     return "\n\nid: " + id + "\norigin: " + origin + "\ndest: " + dest
         + "\nname: " + name + "\nyou: " + you + "\nme: " + me;
   }
 
-  public static Entity newFlightEntity(String name, String origin, String dest,
-      int you, int me) {
-    Entity e = new Entity(Flight.class.getName());
+  public static Entity newFlightEntity(String keyName, String name, String origin, String dest, int you, int me) {
+    Entity e;
+    if (keyName == null) {
+      e = new Entity(Flight.class.getName());
+    } else {
+      e = new Entity(Flight.class.getName(), keyName);
+    }
     e.setProperty("name", name);
     e.setProperty("origin", origin);
     e.setProperty("dest", dest);
@@ -91,6 +103,11 @@ public class Flight {
     e.setProperty("me", me);
     e.setProperty("version", 1L);
     return e;
+  }
+
+  public static Entity newFlightEntity(String name, String origin, String dest,
+      int you, int me) {
+    return newFlightEntity(null, name, origin, dest, you, me);
   }
 
 }

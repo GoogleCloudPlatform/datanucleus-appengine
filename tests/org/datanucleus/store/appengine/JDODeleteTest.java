@@ -35,6 +35,24 @@ public class JDODeleteTest extends JDOTestCase {
     }
   }
 
+  public void testSimpleDelete_NamedKey() {
+    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
+
+    String keyStr = KeyFactory.encodeKey(key);
+    KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
+    assertNotNull(ks);
+    assertEquals("named key", KeyFactory.decodeKey(ks.key).getName());
+    pm.currentTransaction().begin();
+    pm.deletePersistent(ks);
+    pm.currentTransaction().commit();
+    try {
+      pm.getObjectById(KitchenSink.class, keyStr);
+      fail("expected onfe");
+    } catch (JDOObjectNotFoundException onfe) {
+      // good
+    }
+  }
+
   public void testOptimisticLocking_Update_NoField() {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);

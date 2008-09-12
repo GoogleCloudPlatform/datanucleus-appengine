@@ -4,9 +4,9 @@ package org.datanucleus.test;
 import org.datanucleus.jpa.annotations.Extension;
 
 import javax.persistence.Entity;
-import javax.persistence.Id;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -22,11 +22,15 @@ public class HasAncestorJPA {
   private String id;
 
   public HasAncestorJPA() {
-    
   }
 
   public HasAncestorJPA(String ancestorId) {
+    this(ancestorId, null);
+  }
+
+  public HasAncestorJPA(String ancestorId, String id) {
     this.ancestorId = ancestorId;
+    this.id = id;
   }
 
   public String getAncestorId() {

@@ -3,6 +3,7 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
+
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.KitchenSink;
 
@@ -25,6 +26,16 @@ public class JDOFetchTest extends JDOTestCase {
     assertEquals("1", flight.getName());
     assertEquals(1, flight.getYou());
     assertEquals(2, flight.getMe());
+  }
+
+  public void testSimpleFetch_NamedKey() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+
+    String keyStr = KeyFactory.encodeKey(key);
+    Flight flight = pm.getObjectById(Flight.class, keyStr);
+    assertNotNull(flight);
+    assertEquals(keyStr, flight.getId());
+    assertEquals("named key", KeyFactory.decodeKey(flight.getId()).getName());
   }
 
   public void testFetchNonExistent() {

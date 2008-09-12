@@ -10,8 +10,6 @@ import org.datanucleus.test.HasVersionNoFieldJDO;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.KitchenSink;
 
-import java.lang.reflect.Field;
-
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -38,19 +36,14 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals(Flight.class.getName(), entity.getKind());
   }
 
-  public void testInsertObjectWithPKAlreadySet() throws NoSuchFieldException,
-      IllegalAccessException {
+  public void testSimpleInsertWithNamedKey() throws EntityNotFoundException {
     Flight f = new Flight();
-    Field idField = Flight.class.getDeclaredField("id");
-    idField.setAccessible(true);
-    idField.set(f, "99");
+    f.setId("foo");
     assertNotNull(f.getId());
-    try {
-      pm.makePersistent(f);
-      fail("expected uoe");
-    } catch (UnsupportedOperationException uoe) {
-      // good
-    }
+    pm.makePersistent(f);
+    Entity entity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
+    assertNotNull(entity);
+    assertEquals("foo", entity.getKey().getName());
   }
 
   public void testKitchenSinkInsert() throws EntityNotFoundException {

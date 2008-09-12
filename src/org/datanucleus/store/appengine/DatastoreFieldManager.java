@@ -1,12 +1,13 @@
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.StateManager;
-import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.store.fieldmanager.FieldManager;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
+
+import org.datanucleus.StateManager;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.store.fieldmanager.FieldManager;
 
 import java.util.List;
 import java.util.Map;
@@ -38,7 +39,8 @@ public class DatastoreFieldManager implements FieldManager {
   private final StateManager sm;
   private final boolean createdWithoutEntity;
   // Not final because we will reallocate if we hit an ancestor pk field
-  // and the key of the current value does not have a parent.
+  // and the key of the current value does not have a parent, or if the pk
+  // gets set.
   private Entity datastoreEntity;
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity, Entity datastoreEntity) {
@@ -121,11 +123,23 @@ public class DatastoreFieldManager implements FieldManager {
     // We assume pks are of type String.
     if (isPK(fieldNumber)) {
       if (value != null) {
-        throw new UnsupportedOperationException(
-            "It looks like you've tried to set the primary key of your object by hand, but "
-                + "the App Engine datastore only supports datastore-generated primary keys.  "
-                + "Please leave the primary key field of your object blank when making it "
-                + "persistent.");
+        // If the value of the PK has changed we assume that the user has
+        // provided a named key.  Since named keys need to provided when the
+        // entity is created, we create a new entity and copy over any
+        // properties that have already been set.
+
+        // TODO(maxr): Find out if it is in violation of the spec
+        // to throw an exception when someone updates the PK of a POJO.
+        // We would prefer to throw an exception in this case.
+        Entity old = datastoreEntity;
+        if (old.getParent() != null) {
+          datastoreEntity = new Entity(old.getKind(), value, old.getParent());
+        } else {
+          datastoreEntity = new Entity(old.getKind(), value);
+        }
+        copyProperties(old, datastoreEntity);
+      } else {
+        // TODO(maxr): What if someone nulls out the PK value?  Can we throw?
       }
     } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
       if (value == null) {
@@ -143,12 +157,21 @@ public class DatastoreFieldManager implements FieldManager {
       // the value of this field as an arg to the Entity constructor and then moving all
       // properties on the old entity to the new entity.
       Entity old = datastoreEntity;
-      datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
-      for (Map.Entry<String, Object> entry : old.getProperties().entrySet()) {
-        datastoreEntity.setProperty(entry.getKey(), entry.getValue());
+      if (old.getKey().getName() != null) {
+        datastoreEntity =
+            new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+      } else {
+        datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
       }
+      copyProperties(old, datastoreEntity);
     } else {
       storeObjectField(fieldNumber, value);
+    }
+  }
+
+  private static void copyProperties(Entity src, Entity dest) {
+    for (Map.Entry<String, Object> entry : src.getProperties().entrySet()) {
+      dest.setProperty(entry.getKey(), entry.getValue());
     }
   }
 
