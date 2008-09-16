@@ -3,10 +3,9 @@ package org.datanucleus.store.appengine;
 
 import junit.framework.TestCase;
 
-import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
-import java.util.Properties;
+import javax.jdo.PersistenceManagerFactory;
 
 /**
  * Base testcase for tests that need a {@link PersistenceManagerFactory}.
@@ -24,14 +23,7 @@ public class JDOTestCase extends TestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ldth.setUp();
-    Properties properties = new Properties();
-    properties.setProperty("javax.jdo.PersistenceManagerFactoryClass",
-                    "org.datanucleus.jdo.JDOPersistenceManagerFactory");
-    properties.setProperty("javax.jdo.option.ConnectionURL","appengine");
-    properties.setProperty("datanucleus.NontransactionalRead", Boolean.TRUE.toString());
-    properties.setProperty("datanucleus.NontransactionalWrite", Boolean.TRUE.toString());
-    properties.setProperty("datanucleus.identifier.case", "PreserveCase");
-    pmf = JDOHelper.getPersistenceManagerFactory(properties);
+    pmf = JDOHelper.getPersistenceManagerFactory("jdo_tests.properties");
     pm = pmf.getPersistenceManager();
   }
 
