@@ -39,7 +39,10 @@ import java.util.Map;
 public class DatastoreFieldManager implements FieldManager {
 
   private final StateManager sm;
+
+  // true if we instantiated the entity ourselves.
   private final boolean createdWithoutEntity;
+
   // Not final because we will reallocate if we hit an ancestor pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
@@ -149,28 +152,30 @@ public class DatastoreFieldManager implements FieldManager {
         // to just log the warning once.
       }
     } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
-      if (value == null) {
-        throw new IllegalArgumentException("Cannot have a null ancestor PK.");
-      }
+      if (value != null) {
+        if (!createdWithoutEntity) {
+          // Shouldn't even happen.
+          throw new IllegalStateException("You can only rely on this class to properly handle "
+              + "ancestor pks if you instantiated the class without providing a datastore "
+              + "entity to the constructor.");
+        }
 
-      if (!createdWithoutEntity) {
-        // Shouldn't even happen.
-        throw new IllegalStateException("You can only rely on this class to properly handle "
-            + "ancestor pks if you instantiated the class without providing a datastore "
-            + "entity to the constructor.");
-      }
-
-      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
-      // the value of this field as an arg to the Entity constructor and then moving all
-      // properties on the old entity to the new entity.
-      Entity old = datastoreEntity;
-      if (old.getKey().getName() != null) {
-        datastoreEntity =
-            new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+        // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
+        // the value of this field as an arg to the Entity constructor and then moving all
+        // properties on the old entity to the new entity.
+        Entity old = datastoreEntity;
+        if (old.getKey().getName() != null) {
+          datastoreEntity =
+              new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+        } else {
+          datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+        }
+        copyProperties(old, datastoreEntity);
       } else {
-        datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+        // Null ancestor.  Ancestor is defined on a per-instance basis so
+        // annotating a field as an ancestor is not necessarily a commitment
+        // to always having an ancestor.  Null ancestor is fine.
       }
-      copyProperties(old, datastoreEntity);
     } else {
       storeObjectField(fieldNumber, value);
     }

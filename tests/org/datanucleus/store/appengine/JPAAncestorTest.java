@@ -78,4 +78,14 @@ public class JPAAncestorTest extends JPATestCase {
     assertEquals("named key", KeyFactory.decodeKey(ha.getId()).getName());
     assertEquals("named parent key", KeyFactory.decodeKey(ha.getId()).getParent().getName());
   }
+
+  public void testInsertWithNullAncestor() {
+    HasAncestorJPA ha = new HasAncestorJPA(null);
+    EntityTransaction txn = em.getTransaction();
+    txn.begin();
+    em.persist(ha);
+    txn.commit();
+    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    assertNull(keyWithParent.getParent());
+  }
 }

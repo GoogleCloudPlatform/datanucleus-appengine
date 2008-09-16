@@ -70,4 +70,11 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals("named key", KeyFactory.decodeKey(ha.getId()).getName());
     assertEquals("parent named key", KeyFactory.decodeKey(ha.getId()).getParent().getName());
   }
+
+  public void testInsertWithNullAncestor() {
+    HasAncestorJDO ha = new HasAncestorJDO(null);
+    pm.makePersistent(ha);
+    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    assertNull(keyWithParent.getParent());
+  }
 }
