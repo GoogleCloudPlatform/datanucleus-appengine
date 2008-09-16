@@ -7,12 +7,10 @@ import javax.jdo.PersistenceManagerFactory;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class PMF {
+public final class PMF {
 
-  public static final PersistenceManagerFactory pmf;
-  static {
-    pmf = JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
-  }
+  public static final PersistenceManagerFactory pmf =
+      JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
 
   private PMF() {}
 }

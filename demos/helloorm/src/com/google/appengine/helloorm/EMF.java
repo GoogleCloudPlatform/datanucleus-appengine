@@ -7,11 +7,9 @@ import javax.persistence.Persistence;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class EMF {
-  public static final EntityManagerFactory emf;
-  static {
-    emf = Persistence.createEntityManagerFactory("helloorm");
-  }
+public final class EMF {
+
+  public static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("helloorm");
 
   private EMF() {}
 }

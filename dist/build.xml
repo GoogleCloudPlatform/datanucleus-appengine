@@ -33,6 +33,7 @@
       <fileset file="README"/>
       <fileset dir="..">
         <include name="demos/**"/>
+        <include name="doc/**"/>
       </fileset>
     </jar>
     <delete dir="../lib/split"/>
