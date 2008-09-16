@@ -39,11 +39,12 @@
         <include name="**/*.properties"/>
       </fileset>
       <lib dir="${orm.lib.dir}">
-        <include name="datanucleus-appengine-0.1.jar"/>
+        <include name="datanucleus-appengine-0.2.jar"/>
         <include name="datanucleus-core-1.1-SNAPSHOT-0000.jar"/>
         <include name="datanucleus-core-1.1-SNAPSHOT-0001.jar"/>
         <include name="datanucleus-core-1.1-SNAPSHOT-0002.jar"/>
         <include name="datanucleus-core-1.1-SNAPSHOT-0003.jar"/>
+        <include name="datanucleus-rdbms-1.1-SNAPSHOT.jar"/>
         <include name="datanucleus-jpa-1.1-SNAPSHOT.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
@@ -87,6 +88,7 @@
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0002.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0003.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1-SNAPSHOT.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
     <pathelement location="classes"/>
   </path>

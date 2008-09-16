@@ -2,7 +2,7 @@
 <project name="gae" default="dist">
 
   <property name="version.major" value="0"/>
-  <property name="version.minor" value="1"/>
+  <property name="version.minor" value="2"/>
   <property name="version" value="${version.major}.${version.minor}"/>
   <property name="orm.source.jar" value="datanucleus-appengine-${version}-sources.jar"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -22,6 +22,7 @@
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer-*SNAPSHOT*.jar"/>
         <include name="datanucleus-jpa-*SNAPSHOT*.jar"/>
+        <include name="datanucleus-rdbms-*SNAPSHOT*.jar"/>
         <include name="datanucleus-core-*SNAPSHOT-sources.jar"/>
       </fileset>
       <fileset dir="../lib/split">
