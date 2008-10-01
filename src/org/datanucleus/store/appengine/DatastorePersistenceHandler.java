@@ -8,10 +8,10 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
-import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -20,8 +20,8 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
-import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -32,6 +32,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       DatastoreServiceFactoryInternal.getDatastoreService();
   private final DatastoreManager storeMgr;
 
+  /**
+   * Constructor
+   *
+   * @param storeMgr The StoreManager to use.
+   */
   public DatastorePersistenceHandler(StoreManager storeMgr) {
     this.storeMgr = (DatastoreManager) storeMgr;
   }
@@ -104,8 +109,26 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // TODO(earmbrust): Allow for non-transactional read/write.
     put(sm, entity);
 
-    // Set the generated key back on the pojo.
-    sm.setPostStoreNewObjectId(KeyFactory.encodeKey(entity.getKey()));
+    // Set the generated key back on the pojo.  If the pk field is a Key just
+    // set it on the field directly.  If the pk field is a String, convert the Key
+    // to a String.  If the pk field is anything else, we've got a problem.
+
+    // Assumes we only have a single pk member position
+    Class<?> pkType =
+        acmd.getMetaDataForManagedMemberAtPosition(acmd.getPKMemberPositions()[0]).getType();
+
+    Object newObjectId;
+    if (pkType.equals(Key.class)) {
+      newObjectId = entity.getKey();
+    } else if (pkType.equals(String.class)) {
+      newObjectId = KeyFactory.encodeKey(entity.getKey());
+    } else {
+      throw new IllegalStateException(
+          "Primary key for type " + sm.getClassMetaData().getName()
+              + " is of unexpected type " + pkType.getName()
+              + " (must be String or " + Key.class.getName() + ")");
+    }
+    sm.setPostStoreNewObjectId(newObjectId);
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementInsertCount();
     }
@@ -189,19 +212,37 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     return columnMetaData[0].getName();
   }
 
-  private String getPk(StateManager sm) {
-    return (String) sm.getObjectManager().getApiAdapter()
+  private Object getPk(StateManager sm) {
+    return sm.getObjectManager().getApiAdapter()
         .getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
   }
 
+  private Key getPkAsKey(StateManager sm) {
+    Object pk = getPk(sm);
+    if (pk instanceof Key) {
+      return (Key) pk;
+    } else if (pk instanceof String) {
+      return KeyFactory.decodeKey((String) pk);
+    } else {
+      throw new IllegalStateException(
+          "Primary key for type " + sm.getClassMetaData().getName()
+              + " is of unexpected type " + pk.getClass().getName()
+              + " (must be String or " + Key.class.getName() + ")");
+    }
+  }
+
+  private Entity getAssociatedEntity(StateManager sm, Key pk) {
+    return (Entity) sm.getAssociatedValue(pk);
+  }
+
   public void fetchObject(StateManager sm, int fieldNumbers[]) {
-    String pk = getPk(sm);
+    Key pk = getPkAsKey(sm);
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
-    Entity entity = (Entity) sm.getAssociatedValue(pk);
+    Entity entity = getAssociatedEntity(sm, pk);
     if (entity == null) {
-      entity = get(sm, KeyFactory.decodeKey(pk));
+      entity = get(sm, pk);
       sm.setAssociatedValue(pk, entity);
     }
     sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
@@ -219,7 +260,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Entity entity = (Entity) sm.getAssociatedValue(getPk(sm));
+    Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
     sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     put(sm, entity);
@@ -233,21 +274,21 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Entity entity = (Entity) sm.getAssociatedValue(getPk(sm));
+    Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.NO_INCREMENT);
-    delete(sm, KeyFactory.decodeKey(getPk(sm)));
+    delete(sm, getPkAsKey(sm));
   }
 
   public void locateObject(StateManager sm) {
     // get throws NucleusObjectNotFoundException if the entity isn't found,
     // which is what we want.
-    get(sm, KeyFactory.decodeKey(getPk(sm)));
+    get(sm, getPkAsKey(sm));
   }
 
   /**
    * Implementation of this operation is optional and is intended for
    * datastores that instantiate the model objects themselves (as opposed
-   * to letting datanucleus do it).  The App Engine datastore let's
+   * to letting datanucleus do it).  The App Engine datastore lets
    * datanucleus instantiate the model objects so we just return null.
    */
   public Object findObject(ObjectManager om, Object id) {

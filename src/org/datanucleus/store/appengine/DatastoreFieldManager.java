@@ -1,6 +1,7 @@
 package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
 
@@ -70,8 +71,8 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public String fetchStringField(int fieldNumber) {
-    // We assume pks are of type String.
-    // TODO(maxr): validate that pks are of type String at time of enhancement.
+    // TODO(maxr): validate that pks are a valid type at time of enhancement.
+    // TODO(maxr): validate that a class only has a single ancestor key.
     if (isPK(fieldNumber)) {
       // If this is pk field, transform the Key into its String representation.
       return KeyFactory.encodeKey(datastoreEntity.getKey());
@@ -85,15 +86,41 @@ public class DatastoreFieldManager implements FieldManager {
     return (Short) fetchObjectField(fieldNumber);
   }
 
+  private boolean fieldIsOfTypeKey(int fieldNumber) {
+    // Key is final so we don't need to worry about checking for subclasses.
+    return getMetaData(fieldNumber).getType().equals(Key.class);
+  }
+
+  private RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
+    return new IllegalStateException(
+        fieldType + " for type " + getClassMetaData().getName()
+            + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
+            + " (must be String or " + Key.class.getName() + ")");
+  }
+
   public Object fetchObjectField(int fieldNumber) {
     Object value = datastoreEntity.getProperty(getFieldName(fieldNumber));
-    if (value != null) {
-      // Datanucleus invokes this method for the object versions
-      // of primitive types.  We need to make sure we convert
-      // appropriately.
-      value = TypeConversionUtils.datastoreValueToPojoValue(value, getMetaData(fieldNumber));
+    if (isPK(fieldNumber)) {
+      if (fieldIsOfTypeKey(fieldNumber)) {
+        // If this is a pk field, transform the Key into its String
+        // representation.
+        return datastoreEntity.getKey();
+      }
+      throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
+    } else if (isAncestorPK(fieldNumber)) {
+      if (fieldIsOfTypeKey(fieldNumber)) {
+        return datastoreEntity.getKey().getParent();
+      }
+      throw exceptionForUnexpectedKeyType("Ancestor key", fieldNumber);
+    } else {
+      if (value != null) {
+        // Datanucleus invokes this method for the object versions
+        // of primitive types.  We need to make sure we convert
+        // appropriately.
+        value = TypeConversionUtils.datastoreValueToPojoValue(value, getMetaData(fieldNumber));
+      }
+      return value;
     }
-    return value;
   }
 
   public long fetchLongField(int fieldNumber) {
@@ -127,57 +154,65 @@ public class DatastoreFieldManager implements FieldManager {
   public void storeStringField(int fieldNumber, String value) {
     // We assume pks are of type String.
     if (isPK(fieldNumber)) {
-      if (value != null) {
-        // If the value of the PK has changed we assume that the user has
-        // provided a named key.  Since named keys need to provided when the
-        // entity is created, we create a new entity and copy over any
-        // properties that have already been set.
-
-        // TODO(maxr): Find out if it is in violation of the spec
-        // to throw an exception when someone updates the PK of a POJO.
-        // We would prefer to throw an exception in this case.
-        Entity old = datastoreEntity;
-        if (old.getParent() != null) {
-          datastoreEntity = new Entity(old.getKind(), value, old.getParent());
-        } else {
-          datastoreEntity = new Entity(old.getKind(), value);
-        }
-        copyProperties(old, datastoreEntity);
-      } else if (getMetaData(fieldNumber).getColumn() != null) {
-        // The pk doesn't get stored as a property so the fact that the user is
-        // trying to customize the name of the property is concerning.  We
-        // could log here, but that's going to annoy the heck out of people
-        // who are porting existing code.  Instead we should....
-        // TODO(maxr): Log a warning at startup or add a reasonably threadsafe way
-        // to just log the warning once.
-      }
+      storeStringPK(fieldNumber, value);
     } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
-      if (value != null) {
-        if (!createdWithoutEntity) {
-          // Shouldn't even happen.
-          throw new IllegalStateException("You can only rely on this class to properly handle "
-              + "ancestor pks if you instantiated the class without providing a datastore "
-              + "entity to the constructor.");
-        }
-
-        // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
-        // the value of this field as an arg to the Entity constructor and then moving all
-        // properties on the old entity to the new entity.
-        Entity old = datastoreEntity;
-        if (old.getKey().getName() != null) {
-          datastoreEntity =
-              new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
-        } else {
-          datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
-        }
-        copyProperties(old, datastoreEntity);
-      } else {
-        // Null ancestor.  Ancestor is defined on a per-instance basis so
-        // annotating a field as an ancestor is not necessarily a commitment
-        // to always having an ancestor.  Null ancestor is fine.
-      }
+      storeStringAncestorPK(value);
     } else {
       storeObjectField(fieldNumber, value);
+    }
+  }
+
+  private void storeStringAncestorPK(String value) {
+    if (value != null) {
+      if (!createdWithoutEntity) {
+        // Shouldn't even happen.
+        throw new IllegalStateException("You can only rely on this class to properly handle "
+            + "ancestor pks if you instantiated the class without providing a datastore "
+            + "entity to the constructor.");
+      }
+
+      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
+      // the value of this field as an arg to the Entity constructor and then moving all
+      // properties on the old entity to the new entity.
+      Entity old = datastoreEntity;
+      if (old.getKey().getName() != null) {
+        datastoreEntity =
+            new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+      } else {
+        datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+      }
+      copyProperties(old, datastoreEntity);
+    } else {
+      // Null ancestor.  Ancestor is defined on a per-instance basis so
+      // annotating a field as an ancestor is not necessarily a commitment
+      // to always having an ancestor.  Null ancestor is fine.
+    }
+  }
+
+  private void storeStringPK(int fieldNumber, String value) {
+    if (value != null) {
+      // If the value of the PK has changed we assume that the user has
+      // provided a named key.  Since named keys need to be provided when the
+      // entity is created, we create a new entity and copy over any
+      // properties that have already been set.
+
+      // TODO(maxr): Find out if it is in violation of the spec
+      // to throw an exception when someone updates the PK of a POJO.
+      // We would prefer to throw an exception in this case.
+      Entity old = datastoreEntity;
+      if (old.getParent() != null) {
+        datastoreEntity = new Entity(old.getKind(), value, old.getParent());
+      } else {
+        datastoreEntity = new Entity(old.getKind(), value);
+      }
+      copyProperties(old, datastoreEntity);
+    } else if (getMetaData(fieldNumber).getColumn() != null) {
+      // The pk doesn't get stored as a property so the fact that the user is
+      // trying to customize the name of the property is concerning.  We
+      // could log here, but that's going to annoy the heck out of people
+      // who are porting existing code.  Instead we should....
+      // TODO(maxr): Log a warning at startup or add a reasonably threadsafe way
+      // to just log the warning once.
     }
   }
 
@@ -197,22 +232,52 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public void storeObjectField(int fieldNumber, Object value) {
-    if (value != null ) {
-      if (value.getClass().isArray()) {
-        // TODO(maxr): Convert byte[] and Byte[] to BLOB
-        // Translate all arrays to lists before storing.
-        value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
-      } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(getMetaData(fieldNumber))) {
-        // Datastore doesn't support Character so translate into
-        // a list of Longs.  All other Collections can pass straight
-        // through.
-        value = Lists.transform((List<Character>) value, TypeConversionUtils.CHARACTER_TO_LONG);
-      } else if (value instanceof Character) {
-        // Datastore doesn't support Character so translate into a Long.
-        value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
+    if (isPK(fieldNumber)) {
+      if (fieldIsOfTypeKey(fieldNumber)) {
+        storeKeyPK(fieldNumber, (Key) value);
+      } else {
+        throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
+      }
+    } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
+      if (fieldIsOfTypeKey(fieldNumber)) {
+        storeAncestorKeyPK((Key) value);
+      } else {
+        throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
+      }
+    } else {
+      if (value != null ) {
+        if (value.getClass().isArray()) {
+          // TODO(maxr): Convert byte[] and Byte[] to BLOB
+          // Translate all arrays to lists before storing.
+          value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
+        } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(getMetaData(fieldNumber))) {
+          // Datastore doesn't support Character so translate into
+          // a list of Longs.  All other Collections can pass straight
+          // through.
+          value = Lists.transform((List<Character>) value, TypeConversionUtils.CHARACTER_TO_LONG);
+        } else if (value instanceof Character) {
+          // Datastore doesn't support Character so translate into a Long.
+          value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
+        }
+        datastoreEntity.setProperty(getFieldName(fieldNumber), value);
       }
     }
-    datastoreEntity.setProperty(getFieldName(fieldNumber), value);
+  }
+
+  private void storeKeyPK(int fieldNumber, Key key) {
+    if (key != null) {
+      storeStringPK(fieldNumber, key.getName());
+    } else {
+      storeStringPK(fieldNumber, null);
+    }
+  }
+
+  private void storeAncestorKeyPK(Key key) {
+    if (key != null) {
+      storeStringAncestorPK(KeyFactory.encodeKey(key));
+    } else {
+      storeStringAncestorPK(null);
+    }
   }
 
   public void storeLongField(int fieldNumber, long value) {

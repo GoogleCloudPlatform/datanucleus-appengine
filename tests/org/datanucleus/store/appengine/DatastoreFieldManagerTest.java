@@ -1,30 +1,30 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.test.KitchenSink;
-import org.datanucleus.test.HasAncestorJDO;
-import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.JDOClassLoaderResolver;
-import org.datanucleus.StateManager;
-import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.jdo.JDOPersistenceManager;
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
-import org.easymock.EasyMock;
-
+import com.google.apphosting.api.datastore.Blob;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.Blob;
-import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.datastore.Link;
+import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.users.User;
 import com.google.common.collect.Lists;
 
-import java.util.Iterator;
-import java.util.Date;
-import java.util.Arrays;
+import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.JDOClassLoaderResolver;
+import org.datanucleus.StateManager;
+import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.test.HasAncestorJDO;
+import org.datanucleus.test.KitchenSink;
+import org.easymock.EasyMock;
+
 import java.lang.reflect.Field;
+import java.util.Arrays;
+import java.util.Date;
+import java.util.Iterator;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -231,12 +231,12 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
     FieldPositionIterator iter = new FieldPositionIterator(acmd);
     int ancestorPkFieldPos = iter.next();
-    try {
-      fieldManager.storeStringField(ancestorPkFieldPos, null);
-      fail("Expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
+    // null ancestor value is fine
+    fieldManager.storeStringField(ancestorPkFieldPos, null);
+    assertNull(entity.getParent());
+
+    // non-null ancestor value is not fine because we created our own
+    // entity.
     try {
       fieldManager.storeStringField(ancestorPkFieldPos, "a val");
       fail("Expected ise");
@@ -253,16 +253,13 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       }
     };
 
-    // null value is still not ok
-    try {
-      fieldManager.storeStringField(ancestorPkFieldPos, null);
-      fail("Expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
+    // null value is ok
+    fieldManager.storeStringField(ancestorPkFieldPos, null);
+    assertNull(entity.getParent());
 
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
+
     // non-null value is ok
     fieldManager.storeStringField(ancestorPkFieldPos, KeyFactory.encodeKey(ksEntity.getKey()));
     Entity newEntity = fieldManager.getEntity();

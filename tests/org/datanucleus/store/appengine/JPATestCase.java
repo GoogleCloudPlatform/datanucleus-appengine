@@ -3,8 +3,8 @@ package org.datanucleus.store.appengine;
 
 import junit.framework.TestCase;
 
-import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 /**
@@ -27,6 +27,9 @@ public class JPATestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    if (em.getTransaction().isActive()) {
+      em.getTransaction().rollback();
+    }
     em.close();
     emf.close();
     ldth.tearDown();
