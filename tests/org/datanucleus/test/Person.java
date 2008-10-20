@@ -1,6 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.Embedded;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -22,6 +23,13 @@ public class Person {
   @Embedded
   private Name name;
 
+  @Persistent
+  @Embedded(members = {
+    @Persistent(name = "first", columns=@Column(name="anotherFirst")),
+    @Persistent(name = "last", columns=@Column(name="anotherLast"))}
+  )
+  private Name anotherName;
+
   public String getId() {
     return id;
   }
@@ -36,5 +44,13 @@ public class Person {
 
   public void setName(Name name) {
     this.name = name;
+  }
+
+  public Name getAnotherName() {
+    return anotherName;
+  }
+
+  public void setAnotherName(Name anotherName) {
+    this.anotherName = anotherName;
   }
 }

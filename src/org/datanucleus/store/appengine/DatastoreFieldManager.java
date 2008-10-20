@@ -5,13 +5,18 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
 
+import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
@@ -31,15 +36,19 @@ import java.util.Map;
  * {@link Entity Entities} but we handle the conversion ourselves when mapping
  * datastore {@link Entity Entities} to pojos.  For symmetry's sake we could
  * do all the pojo to datastore conversions in our code, but then the
- * conversions would be in two places (our code and the datastore service),
- * but we'd rather have a bit of asymmetry and only have the logic exist in one
+ * conversions would be in two places (our code and the datastore service).
+ * We'd rather have a bit of asymmetry and only have the logic exist in one
  * place.
  *
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreFieldManager implements FieldManager {
 
-  private final StateManager sm;
+  // Stack used to maintain the current field state manager to use.  We push on
+  // to this stack as we encounter embedded classes and then pop when we're
+  // done.
+  private final Deque<FieldManagerState> fieldManagerStateStack =
+      new ArrayDeque<FieldManagerState>();
 
   // true if we instantiated the entity ourselves.
   private final boolean createdWithoutEntity;
@@ -50,7 +59,13 @@ public class DatastoreFieldManager implements FieldManager {
   private Entity datastoreEntity;
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity, Entity datastoreEntity) {
-    this.sm = sm;
+    // We start with an ammdProvider that just gets member meta data from the class meta data.
+    AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
+      public AbstractMemberMetaData get(int fieldNumber) {
+        return getClassMetaData().getMetaDataForManagedMemberAtPosition(fieldNumber);
+      }
+    };
+    this.fieldManagerStateStack.push(new FieldManagerState(sm, ammdProvider));
     this.createdWithoutEntity = createdWithoutEntity;
     this.datastoreEntity = datastoreEntity;
   }
@@ -62,12 +77,12 @@ public class DatastoreFieldManager implements FieldManager {
    * has been returned by the datastore (get or query), or after the entity has
    * been put into the datastore.
    */
-  public DatastoreFieldManager(StateManager sm, Entity datastoreEntity) {
-    this(sm, false, datastoreEntity);
+  public DatastoreFieldManager(StateManager stateManager, Entity datastoreEntity) {
+    this(stateManager, false, datastoreEntity);
   }
 
-  public DatastoreFieldManager(StateManager sm, String kind) {
-    this(sm, true, new Entity(kind));
+  public DatastoreFieldManager(StateManager stateManager, String kind) {
+    this(stateManager, true, new Entity(kind));
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -246,6 +261,7 @@ public class DatastoreFieldManager implements FieldManager {
       }
     } else {
       if (value != null ) {
+        AbstractMemberMetaData ammd = getMetaData(fieldNumber);
         if (value.getClass().isArray()) {
           if (TypeConversionUtils.pojoPropertyIsByteArray(getMetaData(fieldNumber))) {
             value = TypeConversionUtils.convertByteArrayToBlob(value);
@@ -253,7 +269,7 @@ public class DatastoreFieldManager implements FieldManager {
             // Translate all arrays to lists before storing.
             value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
           }
-        } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(getMetaData(fieldNumber))) {
+        } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(ammd)) {
           // Datastore doesn't support Character so translate into
           // a list of Longs.  All other Collections can pass straight
           // through.
@@ -262,10 +278,46 @@ public class DatastoreFieldManager implements FieldManager {
           // Datastore doesn't support Character so translate into a Long.
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
         }
-        datastoreEntity.setProperty(getFieldName(fieldNumber), value);
+        if (ammd.getEmbeddedMetaData() != null) {
+          storeEmbeddedField(ammd, value);
+        } else {
+          datastoreEntity.setProperty(getFieldName(fieldNumber), value);
+        }
       }
 
     }
+  }
+
+  private StateManager getStateManager() {
+    return fieldManagerStateStack.peekFirst().stateManager;
+  }
+
+  private ObjectManager getObjectManager() {
+    return getStateManager().getObjectManager();
+  }
+
+  private void storeEmbeddedField(AbstractMemberMetaData ammd, Object value) {
+    ObjectManager objMgr = getObjectManager();
+    StateManager embeddedStateMgr = objMgr.findStateManager(value);
+    if (embeddedStateMgr == null) {
+      embeddedStateMgr = StateManagerFactory.newStateManagerForEmbedded(objMgr, value, false);
+      embeddedStateMgr.addEmbeddedOwner(getStateManager(), ammd.getAbsoluteFieldNumber());
+      embeddedStateMgr.setPcObjectType(StateManager.EMBEDDED_PC);
+    }
+    
+    final EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
+    // This implementation gets the meta data from the embedded meta data.
+    // This is needed to ensure we see column overrides that are specific to
+    // a specific embedded field.
+    AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
+      public AbstractMemberMetaData get(int fieldNumber) {
+        return emd.getFieldMetaData()[fieldNumber];
+      }
+    };
+    fieldManagerStateStack.push(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
+    embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);
+    fieldManagerStateStack.removeFirst();
   }
 
   private void storeKeyPK(int fieldNumber, Key key) {
@@ -313,23 +365,35 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private boolean isPK(int fieldNumber) {
-    // Assumes we only have a single field pk
-    return getClassMetaData().getPKMemberPositions()[0] == fieldNumber;
+    int[] pkPositions = getClassMetaData().getPKMemberPositions();
+    // Assumes that if we have a pk we only have a single field pk
+    return pkPositions != null && pkPositions[0] == fieldNumber;
   }
 
   private String getFieldName(int fieldNumber) {
-    AbstractClassMetaData acmd = getClassMetaData();
-    AbstractMemberMetaData ammd = acmd.getMetaDataForMemberAtRelativePosition(fieldNumber);
+    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     // If a column name was explicitly provided, use that as the property name.
     if (ammd.getColumn() != null) {
       return ammd.getColumn();
     }
+
+    // If we're dealing with embeddables, the column name override
+    // will show up as part of the column meta data.
+    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+      if (ammd.getColumnMetaData().length != 1) {
+        // TODO(maxr) throw something more appropriate
+        throw new UnsupportedOperationException();
+      }
+      return ammd.getColumnMetaData()[0].getName();
+    }
+
     // Use the IdentifierFactory to convert from the name of the field into
     // a property name.  Be careful, if the field is a version field
     // we need to invoke a different method on the id factory.
     IdentifierFactory idFactory = getIdentifierFactory();
     // TODO(maxr): See if there is a better way than field name comparison to
     // determine if this is a version field
+    AbstractClassMetaData acmd = getClassMetaData();
     if (acmd.hasVersionStrategy() &&
         ammd.getName().equals(acmd.getVersionMetaData().getFieldName())) {
       return idFactory.newVersionFieldIdentifier().getIdentifier();
@@ -338,11 +402,11 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private AbstractMemberMetaData getMetaData(int fieldNumber) {
-    return getClassMetaData().getMetaDataForManagedMemberAtPosition(fieldNumber);
+    return fieldManagerStateStack.peekFirst().abstractMemberMetaDataProvider.get(fieldNumber);
   }
 
   AbstractClassMetaData getClassMetaData() {
-    return sm.getClassMetaData();
+    return getStateManager().getClassMetaData();
   }
 
   Entity getEntity() {
@@ -350,6 +414,24 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   IdentifierFactory getIdentifierFactory() {
-    return ((MappedStoreManager)sm.getObjectManager().getStoreManager()).getIdentifierFactory();
+    return ((MappedStoreManager) getObjectManager().getStoreManager()).getIdentifierFactory();
+  }
+
+  /**
+   * Translates field numbers into {@link AbstractMemberMetaData}.
+   */
+  private interface AbstractMemberMetaDataProvider {
+    AbstractMemberMetaData get(int fieldNumber);
+  }
+
+  private static final class FieldManagerState {
+    private final StateManager stateManager;
+    private final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
+
+    private FieldManagerState(StateManager stateManager,
+        AbstractMemberMetaDataProvider abstractMemberMetaDataProvider) {
+      this.stateManager = stateManager;
+      this.abstractMemberMetaDataProvider = abstractMemberMetaDataProvider;
+    }
   }
 }

@@ -12,6 +12,8 @@ import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.HasVersionNoFieldJDO;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.Name;
+import org.datanucleus.test.Person;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -131,4 +133,25 @@ public class JDOInsertionTest extends JDOTestCase {
     assertNotNull(hk.getKey());
     assertEquals("name", hk.getKey().getName());
   }
+
+  public void testEmbeddable() throws EntityNotFoundException {
+    Person p = new Person();
+    p.setName(new Name());
+    p.getName().setFirst("jimmy");
+    p.getName().setLast("jam");
+    p.setAnotherName(new Name());
+    p.getAnotherName().setFirst("anotherjimmy");
+    p.getAnotherName().setLast("anotherjam");
+    pm.makePersistent(p);
+
+    assertNotNull(p.getId());
+
+    Entity entity = ldth.ds.get(KeyFactory.decodeKey(p.getId()));
+    assertNotNull(entity);
+    assertEquals("jimmy", entity.getProperty("first"));
+    assertEquals("jam", entity.getProperty("last"));  
+    assertEquals("anotherjimmy", entity.getProperty("anotherFirst"));
+    assertEquals("anotherjam", entity.getProperty("anotherLast"));  
+  }
 }
+

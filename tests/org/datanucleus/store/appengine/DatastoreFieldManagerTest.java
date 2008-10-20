@@ -22,6 +22,9 @@ import org.datanucleus.test.KitchenSink;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
@@ -31,6 +34,16 @@ import java.util.Iterator;
  */
 public class DatastoreFieldManagerTest extends JDOTestCase {
 
+  private static final StateManager DUMMY_STATE_MANAGER =
+      (StateManager) Proxy.newProxyInstance(
+          DatastoreFieldManagerTest.class.getClassLoader(),
+          new Class[] {StateManager.class},
+          new InvocationHandler() {
+            public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
+              throw new UnsupportedOperationException();
+            }
+          });
+
   public void testFetching() throws ClassNotFoundException {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
@@ -38,7 +51,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(DUMMY_STATE_MANAGER, ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -150,7 +163,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(null, ksEntity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(DUMMY_STATE_MANAGER, ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
