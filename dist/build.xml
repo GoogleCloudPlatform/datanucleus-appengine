@@ -2,43 +2,43 @@
 <project name="gae" default="dist">
 
   <property name="version.major" value="0"/>
-  <property name="version.minor" value="2"/>
+  <property name="version.minor" value="3"/>
   <property name="version" value="${version.major}.${version.minor}"/>
-  <property name="orm.source.jar" value="datanucleus-appengine-${version}-sources.jar"/>
+  <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
-  <property name="dist.target" value="appengine-orm-${version}.jar"/>
+  <property name="dist.target" value="appengine-orm-${version}.zip"/>
   <target name="dist" depends="split" description="Build the datanucleus appengine distribution">
-    <jar destfile="${orm.source.jar}">
+    <zip destfile="${orm.source.zip}">
       <fileset dir="../src" includes="**/*"/>
-    </jar>
+    </zip>
     <copy file="../datanucleus-appengine-SNAPSHOT.jar" tofile="datanucleus-appengine-${version}.jar"/>
     <copy file="../lib/external-api.jar" todir="../demos/lib"/>
     <copy file="../lib/external-dev-appserver.jar" todir="../demos/lib"/>
-    <jar destfile="${dist.target}">
+    <zip destfile="${dist.target}">
       <fileset dir="../lib">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
-        <include name="datanucleus-enhancer-*SNAPSHOT*.jar"/>
-        <include name="datanucleus-jpa-*SNAPSHOT*.jar"/>
-        <include name="datanucleus-rdbms-*SNAPSHOT*.jar"/>
-        <include name="datanucleus-core-*SNAPSHOT-sources.jar"/>
+        <include name="datanucleus-enhancer*"/>
+        <include name="datanucleus-jpa*"/>
+        <include name="datanucleus-rdbms*"/>
+        <include name="datanucleus-core-*src*"/>
       </fileset>
       <fileset dir="../lib/split">
         <include name="*.jar"/>
       </fileset>
       <fileset file="${orm.jar}"/>
-      <fileset file="${orm.source.jar}"/>
+      <fileset file="${orm.source.zip}"/>
       <fileset file="README"/>
       <fileset dir="..">
         <include name="demos/**"/>
         <include name="doc/**"/>
       </fileset>
-    </jar>
+    </zip>
     <delete dir="../lib/split"/>
     <delete file="${orm.jar}"/>
-    <delete file="${orm.source.jar}"/>
+    <delete file="${orm.source.zip}"/>
     <delete file="../demos/lib/external-api.jar"/>
     <delete file="../demos/lib/external-dev-appserver.jar"/>
   </target>
@@ -49,7 +49,7 @@
                                     has we need to do this ourselves.">
     <mkdir dir="../lib/split"/>
     <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
-      <arg value="--input_jar=datanucleus-core-1.1-SNAPSHOT.jar"/>
+      <arg value="--input_jar=datanucleus-core-1.1.0.m1.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
       <arg value="--replicate_manifests=true"/>

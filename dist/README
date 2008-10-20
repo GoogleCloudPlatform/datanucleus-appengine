@@ -16,3 +16,9 @@ VERSION 0.2
 - Spec compliance for default table names.
 - Spec compliance for default column names.
 - Spec compliance for default version column names.
+
+VERSION 0.3
+- Support pks and ancestors of type Key
+- Translate members of type byte[] and Byte[] to datastore type BLOB
+- Support for offset in jpql and jdoql
+- Support for embeddable classes

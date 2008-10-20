@@ -39,13 +39,13 @@
         <include name="**/*.properties"/>
       </fileset>
       <lib dir="${orm.lib.dir}">
-        <include name="datanucleus-appengine-0.2.jar"/>
-        <include name="datanucleus-core-1.1-SNAPSHOT-0000.jar"/>
-        <include name="datanucleus-core-1.1-SNAPSHOT-0001.jar"/>
-        <include name="datanucleus-core-1.1-SNAPSHOT-0002.jar"/>
-        <include name="datanucleus-core-1.1-SNAPSHOT-0003.jar"/>
-        <include name="datanucleus-rdbms-1.1-SNAPSHOT.jar"/>
-        <include name="datanucleus-jpa-1.1-SNAPSHOT.jar"/>
+        <include name="datanucleus-appengine-0.3.jar"/>
+        <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
+        <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
+        <include name="datanucleus-core-1.1.0.m1-0002.jar"/>
+        <include name="datanucleus-core-1.1.0.m1-0003.jar"/>
+        <include name="datanucleus-rdbms-1.1.0.m1.jar"/>
+        <include name="datanucleus-jpa-1.1.0.m1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
@@ -66,10 +66,10 @@
   <path id="helloorm.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0000.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0001.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0002.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0003.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
     <pathelement location="${demos.lib.dir}/servlet-api-2.4.jar"/>
     <pathelement location="${demos.lib.dir}/external-api.jar"/>
   </path>
@@ -82,13 +82,13 @@
   <path id="enhancer.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
     <pathelement location="persistence-api-1.0.2.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0-SNAPSHOT.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0000.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0001.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0002.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1-SNAPSHOT-0003.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1-SNAPSHOT.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1-SNAPSHOT.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1.jar"/>
     <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
     <pathelement location="classes"/>
   </path>
