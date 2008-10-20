@@ -1,29 +1,33 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.store.NucleusConnection;
-import org.datanucleus.store.Extent;
-import org.datanucleus.store.NucleusConnectionImpl;
-import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.FetchStatement;
-import org.datanucleus.store.mapped.DatastoreContainerObject;
-import org.datanucleus.store.exceptions.NoExtentException;
-import org.datanucleus.ObjectManager;
+import com.google.common.collect.Sets;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ManagedConnection;
-import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.OMFContext;
-import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.ObjectManager;
+import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.util.ClassUtils;
-import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.store.Extent;
+import org.datanucleus.store.NucleusConnection;
+import org.datanucleus.store.NucleusConnectionImpl;
+import org.datanucleus.store.exceptions.NoExtentException;
+import org.datanucleus.store.mapped.DatastoreContainerObject;
+import org.datanucleus.store.mapped.FetchStatement;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.util.ClassUtils;
+import org.datanucleus.util.NucleusLogger;
 
-import java.util.Date;
 import java.sql.DatabaseMetaData;
+import java.util.Collection;
+import java.util.Date;
+import java.util.Set;
 
 
 /**
@@ -127,6 +131,14 @@ public class DatastoreManager extends MappedStoreManager {
       NucleusLogger.PERSISTENCE.error(e);
       throw new NucleusException(idFactoryClassName, e).setFatal();
     }
+  }
+
+
+  @Override
+  public Collection<String> getSupportedOptions() {
+    Set<String> opts = Sets.newHashSet();
+    opts.add("TransactionIsolationLevel.read-committed");
+    return opts;
   }
 
   @Override
