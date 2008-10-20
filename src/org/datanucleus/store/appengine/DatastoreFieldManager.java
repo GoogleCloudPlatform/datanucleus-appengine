@@ -247,9 +247,12 @@ public class DatastoreFieldManager implements FieldManager {
     } else {
       if (value != null ) {
         if (value.getClass().isArray()) {
-          // TODO(maxr): Convert byte[] and Byte[] to BLOB
-          // Translate all arrays to lists before storing.
-          value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
+          if (TypeConversionUtils.pojoPropertyIsByteArray(getMetaData(fieldNumber))) {
+            value = TypeConversionUtils.convertByteArrayToBlob(value);
+          } else {
+            // Translate all arrays to lists before storing.
+            value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
+          }
         } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(getMetaData(fieldNumber))) {
           // Datastore doesn't support Character so translate into
           // a list of Longs.  All other Collections can pass straight
@@ -261,6 +264,7 @@ public class DatastoreFieldManager implements FieldManager {
         }
         datastoreEntity.setProperty(getFieldName(fieldNumber), value);
       }
+
     }
   }
 

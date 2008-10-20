@@ -220,8 +220,8 @@ public class KitchenSink {
     entity.setProperty("floatArray", Lists.newArrayList((double) 1.03f, (double) 1.04f));
     entity.setProperty("primitiveDoubleArray", Lists.newArrayList(2.01d, 2.02d));
     entity.setProperty("doubleArray", Lists.newArrayList(2.03d, 2.04d));
-    entity.setProperty("primitiveByteArray", Lists.newArrayList((long) 0xb, (long) 0xc));
-    entity.setProperty("byteArray", Lists.newArrayList((long) 0xe, (long) 0xf));
+    entity.setProperty("primitiveByteArray", new Blob(new byte[] {0xb, 0xc}));
+    entity.setProperty("byteArray", new Blob(new byte[] {0xe, 0xf}));
     entity.setProperty("primitiveBooleanArray", Lists.newArrayList(true, false));
     entity.setProperty("booleanArray", Lists.newArrayList(false, true));
     entity.setProperty("dateArray", Lists.newArrayList(DATE1, DATE2));

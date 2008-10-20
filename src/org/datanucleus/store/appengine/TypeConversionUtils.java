@@ -1,6 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Blob;
 import com.google.common.base.Function;
 import com.google.common.base.Functions;
 import com.google.common.collect.ImmutableMapBuilder;
@@ -90,6 +91,20 @@ final class TypeConversionUtils {
       .put(Float.TYPE, DOUBLE_TO_FLOAT)
       .getMap();
 
+  /**
+   * @param metaData The meta data we'll consult.
+   *
+   * @return {@code true} if the pojo property is an array of bytes.
+   */
+  public static boolean pojoPropertyIsByteArray(AbstractMemberMetaData metaData) {
+    ContainerMetaData cmd = metaData.getContainer();
+    if (cmd instanceof ArrayMetaData) {
+      String containerType = ((ArrayMetaData)cmd).getElementType();
+      return containerType.equals(Byte.class.getName()) ||
+          containerType.equals(Byte.TYPE.getName());
+    }
+    return false;
+  };
 
   /**
    * @param metaData The meta data we'll consult.
@@ -103,6 +118,27 @@ final class TypeConversionUtils {
       return containerType.equals(Character.class.getName());
     }
     return false;
+  }
+
+  /**
+   * Converts a pojo array of bytes to a datastore blob.
+   *
+   * @param value The pojo array.  It could be a primitive array, which is why
+   * the type of the param is Object and not Object[].
+   *
+   * @return A Blob representing the byte array.
+   */
+  public static Blob convertByteArrayToBlob(Object value) {
+    if (value.getClass().getComponentType().isPrimitive()) {
+      return new Blob((byte[]) value);
+    } else {
+      Byte[] bytes = (Byte[]) value;
+      byte[] array = (byte[]) Array.newInstance(Byte.TYPE, bytes.length);
+      for (int i = 0; i < bytes.length; i++) {
+        array[i] = bytes[i];
+      }
+      return new Blob(array);
+    }
   }
 
   /**
@@ -153,11 +189,19 @@ final class TypeConversionUtils {
     }
     ContainerMetaData cmd = ammd.getContainer();
     if (pojoPropertyIsArray(ammd)) {
-      // The pojo property is an array.  The datastore only supports
-      // Collections so we need to translate.
       String pojoTypeStr = ((ArrayMetaData)cmd).getElementType();
       Class<?> pojoType = classForName(pojoTypeStr);
-      value = convertDatastoreListToPojoArray((List<?>) value, pojoType);
+
+      if (value instanceof Blob) {
+        if (pojoType != Byte.TYPE && pojoType != Byte.class) {
+          throw new NucleusException("Cannot convert a Blob to an array of type " + pojoTypeStr);
+        }
+        value = convertDatastoreBlobToByteArray((Blob) value, pojoType);
+      } else {
+        // The pojo property is an array.  The datastore only supports
+        // Collections so we need to translate.
+        value = convertDatastoreListToPojoArray((List<?>) value, pojoType);
+      }
     } else if (pojoPropertyIsCollection(ammd)) {
       String pojoTypeStr = ((CollectionMetaData)cmd).getElementType();
       Class<?> pojoType = classForName(pojoTypeStr);
@@ -166,6 +210,27 @@ final class TypeConversionUtils {
       value = getDatastoreTypeToPojoTypeFunc(Functions.identity(), ammd).apply(value);
     }
     return value;
+  }
+
+  /**
+   * Converts a datastore blob to either a byte[] or a Byte[].
+   *
+   * @param blob The blob to convert.
+   * @param pojoType The destination type for the array.
+   * @return Object instead of Object[] because primitive arrays don't extend
+   * Object[].
+   */
+  private static Object convertDatastoreBlobToByteArray(Blob blob, Class<?> pojoType) {
+    if (pojoType.isPrimitive()) {
+      return blob.getBytes();
+    } else {
+      byte[] bytes = blob.getBytes();
+      Byte[] array = (Byte[]) Array.newInstance(pojoType, bytes.length);
+      for (int i = 0; i < bytes.length; i++) {
+        array[i] = Byte.valueOf(bytes[i]);
+      }
+      return array;
+    }
   }
 
   private static List<?> convertDatastoreListToPojoCollection(
