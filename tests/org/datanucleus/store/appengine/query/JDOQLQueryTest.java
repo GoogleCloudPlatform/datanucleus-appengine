@@ -171,12 +171,126 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
             + " order by you asc, me desc");
+
+    q.setRange(Long.MAX_VALUE, 1);
+    @SuppressWarnings("unchecked")
+    List<Flight> result1 = (List<Flight>) q.execute();
+    assertEquals(1, result1.size());
+    assertEquals("1", result1.get(0).getName());
+
+    q.setRange(Long.MAX_VALUE, Long.MAX_VALUE);
+    @SuppressWarnings("unchecked")
+    List<Flight> result2 = (List<Flight>) q.execute();
+    assertEquals(4, result2.size());
+    assertEquals("1", result2.get(0).getName());
+
+    q.setRange(Long.MAX_VALUE, 0);
+    @SuppressWarnings("unchecked")
+    List<Flight> result3 = (List<Flight>) q.execute();
+    assertEquals(0, result3.size());
+
+    q.setRange(Long.MAX_VALUE, -1);
+    try {
+      q.execute();
+      fail("expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  public void testOffsetQuery() {
+    ldth.ds.put(newFlight("1", "yam", "bam", 1, 2));
+    ldth.ds.put(newFlight("2", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlight("3", "yam", "bam", 2, 1));
+    ldth.ds.put(newFlight("4", "yam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "notyam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "yam", "notbam", 2, 2));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName()
+            + " where origin == \"yam\" && dest == \"bam\""
+            + " order by you asc, me desc");
+
+    q.setRange(0, Long.MAX_VALUE);
+    @SuppressWarnings("unchecked")
+    List<Flight> result1 = (List<Flight>) q.execute();
+    assertEquals(4, result1.size());
+    assertEquals("1", result1.get(0).getName());
+
+    q.setRange(1, Long.MAX_VALUE);
+    @SuppressWarnings("unchecked")
+    List<Flight> result2 = (List<Flight>) q.execute();
+    assertEquals(3, result2.size());
+    assertEquals("2", result2.get(0).getName());
+
+    q.setRange(Long.MAX_VALUE, Long.MAX_VALUE);
+    @SuppressWarnings("unchecked")
+    List<Flight> result3 = (List<Flight>) q.execute();
+    assertEquals(4, result3.size());
+    assertEquals("1", result3.get(0).getName());
+
+    q.setRange(-1, Long.MAX_VALUE);
+    try {
+      q.execute();
+      fail("expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  public void testOffsetLimitQuery() {
+    ldth.ds.put(newFlight("1", "yam", "bam", 1, 2));
+    ldth.ds.put(newFlight("2", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlight("3", "yam", "bam", 2, 1));
+    ldth.ds.put(newFlight("4", "yam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "notyam", "bam", 2, 2));
+    ldth.ds.put(newFlight("5", "yam", "notbam", 2, 2));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName()
+            + " where origin == \"yam\" && dest == \"bam\""
+            + " order by you asc, me desc");
+
+    q.setRange(0, 0);
+    @SuppressWarnings("unchecked")
+    List<Flight> result1 = (List<Flight>) q.execute();
+    assertEquals(0, result1.size());
+
+    q.setRange(1, 0);
+    @SuppressWarnings("unchecked")
+    List<Flight> result2 = (List<Flight>) q.execute();
+    assertEquals(0, result2.size());
+
     q.setRange(0, 1);
     @SuppressWarnings("unchecked")
-    List<Flight> result = (List<Flight>) q.execute();
-    assertEquals(1, result.size());
+    List<Flight> result3 = (List<Flight>) q.execute();
+    assertEquals(1, result3.size());
 
-    assertEquals("1", result.get(0).getName());
+    q.setRange(0, 2);
+    @SuppressWarnings("unchecked")
+    List<Flight> result4 = (List<Flight>) q.execute();
+    assertEquals(2, result4.size());
+    assertEquals("1", result4.get(0).getName());
+
+    q.setRange(1, 2);
+    @SuppressWarnings("unchecked")
+    List<Flight> result5 = (List<Flight>) q.execute();
+    assertEquals(1, result5.size());
+    assertEquals("2", result5.get(0).getName());
+
+    q.setRange(2, 5);
+    @SuppressWarnings("unchecked")
+    List<Flight> result6 = (List<Flight>) q.execute();
+    assertEquals(2, result6.size());
+    assertEquals("4", result6.get(0).getName());
+
+    q.setRange(2, 2);
+    @SuppressWarnings("unchecked")
+    List<Flight> result7 = (List<Flight>) q.execute();
+    assertEquals(0, result7.size());
+
+    q.setRange(2, 1);
+    @SuppressWarnings("unchecked")
+    List<Flight> result8 = (List<Flight>) q.execute();
+    assertEquals(0, result8.size());
   }
 
   public void testSerialization() throws IOException {

@@ -4,8 +4,10 @@ package org.datanucleus.store.appengine.query;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
+import static com.google.apphosting.api.datastore.FetchOptions.Builder.*;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query;
+import com.google.apphosting.api.datastore.FetchOptions;
 import com.google.common.base.Function;
 import com.google.common.collect.ImmutableMapBuilder;
 import com.google.common.collect.Sets;
@@ -124,6 +126,13 @@ public class DatastoreQuery implements Serializable {
 
     validate();
 
+    if (toExclNo == 0 ||
+        (rangeValueIsSet(toExclNo)
+            && rangeValueIsSet(fromInclNo)
+            && (toExclNo - fromInclNo) <= 0)) {
+      // short-circuit - no point in executing the query
+      return Collections.emptyList();
+    }
     ObjectManager om = query.getObjectManager();
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
@@ -145,11 +154,9 @@ public class DatastoreQuery implements Serializable {
       }
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities;
-      // Datanucleus passes MAX_VALUE if no value was set by the user.
-      if (toExclNo < Long.MAX_VALUE) {
-        // datastore api expects an int because we cap you at 1000 anyway.
-        entities = ds.prepare(mostRecentDatastoreQuery).asIterable(
-            (int)Math.min(Integer.MAX_VALUE, toExclNo));
+      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      if (opts != null) {
+        entities = ds.prepare(mostRecentDatastoreQuery).asIterable(opts);
       } else {
         entities = ds.prepare(mostRecentDatastoreQuery).asIterable();
       }
@@ -167,6 +174,50 @@ public class DatastoreQuery implements Serializable {
     } finally {
       mconn.release();
     }
+  }
+
+  /**
+   * Datanucleus provides {@link Long#MAX_VALUE} if the range value was not set
+   * by the user.
+   */
+  private boolean rangeValueIsSet(long rangeVal) {
+    return rangeVal != Long.MAX_VALUE;
+  }
+
+  /**
+   * Build a FetchOptions instance using the provided params.
+   * @return A FetchOptions instance built using the provided params,
+   * or {@code null} if neither param is set.
+   */
+  FetchOptions buildFetchOptions(long fromInclNo, long toExclNo) {
+    FetchOptions opts = null;
+    Integer offset = null;
+    if (rangeValueIsSet(fromInclNo)) {
+      // datastore api expects an int because we cap you at 1000 anyway.
+      offset = (int) Math.min(Integer.MAX_VALUE, fromInclNo);
+      opts = withOffset(offset);
+    }
+    if (rangeValueIsSet(toExclNo)) {
+      // datastore api expects an int because we cap you at 1000 anyway.
+      int intExclNo = (int) Math.min(Integer.MAX_VALUE, toExclNo);
+      if (opts == null) {
+        // When fromInclNo isn't specified, intExclNo (the index of the last
+        // result to return) and limit are the same.
+        opts = withLimit(intExclNo);
+      } else {
+        // When we have values for both fromInclNo and toExclNo
+        // we can't take toExclNo as the limit for the query because
+        // toExclNo is the index of the last result, not the max
+        // results to return.  In this scenario the limit is the
+        // index of the last result minus the offset.  For example, if
+        // fromInclNo is 10 and toExclNo is 25, the limit for the query
+        // is 15 because we want 15 results starting after the first 10.
+        
+        // We know that offset won't be null because opts is not null.
+        opts.limit(intExclNo - offset);
+      }
+    }
+    return opts;
   }
 
   /**

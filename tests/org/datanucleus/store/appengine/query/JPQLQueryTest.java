@@ -15,7 +15,6 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.test.Book;
-import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJPA;
 
 import java.io.ByteArrayOutputStream;
@@ -135,28 +134,120 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testLimitQuery() {
-    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-    ds.put(newBook("Bar Book", "Joe Blow", "67890"));
-    ds.put(newBook("Bar Book", "Joe Blow", "11111"));
-    ds.put(newBook("Foo Book", "Joe Blow", "12345"));
-    ds.put(newBook("A Book", "Joe Blow", "54321"));
-    ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ldth.ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ldth.ds.put(newBook("Baz Book", "Jane Blow", "13579"));
 
     Query q = em.createQuery("SELECT FROM " +
         Book.class.getName() +
         " WHERE author = 'Joe Blow'" +
         " ORDER BY title DESC, isbn ASC");
+
     q.setMaxResults(1);
-
     @SuppressWarnings("unchecked")
-    List<Book> result = (List<Book>) q.getResultList();
+    List<Book> result1 = (List<Book>) q.getResultList();
+    assertEquals(1, result1.size());
+    assertEquals("12345", result1.get(0).getIsbn());
 
-    assertEquals(1, result.size());
-    assertEquals("12345", result.get(0).getIsbn());
+    q.setMaxResults(0);
+    @SuppressWarnings("unchecked")
+    List<Book> result2 = (List<Book>) q.getResultList();
+    assertEquals(0, result2.size());
+
+    try {
+      q.setMaxResults(-1);
+      fail("expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  public void testOffsetQuery() {
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ldth.ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ldth.ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+    Query q = em.createQuery("SELECT FROM " +
+        Book.class.getName() +
+        " WHERE author = 'Joe Blow'" +
+        " ORDER BY title DESC, isbn ASC");
+
+    q.setFirstResult(0);
+    @SuppressWarnings("unchecked")
+    List<Book> result1 = (List<Book>) q.getResultList();
+    assertEquals(4, result1.size());
+    assertEquals("12345", result1.get(0).getIsbn());
+
+    q.setFirstResult(1);
+    @SuppressWarnings("unchecked")
+    List<Book> result2 = (List<Book>) q.getResultList();
+    assertEquals(3, result2.size());
+    assertEquals("11111", result2.get(0).getIsbn());
+
+    try {
+      q.setFirstResult(-1);
+      fail("expected iae");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  public void testOffsetLimitQuery() {
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ldth.ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ldth.ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+    Query q = em.createQuery("SELECT FROM " +
+        Book.class.getName() +
+        " WHERE author = 'Joe Blow'" +
+        " ORDER BY title DESC, isbn ASC");
+
+    q.setFirstResult(0);
+    q.setMaxResults(0);
+    @SuppressWarnings("unchecked")
+    List<Book> result1 = (List<Book>) q.getResultList();
+    assertEquals(0, result1.size());
+
+    q.setFirstResult(1);
+    q.setMaxResults(0);
+    @SuppressWarnings("unchecked")
+    List<Book> result2 = (List<Book>) q.getResultList();
+    assertEquals(0, result2.size());
+
+    q.setFirstResult(0);
+    q.setMaxResults(1);
+    @SuppressWarnings("unchecked")
+    List<Book> result3 = (List<Book>) q.getResultList();
+    assertEquals(1, result3.size());
+
+    q.setFirstResult(0);
+    q.setMaxResults(2);
+    @SuppressWarnings("unchecked")
+    List<Book> result4 = (List<Book>) q.getResultList();
+    assertEquals(2, result4.size());
+    assertEquals("12345", result4.get(0).getIsbn());
+
+    q.setFirstResult(1);
+    q.setMaxResults(1);
+    @SuppressWarnings("unchecked")
+    List<Book> result5 = (List<Book>) q.getResultList();
+    assertEquals(1, result5.size());
+    assertEquals("11111", result5.get(0).getIsbn());
+
+    q.setFirstResult(2);
+    q.setMaxResults(5);
+    @SuppressWarnings("unchecked")
+    List<Book> result6 = (List<Book>) q.getResultList();
+    assertEquals(2, result6.size());
+    assertEquals("67890", result6.get(0).getIsbn());
   }
 
   public void testSerialization() throws IOException {
-    Query q = em.createQuery("select from " + Flight.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName());
     q.getResultList();
 
     JPQLQuery innerQuery = (JPQLQuery)((JPAQuery)q).getInternalQuery();
