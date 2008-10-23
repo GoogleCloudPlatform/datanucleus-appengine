@@ -329,47 +329,47 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
   }
 
-  public void testIllegalKeyQuery_MultipleFilters() {
+  public void testKeyQuery_MultipleFilters() {
     Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
     ldth.ds.put(flightEntity);
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where id == key && origin == \"yam\" parameters String key");
-    try {
-      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
-      fail ("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
-    }
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    assertEquals(1, flights.size());
+    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
   }
 
-  public void testIllegalKeyQuery_NonEqualityFilter() {
-    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
-    ldth.ds.put(flightEntity);
+  public void testKeyQuery_NonEqualityFilter() {
+    Entity flightEntity1 = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity1);
+    Entity flightEntity2 = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity2);
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where id > key parameters String key");
-    try {
-      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
-      fail ("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
-    }
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity1.getKey()));
+    assertEquals(1, flights.size());
+    assertEquals(flightEntity2.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
   }
 
-  public void testIllegalKeyQuery_SortByKey() {
-    Entity flightEntity = newFlight("1", "yam", "bam", 1, 2);
-    ldth.ds.put(flightEntity);
+  public void testKeyQuery_SortByKey() {
+    Entity flightEntity1 = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity1);
+
+    Entity flightEntity2 = newFlight("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity2);
 
     javax.jdo.Query q = pm.newQuery(
-        "select from " + Flight.class.getName() + " where origin == 4 order by id ASC");
-    try {
-      q.execute();
-      fail ("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
-    }
+        "select from " + Flight.class.getName() + " where origin == 'yam' order by id DESC");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(2, flights.size());
+    assertEquals(flightEntity2.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+    assertEquals(flightEntity1.getKey(), KeyFactory.decodeKey(flights.get(1).getId()));
   }
 
   public void testAncestorQuery() {

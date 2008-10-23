@@ -300,35 +300,51 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
   }
 
-  public void testIllegalKeyQuery_MultipleFilters() {
+  public void testKeyQuery_MultipleFilters() {
     Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
     ldth.ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
-            + " where id = :key and isbn = \"4\"");
+            + " where id = :key and isbn = \"67890\"");
     q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
-    try {
-      q.getResultList();
-      fail("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
-    }
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
   }
 
-  public void testIllegalKeyQuery_NonEqualityFilter() {
-    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
-    ldth.ds.put(bookEntity);
+  public void testKeyQuery_NonEqualityFilter() {
+    Entity bookEntity1 = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity1);
+
+    Entity bookEntity2 = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity2);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
             + " where id > :key");
-    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
-    try {
-      q.getResultList();
-      fail("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-    }
+    q.setParameter("key", KeyFactory.encodeKey(bookEntity1.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(bookEntity2.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+  }
+
+  public void testKeyQuery_SortByKey() {
+    Entity bookEntity1 = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity1);
+
+    Entity bookEntity2 = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity2);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName()
+            + " order by id DESC");
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(bookEntity2.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
   }
 
   public void testAncestorQuery() {
