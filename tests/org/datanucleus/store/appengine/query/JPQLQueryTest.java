@@ -109,7 +109,6 @@ public class JPQLQueryTest extends JPATestCase {
         Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), Lists.newArrayList(TITLE_ASC, ISBN_DESC));
   }
 
-  @SuppressWarnings("unchecked")
   public void test2Equals2OrderBy() {
     DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
     ds.put(newBook("Bar Book", "Joe Blow", "67890"));
@@ -131,6 +130,29 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("11111", result.get(1).getIsbn());
     assertEquals("67890", result.get(2).getIsbn());
     assertEquals("54321", result.get(3).getIsbn());
+  }
+
+  public void testDefaultOrderingIsAsc() {
+    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+    ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+
+    Query q = em.createQuery("SELECT FROM " +
+        Book.class.getName() +
+        " WHERE author = 'Joe Blow'" +
+        " ORDER BY title");
+
+    @SuppressWarnings("unchecked")
+    List<Book> result = (List<Book>) q.getResultList();
+
+    assertEquals(4, result.size());
+    assertEquals("54321", result.get(0).getIsbn());
+    assertEquals("67890", result.get(1).getIsbn());
+    assertEquals("11111", result.get(2).getIsbn());
+    assertEquals("12345", result.get(3).getIsbn());
   }
 
   public void testLimitQuery() {

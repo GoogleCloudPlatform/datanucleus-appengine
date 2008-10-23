@@ -263,11 +263,8 @@ public class DatastoreQuery implements Serializable {
     }
     for (Expression expr : orderBys) {
       OrderExpression oe = (OrderExpression) expr;
-      // TODO(maxr): Check JDO/JPA specs to see if we can assume ASC if no
-      // order provided.  Currently we NPE, which is uncool even if we can't
-      // make this assumption.
       Query.SortDirection dir =
-          oe.getSortOrder().equals("ascending")
+          oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
               ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
       String sortProp = ((PrimaryExpression) oe.getLeft()).getId();
       AbstractMemberMetaData ammd = acmd.getMetaDataForMember(sortProp);
