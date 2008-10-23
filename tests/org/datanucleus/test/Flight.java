@@ -3,6 +3,7 @@ package org.datanucleus.test;
 
 import com.google.apphosting.api.datastore.Entity;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -30,6 +31,9 @@ public class Flight {
   int you;
   @Persistent
   int me;
+  @Persistent
+  @Column(name="flight_number")
+  int flightNumber;
 
   public String getOrigin() {
     return origin;
@@ -83,13 +87,27 @@ public class Flight {
     this.id = id;
   }
 
+  public int getFlightNumber() {
+    return flightNumber;
+  }
+
+  public void setFlightNumber(int flightNumber) {
+    this.flightNumber = flightNumber;
+  }
+
   @Override
   public String toString() {
     return "\n\nid: " + id + "\norigin: " + origin + "\ndest: " + dest
         + "\nname: " + name + "\nyou: " + you + "\nme: " + me;
   }
 
-  public static Entity newFlightEntity(String keyName, String name, String origin, String dest, int you, int me) {
+  public static Entity newFlightEntity(
+      String keyName, String name, String origin, String dest, int you, int me) {
+    return newFlightEntity(keyName, name, origin, dest, you, me, 300);
+  }
+
+  public static Entity newFlightEntity(
+      String keyName, String name, String origin, String dest, int you, int me, int flightNumber) {
     Entity e;
     if (keyName == null) {
       e = new Entity(Flight.class.getSimpleName());
@@ -102,7 +120,13 @@ public class Flight {
     e.setProperty("you", you);
     e.setProperty("me", me);
     e.setProperty("OPT_VERSION", 1L);
+    e.setProperty("flight_number", flightNumber);
     return e;
+  }
+
+  public static Entity newFlightEntity(
+      String name, String origin, String dest, int you, int me, int flightNumber) {
+    return newFlightEntity(null, name, origin, dest, you, me, flightNumber);
   }
 
   public static Entity newFlightEntity(String name, String origin, String dest,

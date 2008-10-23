@@ -1,5 +1,6 @@
 package org.datanucleus.test;
 
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -13,6 +14,9 @@ public class Book {
   private String title;
   private String author;
   private String isbn;
+
+  @Column(name="first_published")
+  private int firstPublished;
 
   public Book(String namedKey) {
     this.id = namedKey;
@@ -50,12 +54,25 @@ public class Book {
     this.isbn = isbn;
   }
 
+  public int getFirstPublished() {
+    return firstPublished;
+  }
+
+  public void setFirstPublished(int firstPublished) {
+    this.firstPublished = firstPublished;
+  }
+
   public String toString() {
     return "\n\nid: " + id + "\ntitle: " + title + "\nauthor: " + author + "\nisbn: " + isbn;
   }
 
   public static com.google.apphosting.api.datastore.Entity newBookEntity(String namedKey,
       String author, String isbn, String title) {
+    return newBookEntity(namedKey, author, isbn, title, 2000);
+  }
+
+  public static com.google.apphosting.api.datastore.Entity newBookEntity(String namedKey,
+      String author, String isbn, String title, int firstPublished) {
     com.google.apphosting.api.datastore.Entity e;
     if (namedKey != null) {
       e = new com.google.apphosting.api.datastore.Entity(Book.class.getSimpleName(), namedKey);
@@ -65,6 +82,7 @@ public class Book {
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);
     e.setProperty("title", title);
+    e.setProperty("first_published", firstPublished);
     return e;
   }
 

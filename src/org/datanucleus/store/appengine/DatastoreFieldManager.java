@@ -114,7 +114,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public Object fetchObjectField(int fieldNumber) {
-    Object value = datastoreEntity.getProperty(getFieldName(fieldNumber));
+    Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
     if (isPK(fieldNumber)) {
       if (fieldIsOfTypeKey(fieldNumber)) {
         // If this is a pk field, transform the Key into its String
@@ -281,7 +281,7 @@ public class DatastoreFieldManager implements FieldManager {
         if (ammd.getEmbeddedMetaData() != null) {
           storeEmbeddedField(ammd, value);
         } else {
-          datastoreEntity.setProperty(getFieldName(fieldNumber), value);
+          datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
         }
       }
 
@@ -370,7 +370,7 @@ public class DatastoreFieldManager implements FieldManager {
     return pkPositions != null && pkPositions[0] == fieldNumber;
   }
 
-  private String getFieldName(int fieldNumber) {
+  private String getPropertyName(int fieldNumber) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     // If a column name was explicitly provided, use that as the property name.
     if (ammd.getColumn() != null) {

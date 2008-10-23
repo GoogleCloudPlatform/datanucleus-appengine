@@ -1,7 +1,5 @@
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query.FilterOperator;
@@ -16,6 +14,7 @@ import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasAncestorJPA;
+import org.datanucleus.test.HasKeyPkJPA;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -110,12 +109,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void test2Equals2OrderBy() {
-    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-    ds.put(newBook("Bar Book", "Joe Blow", "67890"));
-    ds.put(newBook("Bar Book", "Joe Blow", "11111"));
-    ds.put(newBook("Foo Book", "Joe Blow", "12345"));
-    ds.put(newBook("A Book", "Joe Blow", "54321"));
-    ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ldth.ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ldth.ds.put(newBook("Baz Book", "Jane Blow", "13579"));
 
     Query q = em.createQuery("SELECT FROM " +
         Book.class.getName() +
@@ -133,12 +131,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testDefaultOrderingIsAsc() {
-    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
-    ds.put(newBook("Bar Book", "Joe Blow", "67890"));
-    ds.put(newBook("Bar Book", "Joe Blow", "11111"));
-    ds.put(newBook("Foo Book", "Joe Blow", "12345"));
-    ds.put(newBook("A Book", "Joe Blow", "54321"));
-    ds.put(newBook("Baz Book", "Jane Blow", "13579"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111"));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345"));
+    ldth.ds.put(newBook("A Book", "Joe Blow", "54321"));
+    ldth.ds.put(newBook("Baz Book", "Jane Blow", "13579"));
 
     Query q = em.createQuery("SELECT FROM " +
         Book.class.getName() +
@@ -306,6 +303,27 @@ public class JPQLQueryTest extends JPATestCase {
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
     assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+
+    // now issue the same query, but instead of providing a String version of
+    // the key, provide the Key itself.
+    q.setParameter("key", bookEntity.getKey());
+    @SuppressWarnings("unchecked")
+    List<Book> books2 = (List<Book>) q.getResultList();
+    assertEquals(1, books2.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books2.get(0).getId()));
+  }
+
+  public void testKeyQuery_KeyPk() {
+    Entity e = new Entity(HasKeyPkJPA.class.getSimpleName());
+    ldth.ds.put(e);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + HasKeyPkJPA.class.getName() + " where id = :key");
+    q.setParameter("key", e.getKey());
+    @SuppressWarnings("unchecked")
+    List<HasKeyPkJPA> result = (List<HasKeyPkJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    assertEquals(e.getKey(), result.get(0).getId());
   }
 
   public void testKeyQueryWithSorts() {
@@ -407,11 +425,35 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testSortByFieldWithCustomColumn() {
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "67890", 2003));
+    ldth.ds.put(newBook("Bar Book", "Joe Blow", "11111", 2002));
+    ldth.ds.put(newBook("Foo Book", "Joe Blow", "12345", 2001));
+
+    Query q = em.createQuery("SELECT FROM " +
+        Book.class.getName() +
+        " WHERE author = 'Joe Blow'" +
+        " ORDER BY firstPublished ASC");
+
+    @SuppressWarnings("unchecked")
+    List<Book> result = (List<Book>) q.getResultList();
+
+    assertEquals(3, result.size());
+    assertEquals("12345", result.get(0).getIsbn());
+    assertEquals("11111", result.get(1).getIsbn());
+    assertEquals("67890", result.get(2).getIsbn());
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
+    return newBook(title, author, isbn, 2000);
+  }
+
+  private static Entity newBook(String title, String author, String isbn, int firstPublished) {
     Entity e = new Entity(Book.class.getSimpleName());
     e.setProperty("title", title);
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);
+    e.setProperty("first_published", firstPublished);
     return e;
   }
 

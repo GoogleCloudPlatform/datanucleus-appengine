@@ -6,6 +6,7 @@ import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.FetchOptions;
 import static com.google.apphosting.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.apphosting.api.datastore.FetchOptions.Builder.withOffset;
+import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query;
 import com.google.common.base.Function;
@@ -17,6 +18,7 @@ import org.datanucleus.FetchPlan;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
@@ -140,13 +142,13 @@ public class DatastoreQuery implements Serializable {
     }
     MappedStoreManager sm = (MappedStoreManager) om.getStoreManager();
     ManagedConnection mconn = sm.getConnection(om);
-    IdentifierFactory idFactory = sm.getIdentifierFactory();
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
       final ClassLoaderResolver clr = om.getClassLoaderResolver();
       final AbstractClassMetaData acmd =
           om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
-      String kind = idFactory.newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
+      String kind =
+          getIdentifierFactory().newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
       mostRecentDatastoreQuery = new Query(kind);
       addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
@@ -274,13 +276,16 @@ public class DatastoreQuery implements Serializable {
       } else {
         if (ammd.isPrimaryKey()) {
           sortProp = Entity.KEY_RESERVED_PROPERTY;
-        } else if (ammd.getColumn() != null) {
-          // TODO(maxr) Hook into default mechanism for column names
-          sortProp = ammd.getColumn();
+        } else {
+          sortProp = determinePropertyName(ammd);
         }
         q.addSort(sortProp, dir);
       }
     }
+  }
+
+  IdentifierFactory getIdentifierFactory() {
+    return ((MappedStoreManager)query.getObjectManager().getStoreManager()).getIdentifierFactory();
   }
 
   /**
@@ -373,6 +378,11 @@ public class DatastoreQuery implements Serializable {
           query.getSingleStringQuery());
     }
     AbstractMemberMetaData ammd = qd.acmd.getMetaDataForMember(propName);
+    if (ammd == null) {
+      throw new NucleusException(
+          "No meta-data for member named " + propName + " on class " + qd.acmd.getFullClassName()
+              + ".  Are you sure you provided the correct member name?");
+    }
     if (isAncestorPK(ammd)) {
       addAncestorFilter(op, qd, value);
     } else {
@@ -381,11 +391,20 @@ public class DatastoreQuery implements Serializable {
         if (value instanceof String) {
           value = KeyFactory.decodeKey((String) value);
         }
-      } else if (ammd.getColumn() != null) {
-        // TODO(maxr) Hook into default mechanism for column names
-        propName = ammd.getColumn();
+      } else {
+        propName = determinePropertyName(ammd);
       }
       qd.query.addFilter(propName, op, value);
+    }
+  }
+
+  private String determinePropertyName(AbstractMemberMetaData ammd) {
+    if (ammd.getColumn() != null) {
+      return ammd.getColumn();
+    } else if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length != 0) {
+      return ammd.getColumnMetaData()[0].getName();
+    } else {
+      return getIdentifierFactory().newDatastoreFieldIdentifier(ammd.getName()).getIdentifier();
     }
   }
 
@@ -396,8 +415,9 @@ public class DatastoreQuery implements Serializable {
           + "datastore only supports ancestor queries using the equality operator.",
           query.getSingleStringQuery());
     }
-    // TODO(maxr): support key of type Key in addition to String
-    qd.query.setAncestor(KeyFactory.decodeKey((String) value));
+    // value must be String or Key
+    Key ancestor = (value instanceof String) ? KeyFactory.decodeKey((String) value) : (Key) value;
+    qd.query.setAncestor(ancestor);
   }
 
   private void checkForUnsupportedOperator(Expression.Operator operator) {
