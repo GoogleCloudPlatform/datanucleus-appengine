@@ -20,6 +20,8 @@ import java.util.Deque;
 import java.util.List;
 import java.util.Map;
 
+import javax.jdo.spi.JDOImplHelper;
+
 /**
  * FieldManager for converting app engine datastore entities into POJOs and
  * vice-versa.
@@ -114,6 +116,10 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public Object fetchObjectField(int fieldNumber) {
+    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+    if (ammd.getEmbeddedMetaData() != null) {
+      return fetchEmbeddedField(ammd);
+    }
     Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
     if (isPK(fieldNumber)) {
       if (fieldIsOfTypeKey(fieldNumber)) {
@@ -136,6 +142,55 @@ public class DatastoreFieldManager implements FieldManager {
       }
       return value;
     }
+  }
+
+  private AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
+      AbstractMemberMetaData ammd) {
+    final EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
+    // This implementation gets the meta data from the embedded meta data.
+    // This is needed to ensure we see column overrides that are specific to
+    // a specific embedded field.
+    return new AbstractMemberMetaDataProvider() {
+      public AbstractMemberMetaData get(int fieldNumber) {
+        return emd.getFieldMetaData()[fieldNumber];
+      }
+    };
+  }
+
+  private StateManager getEmbeddedStateManager(AbstractMemberMetaData ammd, Object value) {
+    if (value == null) {
+      // Not positive this is the right approach, but when we read the values
+      // of an embedded field out of the datastore we have no way of knowing
+      // if the field should be null or it should contain an instance of the
+      // embeddable whose members are all initialized to their default values
+      // (the result of calling the default ctor).  Also, we can't risk
+      // storing 'null' for every field of the embedded class because some of
+      // the members might be base types and therefore non-nullable.  Writing
+      // nulls to the datastore for these fields would cause NPEs when we read
+      // the object back out.  Seems like the only safe thing to do here is
+      // instantiate a fresh instance of the embeddable class using the default
+      // constructor and then persist that.
+      value = JDOImplHelper.getInstance().newInstance(
+          ammd.getType(), (javax.jdo.spi.StateManager) getStateManager());
+    }
+    ObjectManager objMgr = getObjectManager();
+    StateManager embeddedStateMgr = objMgr.findStateManager(value);
+    if (embeddedStateMgr == null) {
+      embeddedStateMgr = StateManagerFactory.newStateManagerForEmbedded(objMgr, value, false);
+      embeddedStateMgr.addEmbeddedOwner(getStateManager(), ammd.getAbsoluteFieldNumber());
+      embeddedStateMgr.setPcObjectType(StateManager.EMBEDDED_PC);
+    }
+    return embeddedStateMgr;
+  }
+
+  private Object fetchEmbeddedField(AbstractMemberMetaData ammd) {
+    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, null);
+    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
+    fieldManagerStateStack.push(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
+    embeddedStateMgr.replaceFields(acmd.getAllMemberPositions(), this);
+    fieldManagerStateStack.removeFirst();
+    return embeddedStateMgr.getObject();
   }
 
   public long fetchLongField(int fieldNumber) {
@@ -167,7 +222,6 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public void storeStringField(int fieldNumber, String value) {
-    // We assume pks are of type String.
     if (isPK(fieldNumber)) {
       storeStringPK(fieldNumber, value);
     } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
@@ -260,8 +314,8 @@ public class DatastoreFieldManager implements FieldManager {
         throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
       }
     } else {
+      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (value != null ) {
-        AbstractMemberMetaData ammd = getMetaData(fieldNumber);
         if (value.getClass().isArray()) {
           if (TypeConversionUtils.pojoPropertyIsByteArray(getMetaData(fieldNumber))) {
             value = TypeConversionUtils.convertByteArrayToBlob(value);
@@ -278,13 +332,12 @@ public class DatastoreFieldManager implements FieldManager {
           // Datastore doesn't support Character so translate into a Long.
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
         }
-        if (ammd.getEmbeddedMetaData() != null) {
-          storeEmbeddedField(ammd, value);
-        } else {
-          datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
-        }
       }
-
+      if (ammd.getEmbeddedMetaData() != null) {
+        storeEmbeddedField(ammd, value);
+      } else {
+        datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
+      }
     }
   }
 
@@ -297,23 +350,8 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storeEmbeddedField(AbstractMemberMetaData ammd, Object value) {
-    ObjectManager objMgr = getObjectManager();
-    StateManager embeddedStateMgr = objMgr.findStateManager(value);
-    if (embeddedStateMgr == null) {
-      embeddedStateMgr = StateManagerFactory.newStateManagerForEmbedded(objMgr, value, false);
-      embeddedStateMgr.addEmbeddedOwner(getStateManager(), ammd.getAbsoluteFieldNumber());
-      embeddedStateMgr.setPcObjectType(StateManager.EMBEDDED_PC);
-    }
-    
-    final EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
-    // This implementation gets the meta data from the embedded meta data.
-    // This is needed to ensure we see column overrides that are specific to
-    // a specific embedded field.
-    AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
-      public AbstractMemberMetaData get(int fieldNumber) {
-        return emd.getFieldMetaData()[fieldNumber];
-      }
-    };
+    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, value);
+    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
     fieldManagerStateStack.push(new FieldManagerState(embeddedStateMgr, ammdProvider));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);

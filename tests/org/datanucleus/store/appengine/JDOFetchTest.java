@@ -10,6 +10,7 @@ import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.Person;
 
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.JDOUserException;
@@ -132,5 +133,37 @@ public class JDOFetchTest extends JDOTestCase {
     } catch (JDOObjectNotFoundException e) {
       // good
     }
+  }
+
+  public void testEmbeddable() {
+    Entity e = new Entity(Person.class.getSimpleName());
+    e.setProperty("first", "jimmy");
+    e.setProperty("last", "jam");
+    e.setProperty("anotherFirst", "anotherjimmy");
+    e.setProperty("anotherLast", "anotherjam");
+    ldth.ds.put(e);
+    Person p = pm.getObjectById(Person.class, KeyFactory.encodeKey(e.getKey()));
+    assertNotNull(p);
+    assertNotNull(p.getName());
+    assertEquals("jimmy", p.getName().getFirst());
+    assertEquals("jam", p.getName().getLast());
+    assertNotNull(p.getAnotherName());
+    assertEquals("anotherjimmy", p.getAnotherName().getFirst());
+    assertEquals("anotherjam", p.getAnotherName().getLast());
+  }
+
+  public void testEmbeddableWithNull() {
+    Entity e = new Entity(Person.class.getSimpleName());
+    e.setProperty("first", "jimmy");
+    e.setProperty("last", "jam");
+    ldth.ds.put(e);
+    Person p = pm.getObjectById(Person.class, KeyFactory.encodeKey(e.getKey()));
+    assertNotNull(p);
+    assertNotNull(p.getName());
+    assertEquals("jimmy", p.getName().getFirst());
+    assertEquals("jam", p.getName().getLast());
+    assertNotNull(p.getAnotherName());
+    assertNull(p.getAnotherName().getFirst());
+    assertNull(p.getAnotherName().getLast());
   }
 }

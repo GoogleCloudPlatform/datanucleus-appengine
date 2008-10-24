@@ -67,6 +67,21 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals(sameEntity.getProperties(), entity.getProperties());
   }
 
+  public void testKitchenSinkInsertWithNulls() throws EntityNotFoundException {
+    KitchenSink allNulls = new KitchenSink();
+    pm.makePersistent(allNulls);
+    Entity entityWithNulls = ldth.ds.get(KeyFactory.decodeKey(allNulls.key));
+    assertNotNull(entityWithNulls);
+
+    // now create a KitchenSink with non-null values
+    KitchenSink noNulls = KitchenSink.newKitchenSink();
+    pm.makePersistent(noNulls);
+    Entity entityWithoutNulls = ldth.ds.get(KeyFactory.decodeKey(noNulls.key));
+    assertNotNull(entityWithoutNulls);
+
+    assertEquals(entityWithNulls.getProperties().keySet(), entityWithoutNulls.getProperties().keySet());
+  }
+
   public void testVersionInserts() throws EntityNotFoundException {
     HasVersionNoFieldJDO hv = new HasVersionNoFieldJDO();
     pm.makePersistent(hv);
@@ -153,5 +168,21 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals("anotherjimmy", entity.getProperty("anotherFirst"));
     assertEquals("anotherjam", entity.getProperty("anotherLast"));  
   }
-}
+
+  public void testNullEmbeddable() throws EntityNotFoundException {
+    Person p = new Person();
+    p.setName(new Name());
+    p.getName().setFirst("jimmy");
+    p.getName().setLast("jam");
+    pm.makePersistent(p);
+
+    assertNotNull(p.getId());
+
+    Entity entity = ldth.ds.get(KeyFactory.decodeKey(p.getId()));
+    assertNotNull(entity);
+    assertEquals("jimmy", entity.getProperty("first"));
+    assertEquals("jam", entity.getProperty("last"));
+    assertNull(entity.getProperty("anotherFirst"));
+    assertNull(entity.getProperty("anotherLast"));
+  }}
 
