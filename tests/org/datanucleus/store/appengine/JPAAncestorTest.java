@@ -59,7 +59,7 @@ public class JPAAncestorTest extends JPATestCase {
   public void testFetch() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getSimpleName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
@@ -70,7 +70,7 @@ public class JPAAncestorTest extends JPATestCase {
     Entity flightEntity = Flight.newFlightEntity("named parent key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Entity hasAncestorEntity =
-        new Entity(HasAncestorJPA.class.getName(), "named key", flightEntity.getKey());
+        new Entity(HasAncestorJPA.class.getSimpleName(), "named key", flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));

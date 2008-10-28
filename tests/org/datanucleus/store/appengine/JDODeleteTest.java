@@ -98,7 +98,7 @@ public class JDODeleteTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Update_HasVersionField() {
-    Entity entity = new Entity(HasVersionWithFieldJDO.class.getName());
+    Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
@@ -130,7 +130,7 @@ public class JDODeleteTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Delete_HasVersionField() {
-    Entity entity = new Entity(HasVersionWithFieldJDO.class.getName());
+    Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 

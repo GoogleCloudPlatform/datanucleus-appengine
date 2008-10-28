@@ -8,7 +8,6 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
 
-import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
@@ -16,7 +15,6 @@ import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
@@ -96,7 +94,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    String kind = determineKind(sm);
+    String kind = EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
 
     // For inserts we let the field manager create the Entity and then
     // retrieve it afterwards.  We do this because the entity isn't
@@ -134,19 +132,6 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
-  private String determineKind(StateManager sm) {
-    AbstractClassMetaData acmd = sm.getClassMetaData();
-    if (acmd.getTable() != null) {
-      // User specified a table name as part of the mapping so use that as the
-      // kind.
-      return acmd.getTable();
-    }
-    // No table name provided so use the identifier factory to convert the
-    // class name into the kind.
-    ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
-    return getIdentifierFactory(sm).newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
-  }
-
   IdentifierFactory getIdentifierFactory(StateManager sm) {
     return ((MappedStoreManager)sm.getObjectManager().getStoreManager()).getIdentifierFactory();
   }
@@ -176,7 +161,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
           throw newNucleusOptimisticException(
               cmd, entity, "The underlying entity had already been deleted.");
         }
-        if (!getVersionFromEntity(sm, vmd, refreshedEntity).equals(curVersion)) {
+        if (!EntityUtils.getVersionFromEntity(
+            getIdentifierFactory(sm), vmd, refreshedEntity).equals(curVersion)) {
           throw newNucleusOptimisticException(
               cmd, entity, "The underlying entity had already been updated.");
         }
@@ -184,7 +170,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       Object nextVersion = cmd.getVersionMetaData().getNextVersion(curVersion);
 
       sm.setTransactionalVersion(nextVersion);
-      String versionPropertyName = getVersionPropertyName(sm, vmd);
+      String versionPropertyName =
+          EntityUtils.getVersionPropertyName(getIdentifierFactory(sm), vmd);
       entity.setProperty(versionPropertyName, nextVersion);
 
       // Version field - update the version on the object
@@ -194,22 +181,6 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         sm.replaceField(verfmd.getAbsoluteFieldNumber(), nextVersion, false);
       }
     }
-  }
-
-  private Object getVersionFromEntity(StateManager sm, VersionMetaData vmd, Entity entity) {
-    return entity.getProperty(getVersionPropertyName(sm, vmd));
-  }
-
-  private String getVersionPropertyName(StateManager sm, VersionMetaData vmd) {
-    ColumnMetaData[] columnMetaData = vmd.getColumnMetaData();
-    if (columnMetaData == null || columnMetaData.length == 0) {
-      return getIdentifierFactory(sm).newVersionFieldIdentifier().getIdentifier();
-    }
-    if (columnMetaData.length != 1) {
-      throw new IllegalArgumentException(
-          "Please specify 0 or 1 column name for the version property.");
-    }
-    return columnMetaData[0].getName();
   }
 
   private Object getPk(StateManager sm) {
@@ -249,7 +220,9 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
     AbstractClassMetaData cmd = sm.getClassMetaData();
     if (cmd.hasVersionStrategy()) {
-      sm.setTransactionalVersion(getVersionFromEntity(sm, cmd.getVersionMetaData(), entity));
+      sm.setTransactionalVersion(
+          EntityUtils.getVersionFromEntity(
+              getIdentifierFactory(sm), cmd.getVersionMetaData(), entity));
     }
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementFetchCount();

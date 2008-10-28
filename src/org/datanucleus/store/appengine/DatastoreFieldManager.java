@@ -5,8 +5,10 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
@@ -70,6 +72,16 @@ public class DatastoreFieldManager implements FieldManager {
     this.fieldManagerStateStack.push(new FieldManagerState(sm, ammdProvider));
     this.createdWithoutEntity = createdWithoutEntity;
     this.datastoreEntity = datastoreEntity;
+
+    // Sanity check
+    String expectedKind = EntityUtils.determineKind(
+        getClassMetaData(), getClassLoaderResolver(), getIdentifierFactory());
+    if (!expectedKind.equals(datastoreEntity.getKind())) {
+      throw new NucleusException(
+          "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
+              + ">.  This is almost certainly a bug in App Engine ORM.");
+    }
+
   }
 
   /**
@@ -341,6 +353,10 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
+  ClassLoaderResolver getClassLoaderResolver() {
+    return getObjectManager().getClassLoaderResolver();
+  }
+
   private StateManager getStateManager() {
     return fieldManagerStateStack.peekFirst().stateManager;
   }
@@ -410,33 +426,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   private String getPropertyName(int fieldNumber) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    // If a column name was explicitly provided, use that as the property name.
-    if (ammd.getColumn() != null) {
-      return ammd.getColumn();
-    }
-
-    // If we're dealing with embeddables, the column name override
-    // will show up as part of the column meta data.
-    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
-      if (ammd.getColumnMetaData().length != 1) {
-        // TODO(maxr) throw something more appropriate
-        throw new UnsupportedOperationException();
-      }
-      return ammd.getColumnMetaData()[0].getName();
-    }
-
-    // Use the IdentifierFactory to convert from the name of the field into
-    // a property name.  Be careful, if the field is a version field
-    // we need to invoke a different method on the id factory.
-    IdentifierFactory idFactory = getIdentifierFactory();
-    // TODO(maxr): See if there is a better way than field name comparison to
-    // determine if this is a version field
-    AbstractClassMetaData acmd = getClassMetaData();
-    if (acmd.hasVersionStrategy() &&
-        ammd.getName().equals(acmd.getVersionMetaData().getFieldName())) {
-      return idFactory.newVersionFieldIdentifier().getIdentifier();
-    }
-    return idFactory.newDatastoreFieldIdentifier(ammd.getName()).getIdentifier();
+    return EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
   }
 
   private AbstractMemberMetaData getMetaData(int fieldNumber) {

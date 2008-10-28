@@ -51,7 +51,7 @@ public class JDOAncestorTest extends JDOTestCase {
   public void testFetch() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getSimpleName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
@@ -62,7 +62,7 @@ public class JDOAncestorTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Entity hasAncestorEntity =
-        new Entity(HasAncestorJDO.class.getName(), "named key", flightEntity.getKey());
+        new Entity(HasAncestorJDO.class.getSimpleName(), "named key", flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
