@@ -30,8 +30,11 @@ public class JDOTestCase extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     ldth.tearDown();
+    ldth = null;
     pm.close();
+    pm = null;
     pmf.close();
+    pmf = null;
     super.tearDown();
   }
 }

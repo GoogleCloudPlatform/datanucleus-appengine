@@ -27,12 +27,15 @@ public class JPATestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    ldth.tearDown();
+    ldth = null;
     if (em.getTransaction().isActive()) {
       em.getTransaction().rollback();
     }
     em.close();
+    em = null;
     emf.close();
-    ldth.tearDown();
+    emf = null;
     super.tearDown();
   }
 }
