@@ -17,7 +17,7 @@
     <zip destfile="${dist.target}">
       <fileset dir="../lib">
         <include name="asm-3.1.jar"/>
-        <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
+        <include name="jdo2-api-2.2.jar"/>
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer*"/>
@@ -69,20 +69,46 @@
       </daemons>
       <sequential>
         <sleep seconds="5"/>
+
+        <!-- create a flight -->
         <exec executable="curl" failifexecutionfails="true" failonerror="true">
           <arg value="-d"/>
           <arg value="orig=BOS&amp;dest=LAX"/>
           <arg value="http://localhost:8080/addFlight"/>
         </exec>
-        <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.result">
+        <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.add.result">
           <arg value="http://localhost:8080"/>
         </exec>
-        <echo message="${curl.result}"/>
+        <condition property="expected.add.response">
+          <contains string="${curl.add.result}" substring="agU6c2VsZnIMCxIGRkxJR0hUGAEM"/>
+        </condition>
+        <fail unless="expected.add.response" message="Did not get the expected add response: ${curl.add.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
+
+         <!-- issue a jpql query -->
+        <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.query.result">
+          <arg value="-d"/>
+          <arg value="q=select f from com.google.appengine.helloorm.Flight f where orig = 'BOS'"/>
+          <arg value="http://localhost:8080"/>
+        </exec>
+        <condition property="expected.query.response">
+          <contains string="${curl.query.result}" substring="agU6c2VsZnIMCxIGRkxJR0hUGAEM"/>
+        </condition>
+        <fail unless="expected.query.response" message="Did not get the expected query response: ${curl.query.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
+
+        <!-- switch to jdo -->
+       <exec executable="curl" failifexecutionfails="true" failonerror="true">
+         <arg value="-d"/>
+         <arg value="persistenceStandard=JDO"/>
+         <arg value="http://localhost:8080/updatePersistenceStandard"/>
+       </exec>
+        <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.switchps.result">
+          <arg value="http://localhost:8080"/>
+        </exec>
+       <condition property="expected.switchps.response">
+         <contains string="${curl.switchps.result}" substring="Persistence standard is JDO"/>
+       </condition>
+       <fail unless="expected.switchps.response" message="Did not get the expected switchps response: ${curl.switchps.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
       </sequential>
     </parallel>
-    <condition property="expected.response">
-      <contains string="${curl.result}" substring="agU6c2VsZnIqCxIkY29tLmdvb2dsZS5hcHBlbmdpbmUuaGVsbG9vcm0uRmxpZ2h0GAEM"/>
-    </condition>
-    <fail unless="expected.response" message="Did not get the expected response: ${curl.result}"/>
   </target>
 </project>

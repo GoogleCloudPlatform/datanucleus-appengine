@@ -35,9 +35,6 @@
       </fileset>
     </copy>
     <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
-      <fileset dir="src">
-        <include name="**/*.properties"/>
-      </fileset>
       <lib dir="${orm.lib.dir}">
         <include name="datanucleus-appengine-0.3.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
@@ -48,7 +45,7 @@
         <include name="datanucleus-jpa-1.1.0.m1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
-        <include name="jdo2-api-2.2-SNAPSHOT.jar"/>
+        <include name="jdo2-api-2.2.jar"/>
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
       </lib>
@@ -57,14 +54,18 @@
         <include name="external-api.jar"/>
       </lib>
       <classes dir="classes"/>
+      <classes dir="src">
+        <include name="datanucleus.properties"/>
+      </classes>
       <webinf dir="src/WEB-INF">
         <include name="appengine-web.xml"/>
+        <include name="datanucleus.properties"/>
       </webinf>
     </war>
   </target>
 
   <path id="helloorm.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
     <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
@@ -80,7 +81,7 @@
   </target>
 
   <path id="enhancer.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2-SNAPSHOT.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
     <pathelement location="persistence-api-1.0.2.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
