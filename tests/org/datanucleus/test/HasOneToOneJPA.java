@@ -1,39 +1,37 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Version;
+import javax.persistence.JoinColumn;
+import javax.persistence.OneToOne;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class HasVersionJPA {
+public class HasOneToOneJPA {
+
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private String id;
 
-  private String value;
-
-  @Version
-  private long version;
-
-  public String getValue() {
-    return value;
-  }
-
-  public void setValue(String value) {
-    this.value = value;
-  }
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "book_id")
+  private Book book;
 
   public String getId() {
     return id;
   }
 
-  public long getVersion() {
-    return version;
+  public Book getBook() {
+    return book;
+  }
+
+  public void setBook(Book book) {
+    this.book = book;
   }
 }

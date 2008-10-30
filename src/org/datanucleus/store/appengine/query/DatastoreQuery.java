@@ -135,7 +135,7 @@ public class DatastoreQuery implements Serializable {
       // short-circuit - no point in executing the query
       return Collections.emptyList();
     }
-    ObjectManager om = query.getObjectManager();
+    final ObjectManager om = query.getObjectManager();
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
@@ -166,7 +166,7 @@ public class DatastoreQuery implements Serializable {
 
       Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
         public Object apply(Entity entity) {
-          return entityToPojo(entity, acmd, clr);
+          return entityToPojo(entity, acmd, clr, (MappedStoreManager) om.getStoreManager());
         }
       };
       return new StreamingQueryResult(query, entities, entityToPojoFunc);
@@ -220,14 +220,15 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr) {
+      final ClassLoaderResolver clr, final MappedStoreManager storeMgr) {
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
-        sm.replaceFields(acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, entity));
+        sm.replaceFields(
+            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
       }
       public void fetchNonLoadedFields(StateManager sm) {
         sm.replaceNonLoadedFields(
-            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, entity));
+            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
       }
       public FetchPlan getFetchPlanForLoading() {
         return null;

@@ -20,7 +20,7 @@
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
-          <property name="datanucleus.identifier.case" value="PreserveCase"/>
+            <property name="datanucleus.identifier.case" value="PreserveCase"/>
         </properties>
     </persistence-unit>
 

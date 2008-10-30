@@ -12,10 +12,18 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
+import org.datanucleus.store.mapped.mapping.InterfaceMapping;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
+import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
@@ -48,6 +56,9 @@ import javax.jdo.spi.JDOImplHelper;
  */
 public class DatastoreFieldManager implements FieldManager {
 
+  // Needed for relation management in datanucleus.
+  private static final int[] NOT_USED = {0};
+
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
@@ -57,12 +68,15 @@ public class DatastoreFieldManager implements FieldManager {
   // true if we instantiated the entity ourselves.
   private final boolean createdWithoutEntity;
 
+  private final MappedStoreManager storeManager;
+
   // Not final because we will reallocate if we hit an ancestor pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
   private Entity datastoreEntity;
 
-  private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity, Entity datastoreEntity) {
+  private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
+      MappedStoreManager storeManager, Entity datastoreEntity) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
@@ -71,6 +85,7 @@ public class DatastoreFieldManager implements FieldManager {
     };
     this.fieldManagerStateStack.push(new FieldManagerState(sm, ammdProvider));
     this.createdWithoutEntity = createdWithoutEntity;
+    this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
 
     // Sanity check
@@ -81,7 +96,6 @@ public class DatastoreFieldManager implements FieldManager {
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
               + ">.  This is almost certainly a bug in App Engine ORM.");
     }
-
   }
 
   /**
@@ -91,12 +105,14 @@ public class DatastoreFieldManager implements FieldManager {
    * has been returned by the datastore (get or query), or after the entity has
    * been put into the datastore.
    */
-  public DatastoreFieldManager(StateManager stateManager, Entity datastoreEntity) {
-    this(stateManager, false, datastoreEntity);
+  public DatastoreFieldManager(StateManager stateManager, MappedStoreManager storeManager,
+      Entity datastoreEntity) {
+    this(stateManager, false, storeManager, datastoreEntity);
   }
 
-  public DatastoreFieldManager(StateManager stateManager, String kind) {
-    this(stateManager, true, new Entity(kind));
+  public DatastoreFieldManager(StateManager stateManager, String kind,
+      MappedStoreManager storeManager) {
+    this(stateManager, true, storeManager, new Entity(kind));
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -131,7 +147,10 @@ public class DatastoreFieldManager implements FieldManager {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     if (ammd.getEmbeddedMetaData() != null) {
       return fetchEmbeddedField(ammd);
+    } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE) {
+      return fetchRelationField(ammd);
     }
+
     Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
     if (isPK(fieldNumber)) {
       if (fieldIsOfTypeKey(fieldNumber)) {
@@ -154,6 +173,31 @@ public class DatastoreFieldManager implements FieldManager {
       }
       return value;
     }
+  }
+
+  private Object fetchRelationField(AbstractMemberMetaData ammd) {
+    DatastoreClass dc = storeManager.getDatastoreClass(
+        ammd.getAbstractClassMetaData().getFullClassName(), getClassLoaderResolver());
+    JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
+    // Based on ResultSetGetter
+    Object value;
+    if (mapping instanceof EmbeddedPCMapping ||
+        mapping instanceof SerialisedPCMapping ||
+        mapping instanceof SerialisedReferenceMapping) {
+      value = mapping.getObject(
+          getObjectManager(),
+          datastoreEntity,
+          NOT_USED,
+          getStateManager(),
+          ammd.getAbsoluteFieldNumber());
+    } else {
+      // Extract the related key from the entity
+      String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
+      Key relatedKey = (Key) datastoreEntity.getProperty(propName);
+      value = mapping.getObject(getObjectManager(), relatedKey, NOT_USED);
+    }
+    // Return the field value (as a wrapper if wrappable)
+    return getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
   }
 
   private AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
@@ -345,12 +389,39 @@ public class DatastoreFieldManager implements FieldManager {
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
         }
       }
+      ClassLoaderResolver clr = getClassLoaderResolver();
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
+      } else if (ammd.getRelationType(clr) != Relation.NONE) {
+        storeRelationField(ammd, value);
       } else {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
     }
+  }
+
+  private void storeRelationField(AbstractMemberMetaData ammd, Object value) {
+    DatastoreClass dc = storeManager.getDatastoreClass(
+        ammd.getAbstractClassMetaData().getFullClassName(), getClassLoaderResolver());
+    // Based on ParameterSetter
+    JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
+    if (mapping instanceof EmbeddedPCMapping ||
+        mapping instanceof SerialisedPCMapping ||
+        mapping instanceof SerialisedReferenceMapping ||
+        mapping instanceof PersistenceCapableMapping ||
+        mapping instanceof InterfaceMapping) {
+        mapping.setObject(
+            getObjectManager(),
+            datastoreEntity,
+            NOT_USED,
+            value,
+            getStateManager(),
+            ammd.getAbsoluteFieldNumber());
+    } else {
+      mapping.setObject(getObjectManager(), datastoreEntity, NOT_USED, value);
+    }
+    // Make sure the field is wrapped where appropriate
+    getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, true, true);
   }
 
   ClassLoaderResolver getClassLoaderResolver() {

@@ -34,6 +34,7 @@ public class AllTests {
     suite.addTestSuite(JDOAncestorTest.class);
     suite.addTestSuite(JPAAncestorTest.class);
     suite.addTestSuite(JDOTableAndColumnTest.class);
+    suite.addTestSuite(JPAOneToOneTest.class);
     return suite;
   }
 }

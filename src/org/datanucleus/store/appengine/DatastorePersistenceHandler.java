@@ -20,6 +20,7 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.util.NucleusLogger;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -61,6 +62,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private Entity get(StateManager sm, Key key) {
+    NucleusLogger.DATASTORE.debug("Getting entity with key " + key);
     try {
       if (isNontransactionalRead(sm)) {
         return getWithoutTxn(key);
@@ -75,14 +77,18 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private void put(StateManager sm, Entity entity) {
+    NucleusLogger.DATASTORE.debug("Putting entity with key" + entity.getKey());
     if (isNontransactionalWrite(sm)) {
       datastoreService.put(entity);
     } else {
       datastoreService.put(getCurrentTransaction(sm), entity);
     }
+    sm.setAssociatedValue(entity.getKey(), entity);
+
   }
 
   private void delete(StateManager sm, Key key) {
+    NucleusLogger.DATASTORE.debug("Deleting entity with key" + key);
     if (isNontransactionalWrite(sm)) {
       datastoreService.delete(key);
     } else {
@@ -99,7 +105,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // For inserts we let the field manager create the Entity and then
     // retrieve it afterwards.  We do this because the entity isn't
     // 'fixed' until after provideFields has been called.
-    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind);
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind, storeMgr);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
     Entity entity = fieldMgr.getEntity();
@@ -150,6 +156,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       VersionMetaData vmd = cmd.getVersionMetaData();
       Object curVersion = sm.getObjectManager().getApiAdapter().getVersion(sm);
       if (curVersion != null) {
+        NucleusLogger.DATASTORE.debug("Getting entity with key " + entity.getKey());        
         // Fetch the latest and greatest version of the entity from the datastore
         // to see if anyone has made a change underneath us.  We need to execute
         // the fetch outside a txn to guarantee that we see the latest version.
@@ -216,7 +223,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       entity = get(sm, pk);
       sm.setAssociatedValue(pk, entity);
     }
-    sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+    sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity));
 
     AbstractClassMetaData cmd = sm.getClassMetaData();
     if (cmd.hasVersionStrategy()) {
@@ -233,8 +240,13 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
+    Key key = getPkAsKey(sm);
     Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
-    sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, entity));
+    if (entity == null) {
+      // Corresponding entity hasn't been fetcheed yet, so get it.
+      entity = get(sm, key);
+    }
+    sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity));
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     put(sm, entity);
 

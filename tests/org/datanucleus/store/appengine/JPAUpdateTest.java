@@ -20,18 +20,18 @@ public class JPAUpdateTest extends JPATestCase {
 
   private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
 
-  public void testSimpleUpdate() throws EntityNotFoundException {
+  public void testUpdateAfterFetch() throws EntityNotFoundException {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));
 
     String keyStr = KeyFactory.encodeKey(key);
     Book book = em.find(Book.class, keyStr);
-    EntityTransaction tx = em.getTransaction();
 
     assertEquals(keyStr, book.getId());
     assertEquals("jimmy", book.getAuthor());
     assertEquals("12345", book.getIsbn());
     assertEquals("the title", book.getTitle());
 
+    EntityTransaction tx = em.getTransaction();
     tx.begin();
     book.setIsbn("56789");
     tx.commit();
@@ -40,6 +40,31 @@ public class JPAUpdateTest extends JPATestCase {
     assertEquals("jimmy", bookCheck.getProperty("author"));
     assertEquals("56789", bookCheck.getProperty("isbn"));
     assertEquals("the title", bookCheck.getProperty("title"));
+  }
+
+  public void testUpdateAfterSave() throws EntityNotFoundException {
+    Book b = new Book();
+    b.setAuthor("max");
+    b.setIsbn("22333");
+    b.setTitle("yam");
+
+    EntityTransaction tx = em.getTransaction();
+    tx.begin();
+    em.persist(b);
+    tx.commit();
+
+    assertNotNull(b.getId());
+
+    tx = em.getTransaction();
+    tx.begin();
+    b.setTitle("not yam");
+    em.merge(b);
+    tx.commit();
+
+    Entity bookCheck = ldth.ds.get(KeyFactory.decodeKey(b.getId()));
+    assertEquals("max", bookCheck.getProperty("author"));
+    assertEquals("22333", bookCheck.getProperty("isbn"));
+    assertEquals("not yam", bookCheck.getProperty("title"));
   }
 
   public void testOptimisticLocking_Update() {

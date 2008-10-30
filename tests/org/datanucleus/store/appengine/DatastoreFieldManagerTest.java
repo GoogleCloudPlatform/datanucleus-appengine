@@ -53,7 +53,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -171,7 +171,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -252,7 +252,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(om.getClassLoaderResolver()).andReturn(clr).anyTimes();
     EasyMock.expect(om.getStoreManager()).andReturn(getStoreManager()).anyTimes();
     EasyMock.replay(om);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, entity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, null, entity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -276,7 +276,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
     // now we create a field manager where we don't provide the entity
     // in the constructor
-    fieldManager = new DatastoreFieldManager(sm, HasAncestorJDO.class.getSimpleName()) {
+    fieldManager = new DatastoreFieldManager(sm, HasAncestorJDO.class.getSimpleName(), null) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -325,8 +325,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
   }
 
   private IdentifierFactory getIdentifierFactory() {
-    return ((MappedStoreManager)((JDOPersistenceManagerFactory)pmf).getOMFContext()
-        .getStoreManager()).getIdentifierFactory();
+    return getStoreManager().getIdentifierFactory();
   }
 
 }

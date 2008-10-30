@@ -1,6 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Key;
+import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Sets;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -9,18 +11,25 @@ import org.datanucleus.ManagedConnection;
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.PersistenceConfiguration;
+import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
+import org.datanucleus.store.StoreData;
 import org.datanucleus.store.exceptions.NoExtentException;
+import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.FetchStatement;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.StatementExpressionIndex;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.NucleusLogger;
 
@@ -35,6 +44,12 @@ import java.util.Set;
  */
 public class DatastoreManager extends MappedStoreManager {
 
+  /**
+   * Construct a DatsatoreManager
+   *
+   * @param clr The ClassLoaderResolver
+   * @param omfContext The OMFContext
+   */
   public DatastoreManager(ClassLoaderResolver clr, OMFContext omfContext) {
     super("appengine", clr, omfContext);
 
@@ -150,5 +165,113 @@ public class DatastoreManager extends MappedStoreManager {
   public DatastoreContainerObject newJoinDatastoreContainerObject(AbstractMemberMetaData fmd,
       ClassLoaderResolver clr) {
     throw new UnsupportedOperationException();
+  }
+
+  @Override
+  protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
+    DatastoreTable table = new DatastoreTable(this, cmd, clr, dba);
+    return new MappedStoreData(cmd, table, true);
+  }
+
+  public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
+      StatementExpressionIndex[] stmtExprIndex) {
+    return new KeyOnlyFieldManager((Key) obj);
+  }
+
+  public Object getResultValueAtPosition(Object key, JavaTypeMapping mapping, int position) {
+    // this is the key, and we're only using this for keys, so just return it.
+    return key;
+  }
+
+  /**
+   * A {@link FieldManager} implementation that can only be used for managing
+   * keys.  Everything else throws {@link UnsupportedOperationException}.
+   */
+  private static class KeyOnlyFieldManager implements FieldManager {
+    private final Key key;
+
+    private KeyOnlyFieldManager(Key key) {
+      this.key = key;
+    }
+
+    public void storeBooleanField(int fieldNumber, boolean value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeByteField(int fieldNumber, byte value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeCharField(int fieldNumber, char value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeDoubleField(int fieldNumber, double value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeFloatField(int fieldNumber, float value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeIntField(int fieldNumber, int value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeLongField(int fieldNumber, long value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeShortField(int fieldNumber, short value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeStringField(int fieldNumber, String value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public void storeObjectField(int fieldNumber, Object value) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public boolean fetchBooleanField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public byte fetchByteField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public char fetchCharField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public double fetchDoubleField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public float fetchFloatField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public int fetchIntField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public long fetchLongField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public short fetchShortField(int fieldNumber) {
+      throw new UnsupportedOperationException("Should only be using this for keys.");
+    }
+
+    public String fetchStringField(int fieldNumber) {
+      return KeyFactory.encodeKey(key);
+    }
+
+    public Object fetchObjectField(int fieldNumber) {
+      return key;
+    }
   }
 }

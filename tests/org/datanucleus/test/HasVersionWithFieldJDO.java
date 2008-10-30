@@ -16,7 +16,7 @@ import javax.jdo.annotations.VersionStrategy;
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 @Version(
     strategy = VersionStrategy.VERSION_NUMBER,
-    extensions = {@Extension(vendorName="datanucleus", key="field-name", value="version")})
+    extensions = {@Extension(vendorName="datanucleus", key="field-name", value="versionField")})
 public class HasVersionWithFieldJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -25,14 +25,14 @@ public class HasVersionWithFieldJDO {
   @Persistent
   private String value;
 
-  private long version;
+  private long versionField;
 
   public String getId() {
     return id;
   }
 
   public long getVersion() {
-    return version;
+    return versionField;
   }
 
   public String getValue() {
