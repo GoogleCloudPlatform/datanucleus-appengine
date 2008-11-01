@@ -17,11 +17,12 @@ public class JDOTestCase extends TestCase {
   protected PersistenceManagerFactory pmf;
   protected PersistenceManager pm;
 
-  protected LocalDatastoreTestHelper ldth = new LocalDatastoreTestHelper();
-
+  protected LocalDatastoreTestHelper ldth;
+  
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    ldth = new LocalDatastoreTestHelper();
     ldth.setUp();
     pmf = JDOHelper.getPersistenceManagerFactory("jdo_tests.properties");
     pm = pmf.getPersistenceManager();

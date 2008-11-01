@@ -24,6 +24,9 @@ public class HasKeyPkJDO {
   @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
   private Key ancestorKey;
 
+  @Persistent
+  private String str;
+
   public Key getKey() {
     return key;
   }
@@ -38,5 +41,13 @@ public class HasKeyPkJDO {
 
   public void setAncestorKey(Key ancestorKey) {
     this.ancestorKey = ancestorKey;
+  }
+
+  public String getStr() {
+    return str;
+  }
+
+  public void setStr(String str) {
+    this.str = str;
   }
 }
