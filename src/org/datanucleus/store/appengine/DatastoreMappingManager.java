@@ -1,6 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Key;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
@@ -16,6 +18,7 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.AbstractMappingManager;
 import org.datanucleus.store.mapped.mapping.DatastoreMappingFactory;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.SerialisedMapping;
 import org.datanucleus.store.rdbms.sqlidentifier.RDBMSIdentifierFactory;
 
 /**
@@ -252,5 +255,17 @@ class DatastoreMappingManager extends AbstractMappingManager {
   @Override
   public void registerDatastoreMapping(String javaTypeName, Class datastoreMappingType,
       String jdbcType, String sqlType, boolean dflt) {
+  }
+
+  @Override
+  protected Class getOverrideMappingClass(Class mappingClass, AbstractMemberMetaData fmd, int roleForField) {
+    if (roleForField == JavaTypeMapping.MAPPING_FIELD && fmd.isPrimaryKey() && mappingClass.equals(
+        SerialisedMapping.class) && fmd.getType().equals(Key.class)) {
+      // Do I fully comprehend what I'm doing here?  No.  But I do know that
+      // this change enables us to have relations where the pk of the child is of type
+      // Key, and that's a good thing.
+      return KeyMapping.class;
+    }
+    return mappingClass;
   }
 }

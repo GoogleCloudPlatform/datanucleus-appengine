@@ -5,6 +5,7 @@ import com.google.apphosting.api.datastore.Key;
 
 import org.datanucleus.jpa.annotations.Extension;
 
+import javax.jdo.annotations.Persistent;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -25,6 +26,9 @@ public class HasKeyPkJPA {
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Key id;
 
+  @Persistent
+  String str;
+
   public HasKeyPkJPA() {
   }
 
@@ -42,5 +46,13 @@ public class HasKeyPkJPA {
 
   public void setId(Key id) {
     this.id = id;
+  }
+
+  public String getStr() {
+    return str;
+  }
+
+  public void setStr(String str) {
+    this.str = str;
   }
 }

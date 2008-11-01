@@ -17,10 +17,4 @@
         <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
             datastore="appengine"/>
     </extension>
-
-  <!-- PERSISTENCE CAPABLE MAPPING EXTENSION -->
-  <extension point="org.datanucleus.pcmapping_extension">
-      <pcmappingextension class-name="org.datanucleus.store.appengine.DatastorePersistenceCapableMappingExtension" url-key="appengine" key="appengine"/>
-  </extension>
-
 </plugin>

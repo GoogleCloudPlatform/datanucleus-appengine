@@ -23,6 +23,10 @@ public class HasOneToOneJPA {
   @JoinColumn(name = "book_id")
   private Book book;
 
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "haskeypk_id")
+  private HasKeyPkJPA hasKeyPK;
+
   public String getId() {
     return id;
   }
@@ -33,5 +37,13 @@ public class HasOneToOneJPA {
 
   public void setBook(Book book) {
     this.book = book;
+  }
+
+  public HasKeyPkJPA getHasKeyPK() {
+    return hasKeyPK;
+  }
+
+  public void setHasKeyPK(HasKeyPkJPA hasKeyPK) {
+    this.hasKeyPK = hasKeyPK;
   }
 }
