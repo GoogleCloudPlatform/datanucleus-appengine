@@ -22,7 +22,7 @@
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer*"/>
         <include name="datanucleus-jpa*"/>
-        <include name="datanucleus-rdbms*"/>
+        <include name="datanucleus-rdbms-*src*"/>
         <include name="datanucleus-core-*src*"/>
       </fileset>
       <fileset dir="../lib/split">
@@ -50,6 +50,12 @@
     <mkdir dir="../lib/split"/>
     <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
       <arg value="--input_jar=datanucleus-core-1.1.0.m1.jar"/>
+      <arg value="--output_directory=split"/>
+      <arg value="--max_file_size=1000000"/>
+      <arg value="--replicate_manifests=true"/>
+    </java>
+    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
+      <arg value="--input_jar=datanucleus-rdbms-1.1.0.m1.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
       <arg value="--replicate_manifests=true"/>

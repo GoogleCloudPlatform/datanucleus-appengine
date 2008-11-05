@@ -41,7 +41,10 @@
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0002.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0003.jar"/>
-        <include name="datanucleus-rdbms-1.1.0.m1.jar"/>
+        <include name="datanucleus-rdbms-1.1.0.m1-0000.jar"/>
+        <include name="datanucleus-rdbms-1.1.0.m1-0001.jar"/>
+        <include name="datanucleus-rdbms-1.1.0.m1-0002.jar"/>
+        <include name="datanucleus-rdbms-1.1.0.m1-0003.jar"/>
         <include name="datanucleus-jpa-1.1.0.m1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
@@ -89,7 +92,10 @@
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0000.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0001.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0002.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0003.jar"/>
     <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
     <pathelement location="classes"/>
   </path>
