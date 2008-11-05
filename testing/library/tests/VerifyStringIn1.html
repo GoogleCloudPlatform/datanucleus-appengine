@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VerifyStringIn1</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">VerifyStringIn1</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/library</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForPageToLoad</td>
+	<td>3000</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[3]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>action_type</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>lastname</td>
+	<td>Jones Faulkner</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>The Sound and the Fury</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Absalom, Absalom</td>
+	<td></td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

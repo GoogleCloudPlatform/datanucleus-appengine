@@ -1,0 +1,94 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VerifyQueryUpdateStrInMult</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">VerifyQueryUpdateStrInMult</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/library
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[3]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>catalogtype</td>
+	<td>label=Classics</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>action_type</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>firstname</td>
+	<td>Leo Gustave Nathaniel William</td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>UseQueryUpdate</td>
+	<td></td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>selType</td>
+	<td>label=by First Name</td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>selOrder</td>
+	<td>label=Descending</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>The Sound and the Fury</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Absalom, Absalom!</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>The Scarlet Letter</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>The House of Seven Gables</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>War and Peace</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Anna Karenina</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Madame Bovary</td>
+	<td></td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

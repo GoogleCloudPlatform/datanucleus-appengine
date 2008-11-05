@@ -1,0 +1,48 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VerifyIClinktoDataStore</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">VerifyIClinktoDataStore</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/library</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[3]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>open</td>
+	<td>/admin/</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>link=Interactive Console</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertText</td>
+	<td>//h1</td>
+	<td>Interactive Console</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>link=Datastore Viewer</td>
+	<td></td>
+</tr>
+<tr>
+	<td>assertText</td>
+	<td>//h1</td>
+	<td>Datastore Viewer</td>
+</tr>
+</tbody></table>
+</body>
+</html>

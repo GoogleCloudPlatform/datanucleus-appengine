@@ -1,0 +1,264 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>NoImageAllTypes</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">NoImageAllTypes</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/photoblog</td>
+	<td></td>
+</tr>
+<tr>
+	<td>click</td>
+	<td>DeleteAll</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//input[@value='Upload & Submit']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>name</td>
+	<td>George Pirocanac</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>PostalAddress</td>
+	<td>1122 South Main St.<br />Milwaukee WI 53200</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>PhoneNumber</td>
+	<td>111-222-3333</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>email</td>
+	<td>gp@gp.com</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>IM</td>
+	<td>xmpp gp@gp.com</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>title</td>
+	<td>No File Test</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>category</td>
+	<td>Testing</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>longitude</td>
+	<td>10.1</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>latitude</td>
+	<td>11.1</td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>Text</td>
+	<td>This test includes all datatypes except<br />Blob (image)</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//input[@value='Upload & Submit']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>No File Test</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>link=the datastore viewer.</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>kind_input</td>
+	<td>Picture6</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//input[@value='List Entities']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForTable</td>
+	<td>//table[1].1.0</td>
+	<td>G*</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//tr[2]/td[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>waitForPageToLoad</td>
+	<td>3000</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[2]/td[1]</td>
+	<td>Entity Key</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[3]/td[1]/span[1]</td>
+	<td>PhoneNumber</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[4]/td[1]/span[1]</td>
+	<td>rating</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[6]/td[1]/span[1]</td>
+	<td>title</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[7]/td[1]/span[1]</td>
+	<td>abool</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[8]/td[1]/span[1]</td>
+	<td>Text</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[9]/td[1]/span[1]</td>
+	<td>image</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[10]/td[1]/span[1]</td>
+	<td>author</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[11]/td[1]/span[1]</td>
+	<td>filename</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[12]/td[1]/span[1]</td>
+	<td>num_of_replies</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[13]/td[1]/span[1]</td>
+	<td>IM</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[14]/td[1]/span[1]</td>
+	<td>avgrating</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[15]/td[1]/span[1]</td>
+	<td>time</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[16]/td[1]/span[1]</td>
+	<td>link</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[17]/td[1]/span[1]</td>
+	<td>PostalAddress</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[18]/td[1]/span[1]</td>
+	<td>email</td>
+</tr>
+<tr>
+	<td>verifyText</td>
+	<td>//tr[19]/td[1]/span[1]</td>
+	<td>GeoPt</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>PhoneNumber|PhoneNumber</td>
+	<td>111-222-3333</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>Rating|rating</td>
+	<td>100</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>string|name</td>
+	<td>George Pirocanac</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>string|title</td>
+	<td>No File Test</td>
+</tr>
+<!tr>
+	<!td>verifyValue</td>
+	<!td>User|author</td>
+	<!td>georgep</td>
+<!/tr>
+<tr>
+	<td>verifyValue</td>
+	<td>int|num_of_replies</td>
+	<td>0</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>IM|IM</td>
+	<td>xmpp gp@gp.com</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>float|avgrating</td>
+	<td>100.0</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>Link|link</td>
+	<td>exact:http://google.com/</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>PostalAddress|PostalAddress</td>
+	<td>1122 South Main St.<br />Milwaukee WI 53200</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>Email|email</td>
+	<td>gp@gp.com</td>
+</tr>
+<tr>
+	<td>verifyValue</td>
+	<td>GeoPt|GeoPt</td>
+	<td>10.1,11.1</td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

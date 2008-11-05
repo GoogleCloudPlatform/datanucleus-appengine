@@ -1,0 +1,54 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VerifyIntEQ</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">VerifyIntEQ</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/library
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[3]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>catalogtype</td>
+	<td>label=Classics</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>action_type</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>year</td>
+	<td>1929</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[1]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>A Farewell to Arms</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>The Sound and the Fury</td>
+	<td></td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

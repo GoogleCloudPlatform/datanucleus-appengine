@@ -1,0 +1,59 @@
+<html>
+<head>
+<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+<title>VerfiyDatastoreViewerEntityList</title>
+</head>
+<body>
+<table cellpadding="1" cellspacing="1" border="1">
+<thead>
+<tr><td rowspan="1" colspan="3">VerfiyDatastoreViewerEntityList</td></tr>
+</thead><tbody>
+<tr>
+	<td>open</td>
+	<td>/library</td>
+	<td></td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>document.forms[0].action_type[3]</td>
+	<td></td>
+</tr>
+<tr>
+	<td>select</td>
+	<td>catalogtype</td>
+	<td>label=Technical Books</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>action_type</td>
+	<td></td>
+</tr>
+<tr>
+	<td>open</td>
+	<td>/admin/</td>
+	<td></td>
+</tr>
+<tr>
+	<td>type</td>
+	<td>kind_input</td>
+	<td>Book</td>
+</tr>
+<tr>
+	<td>clickAndWait</td>
+	<td>//input[@value='List Entities']</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Martelli</td>
+	<td></td>
+</tr>
+<tr>
+	<td>verifyTextPresent</td>
+	<td>Kennedy</td>
+	<td></td>
+</tr>
+
+</tbody></table>
+</body>
+</html>

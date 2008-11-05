@@ -1,0 +1,159 @@
+<?xml version="1.0" encoding="utf-8"?>
+<catalog>
+<name>Classics</name>
+<book>
+<title>A Connecticut Yankee in King Arthur's Court</title>
+<author>Mark Twain</author> 
+<year>1889</year>
+</book>
+<book>
+<title>The Adventures of Tom Sawyer</title>
+<author>Mark Twain</author> 
+<year>1876</year>
+</book>
+<book>
+<title>The Adventures of Huckleberry Finn</title>
+<author>Mark Twain</author> 
+<year>1884</year>
+</book>
+<book>
+<title>The Prince and the Pauper</title>
+<author>Mark Twain</author> 
+<year>1882</year>
+</book>
+<book>
+<title>Roughing It</title>
+<author>Mark Twain</author> 
+<year>1872</year>
+</book>
+<book>
+<title>The Sun Also Rises</title>
+<author>Ernest Hemingway</author> 
+<year>1926</year>
+</book>
+<book>
+<title>A Farewell to Arms</title>
+<author>Ernest Hemingway</author> 
+<year>1929</year>
+</book>
+<book>
+<title>For Whom the Bell Tolls</title>
+<author>Ernest Hemingway</author> 
+<year>1940</year>
+</book>
+<book>
+<title>The Old Man and the Sea</title>
+<author>Ernest Hemingway</author> 
+<year>1952</year>
+</book>
+<book>
+<title>Across the River and Into the Trees</title>
+<author>Ernest Hemingway</author> 
+<year>1950</year>
+</book>
+<book>
+<title>A Moveable Feast</title>
+<author>Ernest Hemingway</author> 
+<year>1964</year>
+</book>
+<book>
+<title>Lord Jim</title>
+<author>Joseph Conrad</author> 
+<year>1900</year>
+</book>
+<book>
+<title>Heart of Darkness</title>
+<author>Joseph Conrad</author> 
+<year>1899</year>
+</book>
+<book>
+<title>Typhoon</title>
+<author>Joseph Conrad</author> 
+<year>1902</year>
+</book>
+<book>
+<title>War and Peace</title>
+<author>Leo Tolstoy</author> 
+<year>1869</year>
+</book>
+<book>
+<title>Anna Karenina</title>
+<author>Leo Tolstoy</author> 
+<year>1876</year>
+</book>
+<book>
+<title>The Sound and the Fury</title>
+<author>William Faulkner</author> 
+<year>1929</year>
+</book>
+<book>
+<title>Absalom, Absalom!</title>
+<author>William Faulkner</author> 
+<year>1936</year>
+</book>
+<book>
+<title>Madame Bovary</title>
+<author>Gustave Flaubert</author> 
+<year>1857</year>
+</book>
+<book>
+<title>Moby Dick</title>
+<author>Herman Melville</author> 
+<year>1851</year>
+</book>
+<book>
+<title>Typee</title>
+<author>Herman Melville</author> 
+<year>1846</year>
+</book>
+<book>
+<title>Omoo</title>
+<author>Herman Melville</author> 
+<year>1847</year>
+</book>
+<book>
+<title>Great Expectations</title>
+<author>Charles Dickens</author> 
+<year>1861</year>
+</book>
+<book>
+<title>A Christmas Carol</title>
+<author>Charles Dickens</author> 
+<year>1843</year>
+</book>
+<book>
+<title>Oliver Twist</title>
+<author>Charles Dickens</author> 
+<year>1839</year>
+</book>
+<book>
+<title>David Copperfield</title>
+<author>Charles Dickens</author> 
+<year>1850</year>
+</book>
+<book>
+<title>A Tale of Two Cities</title>
+<author>Charles Dickens</author> 
+<year>1850</year>
+</book>
+<book>
+<title>The Scarlet Letter</title>
+<author>Nathaniel Hawthorne</author> 
+<year>1850</year>
+</book>
+<book>
+<title>The House of Seven Gables</title>
+<author>Nathaniel Hawthorne</author> 
+<year>1851</year>
+</book>
+<book>
+<title>The Great Gatsby</title>
+<author>F.Scott Fitzgerald</author> 
+<year>1925</year>
+</book>
+<book>
+<title>Tender is the Night</title>
+<author>F.Scott Fitzgerald</author> 
+<year>1934</year>
+</book>
+</catalog>

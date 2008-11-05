@@ -1,0 +1,7 @@
+<appengine-web-app xmlns="http://appengine.google.com/ns/1.90">
+  <application>kjin-library</application>
+  <version>1</version>
+  <resource-files>
+  </resource-files>
+  <static-files/>
+</appengine-web-app>

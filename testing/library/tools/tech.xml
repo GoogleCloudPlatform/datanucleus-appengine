@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<catalog>
+<name>TechBooks</name>
+<book>
+<title>Python in a Nutshell</title>
+<author>Alex Martelli</author>
+<year>2003</year>
+</book>
+<book>
+<title>HTML and XHTML</title>
+<author>Bill Kennedy</author>
+<year>2007</year>
+</book>
+</catalog>
+
