@@ -26,6 +26,14 @@ public class HasOneToOneJDO {
   @Column(name = "haskeypk_id")
   private HasKeyPkJDO hasKeyPK;
 
+  @Persistent(dependent = "true")
+  @Column(name = "hasparent_id")
+  private HasOneToOneParentJDO hasParent;
+
+  @Persistent(dependent = "true")
+  @Column(name = "hasparentkeypk_id")
+  private HasOneToOneParentKeyPkJDO hasParentKeyPK;
+
   public String getId() {
     return id;
   }
@@ -44,5 +52,21 @@ public class HasOneToOneJDO {
 
   public void setHasKeyPK(HasKeyPkJDO hasKeyPK) {
     this.hasKeyPK = hasKeyPK;
+  }
+
+  public HasOneToOneParentJDO getHasParent() {
+    return hasParent;
+  }
+
+  public void setHasParent(HasOneToOneParentJDO hasParent) {
+    this.hasParent = hasParent;
+  }
+
+  public HasOneToOneParentKeyPkJDO getHasParentKeyPK() {
+    return hasParentKeyPK;
+  }
+
+  public void setHasParentKeyPK(HasOneToOneParentKeyPkJDO hasParentKeyPK) {
+    this.hasParentKeyPK = hasParentKeyPK;
   }
 }

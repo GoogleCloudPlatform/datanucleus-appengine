@@ -18,6 +18,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
+import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.util.NucleusLogger;
@@ -96,7 +97,33 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
+  /**
+   * Token used to make sure we don't try to insert the pc associated with a
+   * state manager more than once.  This can happen in the case of a
+   * bi-directional one-to-one where we add a child to an existing parent and
+   * call merge() on the parent.  In this scenario we receive a call
+   * to {@link #insertObject(StateManager)} with the state
+   * manager for the new child.  When we invoke
+   * {@link StateManager#provideFields(int[], FieldManager)}
+   * we will recurse back to the parent field on the child (remember,
+   * bidirectional relationship), which will then recurse back to the child.
+   * Since the child has not yet been inserted, insertObject will be invoked
+   * _again_ and we end up creating 2 instances of the child in the datastore,
+   * which is not good.  There are probably better ways to solve this problem,
+   * but for now this looks ok.  We're making the assumption that state
+   * managers are only accessed by a single thread at a time.
+   */
+  private static final Object INSERTION_TOKEN = new Object();
+
   public void insertObject(StateManager sm) {
+    if (sm.getAssociatedValue(INSERTION_TOKEN) != null) {
+      // already inserting the pc associated with this state manager
+      return;
+    }
+    // set the token so if we recurse down to the same state manager we know
+    // we're already inserting
+    sm.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
+
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
@@ -108,11 +135,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind, storeMgr);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
+
+    // now safe to clear the insertion token
+    sm.setAssociatedValue(INSERTION_TOKEN, null);
+
     Entity entity = fieldMgr.getEntity();
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     // TODO(earmbrust): Allow for non-transactional read/write.
     put(sm, entity);
-
     // Set the generated key back on the pojo.  If the pk field is a Key just
     // set it on the field directly.  If the pk field is a String, convert the Key
     // to a String.  If the pk field is anything else, we've got a problem.
@@ -243,7 +273,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     Key key = getPkAsKey(sm);
     Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
     if (entity == null) {
-      // Corresponding entity hasn't been fetcheed yet, so get it.
+      // Corresponding entity hasn't been fetched yet, so get it.
       entity = get(sm, key);
     }
     sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity));
@@ -259,7 +289,16 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
+    Key key = getPkAsKey(sm);
     Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
+    if (entity == null) {
+      // Corresponding entity hasn't been fetched yet, so get it.
+      entity = get(sm, key);
+    }
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
+    AbstractClassMetaData acmd = sm.getClassMetaData();
+    sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
+    
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.NO_INCREMENT);
     delete(sm, getPkAsKey(sm));
   }

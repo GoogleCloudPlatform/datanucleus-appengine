@@ -164,13 +164,18 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public DatastoreContainerObject newJoinDatastoreContainerObject(AbstractMemberMetaData fmd,
       ClassLoaderResolver clr) {
-    throw new UnsupportedOperationException();
+    return null;
   }
 
   @Override
   protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
     DatastoreTable table = new DatastoreTable(this, cmd, clr, dba);
-    return new MappedStoreData(cmd, table, true);
+    StoreData sd = new MappedStoreData(cmd, table, true);
+    registerStoreData(sd);
+    // needs to be called after we register the store data to avoid stack
+    // overflow
+    table.buildMapping();
+    return sd;
   }
 
   public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,

@@ -27,6 +27,14 @@ public class HasOneToOneJPA {
   @JoinColumn(name = "haskeypk_id")
   private HasKeyPkJPA hasKeyPK;
 
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "hasparent_id")
+  private HasOneToOneParentJPA hasParent;
+
+  @OneToOne(cascade = CascadeType.ALL)
+  @JoinColumn(name = "hasparentkeypk_id")
+  private HasOneToOneParentKeyPkJPA hasParentKeyPK;
+
   public String getId() {
     return id;
   }
@@ -45,5 +53,21 @@ public class HasOneToOneJPA {
 
   public void setHasKeyPK(HasKeyPkJPA hasKeyPK) {
     this.hasKeyPK = hasKeyPK;
+  }
+
+  public HasOneToOneParentJPA getHasParent() {
+    return hasParent;
+  }
+
+  public void setHasParent(HasOneToOneParentJPA hasParent) {
+    this.hasParent = hasParent;
+  }
+
+  public HasOneToOneParentKeyPkJPA getHasParentKeyPK() {
+    return hasParentKeyPK;
+  }
+
+  public void setHasParentKeyPK(HasOneToOneParentKeyPkJPA hasParentKeyPK) {
+    this.hasParentKeyPK = hasParentKeyPK;
   }
 }

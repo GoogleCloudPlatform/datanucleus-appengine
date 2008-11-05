@@ -116,7 +116,6 @@ class DatastoreTable implements DatastoreClass {
     this.clr = clr;
     this.dba = dba;
     this.identifier = new DatastoreKind(cmd);
-    buildMapping();
   }
 
   public String getType() {
@@ -224,10 +223,6 @@ class DatastoreTable implements DatastoreClass {
     return idMapping;
   }
 
-//  public DatastoreField[] getDatastoreFieldsMetaData() {
-//    return datastoreProperties.toArray(new DatastoreField[datastoreProperties.size()]);
-//  }
-
   public MappedStoreManager getStoreManager() {
     return storeMgr;
   }
@@ -248,7 +243,7 @@ class DatastoreTable implements DatastoreClass {
     return datastoreProperties.toArray(new DatastoreField[datastoreProperties.size()]);
   }
 
-  private void buildMapping() {
+  public void buildMapping() {
     initializePK();
     initializeNonPK();
   }
