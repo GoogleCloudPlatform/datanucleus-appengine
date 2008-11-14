@@ -499,7 +499,7 @@ public class JPAOneToOneTest extends JPATestCase {
     EasyMock.verify(ds);
   }
 
-  public void testDeleteParent() {
+  public void testDeleteParentDeletesChild() {
     Entity bookEntity = Book.newBookEntity("auth", "22222", "the title");
     ldth.ds.put(bookEntity);
 

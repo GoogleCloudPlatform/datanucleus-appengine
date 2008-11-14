@@ -439,7 +439,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     EasyMock.verify(ds);
   }
 
-  public void testDeleteParent() {
+  public void testDeleteParentDeletesChild() {
     Entity flightEntity = Flight.newFlightEntity("jimmy", "bos", "mia", 5, 4, 33);
     ldth.ds.put(flightEntity);
 

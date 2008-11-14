@@ -178,11 +178,13 @@ public class DatastoreManager extends MappedStoreManager {
     return sd;
   }
 
+  @Override
   public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
       StatementExpressionIndex[] stmtExprIndex) {
     return new KeyOnlyFieldManager((Key) obj);
   }
 
+  @Override
   public Object getResultValueAtPosition(Object key, JavaTypeMapping mapping, int position) {
     // this is the key, and we're only using this for keys, so just return it.
     return key;

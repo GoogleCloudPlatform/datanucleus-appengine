@@ -706,15 +706,51 @@ class DatastoreTable implements DatastoreClass {
     }
   }
 
-  // Not sure what to do with these...
-
   public void provideDatastoreIdMappings(MappingConsumer consumer) {
+    consumer.preConsumeMapping(highestFieldNumber + 1);
+
+    if (getIdentityType() == IdentityType.DATASTORE) {
+      consumer.consumeMapping(getDataStoreObjectIdMapping(), MappingConsumer.MAPPING_TYPE_DATASTORE_ID);
+    }
   }
 
   public void providePrimaryKeyMappings(MappingConsumer consumer) {
+    consumer.preConsumeMapping(highestFieldNumber + 1);
+
+    if (pkMappings != null) {
+      // Application identity
+      int[] primaryKeyFieldNumbers = cmd.getPKMemberPositions();
+      for (int i = 0; i < pkMappings.length; i++) {
+        // Make the assumption that the pkMappings are in the same order as the absolute field numbers
+        AbstractMemberMetaData fmd = cmd
+            .getMetaDataForManagedMemberAtAbsolutePosition(primaryKeyFieldNumbers[i]);
+        consumer.consumeMapping(pkMappings[i], fmd);
+      }
+    } else {
+      // Datastore identity
+      int[] primaryKeyFieldNumbers = cmd.getPKMemberPositions();
+      int countPkFields = cmd.getNoOfPrimaryKeyMembers();
+      for (int i = 0; i < countPkFields; i++) {
+        AbstractMemberMetaData pkfmd = cmd
+            .getMetaDataForManagedMemberAtAbsolutePosition(primaryKeyFieldNumbers[i]);
+        consumer.consumeMapping(getFieldMapping(pkfmd), pkfmd);
+      }
+    }
   }
 
   public void provideNonPrimaryKeyMappings(MappingConsumer consumer) {
+    consumer.preConsumeMapping(highestFieldNumber + 1);
+
+    Set fieldNumbersSet = fieldMappingsMap.keySet();
+    for (Object aFieldNumbersSet : fieldNumbersSet) {
+      AbstractMemberMetaData fmd = (AbstractMemberMetaData) aFieldNumbersSet;
+      JavaTypeMapping fieldMapping = fieldMappingsMap.get(fmd);
+      if (fieldMapping != null) {
+        if (!fmd.isPrimaryKey()) {
+          consumer.consumeMapping(fieldMapping, fmd);
+        }
+      }
+    }
   }
 
   public void provideMappingsForFields(MappingConsumer consumer,

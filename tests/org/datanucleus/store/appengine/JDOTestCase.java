@@ -32,6 +32,9 @@ public class JDOTestCase extends TestCase {
   protected void tearDown() throws Exception {
     ldth.tearDown();
     ldth = null;
+    if (pm.currentTransaction().isActive()) {
+      pm.currentTransaction().rollback();
+    }
     pm.close();
     pm = null;
     pmf.close();

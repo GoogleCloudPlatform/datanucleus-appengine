@@ -8,6 +8,7 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
@@ -19,6 +20,7 @@ import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.util.NucleusLogger;
@@ -295,10 +297,19 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       // Corresponding entity hasn't been fetched yet, so get it.
       entity = get(sm, key);
     }
+
+    ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+    DatastoreClass dc = storeMgr.getDatastoreClass(sm.getObject().getClass().getName(), clr);
+
+    // first handle any dependent deletes
+    DependentDeleteRequest req = new DependentDeleteRequest(dc, clr);
+    req.execute(sm, entity);
+
+    // now delete ourselves
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
-    
+
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.NO_INCREMENT);
     delete(sm, getPkAsKey(sm));
   }
