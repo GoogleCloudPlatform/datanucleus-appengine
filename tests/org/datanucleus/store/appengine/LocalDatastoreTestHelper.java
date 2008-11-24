@@ -4,10 +4,10 @@ package org.datanucleus.store.appengine;
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.DatastoreServiceFactory;
+import com.google.apphosting.api.datastore.Transaction;
 import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 
 import java.io.File;
-import java.lang.reflect.Field;
 
 /**
  * A test helper that sets up a datastore service that can be used in tests.
@@ -52,13 +52,16 @@ public class LocalDatastoreTestHelper {
 
   public void tearDown() {
     ApiProxy.clearEnvironmentForCurrentThread();
-    try {
-      Field f = ApiProxy.class.getDeclaredField("delegate");
-      f.setAccessible(true);
-      ApiProxyLocalImpl delegate = (ApiProxyLocalImpl) f.get(null);
-      delegate.stop();
-    } catch (IllegalAccessException e) {
-    } catch (NoSuchFieldException e) {
+    ApiProxyLocalImpl delegate = (ApiProxyLocalImpl) ApiProxy.getDelegate();
+    delegate.stop();
+    Transaction txn = ds.getCurrentTransaction(null);
+    if (txn != null) {
+      try {
+        txn.rollback();
+      } finally {
+        throw new IllegalStateException("Datastore service still has an active txn.  Please "
+            + "rollback or commit all txns before test completes.");
+      }
     }
   }
 }

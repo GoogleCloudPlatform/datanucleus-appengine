@@ -50,26 +50,30 @@ public class JPQLQueryTest extends JPATestCase {
   public void testUnsupportedFilters() {
     String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
 
-    assertQueryUnsupported(baseQuery + "GROUP BY author", DatastoreQuery.GROUP_BY_OP);
+    assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author", DatastoreQuery.GROUP_BY_OP);
     // Can't actually test having because the parser doesn't recognize it unless there is a
     // group by, and the group by gets seen first.
-    assertQueryUnsupported(baseQuery + "GROUP BY author HAVING title = 'foo'", DatastoreQuery.GROUP_BY_OP);
+    assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author HAVING title = 'foo'", DatastoreQuery.GROUP_BY_OP);
 
     Set<Expression.Operator> unsupportedOps = Sets.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
     baseQuery += "WHERE ";
-    assertQueryUnsupported(baseQuery + "title = 'foo' OR title = 'bar'", Expression.OP_OR, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "NOT title = 'foo'", Expression.OP_NOT, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "(title + author) = 'foo'", Expression.OP_ADD, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title + author = 'foo'", Expression.OP_ADD, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "(title - author) = 'foo'", Expression.OP_SUB, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title - author = 'foo'", Expression.OP_SUB, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "(title / author) = 'foo'", Expression.OP_DIV, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title / author = 'foo'", Expression.OP_DIV, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "(title * author) = 'foo'", Expression.OP_MUL, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title * author = 'foo'", Expression.OP_MUL, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "(title % author) = 'foo'", Expression.OP_MOD, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title % author = 'foo'", Expression.OP_MOD, unsupportedOps);
-    assertQueryUnsupported(baseQuery + "title LIKE 'foo%'", Expression.OP_LIKE, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title = 'foo' OR title = 'bar'", Expression.OP_OR, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "NOT title = 'foo'", Expression.OP_NOT, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "(title + author) = 'foo'", Expression.OP_ADD, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title + author = 'foo'", Expression.OP_ADD, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "(title - author) = 'foo'", Expression.OP_SUB, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title - author = 'foo'", Expression.OP_SUB, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "(title / author) = 'foo'", Expression.OP_DIV, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title / author = 'foo'", Expression.OP_DIV, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "(title * author) = 'foo'", Expression.OP_MUL, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title * author = 'foo'", Expression.OP_MUL, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "(title % author) = 'foo'", Expression.OP_MOD, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title % author = 'foo'", Expression.OP_MOD, unsupportedOps);
+    assertQueryUnsupportedByOrm(baseQuery + "title LIKE 'foo%'", Expression.OP_LIKE, unsupportedOps);
+    // multiple inequality filters
+    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)");
+    // inequality filter prop is not the same as the first order by prop
+    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");
 
     assertEquals(Sets.newHashSet(Expression.OP_CONCAT, Expression.OP_COM,
         Expression.OP_NEG, Expression.OP_IS, Expression.OP_BETWEEN,
@@ -95,8 +99,6 @@ public class JPQLQueryTest extends JPATestCase {
     assertQuerySupported(baseQuery + "title >= 2", Lists.newArrayList(TITLE_GTE_2), NO_SORTS);
     assertQuerySupported(baseQuery + "isbn < 4", Lists.newArrayList(ISBN_LT_4), NO_SORTS);
     assertQuerySupported(baseQuery + "isbn <= 4", Lists.newArrayList(ISBN_LTE_4), NO_SORTS);
-    assertQuerySupported(baseQuery + "(title > 2 AND isbn < 4)", Lists.newArrayList(TITLE_GT_2,
-        ISBN_LT_4), NO_SORTS);
 
     baseQuery = "SELECT FROM " + Book.class.getName() + " ";
     assertQuerySupported(baseQuery + "ORDER BY title ASC", NO_FILTERS, Lists.newArrayList(TITLE_ASC));
@@ -457,7 +459,17 @@ public class JPQLQueryTest extends JPATestCase {
     return e;
   }
 
-  private void assertQueryUnsupported(String query,
+  private void assertQueryUnsupportedByDatastore(String query) {
+    Query q = em.createQuery(query);
+    try {
+      q.getResultList();
+      fail("expected IllegalArgumentException for query <" + query + ">");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  private void assertQueryUnsupportedByOrm(String query,
       Expression.Operator unsupportedOp) {
     Query q = em.createQuery(query);
     try {
@@ -469,10 +481,10 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  private void assertQueryUnsupported(String query,
+  private void assertQueryUnsupportedByOrm(String query,
       Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
-    assertQueryUnsupported(query, unsupportedOp);
+    assertQueryUnsupportedByOrm(query, unsupportedOp);
     unsupportedOps.remove(unsupportedOp);
   }
 

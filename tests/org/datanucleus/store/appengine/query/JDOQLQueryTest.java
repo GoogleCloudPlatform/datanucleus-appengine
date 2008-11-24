@@ -58,34 +58,40 @@ public class JDOQLQueryTest extends JDOTestCase {
       new SortPredicate("dest", SortDirection.DESCENDING);
 
   public void testUnsupportedFilters() {
-    assertQueryUnsupported("select from " + Flight.class.getName()
+    assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
         + " where origin == 2 group by dest", DatastoreQuery.GROUP_BY_OP);
     // can't actually test having because the parser doesn't recognize it unless there is a
     // group by, and the group by gets seen first
-    assertQueryUnsupported("select from " + Flight.class.getName()
+    assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
         + " where origin == 2 group by dest having dest == 2", DatastoreQuery.GROUP_BY_OP);
     Set<Expression.Operator> unsupportedOps = Sets.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
-    assertQueryUnsupported(Flight.class,
+    assertQueryUnsupportedByOrm(Flight.class,
         "origin == 2 || dest == 3", Expression.OP_OR, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "!origin", Expression.OP_NOT, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "(origin + dest) == 4", Expression.OP_ADD, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin + dest == 4", Expression.OP_ADD, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "(origin - dest) == 4", Expression.OP_SUB, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin - dest == 4", Expression.OP_SUB, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "(origin / dest) == 4", Expression.OP_DIV, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin / dest == 4", Expression.OP_DIV, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "(origin * dest) == 4", Expression.OP_MUL, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin * dest == 4", Expression.OP_MUL, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "(origin % dest) == 4", Expression.OP_MOD, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin % dest == 4", Expression.OP_MOD, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin | dest == 4", Expression.OP_OR, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "~origin == 4", Expression.OP_COM, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "!origin == 4", Expression.OP_NOT, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "-origin == 4", Expression.OP_NEG, unsupportedOps);
-    assertQueryUnsupported(Flight.class, "origin instanceof " + Flight.class.getName(),
+    assertQueryUnsupportedByOrm(Flight.class, "!origin", Expression.OP_NOT, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "(origin + dest) == 4", Expression.OP_ADD, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin + dest == 4", Expression.OP_ADD, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "(origin - dest) == 4", Expression.OP_SUB, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin - dest == 4", Expression.OP_SUB, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "(origin / dest) == 4", Expression.OP_DIV, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin / dest == 4", Expression.OP_DIV, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "(origin * dest) == 4", Expression.OP_MUL, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin * dest == 4", Expression.OP_MUL, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "(origin % dest) == 4", Expression.OP_MOD, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin % dest == 4", Expression.OP_MOD, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin | dest == 4", Expression.OP_OR, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "~origin == 4", Expression.OP_COM, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "!origin == 4", Expression.OP_NOT, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "-origin == 4", Expression.OP_NEG, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin instanceof " + Flight.class.getName(),
         Expression.OP_IS, unsupportedOps);
-    assertEquals(Sets.newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
+    assertEquals(Sets.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
         Expression.OP_BETWEEN, Expression.OP_ISNOT), unsupportedOps);
+    // multiple inequality filters
+    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
+        + " where (origin > 2 && dest < 4)");
+    // inequality filter prop is not the same as the first order by prop
+    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
+        + " where origin > 2 order by dest");
   }
 
   public void testSupportedFilters() {
@@ -105,8 +111,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupported(Flight.class, "origin >= 2", Lists.newArrayList(ORIG_GTE_2), NO_SORTS);
     assertQuerySupported(Flight.class, "dest < 4", Lists.newArrayList(DEST_LT_4), NO_SORTS);
     assertQuerySupported(Flight.class, "dest <= 4", Lists.newArrayList(DEST_LTE_4), NO_SORTS);
-    assertQuerySupported(Flight.class, "(origin > 2 && dest < 4)", Lists.newArrayList(ORIG_GT_2,
-        DEST_LT_4), NO_SORTS);
 
     assertQuerySupported("select from " + Flight.class.getName() + " order by origin asc",
         NO_FILTERS, Lists.newArrayList(ORIG_ASC));
@@ -497,7 +501,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
-  private void assertQueryUnsupported(
+  private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
     Query q = pm.newQuery(clazz, query);
@@ -511,7 +515,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     unsupportedOps.remove(unsupportedOp);
   }
 
-  private void assertQueryUnsupported(String query, Expression.Operator unsupportedOp) {
+  private void assertQueryUnsupportedByDatastore(String query) {
+    Query q = pm.newQuery(query);
+    try {
+      q.execute();
+      fail("expected IllegalArgumentException for query <" + query + ">");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
+  }
+
+  private void assertQueryUnsupportedByOrm(String query, Expression.Operator unsupportedOp) {
     Query q = pm.newQuery(query);
     try {
       q.execute();

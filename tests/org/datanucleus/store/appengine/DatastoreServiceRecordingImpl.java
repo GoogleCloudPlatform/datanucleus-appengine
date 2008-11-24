@@ -1,9 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import java.util.Collection;
-import java.util.Map;
-
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
@@ -12,6 +9,9 @@ import com.google.apphosting.api.datastore.PreparedQuery;
 import com.google.apphosting.api.datastore.Query;
 import com.google.apphosting.api.datastore.Transaction;
 
+import java.util.Collection;
+import java.util.Map;
+
 /**
  * This testing helper class allows a test to perform an integration test while
  * simultaneously recording calls.  This is useful when used in conjunction with
@@ -19,14 +19,17 @@ import com.google.apphosting.api.datastore.Transaction;
  *
  * @author Erick Armbrust <earmbrust@google.com>
  */
-public class DatastoreServiceRecordingImpl implements DatastoreService {
+class DatastoreServiceRecordingImpl implements DatastoreService {
 
-  final DatastoreService delegate;
-  final DatastoreService recorder;
+  private final DatastoreService recorder;
+  private final DatastoreService delegate;
+  private final Transaction txnRecorder;
 
-  public DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate) {
+  public DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate,
+      Transaction txnRecorder) {
     this.recorder = recorder;
     this.delegate = delegate;
+    this.txnRecorder = txnRecorder;
   }
 
   public Entity get(Key key) throws EntityNotFoundException {
@@ -91,7 +94,8 @@ public class DatastoreServiceRecordingImpl implements DatastoreService {
 
   public Transaction beginTransaction() {
     recorder.beginTransaction();
-    return delegate.beginTransaction();
+    Transaction txn =  delegate.beginTransaction();
+    return new TransactionRecordingImpl(txn, txnRecorder);
   }
 
   public Transaction getCurrentTransaction() {
