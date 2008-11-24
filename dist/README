@@ -22,3 +22,8 @@ VERSION 0.3
 - Translate members of type byte[] and Byte[] to datastore type BLOB
 - Support for offset in jpql and jdoql
 - Support for embeddable classes
+
+VERSION 0.4
+- Support for 1-1 associations, both unidirectional and bidirectional.
+- Proper handling of null fields.
+- Support filtering and sorting by implicit __key__ entity property.
