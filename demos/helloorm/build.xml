@@ -2,7 +2,7 @@
 <project name="helloorm" default="launch" basedir=".">
 
   <property name="orm.lib.dir" value="../.."/>
-  <property name="demos.lib.dir" value="../lib"/>
+  <property file="../demos.properties"/>
 
   <target name="clean" description="clean up">
     <delete dir="classes"/>
@@ -12,7 +12,7 @@
   </target>
 
   <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" jar="${demos.lib.dir}/external-dev-appserver.jar">
+    <java fork="true" jar="${sdk.lib.dir}/appengine-local-runtime.jar">
       <arg value="exploded"/>
     </java>
   </target>
@@ -52,9 +52,8 @@
         <include name="jta.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
       </lib>
-      <lib dir="${demos.lib.dir}">
-        <include name="servlet-api-2.4.jar"/>
-        <include name="external-api.jar"/>
+      <lib dir="${sdk.lib.dir}">
+        <include name="appengine-api.jar"/>
       </lib>
       <classes dir="classes"/>
       <classes dir="src">
@@ -74,9 +73,13 @@
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
-    <pathelement location="${demos.lib.dir}/servlet-api-2.4.jar"/>
-    <pathelement location="${demos.lib.dir}/external-api.jar"/>
+    <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
+    <pathelement location="${sdk.lib.dir}/appengine-local-runtime.jar"/>
   </path>
+
+  <!-- TODO(maxr): Implement this check -->
+  <!--<target name="check_sdk" description="make sure the sdk is available">-->
+  <!--</target>-->
 
   <target name="compile" description="compile the webapp">
     <mkdir dir="classes"/>

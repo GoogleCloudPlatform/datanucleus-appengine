@@ -6,16 +6,15 @@
   <property name="version" value="${version.major}.${version.minor}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
-  <property name="dist.target" value="appengine-orm-${version}.zip"/>
+  <property name="zip.prefix" value="appengine-orm"/>
+  <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
   <target name="dist" depends="split" description="Build the datanucleus appengine distribution">
     <zip destfile="${orm.source.zip}">
       <fileset dir="../src" includes="**/*"/>
     </zip>
     <copy file="../datanucleus-appengine-SNAPSHOT.jar" tofile="datanucleus-appengine-${version}.jar"/>
-    <copy file="../lib/external-api.jar" todir="../demos/lib"/>
-    <copy file="../lib/external-dev-appserver.jar" todir="../demos/lib"/>
     <zip destfile="${dist.target}">
-      <fileset dir="../lib">
+      <zipfileset prefix="${zip.prefix}" dir="../lib">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2.jar"/>
         <include name="jta.jar"/>
@@ -24,23 +23,21 @@
         <include name="datanucleus-jpa*"/>
         <include name="datanucleus-rdbms-*src*"/>
         <include name="datanucleus-core-*src*"/>
-      </fileset>
-      <fileset dir="../lib/split">
+      </zipfileset>
+      <zipfileset prefix="${zip.prefix}" dir="../lib/split">
         <include name="*.jar"/>
-      </fileset>
-      <fileset file="${orm.jar}"/>
-      <fileset file="${orm.source.zip}"/>
-      <fileset file="README"/>
-      <fileset dir="..">
+      </zipfileset>
+      <zipfileset prefix="${zip.prefix}" file="${orm.jar}"/>
+      <zipfileset prefix="${zip.prefix}" file="${orm.source.zip}"/>
+      <zipfileset prefix="${zip.prefix}" file="README"/>
+      <zipfileset prefix="${zip.prefix}" dir="..">
         <include name="demos/**"/>
         <include name="doc/**"/>
-      </fileset>
+      </zipfileset>
     </zip>
     <delete dir="../lib/split"/>
     <delete file="${orm.jar}"/>
     <delete file="${orm.source.zip}"/>
-    <delete file="../demos/lib/external-api.jar"/>
-    <delete file="../demos/lib/external-dev-appserver.jar"/>
   </target>
 
   <target name="split" description="Split the datanucleus jars into chunks smaller than 1MB.
@@ -62,16 +59,28 @@
     </java>
   </target>
 
-  <property name="tmp.dir" value="/tmp/testdist"/>
+  <property name="orm.tmp.dir" value="/tmp/testdist"/>
+  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/appengine-java-sdk/lib"/>
 
   <target name="testdist" description="Unzip the dist, launch one of the sample apps, and hit it
                                        with curl to make sure it is functioning properly.">
-    <delete dir="${tmp.dir}"/>
-    <mkdir dir="${tmp.dir}"/>
-    <unzip src="${dist.target}" dest="${tmp.dir}"/>
+    <!-- First setup a directory for the test distribution -->
+    <delete dir="${orm.tmp.dir}"/>
+    <mkdir dir="${orm.tmp.dir}"/>
+
+    <!-- Now setup a directory that contains the sdk jars we need to run the demos -->
+    <mkdir dir="${orm.sdk.tmp.dir}"/>
+    <copy todir="${orm.sdk.tmp.dir}">
+      <fileset dir="../lib">
+        <include name="appengine-api.jar"/>
+        <include name="appengine-local-runtime.jar"/>
+      </fileset>
+    </copy>
+
+    <unzip src="${dist.target}" dest="${orm.tmp.dir}"/>
     <parallel>
       <daemons>
-        <exec executable="ant" dir="${tmp.dir}/demos/helloorm"/>
+        <exec executable="ant" dir="${orm.tmp.dir}/${zip.prefix}/demos/helloorm"/>
       </daemons>
       <sequential>
         <sleep seconds="5"/>
@@ -86,7 +95,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.add.response">
-          <contains string="${curl.add.result}" substring="agU6c2VsZnIMCxIGRkxJR0hUGAEM"/>
+          <contains string="${curl.add.result}" substring="aghoZWxsb29ybXIMCxIGRkxJR0hUGAEM"/>
         </condition>
         <fail unless="expected.add.response" message="Did not get the expected add response: ${curl.add.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 
@@ -97,7 +106,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.query.response">
-          <contains string="${curl.query.result}" substring="agU6c2VsZnIMCxIGRkxJR0hUGAEM"/>
+          <contains string="${curl.query.result}" substring="aghoZWxsb29ybXIMCxIGRkxJR0hUGAEM"/>
         </condition>
         <fail unless="expected.query.response" message="Did not get the expected query response: ${curl.query.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 

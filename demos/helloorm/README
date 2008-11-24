@@ -1,1 +1,3 @@
-A very basic demo that reads, writes, deletes, and retrieves Flight objects using and jpa.
+A very basic demo that reads, writes, deletes, and retrieves Flight objects using jdo and jpa.
+
+Execute 'ant' from this directory to compile and run.
