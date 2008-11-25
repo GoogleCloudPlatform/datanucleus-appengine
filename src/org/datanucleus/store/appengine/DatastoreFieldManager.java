@@ -59,6 +59,10 @@ public class DatastoreFieldManager implements FieldManager {
   // Needed for relation management in datanucleus.
   private static final int[] NOT_USED = {0};
 
+  private static final String ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT =
+      "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
+          + "mapped to %s, which cannot accept null values.";
+
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
@@ -249,32 +253,50 @@ public class DatastoreFieldManager implements FieldManager {
     return embeddedStateMgr.getObject();
   }
 
+  /**
+   * Ensures that the given value is not null.  Throws
+   * {@link NullPointerException} with a helpful error message if it is.
+   */
+  private Object checkAssignmentToNotNullField(Object val, int fieldNumber) {
+    if (val != null) {
+      // not null so no problem
+      return val;
+    }
+    // Put together a really helpful error message
+    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+    String propertyName = getPropertyName(fieldNumber);
+    final String msg = String.format(ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT,
+        datastoreEntity.getKind(), KeyFactory.encodeKey(datastoreEntity.getKey()), propertyName,
+        ammd.getFullFieldName());
+    throw new NullPointerException(msg);
+  }
+
   public long fetchLongField(int fieldNumber) {
-    return (Long) fetchObjectField(fieldNumber);
+    return (Long) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public int fetchIntField(int fieldNumber) {
-    return (Integer) fetchObjectField(fieldNumber);
+    return (Integer) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public float fetchFloatField(int fieldNumber) {
-    return (Float) fetchObjectField(fieldNumber);
+    return (Float) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public double fetchDoubleField(int fieldNumber) {
-    return (Double) fetchObjectField(fieldNumber);
+    return (Double) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public char fetchCharField(int fieldNumber) {
-    return (Character) fetchObjectField(fieldNumber);
+    return (Character) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public byte fetchByteField(int fieldNumber) {
-    return (Byte) fetchObjectField(fieldNumber);
+    return (Byte) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public boolean fetchBooleanField(int fieldNumber) {
-    return (Boolean) fetchObjectField(fieldNumber);
+    return (Boolean) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
   }
 
   public void storeStringField(int fieldNumber, String value) {

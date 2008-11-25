@@ -45,7 +45,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
             }
           });
 
-  public void testFetching() throws ClassNotFoundException {
+  public void testFetching() {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
     ldth.ds.put(ksEntity);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
@@ -162,7 +162,81 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
   }
 
-  public void testStorage() throws ClassNotFoundException {
+  public void testFetchingNullsForNotNullFields() {
+    Entity entity = new Entity(KitchenSink.class.getSimpleName());
+    ldth.ds.put(entity);
+    JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
+    final ClassLoaderResolver clr = new JDOClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+    DatastoreFieldManager fieldManager =
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, entity) {
+      @Override
+      AbstractClassMetaData getClassMetaData() {
+        return acmd;
+      }
+
+      @Override
+      IdentifierFactory getIdentifierFactory() {
+        return DatastoreFieldManagerTest.this.getIdentifierFactory();
+      }
+
+      @Override
+      ClassLoaderResolver getClassLoaderResolver() {
+        return clr;
+      }
+    };
+    try {
+      fieldManager.fetchBooleanField(acmd.getRelativePositionOfMember("boolPrimVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchLongField(acmd.getRelativePositionOfMember("longPrimVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchIntField(acmd.getRelativePositionOfMember("intVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchFloatField(acmd.getRelativePositionOfMember("floatPrimVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchDoubleField(acmd.getRelativePositionOfMember("doublePrimVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchByteField(acmd.getRelativePositionOfMember("bytePrimVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+
+    try {
+      fieldManager.fetchCharField(acmd.getRelativePositionOfMember("charVal"));
+      fail("expected npe");
+    } catch (NullPointerException npe) {
+      // good
+    }
+  }
+
+  public void testStorage() {
     Entity ksEntity = new Entity("KitchenSink");
     ldth.ds.put(ksEntity);
 
@@ -239,7 +313,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(KitchenSink.LINK1, ksEntity.getProperty(fieldIter.next().getName()));
   }
 
-  public void testAncestorValues() throws ClassNotFoundException {
+  public void testAncestorValues() {
     Entity entity = new Entity(HasAncestorJDO.class.getSimpleName());
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
@@ -300,10 +374,14 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     private final AbstractClassMetaData acmd;
     private final Iterator<Field> inner;
 
-    private FieldPositionIterator(AbstractClassMetaData acmd) throws ClassNotFoundException {
+    private FieldPositionIterator(AbstractClassMetaData acmd) {
       this.acmd = acmd;
-      this.inner =
-          Arrays.asList(Class.forName(acmd.getFullClassName()).getDeclaredFields()).iterator();
+      try {
+        this.inner =
+            Arrays.asList(Class.forName(acmd.getFullClassName()).getDeclaredFields()).iterator();
+      } catch (ClassNotFoundException e) {
+        throw new RuntimeException(e);
+      }
     }
 
     public boolean hasNext() {
