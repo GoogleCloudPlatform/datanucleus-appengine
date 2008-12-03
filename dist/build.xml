@@ -2,7 +2,7 @@
 <project name="gae" default="testdist">
 
   <property name="version.major" value="0"/>
-  <property name="version.minor" value="4"/>
+  <property name="version.minor" value="5"/>
   <property name="version" value="${version.major}.${version.minor}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
