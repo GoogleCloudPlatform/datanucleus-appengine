@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
-<project name="gae" default="dist">
+<project name="gae" default="testdist">
 
   <property name="version.major" value="0"/>
   <property name="version.minor" value="4"/>
@@ -8,6 +8,7 @@
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
+
   <target name="dist" depends="split" description="Build the datanucleus appengine distribution">
     <zip destfile="${orm.source.zip}">
       <fileset dir="../src" includes="**/*"/>
@@ -17,7 +18,7 @@
       <zipfileset prefix="${zip.prefix}" dir="../lib">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2.jar"/>
-        <include name="jta.jar"/>
+        <include name="transaction-api-1.1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="datanucleus-enhancer*"/>
         <include name="datanucleus-jpa*"/>
@@ -60,11 +61,20 @@
   </target>
 
   <property name="orm.tmp.dir" value="/tmp/testdist"/>
-  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/appengine-java-sdk/lib"/>
+  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/lib"/>
 
-  <target name="testdist" description="Unzip the dist, launch one of the sample apps, and hit it
-                                       with curl to make sure it is functioning properly.">
-    <!-- First setup a directory for the test distribution -->
+  <target name="testdist" depends="dist"
+          description="Unzip the dist, launch one of the sample apps, and hit it
+                       with curl to make sure it is functioning properly.">
+    <!--
+      Setup a directory for the test distribution
+      It should look like this:
+      /tmp/testdist/lib
+      /tmp/testdist/lib/appengine-api.jar
+      /tmp/testdist/lib/appengine-loca-runtime.jar
+      /tmp/testdist/appengine-orm
+      /tmp/testdist/appengine-orm/<orm distro>
+     -->
     <delete dir="${orm.tmp.dir}"/>
     <mkdir dir="${orm.tmp.dir}"/>
 
