@@ -18,8 +18,10 @@
       <zipfileset prefix="${zip.prefix}" dir="../lib">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2.jar"/>
-        <include name="transaction-api-1.1.jar"/>
-        <include name="persistence-api-1.0.2.jar"/>
+        <!-- Don't ship txn and jpa jars-->
+        <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
+        <!--<include name="transaction-api-1.1.jar"/>-->
+        <!--<include name="persistence-api-1.0.2.jar"/>-->
         <include name="datanucleus-enhancer*"/>
         <include name="datanucleus-jpa*"/>
         <include name="datanucleus-rdbms-*src*"/>
@@ -88,12 +90,22 @@
     </copy>
 
     <unzip src="${dist.target}" dest="${orm.tmp.dir}"/>
+
+    <!-- Copy over the jta and jpa jars which we don't ship with the distro -->
+    <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
+    <copy todir="${orm.tmp.dir}/${zip.prefix}">
+      <fileset dir="../lib">
+        <include name="transaction-api-1.1.jar"/>
+        <include name="persistence-api-1.0.2.jar"/>
+      </fileset>
+    </copy>
+    
     <parallel>
       <daemons>
         <exec executable="ant" dir="${orm.tmp.dir}/${zip.prefix}/demos/helloorm"/>
       </daemons>
       <sequential>
-        <sleep seconds="5"/>
+        <sleep seconds="8"/>
 
         <!-- create a flight -->
         <exec executable="curl" failifexecutionfails="true" failonerror="true">
