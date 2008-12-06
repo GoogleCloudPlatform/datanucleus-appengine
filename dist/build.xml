@@ -73,7 +73,8 @@
       It should look like this:
       /tmp/testdist/lib
       /tmp/testdist/lib/appengine-api.jar
-      /tmp/testdist/lib/appengine-loca-runtime.jar
+      /tmp/testdist/lib/appengine-local-runtime.jar
+      /tmp/testdist/lib/servlet-api-2.5 .jar
       /tmp/testdist/appengine-orm
       /tmp/testdist/appengine-orm/<orm distro>
      -->
@@ -86,6 +87,7 @@
       <fileset dir="../lib">
         <include name="appengine-api.jar"/>
         <include name="appengine-local-runtime.jar"/>
+        <include name="servlet-api-2.5.jar"/>
       </fileset>
     </copy>
 

@@ -12,7 +12,7 @@
   </target>
 
   <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" jar="${sdk.lib.dir}/appengine-local-runtime.jar">
+    <java fork="true" jar="${sdk.lib.dir}/appengine-local-runtime.jar" classpath="">
       <arg value="exploded"/>
     </java>
   </target>
@@ -75,6 +75,7 @@
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-local-runtime.jar"/>
+    <pathelement location="${sdk.lib.dir}/servlet-api-2.5.jar"/>
   </path>
 
   <!-- TODO(maxr): Implement this check -->
