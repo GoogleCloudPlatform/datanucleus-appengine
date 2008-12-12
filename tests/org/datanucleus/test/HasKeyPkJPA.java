@@ -26,7 +26,6 @@ public class HasKeyPkJPA {
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Key id;
 
-  @Persistent
   String str;
 
   public HasKeyPkJPA() {
@@ -48,6 +47,7 @@ public class HasKeyPkJPA {
     this.id = id;
   }
 
+  @Persistent
   public String getStr() {
     return str;
   }

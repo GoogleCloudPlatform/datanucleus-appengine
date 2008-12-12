@@ -4,6 +4,7 @@ import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
+import com.google.common.collect.Maps;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
@@ -15,6 +16,7 @@ import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -27,6 +29,7 @@ import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 
 import java.util.ArrayDeque;
 import java.util.Deque;
+import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -63,6 +66,18 @@ public class DatastoreFieldManager implements FieldManager {
       "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
           + "mapped to %s, which cannot accept null values.";
 
+  // Thread local map is used to pass messages between parent and child
+  // during cascades.  We're explicit about using an IdentityHashMap here
+  // because we really really (really) want reference equality, not object
+  // equality.  Field is not private to facilitate testing.
+  static final ThreadLocal<IdentityHashMap<Object, Key>> PARENT_KEY_MAP =
+      new ThreadLocal<IdentityHashMap<Object, Key>>() {
+    @Override
+    protected IdentityHashMap<Object, Key> initialValue() {
+      return Maps.newIdentityHashMap();
+    }
+  };
+
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
@@ -78,6 +93,13 @@ public class DatastoreFieldManager implements FieldManager {
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
   private Entity datastoreEntity;
+
+  // Events that know how to store relations.
+  private final List<StoreRelationEvent> storeRelationEvents = Lists.newArrayList();
+
+  // We'll assign this if we have an ancestor member and we store a value
+  // into it.
+  private AbstractMemberMetaData ancestorMemberMetaData;
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
       MappedStoreManager storeManager, Entity datastoreEntity) {
@@ -126,7 +148,11 @@ public class DatastoreFieldManager implements FieldManager {
       // If this is pk field, transform the Key into its String representation.
       return KeyFactory.encodeKey(datastoreEntity.getKey());
     } else if (isAncestorPK(fieldNumber)) {
-      return KeyFactory.encodeKey(datastoreEntity.getKey().getParent());
+      Key parentKey = datastoreEntity.getKey().getParent();
+      if (parentKey == null) {
+        return null;
+      }
+      return KeyFactory.encodeKey(parentKey);
     }
     return (String) fetchObjectField(fieldNumber);
   }
@@ -302,11 +328,33 @@ public class DatastoreFieldManager implements FieldManager {
   public void storeStringField(int fieldNumber, String value) {
     if (isPK(fieldNumber)) {
       storeStringPK(fieldNumber, value);
-    } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
-      storeStringAncestorPK(value);
+    } else if (isAncestorPK(fieldNumber)) {
+      if (datastoreEntity.getParent() == null) {
+        storeStringAncestorPK(value);
+      }
     } else {
       storeObjectField(fieldNumber, value);
     }
+  }
+
+  /**
+   * If the datastore entity doesn't have a parent and some other
+   * pojo in the cascade chain registered itself as the parent for
+   * this pojo, recreate the datastore entity with the parent pojo's
+   * key as the ancestor.
+   *
+   * @return The key that was assigned, if any.
+   */
+  Object establishEntityGroup() {
+    Key parentKey = PARENT_KEY_MAP.get().get(getStateManager().getObject());
+    if (parentKey != null && datastoreEntity.getParent() == null) {
+      recreateEntityWithAncestor(KeyFactory.encodeKey(parentKey));
+      if (ancestorMemberMetaData != null) {
+        return ancestorMemberMetaData.getType().equals(Key.class)
+            ? parentKey : KeyFactory.encodeKey(parentKey);
+      }
+    }
+    return null;
   }
 
   private void storeStringAncestorPK(String value) {
@@ -321,19 +369,23 @@ public class DatastoreFieldManager implements FieldManager {
       // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
       // the value of this field as an arg to the Entity constructor and then moving all
       // properties on the old entity to the new entity.
-      Entity old = datastoreEntity;
-      if (old.getKey().getName() != null) {
-        datastoreEntity =
-            new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
-      } else {
-        datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
-      }
-      copyProperties(old, datastoreEntity);
+      recreateEntityWithAncestor(value);
     } else {
       // Null ancestor.  Ancestor is defined on a per-instance basis so
       // annotating a field as an ancestor is not necessarily a commitment
       // to always having an ancestor.  Null ancestor is fine.
     }
+  }
+
+  private void recreateEntityWithAncestor(String value) {
+    Entity old = datastoreEntity;
+    if (old.getKey().getName() != null) {
+      datastoreEntity =
+          new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+    } else {
+      datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+    }
+    copyProperties(old, datastoreEntity);
   }
 
   private void storeStringPK(int fieldNumber, String value) {
@@ -371,7 +423,12 @@ public class DatastoreFieldManager implements FieldManager {
 
   private boolean isAncestorPK(int fieldNumber) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    return ammd.hasExtension("ancestor-pk");
+    boolean result = ammd.hasExtension("ancestor-pk");
+    if (result) {
+      // ew, side effect
+      ancestorMemberMetaData = ammd;
+    }
+    return result;
   }
 
   public void storeShortField(int fieldNumber, short value) {
@@ -385,11 +442,13 @@ public class DatastoreFieldManager implements FieldManager {
       } else {
         throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
       }
-    } else if (isAncestorPK(fieldNumber) && datastoreEntity.getParent() == null) {
-      if (fieldIsOfTypeKey(fieldNumber)) {
-        storeAncestorKeyPK((Key) value);
-      } else {
-        throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
+    } else if (isAncestorPK(fieldNumber)) {
+      if (datastoreEntity.getParent() == null) {
+        if (fieldIsOfTypeKey(fieldNumber)) {
+          storeAncestorKeyPK((Key) value);
+        } else {
+          throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
+        }
       }
     } else {
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
@@ -422,28 +481,112 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private void storeRelationField(AbstractMemberMetaData ammd, Object value) {
-    DatastoreClass dc = storeManager.getDatastoreClass(
-        ammd.getAbstractClassMetaData().getFullClassName(), getClassLoaderResolver());
-    // Based on ParameterSetter
-    JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
-    if (mapping instanceof EmbeddedPCMapping ||
-        mapping instanceof SerialisedPCMapping ||
-        mapping instanceof SerialisedReferenceMapping ||
-        mapping instanceof PersistenceCapableMapping ||
-        mapping instanceof InterfaceMapping) {
-        mapping.setObject(
-            getObjectManager(),
-            datastoreEntity,
-            NOT_USED,
-            value,
-            getStateManager(),
-            ammd.getAbsoluteFieldNumber());
-    } else {
-      mapping.setObject(getObjectManager(), datastoreEntity, NOT_USED, value);
+  /**
+   * Applies all the relation events that have been built up.
+   * @return {@code true} if any of the events modified the parent
+   * in such a way that the parent needs to be repersisted, {@link false}
+   * otherwise.
+   */
+  boolean storeRelations() {
+    if (storeRelationEvents.isEmpty()) {
+      return false;
     }
-    // Make sure the field is wrapped where appropriate
-    getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, true, true);
+    Map<Object, Key> parentKeyMap = PARENT_KEY_MAP.get();
+    Map<Object, Key> original = null;
+    try {
+      if (datastoreEntity.getKey() != null) {
+        original = makeKeyAvailableToRelatedObjects(parentKeyMap, original);
+      }
+      for (StoreRelationEvent event : storeRelationEvents) {
+        event.apply();
+      }
+    } finally {
+      if (original != null) {
+        // This is an easy place to leak memory so make sure we restore
+        // the map to its original state.  The map lives in a threadlocal
+        // so we don't need to worry about concurrent access.
+        parentKeyMap.clear();
+        parentKeyMap.putAll(original);
+      }
+    }
+    storeRelationEvents.clear();
+    // TODO(maxr) Detect changes that modify the parent.
+    return true;
+  }
+
+  /**
+   * In order to automatically assign children to the same entity groups as
+   * their parents, we need to make sure the Key of the parent entity is
+   * available to the children when their corresponding entities are created.
+   * We do this by looping over all the dependent fields of the parent, and for
+   * each dependent field we extract the value of that field from the parent.
+   * We then add that field value as the key in an indentity map, associating
+   * it with the Key of the parent entity.  Anytime we insert a new object
+   * we need to consult this map to see if a parent Key has been mapped to it,
+   * and if it has we use that Key as the parent key for the new Entity we
+   * are creating.
+   *
+   * TODO(maxr): Refactor relation-related code into a separate class - it's
+   * starting to get crowded in here.
+   */
+  private Map<Object, Key> makeKeyAvailableToRelatedObjects(
+      Map<Object, Key> parentKeyMap, Map<Object, Key> original) {
+    DatastoreTable dt = (DatastoreTable) storeManager.getDatastoreClass(
+        getClassMetaData().getFullClassName(), getClassLoaderResolver());
+    SingleValueFieldManager sfv = new SingleValueFieldManager();
+    for (AbstractMemberMetaData dependent : dt.getDependentMemberMetaData()) {
+      getStateManager().provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
+      Object dependentValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
+      if (dependentValue != null) {
+        if (original == null) {
+          // try to avoid making a copy of this map unless we really have to
+          original = Maps.newHashMap(parentKeyMap);
+        }
+        PARENT_KEY_MAP.get().put(dependentValue, datastoreEntity.getKey());
+      }
+    }
+    return original;
+  }
+
+  private void storeRelationField(final AbstractMemberMetaData ammd, final Object value) {
+    StoreRelationEvent event = new StoreRelationEvent() {
+      public void apply() {
+        DatastoreClass dc = storeManager.getDatastoreClass(
+            ammd.getAbstractClassMetaData().getFullClassName(), getClassLoaderResolver());
+        // Based on ParameterSetter
+        JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
+        if (mapping instanceof EmbeddedPCMapping ||
+            mapping instanceof SerialisedPCMapping ||
+            mapping instanceof SerialisedReferenceMapping ||
+            mapping instanceof PersistenceCapableMapping ||
+            mapping instanceof InterfaceMapping) {
+          mapping.setObject(
+              getObjectManager(),
+              datastoreEntity,
+              NOT_USED,
+              value,
+              getStateManager(),
+              ammd.getAbsoluteFieldNumber());
+        } else {
+          mapping.setObject(getObjectManager(), datastoreEntity, NOT_USED, value);
+        }
+        // Make sure the field is wrapped where appropriate
+        getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, true, true);
+      }
+    };
+
+    // If the related object can't exist without the parent it should be part
+    // of the parent's entity group.  In order to be part of the parent's
+    // entity group we need the parent's key.  In order to get the parent's key
+    // we must save the parent before we save the child.  In order to avoid
+    // saving the child until after we've saved the parent we register an event
+    // that we will apply later.
+    if (ammd.isDependent()) {
+      storeRelationEvents.add(event);
+    } else {
+      // not dependent so just apply right away
+      event.apply();
+    }
   }
 
   ClassLoaderResolver getClassLoaderResolver() {
@@ -538,6 +681,10 @@ public class DatastoreFieldManager implements FieldManager {
     return ((MappedStoreManager) getObjectManager().getStoreManager()).getIdentifierFactory();
   }
 
+  AbstractMemberMetaData getAncestorMemberMetaData() {
+    return ancestorMemberMetaData;
+  }
+
   /**
    * Translates field numbers into {@link AbstractMemberMetaData}.
    */
@@ -555,4 +702,12 @@ public class DatastoreFieldManager implements FieldManager {
       this.abstractMemberMetaDataProvider = abstractMemberMetaDataProvider;
     }
   }
+
+  /**
+   * Supports a mechanism for delaying the storage of a relation.
+   */
+  private interface StoreRelationEvent {
+    void apply();
+  }
+
 }

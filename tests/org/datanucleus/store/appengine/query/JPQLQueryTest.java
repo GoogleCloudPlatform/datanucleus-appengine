@@ -47,6 +47,11 @@ public class JPQLQueryTest extends JPATestCase {
   private static final SortPredicate TITLE_ASC = new SortPredicate("title", SortDirection.ASCENDING);
   private static final SortPredicate ISBN_DESC = new SortPredicate("isbn", SortDirection.DESCENDING);
 
+  @Override
+  protected EntityManagerFactoryName getEntityManagerFactoryName() {
+    return EntityManagerFactoryName.nontransactional;
+  }
+
   public void testUnsupportedFilters() {
     String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
 

@@ -9,7 +9,6 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasVersionJPA;
 
-import javax.persistence.EntityTransaction;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
 
@@ -24,6 +23,7 @@ public class JPAUpdateTest extends JPATestCase {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     Book book = em.find(Book.class, keyStr);
 
     assertEquals(keyStr, book.getId());
@@ -31,10 +31,8 @@ public class JPAUpdateTest extends JPATestCase {
     assertEquals("12345", book.getIsbn());
     assertEquals("the title", book.getTitle());
 
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
     book.setIsbn("56789");
-    tx.commit();
+    commitTxn();
 
     Entity bookCheck = ldth.ds.get(key);
     assertEquals("jimmy", bookCheck.getProperty("author"));
@@ -48,18 +46,16 @@ public class JPAUpdateTest extends JPATestCase {
     b.setIsbn("22333");
     b.setTitle("yam");
 
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
+    beginTxn();
     em.persist(b);
-    tx.commit();
+    commitTxn();
 
     assertNotNull(b.getId());
 
-    tx = em.getTransaction();
-    tx.begin();
+    beginTxn();
     b.setTitle("not yam");
     em.merge(b);
-    tx.commit();
+    commitTxn();
 
     Entity bookCheck = ldth.ds.get(KeyFactory.decodeKey(b.getId()));
     assertEquals("max", bookCheck.getProperty("author"));
@@ -73,32 +69,31 @@ public class JPAUpdateTest extends JPATestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
-
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
     hv.setValue("value");
-    tx.commit();
+    commitTxn();
     assertEquals(2L, hv.getVersion());
     // make sure the version gets bumped
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
 
+    beginTxn();
     hv = em.find(HasVersionJPA.class, keyStr);
-    tx = em.getTransaction();
-    tx.begin();
     hv.setValue("another value");
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
     ldth.ds.put(entity);
     try {
-      tx.commit();
+      commitTxn();
       fail("expected optimistic exception");
     } catch (RollbackException re) {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
+    beginTxn();
     // make sure the version didn't change on the model object
     assertEquals(2L, hv.getVersion());
+    commitTxn();
   }
 
   public void testOptimisticLocking_Delete() {
@@ -107,22 +102,23 @@ public class JPAUpdateTest extends JPATestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
     // delete the entity in the datastore right before we commit
     ldth.ds.delete(key);
     hv.setValue("value");
     try {
-      tx.commit();
+      commitTxn();
       fail("expected optimistic exception");
     } catch (RollbackException re) {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
+    beginTxn();
     // make sure the version didn't change on the model object
     assertEquals(1L, hv.getVersion());
+    commitTxn();
   }
 
 }

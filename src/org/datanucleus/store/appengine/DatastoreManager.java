@@ -59,6 +59,8 @@ public class DatastoreManager extends MappedStoreManager {
     ClassUtils.assertClassForJarExistsInClasspath(
         clr, "com.google.apphosting.api.datastore.DatastoreService", "external-api.jar");
 
+    PersistenceConfiguration conf = omfContext.getPersistenceConfiguration();
+    conf.setProperty("datanucleus.attachSameDatastore", "true");
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
     DatabaseMetaData dmd = new DatastoreMetaData();

@@ -1,5 +1,7 @@
 package org.datanucleus.test;
 
+import com.google.apphosting.api.datastore.Key;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -73,11 +75,25 @@ public class Book {
 
   public static com.google.apphosting.api.datastore.Entity newBookEntity(String namedKey,
       String author, String isbn, String title, int firstPublished) {
+    return newBookEntity(null, namedKey, author, isbn, title, firstPublished);
+  }
+
+  public static com.google.apphosting.api.datastore.Entity newBookEntity(Key parentKey,
+      String namedKey, String author, String isbn, String title, int firstPublished) {
     com.google.apphosting.api.datastore.Entity e;
+    String kind = Book.class.getSimpleName();
     if (namedKey != null) {
-      e = new com.google.apphosting.api.datastore.Entity(Book.class.getSimpleName(), namedKey);
+      if (parentKey != null) {
+        e = new com.google.apphosting.api.datastore.Entity(kind, namedKey, parentKey);
+      } else {
+        e = new com.google.apphosting.api.datastore.Entity(kind, namedKey);
+      }
     } else {
-      e = new com.google.apphosting.api.datastore.Entity(Book.class.getSimpleName());
+      if (parentKey != null) {
+        e = new com.google.apphosting.api.datastore.Entity(kind, parentKey);
+      } else {
+        e = new com.google.apphosting.api.datastore.Entity(kind);
+      }
     }
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);
@@ -88,6 +104,11 @@ public class Book {
 
   public static com.google.apphosting.api.datastore.Entity newBookEntity(String author, String isbn,
       String title) {
-    return newBookEntity(null, author, isbn, title);
+    return newBookEntity(null, null, author, isbn, title, 2000);
+  }
+
+  public static com.google.apphosting.api.datastore.Entity newBookEntity(Key parent,
+      String author, String isbn, String title) {
+    return newBookEntity(parent, null, author, isbn, title, 2000);
   }
 }

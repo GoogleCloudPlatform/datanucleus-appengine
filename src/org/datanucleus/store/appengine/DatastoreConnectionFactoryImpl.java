@@ -74,7 +74,9 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
     }
 
     public void release() {
-      close();
+      if (!managed) {        
+        close();
+      }
     }
 
     public void close() {

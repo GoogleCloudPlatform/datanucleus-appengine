@@ -9,8 +9,6 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasStringAncestorKeyPkJPA;
 
-import javax.persistence.EntityTransaction;
-
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -22,10 +20,9 @@ public class JPAInsertionTest extends JPATestCase {
     b1.setIsbn("isbn");
     b1.setTitle("the title");
     assertNull(b1.getId());
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    beginTxn();
     em.persist(b1);
-    txn.commit();
+    commitTxn();
     assertNotNull(b1.getId());
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(b1.getId()));
     assertNotNull(entity);
@@ -40,10 +37,9 @@ public class JPAInsertionTest extends JPATestCase {
     b1.setAuthor("jimmy");
     b1.setIsbn("isbn");
     b1.setTitle("the title");
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    beginTxn();
     em.persist(b1);
-    txn.commit();
+    commitTxn();
     assertEquals("named key", KeyFactory.decodeKey(b1.getId()).getName());
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(b1.getId()));
     assertNotNull(entity);
@@ -57,10 +53,9 @@ public class JPAInsertionTest extends JPATestCase {
   public void testInsertWithKeyPk() {
     HasKeyPkJPA hk = new HasKeyPkJPA();
 
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    beginTxn();
     em.persist(hk);
-    txn.commit();
+    commitTxn();
 
     assertNotNull(hk.getId());
     assertNull(hk.getAncestorId());
@@ -102,10 +97,9 @@ public class JPAInsertionTest extends JPATestCase {
     ldth.ds.put(e);
     HasStringAncestorKeyPkJPA hk1 = new HasStringAncestorKeyPkJPA();
     hk1.setAncestorKey(KeyFactory.encodeKey(e.getKey()));
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    beginTxn();
     em.persist(hk1);
-    txn.commit();
+    commitTxn();
 
     Entity reloaded = ldth.ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), KeyFactory.encodeKey(reloaded.getKey().getParent()));
@@ -115,10 +109,9 @@ public class JPAInsertionTest extends JPATestCase {
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJPA hk = new HasKeyPkJPA();
     hk.setId(KeyFactory.createKey("something", "name"));
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    beginTxn();
     em.persist(hk);
-    txn.commit();
+    commitTxn();
 
     assertNotNull(hk.getId());
     assertEquals("name", hk.getId().getName());

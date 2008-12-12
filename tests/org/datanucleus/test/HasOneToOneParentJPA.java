@@ -40,4 +40,8 @@ public class HasOneToOneParentJPA {
   public void setStr(String str) {
     this.str = str;
   }
+
+  public void setId(String id) {
+    this.id = id;
+  }
 }

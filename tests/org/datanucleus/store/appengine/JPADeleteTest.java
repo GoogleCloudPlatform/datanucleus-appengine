@@ -8,7 +8,6 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.HasVersionJPA;
 import org.datanucleus.test.KitchenSink;
 
-import javax.persistence.EntityTransaction;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
 
@@ -23,26 +22,36 @@ public class JPADeleteTest extends JPATestCase {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.encodeKey(key);
-    KitchenSink ks = em.find(KitchenSink.class, keyStr);
+    KitchenSink ks;
+    beginTxn();
+    ks = em.find(KitchenSink.class, keyStr);
     assertNotNull(ks);
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
     em.remove(ks);
-    txn.commit();
-    assertNull(em.find(KitchenSink.class, keyStr));
+    commitTxn();
+    beginTxn();
+    try {
+      assertNull(em.find(KitchenSink.class, keyStr));
+    } finally {
+      commitTxn();
+    }
   }
 
   public void testSimpleDeleteWithNamedKey() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
     assertEquals("named key", key.getName());
     String keyStr = KeyFactory.encodeKey(key);
-    KitchenSink ks = em.find(KitchenSink.class, keyStr);
+    KitchenSink ks;
+    beginTxn();
+    ks = em.find(KitchenSink.class, keyStr);
     assertNotNull(ks);
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
     em.remove(ks);
-    txn.commit();
-    assertNull(em.find(KitchenSink.class, keyStr));
+    commitTxn();
+    beginTxn();
+    try {
+      assertNull(em.find(KitchenSink.class, keyStr));
+    } finally {
+      commitTxn();
+    }
   }
 
   public void testOptimisticLocking_Update() {
@@ -51,32 +60,32 @@ public class JPADeleteTest extends JPATestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
     hv.setValue("value");
-    tx.commit();
+    commitTxn();
     assertEquals(2L, hv.getVersion());
     // make sure the version gets bumped
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
 
+    beginTxn();
     hv = em.find(HasVersionJPA.class, keyStr);
-    tx = em.getTransaction();
-    tx.begin();
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
     em.remove(hv);
     ldth.ds.put(entity);
     try {
-      tx.commit();
+      commitTxn();
       fail("expected optimistic exception");
     } catch (RollbackException re) {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
+    beginTxn();
     // make sure the version didn't change on the model object
     assertEquals(2L, hv.getVersion());
+    commitTxn();
   }
 
   public void testOptimisticLocking_Delete() {
@@ -85,22 +94,23 @@ public class JPADeleteTest extends JPATestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 
-    EntityTransaction tx = em.getTransaction();
-    tx.begin();
     // delete the entity in the datastore right before we commit
     ldth.ds.delete(key);
     em.remove(hv);
     try {
-      tx.commit();
+      commitTxn();
       fail("expected optimistic exception");
     } catch (RollbackException re) {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
+    beginTxn();
     // make sure the version didn't change on the model object
     assertEquals(1L, hv.getVersion());
+    commitTxn();
   }
 
 }

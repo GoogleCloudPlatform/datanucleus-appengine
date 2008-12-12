@@ -109,6 +109,12 @@ class DatastoreTable implements DatastoreClass {
    */
   private int highestFieldNumber = 0;
 
+  /**
+   * Dependent fields.  Unlike pretty much the rest of this class, this member and the
+   * code that populates is specific to the appengine plugin.
+   */
+  private final List<AbstractMemberMetaData> dependentMemberMetaData = Lists.newArrayList();
+
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
     this.storeMgr = storeMgr;
@@ -345,6 +351,9 @@ class DatastoreTable implements DatastoreClass {
     int absoluteFieldNumber = fmd.getAbsoluteFieldNumber();
     if (absoluteFieldNumber > highestFieldNumber) {
       highestFieldNumber = absoluteFieldNumber;
+    }
+    if (fmd.isDependent()) {
+      dependentMemberMetaData.add(fmd);
     }
   }
 
@@ -794,4 +803,7 @@ class DatastoreTable implements DatastoreClass {
     return null;
   }
 
+  public List<AbstractMemberMetaData> getDependentMemberMetaData() {
+    return dependentMemberMetaData;
+  }
 }

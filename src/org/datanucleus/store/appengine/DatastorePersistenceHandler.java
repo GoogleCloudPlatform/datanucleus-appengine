@@ -137,18 +137,18 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind, storeMgr);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
-
-    // now safe to clear the insertion token
-    sm.setAssociatedValue(INSERTION_TOKEN, null);
-
+    Object assignedAncestorPk = fieldMgr.establishEntityGroup();
     Entity entity = fieldMgr.getEntity();
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
+
     // TODO(earmbrust): Allow for non-transactional read/write.
+
+    // Save the parent entity first so we can have a key to use as a parent
+    // on owned child entities.
     put(sm, entity);
     // Set the generated key back on the pojo.  If the pk field is a Key just
     // set it on the field directly.  If the pk field is a String, convert the Key
     // to a String.  If the pk field is anything else, we've got a problem.
-
     // Assumes we only have a single pk member position
     Class<?> pkType =
         acmd.getMetaDataForManagedMemberAtPosition(acmd.getPKMemberPositions()[0]).getType();
@@ -165,8 +165,38 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
               + " (must be String or " + Key.class.getName() + ")");
     }
     sm.setPostStoreNewObjectId(newObjectId);
+    if (assignedAncestorPk != null) {
+      // we automatically assigned an ancestor to the entity so make sure
+      // that makes it back on to the pojo
+      setPostStoreNewAncestor(sm, fieldMgr.getAncestorMemberMetaData(), assignedAncestorPk);
+    }
+
+    storeRelations(fieldMgr, sm, entity);
+
+    // now safe to clear the insertion token
+    sm.setAssociatedValue(INSERTION_TOKEN, null);
+
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementInsertCount();
+    }
+  }
+
+  private void setPostStoreNewAncestor(
+      StateManager sm, AbstractMemberMetaData ancestorMemberMetaData, Object assignedAncestorPk) {
+    sm.replaceField(ancestorMemberMetaData.getAbsoluteFieldNumber(), assignedAncestorPk, true);
+  }
+
+  private void storeRelations(DatastoreFieldManager fieldMgr, StateManager sm, Entity entity) {
+    if (fieldMgr.storeRelations()) {
+      // Return value of true means that storing the relations resulted in
+      // changes to the parent object.  That means we need to re-save the parent.
+      // TODO(maxr): Look into exposing a datastore mechanism for assigning a
+      // Key and nothing else.  This would allow us to put children that need
+      // the parent Key before we put the parent, and then we'd only need to
+      // put the parent once at the end.
+      ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+      sm.provideFields(sm.getClassMetaData().getRelationMemberPositions(clr), fieldMgr);
+      put(sm, entity);
     }
   }
 
@@ -278,9 +308,12 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       // Corresponding entity hasn't been fetched yet, so get it.
       entity = get(sm, key);
     }
-    sm.provideFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity));
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
+    sm.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
     put(sm, entity);
+
+    storeRelations(fieldMgr, sm, entity);
 
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementUpdateCount();

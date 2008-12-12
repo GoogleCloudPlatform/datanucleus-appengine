@@ -11,6 +11,11 @@ import org.datanucleus.test.Book;
  */
 public class JPAFetchTest extends JPATestCase {
 
+  @Override
+  protected EntityManagerFactoryName getEntityManagerFactoryName() {
+    return EntityManagerFactoryName.nontransactional;
+  }
+
   public void testSimpleFetch() {
     Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
 
