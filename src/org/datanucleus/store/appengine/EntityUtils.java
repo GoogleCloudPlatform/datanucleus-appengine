@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Entity;
 
-import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -45,7 +44,7 @@ final class EntityUtils {
     }
     // Use the IdentifierFactory to convert from the name of the field into
     // a property name.
-    return idFactory.newDatastoreFieldIdentifier(ammd.getName()).getIdentifier();
+    return idFactory.newDatastoreFieldIdentifier(ammd.getName()).getIdentifierName();
   }
 
   public static Object getVersionFromEntity(
@@ -57,7 +56,7 @@ final class EntityUtils {
       IdentifierFactory idFactory, VersionMetaData vmd) {
     ColumnMetaData[] columnMetaData = vmd.getColumnMetaData();
     if (columnMetaData == null || columnMetaData.length == 0) {
-      return idFactory.newVersionFieldIdentifier().getIdentifier();
+      return idFactory.newVersionFieldIdentifier().getIdentifierName();
     }
     if (columnMetaData.length != 1) {
       throw new IllegalArgumentException(
@@ -68,10 +67,10 @@ final class EntityUtils {
 
   public static String determineKind(AbstractClassMetaData acmd, ObjectManager om) {
     MappedStoreManager storeMgr = (MappedStoreManager) om.getStoreManager();
-    return determineKind(acmd, om.getClassLoaderResolver(), storeMgr.getIdentifierFactory());
+    return determineKind(acmd, storeMgr.getIdentifierFactory());
   }
 
-  public static String determineKind(AbstractClassMetaData acmd, ClassLoaderResolver clr, IdentifierFactory idFactory) {
+  public static String determineKind(AbstractClassMetaData acmd, IdentifierFactory idFactory) {
     if (acmd.getTable() != null) {
       // User specified a table name as part of the mapping so use that as the
       // kind.
@@ -79,7 +78,7 @@ final class EntityUtils {
     }
     // No table name provided so use the identifier factory to convert the
     // class name into the kind.
-    return idFactory.newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
+    return idFactory.newDatastoreContainerIdentifier(acmd).getIdentifierName();
   }
 
 }

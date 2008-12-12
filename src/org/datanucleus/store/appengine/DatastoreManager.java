@@ -3,10 +3,12 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
+import org.datanucleus.FetchPlan;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
@@ -23,19 +25,25 @@ import org.datanucleus.store.NucleusConnectionImpl;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.exceptions.NoExtentException;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.FetchStatement;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementExpressionIndex;
+import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.scostore.AssociationStrategy;
+import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
+import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.sql.DatabaseMetaData;
 import java.util.Collection;
 import java.util.Date;
+import java.util.Map;
 import java.util.Set;
 
 
@@ -122,22 +130,19 @@ public class DatastoreManager extends MappedStoreManager {
       throw new NucleusUserException(idFactoryName).setFatal();
 //      throw new NucleusUserException(LOCALISER_RDBMS.msg("039003", idFactoryName)).setFatal();
     }
+    Map<String, String> props = Maps.newHashMap();
+    addStringPropIfNotNull(conf, props, "datanucleus.mapping.Catalog", "DefaultCatalog");
+    addStringPropIfNotNull(conf, props, "datanucleus.mapping.Schema", "DefaultSchema");
+    addStringPropIfNotNull(conf, props, "datanucleus.identifier.case", "RequiredCase");
+    addStringPropIfNotNull(conf, props, "datanucleus.identifier.wordSeparator", "WordSeparator");
+    addStringPropIfNotNull(conf, props, "datanucleus.identifier.tablePrefix", "TablePrefix");
+    addStringPropIfNotNull(conf, props, "datanucleus.identifier.tableSuffix", "TableSuffix");
     try {
       // Create the IdentifierFactory
       Class cls = Class.forName(idFactoryClassName);
       Class[] argTypes = new Class[]
-          {org.datanucleus.store.mapped.DatastoreAdapter.class, String.class, String.class,
-              String.class, String.class, String.class, String.class};
-      Object[] args = new Object[]
-          {
-              dba,
-              conf.getStringProperty("datanucleus.mapping.Catalog"),
-              conf.getStringProperty("datanucleus.mapping.Schema"),
-              conf.getStringProperty("datanucleus.identifier.case"),
-              conf.getStringProperty("datanucleus.identifier.wordSeparator"),
-              conf.getStringProperty("datanucleus.identifier.tablePrefix"),
-              conf.getStringProperty("datanucleus.identifier.tableSuffix")
-          };
+          {org.datanucleus.store.mapped.DatastoreAdapter.class, ClassLoaderResolver.class, Map.class};
+      Object[] args = {dba, omfContext.getClassLoaderResolver(null), props};
       identifierFactory = (IdentifierFactory) ClassUtils.newInstance(cls, argTypes, args);
     }
     catch (ClassNotFoundException cnfe) {
@@ -150,7 +155,13 @@ public class DatastoreManager extends MappedStoreManager {
     }
   }
 
-
+  private void addStringPropIfNotNull(
+      PersistenceConfiguration conf, Map<String, String> map, String propName, String mapName) {
+    String val = conf.getStringProperty(propName);
+    if (val != null) {
+      map.put(mapName, val);
+    }
+  }
   @Override
   public Collection<String> getSupportedOptions() {
     Set<String> opts = Sets.newHashSet();
@@ -190,6 +201,35 @@ public class DatastoreManager extends MappedStoreManager {
   public Object getResultValueAtPosition(Object key, JavaTypeMapping mapping, int position) {
     // this is the key, and we're only using this for keys, so just return it.
     return key;
+  }
+
+  public FieldManager getFieldManagerForStatementGeneration(StateManager elementSM, Object stmt,
+      StatementExpressionIndex[] stmtExprIndex, boolean checkNonNullable) {
+    // TODO(maxr)
+    return null;
+  }
+
+  public boolean insertValuesOnInsert(DatastoreMapping datastoreMapping) {
+    return true;
+  }
+
+  public boolean allowsBatching() {
+    return false;
+  }
+
+  public AssociationStrategy newAssociationStrategy(Localiser localiser,
+      ClassLoaderResolver classLoaderResolver) {
+    // TODO(maxr)
+    return null;
+  }
+
+  public ResultObjectFactory newResultObjectFactory(DatastoreClass table, int[] fieldNumbers,
+      AbstractClassMetaData acmd, StatementExpressionIndex[] statementExpressionIndex,
+      int[] datastoreIdentityExpressionIndex, int[] versionIndex, boolean ignoreCache,
+      boolean discriminator, boolean hasMetaDataInResults, FetchPlan fetchPlan,
+      Class persistentClass) {
+    // TODO(maxr)
+    return null;
   }
 
   /**

@@ -18,12 +18,28 @@ class DatastoreKind implements DatastoreIdentifier {
     this.identifier = acmd.getFullClassName();
   }
 
-  public String getIdentifier() {
+  @Override
+  public String getIdentifierName() {
     return identifier;
   }
 
+  @Override
   public String getFullyQualifiedName(boolean adapterCase) {
     // TODO(maxr): Figure out what to return here.
-    return getIdentifier();
+    return getIdentifierName();
+  }
+
+  public void setCatalogName(String s) {
+  }
+
+  public void setSchemaName(String s) {
+  }
+
+  public String getCatalogName() {
+    return null;
+  }
+
+  public String getSchemaName() {
+    return null;
   }
 }

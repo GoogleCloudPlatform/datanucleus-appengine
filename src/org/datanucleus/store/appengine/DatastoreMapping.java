@@ -111,7 +111,7 @@ public class DatastoreMapping implements org.datanucleus.store.mapped.mapping.Da
   }
 
   public void setObject(Object datastoreEntity, int paramIndex, Object value) {
-    AbstractMemberMetaData ammd = field.getFieldMetaData();
+    AbstractMemberMetaData ammd = field.getMemberMetaData();
     String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
     ((Entity) datastoreEntity).setProperty(propName, value);
   }

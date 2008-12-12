@@ -148,7 +148,7 @@ public class DatastoreQuery implements Serializable {
       final AbstractClassMetaData acmd =
           om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
       String kind =
-          getIdentifierFactory().newDatastoreContainerIdentifier(clr, acmd).getIdentifier();
+          getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
       addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
@@ -405,7 +405,7 @@ public class DatastoreQuery implements Serializable {
     } else if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length != 0) {
       return ammd.getColumnMetaData()[0].getName();
     } else {
-      return getIdentifierFactory().newDatastoreFieldIdentifier(ammd.getName()).getIdentifier();
+      return getIdentifierFactory().newDatastoreFieldIdentifier(ammd.getName()).getIdentifierName();
     }
   }
 

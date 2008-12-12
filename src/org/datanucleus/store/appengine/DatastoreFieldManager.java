@@ -115,8 +115,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.datastoreEntity = datastoreEntity;
 
     // Sanity check
-    String expectedKind = EntityUtils.determineKind(
-        getClassMetaData(), getClassLoaderResolver(), getIdentifierFactory());
+    String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
@@ -238,7 +237,7 @@ public class DatastoreFieldManager implements FieldManager {
     // a specific embedded field.
     return new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
-        return emd.getFieldMetaData()[fieldNumber];
+        return emd.getMemberMetaData()[fieldNumber];
       }
     };
   }

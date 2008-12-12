@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.metadata.MetaData;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
@@ -24,7 +23,7 @@ class DatastoreProperty implements DatastoreField {
   private DatastoreIdentifier identifier;
 
   /** ColumnMetaData for this column. */
-  private final ColumnMetaData columnMetaData;
+  private ColumnMetaData columnMetaData;
 
   /** Table containing this column in the datastore. */
   private final DatastoreContainerObject table;
@@ -50,7 +49,7 @@ class DatastoreProperty implements DatastoreField {
     setIdentifier(identifier);
     if (colmd == null) {
       // Create a default ColumnMetaData since none provided
-      columnMetaData = new ColumnMetaData(null, (String) null);
+      columnMetaData = new ColumnMetaData((String) null);
     } else {
       columnMetaData = colmd;
     }
@@ -87,10 +86,6 @@ class DatastoreProperty implements DatastoreField {
     this.datastoreMapping = mapping;
   }
 
-  public JavaTypeMapping getMapping() {
-    return datastoreMapping.getJavaTypeMapping();
-  }
-
   public DatastoreContainerObject getDatastoreContainerObject() {
     return table;
   }
@@ -117,36 +112,59 @@ class DatastoreProperty implements DatastoreField {
     this.identifier = identifier;
   }
 
-  public MetaData getMetaData() {
-    return columnMetaData;
-  }
-
-  public void setMetaData(MetaData md) {
-    if (md == null) {
-      // Nothing to do since no definition of requirements
-      return;
-    }
-
-    ColumnMetaData colmd = (ColumnMetaData) md;
-    if (colmd.getName() != null) {
-      columnMetaData.setName(colmd.getName());
-    }
-
-    // other properties of columnMetaData don't apply to us
-  }
-
-  public AbstractMemberMetaData getFieldMetaData() {
-    if (columnMetaData != null && columnMetaData.getParent() instanceof AbstractMemberMetaData) {
-      return (AbstractMemberMetaData)columnMetaData.getParent();
-    }
-    return null;
-  }
-
   public MappedStoreManager getStoreManager() {
     return storeMgr;
   }
 
   public DatastoreIdentifier getIdentifier() {
     return identifier;
+  }
+
+  public boolean isDefaultable() {
+    return false;
+  }
+
+  public DatastoreField setUnique() {
+    return this;
+  }
+
+  public boolean isUnique() {
+    return false;
+  }
+
+  public DatastoreField setIdentity(boolean b) {
+    isPrimaryKey = b;
+    return this;
+  }
+
+  public boolean isIdentity() {
+    return isPrimaryKey();
+  }
+
+  public void setDefaultValue(Object o) {
+    throw new UnsupportedOperationException("Default values not supported.");
+  }
+
+  public Object getDefaultValue() {
+    return null;
+  }
+
+  public void setColumnMetaData(ColumnMetaData columnMetaData) {
+    this.columnMetaData = columnMetaData;
+  }
+
+  public ColumnMetaData getColumnMetaData() {
+    return columnMetaData;
+  }
+
+  public JavaTypeMapping getJavaTypeMapping() {
+    return datastoreMapping.getJavaTypeMapping();
+  }
+
+  public AbstractMemberMetaData getMemberMetaData() {
+    if (columnMetaData != null && columnMetaData.getParent() instanceof AbstractMemberMetaData) {
+        return (AbstractMemberMetaData)columnMetaData.getParent();
+    }
+    return null;
   }
 }

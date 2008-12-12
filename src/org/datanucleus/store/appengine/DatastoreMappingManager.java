@@ -19,7 +19,6 @@ import org.datanucleus.store.mapped.mapping.AbstractMappingManager;
 import org.datanucleus.store.mapped.mapping.DatastoreMappingFactory;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedMapping;
-import org.datanucleus.store.rdbms.sqlidentifier.RDBMSIdentifierFactory;
 
 /**
  * MappingManager for the datastore.  Most of this code is taken from
@@ -31,21 +30,26 @@ import org.datanucleus.store.rdbms.sqlidentifier.RDBMSIdentifierFactory;
  */
 class DatastoreMappingManager extends AbstractMappingManager {
 
-  public org.datanucleus.store.mapped.mapping.DatastoreMapping createDatastoreMapping(JavaTypeMapping mapping,
-      AbstractMemberMetaData fmd, int index, MappedStoreManager srm, DatastoreField prop) {
-    return createDatastoreMapping(mapping, srm, prop);
+  DatastoreMappingManager(MappedStoreManager mappedStoreManager) {
+    super(mappedStoreManager);
   }
 
   public org.datanucleus.store.mapped.mapping.DatastoreMapping createDatastoreMapping(
-      JavaTypeMapping mapping, MappedStoreManager storeMgr, DatastoreField prop, String javaType) {
-    return createDatastoreMapping(mapping, storeMgr, prop);
+      JavaTypeMapping javaTypeMapping, AbstractMemberMetaData abstractMemberMetaData, int ignored,
+      DatastoreField datastoreField) {
+    return createDatastoreMapping(javaTypeMapping, datastoreField);
+  }
+
+  public org.datanucleus.store.mapped.mapping.DatastoreMapping createDatastoreMapping(
+      JavaTypeMapping mapping, DatastoreField prop, String javaType) {
+    return createDatastoreMapping(mapping, prop);
   }
 
   private org.datanucleus.store.mapped.mapping.DatastoreMapping createDatastoreMapping(
-      JavaTypeMapping mapping, MappedStoreManager srm, DatastoreField prop) {
+      JavaTypeMapping mapping, DatastoreField prop) {
     // for now we're just usting a single DatastoreMapping impl for everything.
     org.datanucleus.store.mapped.mapping.DatastoreMapping datastoreMapping =
-        DatastoreMappingFactory.createMapping(DatastoreMapping.class, mapping, srm, prop);
+        DatastoreMappingFactory.createMapping(DatastoreMapping.class, mapping, storeMgr, prop);
     if (prop != null) {
       prop.setDatastoreMapping(datastoreMapping);
     }
@@ -62,12 +66,12 @@ class DatastoreMappingManager extends AbstractMappingManager {
     // Take the column MetaData from the component that this mappings role relates to
     ColumnMetaData colmd;
     ColumnMetaDataContainer columnContainer = fmd;
-    if (roleForField == JavaTypeMapping.MAPPING_COLLECTION_ELEMENT ||
-        roleForField == JavaTypeMapping.MAPPING_ARRAY_ELEMENT) {
+    if (roleForField == FieldRole.ROLE_COLLECTION_ELEMENT ||
+        roleForField == FieldRole.ROLE_ARRAY_ELEMENT) {
       columnContainer = fmd.getElementMetaData();
-    } else if (roleForField == JavaTypeMapping.MAPPING_MAP_KEY) {
+    } else if (roleForField == FieldRole.ROLE_MAP_KEY) {
       columnContainer = fmd.getKeyMetaData();
-    } else if (roleForField == JavaTypeMapping.MAPPING_MAP_VALUE) {
+    } else if (roleForField == FieldRole.ROLE_MAP_VALUE) {
       columnContainer = fmd.getValueMetaData();
     }
 
@@ -79,7 +83,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
       colmds = columnContainer.getColumnMetaData();
     } else {
       // If column specified add one (use any column name specified on field element)
-      colmd = new ColumnMetaData(fmd, fmd.getColumn());
+      colmd = new ColumnMetaData(fmd.getColumn());
       if (columnContainer != null) {
         columnContainer.addColumn(colmd);
         colmds = columnContainer.getColumnMetaData();
@@ -95,36 +99,32 @@ class DatastoreMappingManager extends AbstractMappingManager {
     DatastoreIdentifier identifier = null;
     if (colmd.getName() == null) {
       // No name specified, so generate the identifier from the field name
-      if (roleForField == JavaTypeMapping.MAPPING_FIELD) {
+      if (roleForField == FieldRole.ROLE_FIELD) {
         identifier = idFactory.newIdentifier(IdentifierFactory.COLUMN, fmd.getName());
         int i = 0;
         while (datastoreContainer.hasDatastoreField(identifier)) {
           identifier = idFactory.newIdentifier(IdentifierFactory.COLUMN, fmd.getName() + "_" + i);
           i++;
         }
-      } else if (roleForField == JavaTypeMapping.MAPPING_COLLECTION_ELEMENT) {
+      } else if (roleForField == FieldRole.ROLE_COLLECTION_ELEMENT) {
         // Join table collection element
-        identifier = ((RDBMSIdentifierFactory) idFactory)
-            .newJoinTableFieldIdentifier(fmd, null, null,
-                true, FieldRole.ROLE_COLLECTION_ELEMENT);
-      } else if (roleForField == JavaTypeMapping.MAPPING_ARRAY_ELEMENT) {
+        identifier = idFactory.newJoinTableFieldIdentifier(fmd, null, null, true,
+            FieldRole.ROLE_COLLECTION_ELEMENT);
+      } else if (roleForField == FieldRole.ROLE_ARRAY_ELEMENT) {
         // Join table array element
-        identifier = ((RDBMSIdentifierFactory) idFactory)
-            .newJoinTableFieldIdentifier(fmd, null, null,
-                true, FieldRole.ROLE_ARRAY_ELEMENT);
-      } else if (roleForField == JavaTypeMapping.MAPPING_MAP_KEY) {
+        identifier = idFactory.newJoinTableFieldIdentifier(fmd, null, null, true,
+            FieldRole.ROLE_ARRAY_ELEMENT);
+      } else if (roleForField == FieldRole.ROLE_MAP_KEY) {
         // Join table map key
-        identifier = ((RDBMSIdentifierFactory) idFactory)
-            .newJoinTableFieldIdentifier(fmd, null, null,
-                true, FieldRole.ROLE_MAP_KEY);
-      } else if (roleForField == JavaTypeMapping.MAPPING_MAP_VALUE) {
+        identifier = idFactory.newJoinTableFieldIdentifier(fmd, null, null, true,
+            FieldRole.ROLE_MAP_KEY);
+      } else if (roleForField == FieldRole.ROLE_MAP_VALUE) {
         // Join table map value
-        identifier = ((RDBMSIdentifierFactory) idFactory)
-            .newJoinTableFieldIdentifier(fmd, null, null,
-                true, FieldRole.ROLE_MAP_VALUE);
+        identifier = idFactory.newJoinTableFieldIdentifier(fmd, null, null, true,
+            FieldRole.ROLE_MAP_VALUE);
       }
 
-      colmd.setName(identifier.getIdentifier());
+      colmd.setName(identifier.getIdentifierName());
     } else {
       // User has specified a name, so try to keep this unmodified
       identifier = idFactory.newDatastoreFieldIdentifier(colmds[datastoreFieldIndex].getName(),
@@ -160,7 +160,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
     DatastoreField prop;
     if (colmd == null) {
       // If column specified add one (use any column name specified on field element)
-      colmd = new ColumnMetaData(fmd, fmd.getColumn());
+      colmd = new ColumnMetaData(fmd.getColumn());
       fmd.addColumn(colmd);
     }
 
@@ -175,7 +175,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
         i++;
       }
 
-      colmd.setName(identifier.getIdentifier());
+      colmd.setName(identifier.getIdentifierName());
       prop = datastoreContainer.addDatastoreField(javaType, identifier, mapping, colmd);
     } else {
       // User has specified a name, so try to keep this unmodified
@@ -208,12 +208,12 @@ class DatastoreMappingManager extends AbstractMappingManager {
     if (colmd.getName() == null) {
       // No name specified, so generate the identifier from the field name
       AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
-      identifier = ((RDBMSIdentifierFactory) idFactory).newForeignKeyFieldIdentifier(
+      identifier = idFactory.newForeignKeyFieldIdentifier(
           relatedMmds != null ? relatedMmds[0] : null,
           fmd, reference.getIdentifier(),
           storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
           FieldRole.ROLE_OWNER);
-      colmd.setName(identifier.getIdentifier());
+      colmd.setName(identifier.getIdentifierName());
     } else {
       // User has specified a name, so try to keep this unmodified
       identifier = idFactory
@@ -259,7 +259,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
 
   @Override
   protected Class getOverrideMappingClass(Class mappingClass, AbstractMemberMetaData fmd, int roleForField) {
-    if (roleForField == JavaTypeMapping.MAPPING_FIELD && fmd.isPrimaryKey() && mappingClass.equals(
+    if (roleForField == FieldRole.ROLE_FIELD && fmd.isPrimaryKey() && mappingClass.equals(
         SerialisedMapping.class) && fmd.getType().equals(Key.class)) {
       // Do I fully comprehend what I'm doing here?  No.  But I do know that
       // this change enables us to have relations where the pk of the child is of type

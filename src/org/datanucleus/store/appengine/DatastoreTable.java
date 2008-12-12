@@ -275,8 +275,8 @@ class DatastoreTable implements DatastoreClass {
             }
             if (isPrimary) {
               // Add the field to this table
-              JavaTypeMapping mapping = dba.getMappingManager().getMapping(
-                  this, fmd, dba, clr, JavaTypeMapping.MAPPING_FIELD);
+              JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
+                  this, fmd, dba, clr, FieldRole.ROLE_FIELD);
               addFieldMapping(mapping);
             } else {
               throw new UnsupportedOperationException("No support for secondary tables.");
@@ -388,9 +388,9 @@ class DatastoreTable implements DatastoreClass {
     // Create a ColumnMetaData in the container if none is defined
     ColumnMetaData colmd;
     if (columnContainer == null) {
-      colmd = new ColumnMetaData(null, (String) null);
+      colmd = new ColumnMetaData((String) null);
     } else if (columnContainer.getColumnMetaData().length < 1) {
-      colmd = new ColumnMetaData((MetaData) columnContainer, (String) null);
+      colmd = new ColumnMetaData((String) null);
     } else {
       colmd = columnContainer.getColumnMetaData()[0];
     }
@@ -398,14 +398,14 @@ class DatastoreTable implements DatastoreClass {
       // Provide default column naming if none is defined
       if (refTable != null) {
         colmd.setName(storeMgr.getIdentifierFactory()
-            .newDatastoreFieldIdentifier(refTable.getIdentifier().getIdentifier(),
+            .newDatastoreFieldIdentifier(refTable.getIdentifier().getIdentifierName(),
                 this.storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(OID.class),
-                FieldRole.ROLE_OWNER).getIdentifier());
+                FieldRole.ROLE_OWNER).getIdentifierName());
       } else {
         colmd.setName(
-            storeMgr.getIdentifierFactory().newDatastoreFieldIdentifier(identifier.getIdentifier(),
+            storeMgr.getIdentifierFactory().newDatastoreFieldIdentifier(identifier.getIdentifierName(),
                 this.storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(OID.class),
-                FieldRole.ROLE_NONE).getIdentifier());
+                FieldRole.ROLE_NONE).getIdentifierName());
       }
     }
 
@@ -451,8 +451,8 @@ class DatastoreTable implements DatastoreClass {
       }
     }
 
-    dba.getMappingManager().createDatastoreMapping(datastoreIDMapping, storeMgr, idColumn,
-        poidClass.getName());
+    dba.getMappingManager(storeMgr)
+        .createDatastoreMapping(datastoreIDMapping, idColumn, poidClass.getName());
 
     // Handle any auto-increment requirement
     if (isObjectIDDatastoreAttributed()) {
@@ -478,7 +478,7 @@ class DatastoreTable implements DatastoreClass {
     boolean hasPrimaryKeyInThisClass = false;
     if (cmd.getNoOfPrimaryKeyMembers() > 0) {
       pkMappings = new JavaTypeMapping[cmd.getNoOfPrimaryKeyMembers()];
-      if (cmd.getInheritanceMetaData().getStrategyValue() == InheritanceStrategy.COMPLETE_TABLE) {
+      if (cmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE) {
         // COMPLETE-TABLE so use root class metadata and add PK members
         // TODO Does this allow for overridden PK field info ?
         AbstractClassMetaData baseCmd = cmd.getBaseAbstractClassMetaData();
@@ -603,8 +603,8 @@ class DatastoreTable implements DatastoreClass {
         catch (NoTableManagedException ex) {
           //do nothing
         }
-        JavaTypeMapping fieldMapping = dba.getMappingManager()
-            .getMapping(this, fieldsToAdd[i], dba, clr, JavaTypeMapping.MAPPING_FIELD);
+        JavaTypeMapping fieldMapping = dba.getMappingManager(storeMgr)
+            .getMapping(this, fieldsToAdd[i], dba, clr, FieldRole.ROLE_FIELD);
         addFieldMapping(fieldMapping);
         pkMappings[i] = fieldMapping;
       }
@@ -655,7 +655,8 @@ class DatastoreTable implements DatastoreClass {
             StringUtils.objectArrayToString(refTable.getDatastoreFields()));
       }
 
-      JavaTypeMapping masterMapping = dba.getMapping(clr.classForName(mapping.getType()), storeMgr);
+      JavaTypeMapping masterMapping = storeMgr.getMappingManager()
+          .getMapping(clr.classForName(mapping.getType()));
       masterMapping.setFieldInformation(fmd, this); // Update field info in mapping
       pkMappings[i] = masterMapping;
 
@@ -665,15 +666,16 @@ class DatastoreTable implements DatastoreClass {
         JavaTypeMapping m = masterMapping;
         DatastoreField refColumn = mapping.getDataStoreMapping(j).getDatastoreField();
         if (mapping instanceof PersistenceCapableMapping) {
-          m = dba.getMapping(clr.classForName(refColumn.getMapping().getType()), storeMgr);
+          m = storeMgr.getMappingManager()
+              .getMapping(clr.classForName(refColumn.getJavaTypeMapping().getType()));
           ((PersistenceCapableMapping) masterMapping).addJavaTypeMapping(m);
         }
 
         ColumnMetaData userdefinedColumn = null;
         if (userdefinedCols != null) {
-          for (ColumnMetaData userdefinedCol : userdefinedCols) {
-            if (refColumn.getIdentifier().toString().equals(userdefinedCol.getTarget())) {
-              userdefinedColumn = userdefinedCol;
+          for (int k = 0; k < userdefinedCols.length; k++) {
+            if (refColumn.getIdentifier().toString().equals(userdefinedCols[k].getTarget())) {
+              userdefinedColumn = userdefinedCols[k];
               break;
             }
           }
@@ -683,7 +685,7 @@ class DatastoreTable implements DatastoreClass {
         }
 
         // Add this application identity column
-        DatastoreField idColumn;
+        DatastoreField idColumn = null;
         if (userdefinedColumn != null) {
           // User has provided a name for this column
           // Currently we only use the column namings from the users definition but we could easily
@@ -691,20 +693,21 @@ class DatastoreTable implements DatastoreClass {
           idColumn = addDatastoreField(refColumn.getStoredJavaType(),
               storeMgr.getIdentifierFactory().newIdentifier(IdentifierFactory.COLUMN,
                   userdefinedColumn.getName()),
-              m, refColumn.getMetaData());
+              m, refColumn.getColumnMetaData());
         } else {
           // No name provided so take same as superclass
           idColumn = addDatastoreField(refColumn.getStoredJavaType(), refColumn.getIdentifier(),
-              m, refColumn.getMetaData());
+              m, refColumn.getColumnMetaData());
         }
-        if (mapping.getDataStoreMapping(j).getDatastoreField().getMetaData() != null) {
+        if (mapping != null
+            && mapping.getDataStoreMapping(j).getDatastoreField().getColumnMetaData() != null) {
           refColumn.copyConfigurationTo(idColumn);
         }
         idColumn.setAsPrimaryKey();
 
         // Set the column type based on the field.getType()
-        getStoreManager().getMappingManager().createDatastoreMapping(m, storeMgr, idColumn,
-            refColumn.getMapping().getType());
+        getStoreManager().getMappingManager()
+            .createDatastoreMapping(m, idColumn, refColumn.getJavaTypeMapping().getType());
       }
 
       // Update highest field number if this is higher

@@ -1,6 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingManager;
 import org.datanucleus.store.rdbms.adapter.DatabaseAdapter;
 
@@ -22,7 +23,7 @@ class DatastoreAdapter extends DatabaseAdapter {
   }
 
   @Override
-  protected MappingManager getNewMappingManager() {
-    return new DatastoreMappingManager();
+  public MappingManager getMappingManager(MappedStoreManager mappedStoreManager) {
+    return new DatastoreMappingManager(mappedStoreManager);
   }
 }
