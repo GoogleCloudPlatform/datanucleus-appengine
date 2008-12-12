@@ -8,6 +8,8 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query;
 import com.google.apphosting.api.datastore.Transaction;
 
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToOneJPA;

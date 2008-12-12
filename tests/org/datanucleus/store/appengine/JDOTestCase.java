@@ -18,7 +18,8 @@ public class JDOTestCase extends TestCase {
   protected PersistenceManager pm;
 
   protected LocalDatastoreTestHelper ldth;
-  
+  private boolean failed = false;
+
   @Override
   protected void setUp() throws Exception {
     super.setUp();
@@ -29,8 +30,20 @@ public class JDOTestCase extends TestCase {
   }
 
   @Override
+  protected void runTest() throws Throwable {
+    try {
+      super.runTest();
+    } catch (Throwable t) {
+      failed = true;
+      throw t;
+    }
+  }
+
+  @Override
   protected void tearDown() throws Exception {
-    ldth.tearDown();
+    boolean throwIfActiveTxn = !failed;
+    failed = false;
+    ldth.tearDown(throwIfActiveTxn);
     ldth = null;
     if (pm.currentTransaction().isActive()) {
       pm.currentTransaction().rollback();
@@ -41,4 +54,32 @@ public class JDOTestCase extends TestCase {
     pmf = null;
     super.tearDown();
   }
+
+
+  protected void beginTxn() {
+    pm.currentTransaction().begin();
+  }
+
+  protected void commitTxn() {
+    pm.currentTransaction().commit();
+  }
+
+  protected void rollbackTxn() {
+    pm.currentTransaction().rollback();
+  }
+
+  protected void makePersistentInTxn(Object obj) {
+    boolean success = false;
+    beginTxn();
+    try {
+      pm.makePersistent(obj);
+      commitTxn();
+      success = true;
+    } finally {
+      if (!success) {
+        rollbackTxn();
+      }
+    }
+  }
+
 }

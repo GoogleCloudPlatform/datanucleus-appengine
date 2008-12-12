@@ -106,6 +106,16 @@ public class Flight {
     return newFlightEntity(keyName, name, origin, dest, you, me, 300);
   }
 
+  public static void addData(Entity e, String name, String origin, String dest, int you, int me, int flightNumber) {
+    e.setProperty("name", name);
+    e.setProperty("origin", origin);
+    e.setProperty("dest", dest);
+    e.setProperty("you", you);
+    e.setProperty("me", me);
+    e.setProperty("OPT_VERSION", 1L);
+    e.setProperty("flight_number", flightNumber);
+  }
+
   public static Entity newFlightEntity(
       String keyName, String name, String origin, String dest, int you, int me, int flightNumber) {
     Entity e;
@@ -114,13 +124,7 @@ public class Flight {
     } else {
       e = new Entity(Flight.class.getSimpleName(), keyName);
     }
-    e.setProperty("name", name);
-    e.setProperty("origin", origin);
-    e.setProperty("dest", dest);
-    e.setProperty("you", you);
-    e.setProperty("me", me);
-    e.setProperty("OPT_VERSION", 1L);
-    e.setProperty("flight_number", flightNumber);
+    addData(e, name, origin, dest, you, me, flightNumber);
     return e;
   }
 

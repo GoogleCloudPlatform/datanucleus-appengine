@@ -21,6 +21,9 @@ public class HasAncestorJDO {
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
 
+  public HasAncestorJDO() {
+  }
+
   public HasAncestorJDO(String ancestorId) {
     this(ancestorId, null);
   }

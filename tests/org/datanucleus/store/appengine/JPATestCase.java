@@ -1,10 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
-
 import junit.framework.TestCase;
 
 import javax.persistence.EntityManager;
@@ -20,6 +16,17 @@ public class JPATestCase extends TestCase {
   protected EntityManager em;
 
   protected LocalDatastoreTestHelper ldth;
+
+  private boolean failed = false;
+  @Override
+  protected void runTest() throws Throwable {
+    try {
+      super.runTest();
+    } catch (Throwable t) {
+      failed = true;
+      throw t;
+    }
+  }
 
   @Override
   protected void setUp() throws Exception {
@@ -43,7 +50,9 @@ public class JPATestCase extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     assertTrue(DatastoreFieldManager.PARENT_KEY_MAP.get().isEmpty());
-    ldth.tearDown();
+    boolean throwIfActiveTxn = !failed;
+    failed = false;
+    ldth.tearDown(throwIfActiveTxn);
     ldth = null;
     if (em.getTransaction().isActive()) {
       em.getTransaction().rollback();
@@ -62,25 +71,4 @@ public class JPATestCase extends TestCase {
   protected void commitTxn() {
     em.getTransaction().commit();
   }
-
-  protected void assertKeyParentEquals(String parentKey, Entity childEntity, Key childKey) {
-    assertEquals(KeyFactory.decodeKey(parentKey), childEntity.getKey().getParent());
-    assertEquals(KeyFactory.decodeKey(parentKey), childKey.getParent());
-  }
-
-  protected void assertKeyParentEquals(String parentKey, Entity childEntity, String childKey) {
-    assertEquals(KeyFactory.decodeKey(parentKey), childEntity.getKey().getParent());
-    assertEquals(KeyFactory.decodeKey(parentKey), KeyFactory.decodeKey(childKey).getParent());
-  }
-
-  protected void assertKeyParentNull(Entity childEntity, String childKey) {
-    assertNull(childEntity.getKey().getParent());
-    assertNull(KeyFactory.decodeKey(childKey).getParent());
-  }
-
-  protected void assertKeyParentNull(Entity childEntity, Key childKey) {
-    assertNull(childEntity.getKey().getParent());
-    assertNull(childKey.getParent());
-  }
-
 }

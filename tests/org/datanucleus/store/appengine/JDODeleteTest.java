@@ -9,6 +9,7 @@ import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.KitchenSink;
 
+import javax.jdo.JDOHelper;
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.JDOOptimisticVerificationException;
 
@@ -23,16 +24,19 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
-    pm.currentTransaction().begin();
     pm.deletePersistent(ks);
-    pm.currentTransaction().commit();
+    commitTxn();
+    beginTxn();
     try {
       pm.getObjectById(KitchenSink.class, keyStr);
       fail("expected onfe");
     } catch (JDOObjectNotFoundException onfe) {
       // good
+    } finally {
+      rollbackTxn();
     }
   }
 
@@ -40,17 +44,20 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
     assertEquals("named key", KeyFactory.decodeKey(ks.key).getName());
-    pm.currentTransaction().begin();
     pm.deletePersistent(ks);
-    pm.currentTransaction().commit();
+    commitTxn();
+    beginTxn();
     try {
       pm.getObjectById(KitchenSink.class, keyStr);
       fail("expected onfe");
     } catch (JDOObjectNotFoundException onfe) {
       // good
+    } finally {
+      rollbackTxn();
     }
   }
 
@@ -59,9 +66,9 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(flightEntity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
-    pm.currentTransaction().begin();
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we update the flight directly in the datastore right before we delete
     ldth.ds.put(flightEntity);
@@ -71,7 +78,7 @@ public class JDODeleteTest extends JDOTestCase {
     } catch (JDOOptimisticVerificationException jove) {
       // good
     } finally {
-      pm.currentTransaction().rollback();
+      rollbackTxn();
     }
   }
 
@@ -80,9 +87,9 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(flightEntity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
-    pm.currentTransaction().begin();
     flight.setName("2");
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we remove the flight from the datastore right before delete
@@ -93,7 +100,7 @@ public class JDODeleteTest extends JDOTestCase {
     } catch (JDOOptimisticVerificationException jove) {
       // good
     } finally {
-      pm.currentTransaction().rollback();
+      rollbackTxn();
     }
   }
 
@@ -103,17 +110,17 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
-    pm.currentTransaction().begin();
     hvwf.setValue("value");
-    pm.currentTransaction().commit();
+    commitTxn();
+    beginTxn();
+    hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
     assertEquals(2L, hvwf.getVersion());
     // make sure the version gets bumped
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
 
-    hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
-    pm.currentTransaction().begin();
     // we update the entity directly in the datastore right before delete
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
     ldth.ds.put(entity);
@@ -123,10 +130,10 @@ public class JDODeleteTest extends JDOTestCase {
     } catch (JDOOptimisticVerificationException jove) {
       // good
     } finally {
-      pm.currentTransaction().rollback();
+      rollbackTxn();
     }
     // make sure the version didn't change on the model object
-    assertEquals(2L, hvwf.getVersion());
+    assertEquals(2L, JDOHelper.getVersion(hvwf));
   }
 
   public void testOptimisticLocking_Delete_HasVersionField() {
@@ -135,9 +142,9 @@ public class JDODeleteTest extends JDOTestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
-    pm.currentTransaction().begin();
     // delete the entity in the datastore right before we delete
     ldth.ds.delete(key);
     try {
@@ -146,9 +153,9 @@ public class JDODeleteTest extends JDOTestCase {
     } catch (JDOOptimisticVerificationException jove) {
       // good
     } finally {
-      pm.currentTransaction().rollback();
+      rollbackTxn();
     }
     // make sure the version didn't change on the model object
-    assertEquals(1L, hvwf.getVersion());
+    assertEquals(1L, JDOHelper.getVersion(hvwf));
   }
 }

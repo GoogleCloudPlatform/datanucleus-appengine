@@ -57,6 +57,18 @@ public class JDOQLQueryTest extends JDOTestCase {
   private static final SortPredicate DESC_DESC =
       new SortPredicate("dest", SortDirection.DESCENDING);
 
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    beginTxn();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    commitTxn();
+    super.tearDown();
+  }
+
   public void testUnsupportedFilters() {
     assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
         + " where origin == 2 group by dest", DatastoreQuery.GROUP_BY_OP);

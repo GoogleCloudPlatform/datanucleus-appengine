@@ -8,6 +8,7 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import org.datanucleus.test.HasVersionJPA;
 import org.datanucleus.test.KitchenSink;
 
+import javax.jdo.JDOHelper;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
 
@@ -82,10 +83,8 @@ public class JPADeleteTest extends JPATestCase {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
-    beginTxn();
     // make sure the version didn't change on the model object
-    assertEquals(2L, hv.getVersion());
-    commitTxn();
+    assertEquals(2L, JDOHelper.getVersion(hv));
   }
 
   public void testOptimisticLocking_Delete() {
@@ -107,10 +106,8 @@ public class JPADeleteTest extends JPATestCase {
       // good
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
-    beginTxn();
     // make sure the version didn't change on the model object
-    assertEquals(1L, hv.getVersion());
-    commitTxn();
+    assertEquals(1L, JDOHelper.getVersion(hv));
   }
 
 }

@@ -42,7 +42,7 @@ public class JDOTransactionTest extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
-    ldth.tearDown();
+    ldth.tearDown(true);
     ldth = null;
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     recordingImpl = null;
@@ -177,8 +177,11 @@ public class JDOTransactionTest extends TestCase {
   }
 
   public void testNontransactionalRead() throws Exception {
+    mockTxn.commit();
+    EasyMock.expectLastCall();
+    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
-    EasyMock.replay(mockDatastoreService);
+    EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity f1 = Flight.newFlightEntity("foo", "bar", "baz", 1, 2);
     ldth.ds.put(f1);
@@ -192,7 +195,7 @@ public class JDOTransactionTest extends TestCase {
       txn.commit();
     }
 
-    EasyMock.verify(mockDatastoreService);
+    EasyMock.verify(mockDatastoreService, mockTxn);
   }
 
   public void testMixedTransactionalReads() throws Exception {
@@ -227,13 +230,13 @@ public class JDOTransactionTest extends TestCase {
 
   public void testMixedTransactionalReadsAndWrites() throws Exception {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
-    EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
-    EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
+    EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null).times(3);
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn("0");
+    EasyMock.expect(mockTxn.getId()).andReturn("1");
     mockTxn.commit();
+    EasyMock.expectLastCall();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity f1 = Flight.newFlightEntity("foo", "bar", "baz", 1, 2);

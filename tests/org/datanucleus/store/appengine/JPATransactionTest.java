@@ -39,7 +39,7 @@ public class JPATransactionTest extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
-    ldth.tearDown();
+    ldth.tearDown(true);
     ldth = null;
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     recordingImpl = null;
@@ -60,7 +60,7 @@ public class JPATransactionTest extends TestCase {
   public void testTransactionalWrite() throws Exception {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.put(
-        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
+        EasyMock.isA(Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andReturn("0");
     mockTxn.commit();
@@ -107,7 +107,7 @@ public class JPATransactionTest extends TestCase {
   public void testTransactionalRead() throws Exception {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
-        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
+        EasyMock.isA(Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andReturn("1");
     mockTxn.commit();
@@ -128,7 +128,29 @@ public class JPATransactionTest extends TestCase {
     EasyMock.verify(mockDatastoreService, mockTxn);
   }
 
-  public void testNontransactionalRead() throws Exception {
+  public void testNontransactionalRead_Txn() throws Exception {
+    mockTxn.commit();
+    EasyMock.expectLastCall();
+    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    Entity b1 = Book.newBookEntity("Joe Blow", "12345", "Foo Bar");
+    ldth.ds.put(b1);
+
+    EntityManager em = getEntityManager("nontransactional");
+    em.getTransaction().begin();
+    try {
+      em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
+    } finally {
+      em.getTransaction().commit();
+      em.close();
+    }
+
+    EasyMock.verify(mockDatastoreService, mockTxn);
+  }
+
+  public void testNontransactionalRead_NoTxn() throws Exception {
     EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.replay(mockDatastoreService);
 
@@ -136,14 +158,7 @@ public class JPATransactionTest extends TestCase {
     ldth.ds.put(b1);
 
     EntityManager em = getEntityManager("nontransactional");
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
-    try {
-      em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
-    } finally {
-      txn.commit();
-    }
-
+    em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
     EasyMock.verify(mockDatastoreService);
   }
 }

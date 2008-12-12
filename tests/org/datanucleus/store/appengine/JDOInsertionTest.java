@@ -30,7 +30,7 @@ public class JDOInsertionTest extends JDOTestCase {
     f1.setYou(4);
     f1.setName("Harold");
     assertNull(f1.getId());
-    pm.makePersistent(f1);
+    makePersistentInTxn(f1);
     assertNotNull(f1.getId());
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(f1.getId()));
     assertNotNull(entity);
@@ -47,7 +47,7 @@ public class JDOInsertionTest extends JDOTestCase {
     Flight f = new Flight();
     f.setId("foo");
     assertNotNull(f.getId());
-    pm.makePersistent(f);
+    makePersistentInTxn(f);
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
     assertNotNull(entity);
     assertEquals("foo", entity.getKey().getName());
@@ -56,7 +56,7 @@ public class JDOInsertionTest extends JDOTestCase {
   public void testKitchenSinkInsert() throws EntityNotFoundException {
     KitchenSink ks = KitchenSink.newKitchenSink();
     assertNull(ks.key);
-    pm.makePersistent(ks);
+    makePersistentInTxn(ks);
     assertNotNull(ks.key);
 
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(ks.key));
@@ -69,13 +69,13 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testKitchenSinkInsertWithNulls() throws EntityNotFoundException {
     KitchenSink allNulls = new KitchenSink();
-    pm.makePersistent(allNulls);
+    makePersistentInTxn(allNulls);
     Entity entityWithNulls = ldth.ds.get(KeyFactory.decodeKey(allNulls.key));
     assertNotNull(entityWithNulls);
 
     // now create a KitchenSink with non-null values
     KitchenSink noNulls = KitchenSink.newKitchenSink();
-    pm.makePersistent(noNulls);
+    makePersistentInTxn(noNulls);
     Entity entityWithoutNulls = ldth.ds.get(KeyFactory.decodeKey(noNulls.key));
     assertNotNull(entityWithoutNulls);
 
@@ -84,27 +84,31 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testVersionInserts() throws EntityNotFoundException {
     HasVersionNoFieldJDO hv = new HasVersionNoFieldJDO();
-    pm.makePersistent(hv);
+    makePersistentInTxn(hv);
 
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(hv.getId()));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty("myversioncolumn"));
 
     HasVersionWithFieldJDO hvwf = new HasVersionWithFieldJDO();
+    beginTxn();
     pm.makePersistent(hvwf);
     entity = ldth.ds.get(KeyFactory.decodeKey(hvwf.getId()));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
     assertEquals(1L, hvwf.getVersion());
+    commitTxn();
   }
 
   public void testInsertWithKeyPk() {
     HasKeyPkJDO hk = new HasKeyPkJDO();
 
+    beginTxn();
     pm.makePersistent(hk);
 
     assertNotNull(hk.getKey());
     assertNull(hk.getAncestorKey());
+    commitTxn();
   }
 
   public void testInsertWithKeyPkAndAncestor() throws EntityNotFoundException {
@@ -112,10 +116,12 @@ public class JDOInsertionTest extends JDOTestCase {
     ldth.ds.put(e);
     HasKeyPkJDO hk1 = new HasKeyPkJDO();
     hk1.setAncestorKey(e.getKey());
+    beginTxn();
     pm.makePersistent(hk1);
 
     Entity reloaded = ldth.ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
+    commitTxn();
   }
 
   public void testInsertWithKeyPkAndStringAncestor() throws EntityNotFoundException {
@@ -123,10 +129,12 @@ public class JDOInsertionTest extends JDOTestCase {
     ldth.ds.put(e);
     HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
     hk1.setAncestorKey(KeyFactory.encodeKey(e.getKey()));
+    beginTxn();
     pm.makePersistent(hk1);
 
     Entity reloaded = ldth.ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), KeyFactory.encodeKey(reloaded.getKey().getParent()));
+    commitTxn();
   }
 
   public void testInsertWithStringPkAndKeyAncestor() throws EntityNotFoundException {
@@ -134,16 +142,18 @@ public class JDOInsertionTest extends JDOTestCase {
     ldth.ds.put(e);
     HasKeyAncestorKeyStringPkJDO hk1 = new HasKeyAncestorKeyStringPkJDO();
     hk1.setAncestorKey(e.getKey());
+    beginTxn();
     pm.makePersistent(hk1);
 
     Entity reloaded = ldth.ds.get(KeyFactory.decodeKey(hk1.getKey()));
     assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
+    commitTxn();
   }
 
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJDO hk = new HasKeyPkJDO();
     hk.setKey(KeyFactory.createKey("something", "name"));
-    pm.makePersistent(hk);
+    makePersistentInTxn(hk);
 
     assertNotNull(hk.getKey());
     assertEquals("name", hk.getKey().getName());
@@ -157,7 +167,7 @@ public class JDOInsertionTest extends JDOTestCase {
     p.setAnotherName(new Name());
     p.getAnotherName().setFirst("anotherjimmy");
     p.getAnotherName().setLast("anotherjam");
-    pm.makePersistent(p);
+    makePersistentInTxn(p);
 
     assertNotNull(p.getId());
 
@@ -174,7 +184,7 @@ public class JDOInsertionTest extends JDOTestCase {
     p.setName(new Name());
     p.getName().setFirst("jimmy");
     p.getName().setLast("jam");
-    pm.makePersistent(p);
+    makePersistentInTxn(p);
 
     assertNotNull(p.getId());
 

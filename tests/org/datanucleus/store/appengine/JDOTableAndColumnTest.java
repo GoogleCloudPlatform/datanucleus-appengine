@@ -23,7 +23,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
   public void testInsert() throws EntityNotFoundException {
     HasTableAndColumnsInMappingJDO htacim = new HasTableAndColumnsInMappingJDO();
     htacim.setFoo("foo val");
-    pm.makePersistent(htacim);
+    makePersistentInTxn(htacim);
     assertNotNull(htacim.getId());
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(htacim.getId()));
     assertNotNull(entity);
@@ -74,11 +74,13 @@ public class JDOTableAndColumnTest extends JDOTestCase {
     Key key = ldth.ds.put(entity);
 
     String keyStr = KeyFactory.encodeKey(key);
+    beginTxn();
     HasTableAndColumnsInMappingJDO htacim =
         pm.getObjectById(HasTableAndColumnsInMappingJDO.class, keyStr);
     assertNotNull(htacim);
     assertEquals(keyStr, htacim.getId());
     assertEquals("foo val", htacim.getFoo());
+    commitTxn();
   }
 
   public void testQueryWithCustomIdPolicy() {

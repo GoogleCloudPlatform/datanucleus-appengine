@@ -20,6 +20,18 @@ import javax.jdo.JDOUserException;
  */
 public class JDOFetchTest extends JDOTestCase {
 
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    beginTxn();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    commitTxn();
+    super.tearDown();
+  }
+
   public void testSimpleFetch() {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
 
@@ -60,8 +72,7 @@ public class JDOFetchTest extends JDOTestCase {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.encodeKey(key);
-    KitchenSink ks =
-        pmf.getPersistenceManager().getObjectById(KitchenSink.class, keyStr);
+    KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
     assertEquals(keyStr, ks.key);
     assertEquals(KitchenSink.newKitchenSink(ks.key), ks);

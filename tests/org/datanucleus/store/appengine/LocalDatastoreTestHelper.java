@@ -50,18 +50,23 @@ public class LocalDatastoreTestHelper {
 
   }
 
-  public void tearDown() {
-    ApiProxy.clearEnvironmentForCurrentThread();
-    ApiProxyLocalImpl delegate = (ApiProxyLocalImpl) ApiProxy.getDelegate();
-    delegate.stop();
+  public void tearDown(boolean exceptionIfActiveTxn) {
     Transaction txn = ds.getCurrentTransaction(null);
-    if (txn != null) {
-      try {
-        txn.rollback();
-      } finally {
-        throw new IllegalStateException("Datastore service still has an active txn.  Please "
-            + "rollback or commit all txns before test completes.");
+    try {
+      if (txn != null) {
+        try {
+          txn.rollback();
+        } finally {
+          if (exceptionIfActiveTxn) {
+            throw new IllegalStateException("Datastore service still has an active txn.  Please "
+                + "rollback or commit all txns before test completes.");
+          }
+        }
       }
+    } finally {
+      ApiProxy.clearEnvironmentForCurrentThread();
+      ApiProxyLocalImpl delegate = (ApiProxyLocalImpl) ApiProxy.getDelegate();
+      delegate.stop();
     }
   }
 }

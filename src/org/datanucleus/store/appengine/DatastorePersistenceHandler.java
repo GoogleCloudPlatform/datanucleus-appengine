@@ -66,12 +66,17 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   private Entity get(StateManager sm, Key key) {
     NucleusLogger.DATASTORE.debug("Getting entity with key " + key);
+    Entity entity;
     try {
+      Transaction txn = null;
       if (isNontransactionalRead(sm)) {
-        return getWithoutTxn(key);
+        entity = getWithoutTxn(key);
       } else {
-        return datastoreService.get(getCurrentTransaction(sm), key);
+        txn = getCurrentTransaction(sm);
+        entity = datastoreService.get(getCurrentTransaction(sm), key);
       }
+      setAssociatedEntity(sm, txn, entity);
+      return entity;
     } catch (EntityNotFoundException e) {
       throw new NucleusObjectNotFoundException(
           "Could not retrieve entity of type " + sm.getClassMetaData().getName()
@@ -81,13 +86,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   private void put(StateManager sm, Entity entity) {
     NucleusLogger.DATASTORE.debug("Putting entity with key" + entity.getKey());
+    Transaction txn = null;
     if (isNontransactionalWrite(sm)) {
       datastoreService.put(entity);
     } else {
+      txn = getCurrentTransaction(sm);
       datastoreService.put(getCurrentTransaction(sm), entity);
     }
-    sm.setAssociatedValue(entity.getKey(), entity);
-
+    setAssociatedEntity(sm, txn, entity);
   }
 
   private void delete(StateManager sm, Key key) {
@@ -271,19 +277,25 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
-  private Entity getAssociatedEntity(StateManager sm, Key pk) {
-    return (Entity) sm.getAssociatedValue(pk);
+  private void setAssociatedEntity(StateManager sm, Transaction txn, Entity entity) {
+    // A StateManager can be used across multiple transactions, so we really
+    // want to associate the entity not just with a StateManager but a
+    // StateManager and a transaction.
+    sm.setAssociatedValue(txn, entity);
+  }
+
+  private Entity getAssociatedEntity(StateManager sm, Transaction txn) {
+    return (Entity) sm.getAssociatedValue(txn);
   }
 
   public void fetchObject(StateManager sm, int fieldNumbers[]) {
-    Key pk = getPkAsKey(sm);
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
-    Entity entity = getAssociatedEntity(sm, pk);
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
     if (entity == null) {
+      Key pk = getPkAsKey(sm);
       entity = get(sm, pk);
-      sm.setAssociatedValue(pk, entity);
     }
     sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity));
 
@@ -302,10 +314,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Key key = getPkAsKey(sm);
-    Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
+      Key key = getPkAsKey(sm);
       entity = get(sm, key);
     }
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
@@ -324,10 +336,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Key key = getPkAsKey(sm);
-    Entity entity = getAssociatedEntity(sm, getPkAsKey(sm));
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
+      Key key = getPkAsKey(sm);
       entity = get(sm, key);
     }
 

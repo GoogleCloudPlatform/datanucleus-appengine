@@ -4,8 +4,12 @@ package org.datanucleus.store.appengine;
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.EntityNotFoundException;
+import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.apphosting.api.datastore.Transaction;
 
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToOneJDO;
@@ -36,7 +40,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    pm.makePersistent(pojo);
+    makePersistentInTxn(pojo);
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -53,18 +57,22 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(3L, flightEntity.getProperty("you"));
     assertEquals(44L, flightEntity.getProperty("flight_number"));
     assertEquals(KeyFactory.decodeKey(f.getId()), flightEntity.getKey());
+    assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
 
     Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
+    assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
 
     Entity hasParentEntity = ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
     assertNotNull(hasParentEntity);
     assertEquals(KeyFactory.decodeKey(hasParent.getKey()), hasParentEntity.getKey());
+    assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getKey());
 
     Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals(hasParentKeyPk.getKey(), hasParentKeyPkEntity.getKey());
+    assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getKey());
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.decodeKey(pojo.getId()));
     assertNotNull(pojoEntity);
@@ -76,25 +84,28 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertCountsInDatastore(1, 1);
   }
 
-  public void testInsert_NewParentExistingChild() throws EntityNotFoundException {
+  public void testInsert_NewParentExistingChild_Unidirectional() throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
 
-    pm.makePersistent(f);
-    pm.makePersistent(hasKeyPk);
+    persistInTxn(f);
+    persistInTxn(hasKeyPk);
+    persistInTxn(hasParent);
+    persistInTxn(hasParentKeyPk);
     assertNotNull(f.getId());
+    assertNotNull(hasKeyPk.getKey());
+    assertNotNull(hasParent.getKey());
+    assertNotNull(hasParentKeyPk.getKey());
 
     HasOneToOneJDO pojo = new HasOneToOneJDO();
     pojo.setFlight(f);
     pojo.setHasKeyPK(hasKeyPk);
-    pojo.setHasParent(hasParent);
-    hasParent.setParent(pojo);
-    pojo.setHasParentKeyPK(hasParentKeyPk);
-    hasParentKeyPk.setParent(pojo);
 
+    beginTxn();
     pm.makePersistent(pojo);
+    commitTxn();
 
     assertNotNull(pojo.getId());
 
@@ -102,22 +113,74 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(pojoEntity);
     assertEquals(KeyFactory.decodeKey(f.getId()), pojoEntity.getProperty("flight_id"));
     assertEquals(hasKeyPk.getKey(), pojoEntity.getProperty("haskeypk_id"));
-    assertEquals(KeyFactory.decodeKey(hasParent.getKey()), pojoEntity.getProperty("hasparent_id"));
-    assertEquals(hasParentKeyPk.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
+    assertNull(pojoEntity.getProperty("hasparent_id"));
+    assertNull(pojoEntity.getProperty("hasparentkeypk_id"));
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
+    assertNotNull(flightEntity);
+    assertKeyParentNull(flightEntity, f.getId());
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    assertNotNull(hasKeyPkEntity);
+    assertKeyParentNull(hasKeyPkEntity, hasKeyPk.getKey());
+
+    Entity hasParentEntity = ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
+    assertNotNull(hasParentEntity);
+    assertKeyParentNull(hasParentEntity, hasParent.getKey());
+
+    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
+    assertNotNull(hasParentKeyPkEntity);
+    assertKeyParentNull(hasParentKeyPkEntity, hasParentKeyPk.getKey());
 
     assertCountsInDatastore(1, 1);
+  }
+
+  public void testInsert_NewParentExistingChild_Bidirectional() throws EntityNotFoundException {
+    Flight f = newFlight();
+    HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
+
+    persistInTxn(f);
+    persistInTxn(hasKeyPk);
+    persistInTxn(hasParent);
+    persistInTxn(hasParentKeyPk);
+    assertNotNull(f.getId());
+    assertNotNull(hasKeyPk.getKey());
+    assertNotNull(hasParent.getKey());
+    assertNotNull(hasParentKeyPk.getKey());
+
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    pojo.setFlight(f);
+    pojo.setHasKeyPK(hasKeyPk);
+    pojo.setHasParent(hasParent);
+    pojo.setHasParentKeyPK(hasParentKeyPk);
+
+    beginTxn();
+    pm.makePersistent(pojo);
+    try {
+      // this fails because the back ptrs on hasParent and  hasParentKeyPk
+      // are automatically set, which makes them dirty, and those objects
+      // belong to a different entity group
+      commitTxn();
+      fail("expected IllegalArgumentException");
+    } catch (IllegalArgumentException iae) {
+      // good
+    }
   }
 
   public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
     HasOneToOneJDO pojo = new HasOneToOneJDO();
 
+    beginTxn();
     pm.makePersistent(pojo);
     assertNotNull(pojo.getId());
     assertNull(pojo.getFlight());
     assertNull(pojo.getHasKeyPK());
     assertNull(pojo.getHasParent());
     assertNull(pojo.getHasParentKeyPK());
-
+    commitTxn();
+    
     Entity pojoEntity = ldth.ds.get(KeyFactory.decodeKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertTrue(pojoEntity.getProperties().keySet().contains("flight_id"));
@@ -133,14 +196,14 @@ public class JDOOneToOneTest extends JDOTestCase {
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
-    pm.currentTransaction().begin();
+    beginTxn();
     pojo.setFlight(f);
     pojo.setHasKeyPK(hasKeyPk);
     pojo.setHasParent(hasParent);
     hasParent.setParent(pojo);
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
-    pm.currentTransaction().commit();
+    commitTxn();
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -152,6 +215,22 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(hasKeyPk.getKey(), pojoEntity.getProperty("haskeypk_id"));
     assertEquals(KeyFactory.decodeKey(hasParent.getKey()), pojoEntity.getProperty("hasparent_id"));
     assertEquals(hasParentKeyPk.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
+    assertNotNull(flightEntity);
+    assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    assertNotNull(hasKeyPkEntity);
+    assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
+
+    Entity hasParentEntity = ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
+    assertNotNull(hasParentEntity);
+    assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getKey());
+
+    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
+    assertNotNull(hasParentKeyPkEntity);
+    assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getKey());
 
     assertCountsInDatastore(1, 1);
   }
@@ -172,6 +251,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
+    beginTxn();
     pm.makePersistent(pojo);
 
     assertNotNull(f.getId());
@@ -179,29 +259,33 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(hasParent.getKey());
     assertNotNull(hasParentKeyPk.getKey());
     assertNotNull(pojo.getId());
-
-    pm.currentTransaction().begin();
+    commitTxn();
+    beginTxn();
     f.setOrigin("yam");
     hasKeyPk.setStr("yar");
     hasParent.setStr("yag");
     hasParentKeyPk.setStr("yap");
-    pm.currentTransaction().commit();
+    commitTxn();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
+    assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
 
     Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
 
     Entity hasParentEntity = ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
     assertNotNull(hasParentEntity);
     assertEquals("yag", hasParentEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getKey());
 
     Entity hasParentPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
     assertNotNull(hasParentPkEntity);
     assertEquals("yap", hasParentPkEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasParentPkEntity, hasParentKeyPk.getKey());
 
     assertCountsInDatastore(1, 1);
   }
@@ -220,6 +304,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
+    beginTxn();
     pm.makePersistent(pojo);
 
     assertNotNull(f.getId());
@@ -227,30 +312,35 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(hasParentKeyPk.getKey());
     assertNotNull(hasParent.getKey());
     assertNotNull(pojo.getId());
+    commitTxn();
 
-    pm.currentTransaction().begin();
+    beginTxn();
     pojo = pm.getObjectById(HasOneToOneJDO.class, pojo.getId());
     pojo.getFlight().setOrigin("yam");
     pojo.getHasKeyPK().setStr("yar");
     pojo.getHasParent().setStr("yag");
     pojo.getHasParentKeyPK().setStr("yap");
-    pm.currentTransaction().commit();
+    commitTxn();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.decodeKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
+    assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
 
     Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
 
     Entity hasParentEntity = ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
     assertNotNull(hasParentEntity);
     assertEquals("yag", hasParentEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getKey());
 
     Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals("yap", hasParentKeyPkEntity.getProperty("str"));
+    assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getKey());
 
     assertCountsInDatastore(1, 1);
   }
@@ -269,38 +359,47 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
+    beginTxn();
     pm.makePersistent(pojo);
+    String flightId = f.getId();
+    Key hasKeyPkKey = hasKeyPk.getKey();
+    String hasParentKey = hasParent.getKey();
+    Key hasParentKeyPkKey = hasParentKeyPk.getKey();
+    commitTxn();
 
-    pm.currentTransaction().begin();
-    pojo.setFlight(null);
-    pojo.setHasKeyPK(null);
-    pojo.setHasParent(null);
-    pojo.setHasParentKeyPK(null);
-    pm.currentTransaction().commit();
+    beginTxn();
+    try {
+      pojo.setFlight(null);
+      pojo.setHasKeyPK(null);
+      pojo.setHasParent(null);
+      pojo.setHasParentKeyPK(null);
+    } finally {
+      commitTxn();
+    }
 
     try {
-      ldth.ds.get(KeyFactory.decodeKey(f.getId()));
+      ldth.ds.get(KeyFactory.decodeKey(flightId));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasKeyPk.getKey());
+      ldth.ds.get(hasKeyPkKey);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(KeyFactory.decodeKey(hasParent.getKey()));
+      ldth.ds.get(KeyFactory.decodeKey(hasParentKey));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasParentKeyPk.getKey());
+      ldth.ds.get(hasParentKeyPkKey);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -342,7 +441,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojoEntity.setProperty("hasparentkeypk_id", hasParentKeyPkEntity.getKey());
     ldth.ds.put(pojoEntity);
 
-
+    beginTxn();
     HasOneToOneJDO pojo = pm.getObjectById(HasOneToOneJDO.class, KeyFactory.encodeKey(pojoEntity.getKey()));
     assertNotNull(pojo);
     assertNotNull(pojo.getFlight());
@@ -354,6 +453,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
+    commitTxn();
   }
 
   public void testQuery() {
@@ -381,6 +481,7 @@ public class JDOOneToOneTest extends JDOTestCase {
 
     Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName()
         + " where id == key parameters String key");
+    beginTxn();
     @SuppressWarnings("unchecked")
     List<HasOneToOneJDO> result =
         (List<HasOneToOneJDO>) q.execute(KeyFactory.encodeKey(pojoEntity.getKey()));
@@ -394,6 +495,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
+    commitTxn();
   }
 
   public void testChildFetchedLazily() throws Exception {
@@ -401,6 +503,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     DatastoreService ds = EasyMock.createMock(DatastoreService.class);
     DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService();
     DatastoreServiceFactoryInternal.setDatastoreService(ds);
+    Transaction txn;
     try {
       setUp();
 
@@ -427,46 +530,56 @@ public class JDOOneToOneTest extends JDOTestCase {
       ldth.ds.put(pojoEntity);
 
       // the only get we're going to perform is for the pojo
-      EasyMock.expect(ds.get(pojoEntity.getKey())).andReturn(pojoEntity);
+      txn = EasyMock.createMock(Transaction.class);
+      txn.commit();
+      EasyMock.expectLastCall();
+      EasyMock.replay(txn);
+      EasyMock.expect(ds.beginTransaction()).andReturn(txn);
+      EasyMock.expect(ds.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(ds);
 
+      beginTxn();
       HasOneToOneJDO pojo = pm.getObjectById(HasOneToOneJDO.class, KeyFactory.encodeKey(pojoEntity.getKey()));
       assertNotNull(pojo);
       pojo.getId();
+      commitTxn();
     } finally {
       DatastoreServiceFactoryInternal.setDatastoreService(original);
     }
     EasyMock.verify(ds);
+    EasyMock.verify(txn);
   }
 
   public void testDeleteParentDeletesChild() {
-    Entity flightEntity = Flight.newFlightEntity("jimmy", "bos", "mia", 5, 4, 33);
+    Entity pojoEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(pojoEntity);
+
+    Entity flightEntity = new Entity(Flight.class.getSimpleName(), pojoEntity.getKey());
+    Flight.addData(flightEntity, "jimmy", "bos", "mia", 5, 4, 33);
     ldth.ds.put(flightEntity);
 
-    Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName());
+    Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
     ldth.ds.put(hasKeyPkEntity);
 
-    Entity hasParentEntity = new Entity(HasOneToOneParentJDO.class.getSimpleName());
+    Entity hasParentEntity = new Entity(HasOneToOneParentJDO.class.getSimpleName(), pojoEntity.getKey());
     hasParentEntity.setProperty("str", "yap");
     ldth.ds.put(hasParentEntity);
 
-    Entity hasParentPkEntity = new Entity(HasOneToOneParentKeyPkJDO.class.getSimpleName());
+    Entity hasParentPkEntity = new Entity(HasOneToOneParentKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
     hasParentPkEntity.setProperty("str", "yag");
     ldth.ds.put(hasParentPkEntity);
 
-    Entity pojoEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     pojoEntity.setProperty("flight_id", flightEntity.getKey());
     pojoEntity.setProperty("haskeypk_id", hasKeyPkEntity.getKey());
     pojoEntity.setProperty("hasparent_id", hasParentEntity.getKey());
     pojoEntity.setProperty("hasparentkeypk_id", hasParentPkEntity.getKey());
     ldth.ds.put(pojoEntity);
 
-    pm.currentTransaction().begin();
+    beginTxn();
     HasOneToOneJDO pojo = pm.getObjectById(HasOneToOneJDO.class, KeyFactory.encodeKey(pojoEntity.getKey()));
     pm.deletePersistent(pojo);
-    pm.currentTransaction().commit();
-
+    commitTxn();
     assertCountsInDatastore(0, 0);
   }
 
@@ -493,4 +606,11 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(expectedChildren, countForClass(HasOneToOneParentJDO.class));
     assertEquals(expectedChildren, countForClass(HasOneToOneParentKeyPkJDO.class));
   }
+
+  private void persistInTxn(Object obj) {
+    beginTxn();
+    pm.makePersistent(obj);
+    commitTxn();
+  }
+
 }
