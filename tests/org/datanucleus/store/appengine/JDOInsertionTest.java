@@ -194,5 +194,6 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals("jam", entity.getProperty("last"));
     assertNull(entity.getProperty("anotherFirst"));
     assertNull(entity.getProperty("anotherLast"));
-  }}
+  }
+}
 
