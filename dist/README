@@ -32,3 +32,7 @@ VERSION 0.5
 - Better error messages when attempting to assign null to a not-null pojo field.
 - Removed jta.jar and persistence-api.1.0.2.jar from the distro - users must download
 these by hand for now.
+
+VERSION 0.6
+- Implicitly assign entity groups when creating dependent children (1 to 1 only)
+- Support for jdk 5.
