@@ -388,9 +388,9 @@ class DatastoreTable implements DatastoreClass {
     // Create a ColumnMetaData in the container if none is defined
     ColumnMetaData colmd;
     if (columnContainer == null) {
-      colmd = new ColumnMetaData((String) null);
+      colmd = new ColumnMetaData();
     } else if (columnContainer.getColumnMetaData().length < 1) {
-      colmd = new ColumnMetaData((String) null);
+      colmd = new ColumnMetaData();
     } else {
       colmd = columnContainer.getColumnMetaData()[0];
     }

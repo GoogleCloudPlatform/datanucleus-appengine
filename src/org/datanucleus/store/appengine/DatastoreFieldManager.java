@@ -18,10 +18,9 @@ import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
-import java.util.ArrayDeque;
-import java.util.Deque;
 import java.util.List;
 import java.util.Map;
+import java.util.LinkedList;
 
 import javax.jdo.spi.JDOImplHelper;
 
@@ -56,8 +55,8 @@ public class DatastoreFieldManager implements FieldManager {
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
-  private final Deque<FieldManagerState> fieldManagerStateStack =
-      new ArrayDeque<FieldManagerState>();
+  private final LinkedList<FieldManagerState> fieldManagerStateStack =
+      new LinkedList<FieldManagerState>();
 
   // true if we instantiated the entity ourselves.
   private final boolean createdWithoutEntity;
@@ -83,7 +82,7 @@ public class DatastoreFieldManager implements FieldManager {
         return getClassMetaData().getMetaDataForManagedMemberAtPosition(fieldNumber);
       }
     };
-    this.fieldManagerStateStack.push(new FieldManagerState(sm, ammdProvider));
+    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider));
     this.createdWithoutEntity = createdWithoutEntity;
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
@@ -221,7 +220,7 @@ public class DatastoreFieldManager implements FieldManager {
   private Object fetchEmbeddedField(AbstractMemberMetaData ammd) {
     StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, null);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.push(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.replaceFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
@@ -434,7 +433,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   StateManager getStateManager() {
-    return fieldManagerStateStack.peekFirst().stateManager;
+    return fieldManagerStateStack.getFirst().stateManager;
   }
 
   ObjectManager getObjectManager() {
@@ -444,7 +443,7 @@ public class DatastoreFieldManager implements FieldManager {
   private void storeEmbeddedField(AbstractMemberMetaData ammd, Object value) {
     StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, value);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.push(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
@@ -506,7 +505,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private AbstractMemberMetaData getMetaData(int fieldNumber) {
-    return fieldManagerStateStack.peekFirst().abstractMemberMetaDataProvider.get(fieldNumber);
+    return fieldManagerStateStack.getFirst().abstractMemberMetaDataProvider.get(fieldNumber);
   }
 
   AbstractClassMetaData getClassMetaData() {

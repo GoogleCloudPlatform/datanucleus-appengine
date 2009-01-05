@@ -49,7 +49,7 @@ class DatastoreProperty implements DatastoreField {
     setIdentifier(identifier);
     if (colmd == null) {
       // Create a default ColumnMetaData since none provided
-      columnMetaData = new ColumnMetaData((String) null);
+      columnMetaData = new ColumnMetaData();
     } else {
       columnMetaData = colmd;
     }

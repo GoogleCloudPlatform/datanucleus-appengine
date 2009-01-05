@@ -83,7 +83,8 @@ class DatastoreMappingManager extends AbstractMappingManager {
       colmds = columnContainer.getColumnMetaData();
     } else {
       // If column specified add one (use any column name specified on field element)
-      colmd = new ColumnMetaData(fmd.getColumn());
+      colmd = new ColumnMetaData();
+      colmd.setName(fmd.getColumn());
       if (columnContainer != null) {
         columnContainer.addColumn(colmd);
         colmds = columnContainer.getColumnMetaData();
@@ -160,7 +161,8 @@ class DatastoreMappingManager extends AbstractMappingManager {
     DatastoreField prop;
     if (colmd == null) {
       // If column specified add one (use any column name specified on field element)
-      colmd = new ColumnMetaData(fmd.getColumn());
+      colmd = new ColumnMetaData();
+      colmd.setName(fmd.getColumn());
       fmd.addColumn(colmd);
     }
 

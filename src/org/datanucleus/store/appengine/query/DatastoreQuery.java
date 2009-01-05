@@ -22,12 +22,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
-import org.datanucleus.query.expression.DyadicExpression;
-import org.datanucleus.query.expression.Expression;
-import org.datanucleus.query.expression.Literal;
-import org.datanucleus.query.expression.OrderExpression;
-import org.datanucleus.query.expression.ParameterExpression;
-import org.datanucleus.query.expression.PrimaryExpression;
+import org.datanucleus.query.expression.*;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
@@ -126,7 +121,7 @@ public class DatastoreQuery implements Serializable {
   public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
 
-    validate();
+    validate(compilation);
 
     if (toExclNo == 0 ||
         (rangeValueIsSet(toExclNo)
@@ -238,7 +233,7 @@ public class DatastoreQuery implements Serializable {
         clr.classForName(acmd.getFullClassName()), fv, query.getIgnoreCache(), true);
   }
 
-  private void validate() {
+  private void validate(QueryCompilation compilation) {
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
     if (query.getGrouping() != null) {
@@ -251,8 +246,26 @@ public class DatastoreQuery implements Serializable {
           HAVING_OP);
     }
 
-    // TODO(maxr): Add checks for subqueries, joins, and anything else we don't
+    if (compilation.getExprFrom() != null) {
+      for (Expression fromExpr : compilation.getExprFrom()) {
+        checkNotJoin(fromExpr);
+      }
+    }
+    // TODO(maxr): Add checks for subqueries and anything else we don't
     // allow.
+  }
+
+  private void checkNotJoin(Expression expr) {
+    if (expr instanceof JoinExpression) {
+      throw new UnsupportedDatastoreFeatureException("Cannot fulfill queries with joins.",
+          query.getSingleStringQuery());
+    }
+    if (expr.getLeft() != null) {
+      checkNotJoin(expr.getLeft());
+    }
+    if (expr.getRight() != null) {
+      checkNotJoin(expr.getRight());
+    }
   }
 
   /**

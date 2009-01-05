@@ -34,13 +34,11 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementExpressionIndex;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.scostore.AssociationStrategy;
 import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
-import java.sql.DatabaseMetaData;
 import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
@@ -71,8 +69,7 @@ public class DatastoreManager extends MappedStoreManager {
     conf.setProperty("datanucleus.attachSameDatastore", "true");
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
-    DatabaseMetaData dmd = new DatastoreMetaData();
-    dba = new DatastoreAdapter(dmd);
+    dba = new DatastoreAdapter();
     initialiseIdentifierFactory(omfContext);
     logConfiguration();
   }
@@ -215,12 +212,6 @@ public class DatastoreManager extends MappedStoreManager {
 
   public boolean allowsBatching() {
     return false;
-  }
-
-  public AssociationStrategy newAssociationStrategy(Localiser localiser,
-      ClassLoaderResolver classLoaderResolver) {
-    // TODO(maxr)
-    return null;
   }
 
   public ResultObjectFactory newResultObjectFactory(DatastoreClass table, int[] fieldNumbers,
