@@ -41,6 +41,7 @@
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0002.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0003.jar"/>
+        <include name="datanucleus-core-1.1.0.m1-0004.jar"/>
         <include name="datanucleus-jpa-1.1.0.m1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
         <include name="asm-3.1.jar"/>
@@ -69,6 +70,7 @@
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0004.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-local-runtime.jar"/>
     <pathelement location="${sdk.lib.dir}/servlet-api-2.5.jar"/>
@@ -91,6 +93,7 @@
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0004.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/asm-3.1.jar"/>
     <pathelement location="classes"/>
