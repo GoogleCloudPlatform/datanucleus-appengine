@@ -54,12 +54,6 @@
       <arg value="--replicate_manifests=true"/>
     </java>
     <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
-      <arg value="--input_jar=${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1.jar"/>
-      <arg value="--output_directory=."/>
-      <arg value="--max_file_size=1000000"/>
-      <arg value="--replicate_manifests=true"/>
-    </java>
-    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
       <arg value="--input_jar=${orm.lib.dir}/external-api.jar"/>
       <arg value="--output_directory=."/>
       <arg value="--max_file_size=1000000"/>
@@ -87,7 +81,6 @@
         <include name="persistence-api-1.0.2.jar"/>
       </lib>
       <lib dir="../lib">
-        <include name="datanucleus-rdbms-1.1.0.m1-*.jar"/>
         <include name="datanucleus-core-1.1.0.m1-*.jar"/>
         <include name="external-api-*.jar"/>
       </lib>

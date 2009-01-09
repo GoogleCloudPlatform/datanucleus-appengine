@@ -29,7 +29,7 @@ import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
-import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
@@ -140,7 +140,7 @@ class DatastoreTable implements DatastoreClass {
     return true;
   }
 
-  public DatastoreClass getBaseDatastoreClassWithField(AbstractMemberMetaData fmd) {
+  public DatastoreClass getBaseDatastoreClassWithMember(AbstractMemberMetaData fmd) {
     if (fieldMappingsMap.get(fmd) != null) {
       return this;
     }
@@ -163,9 +163,9 @@ class DatastoreTable implements DatastoreClass {
     return datastoreIDMapping;
   }
 
-  public JavaTypeMapping getFieldMapping(String fieldName) {
+  public JavaTypeMapping getMemberMapping(String fieldName) {
     AbstractMemberMetaData fmd = getFieldMetaData(fieldName);
-    JavaTypeMapping m = getFieldMapping(fmd);
+    JavaTypeMapping m = getMemberMapping(fmd);
     if (m == null) {
         throw new NoSuchPersistentFieldException(cmd.getFullClassName(), fieldName);
     }
@@ -176,7 +176,7 @@ class DatastoreTable implements DatastoreClass {
     return cmd.getMetaDataForMember(fieldName);
   }
 
-  public JavaTypeMapping getFieldMapping(AbstractMemberMetaData mmd) {
+  public JavaTypeMapping getMemberMapping(AbstractMemberMetaData mmd) {
     if (mmd == null) {
       return null;
     }
@@ -189,8 +189,8 @@ class DatastoreTable implements DatastoreClass {
     return null;
   }
 
-  public JavaTypeMapping getFieldMappingInDatastoreClass(AbstractMemberMetaData mmd) {
-    return getFieldMapping(mmd);
+  public JavaTypeMapping getMemberMappingInDatastoreClass(AbstractMemberMetaData mmd) {
+    return getMemberMapping(mmd);
   }
 
   // Mostly copied from AbstractTable.addDatastoreField
@@ -345,7 +345,7 @@ class DatastoreTable implements DatastoreClass {
   }
 
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
-    AbstractMemberMetaData fmd = fieldMapping.getFieldMetaData();
+    AbstractMemberMetaData fmd = fieldMapping.getMemberMetaData();
     fieldMappingsMap.put(fmd, fieldMapping);
     // Update highest field number if this is higher
     int absoluteFieldNumber = fmd.getAbsoluteFieldNumber();
@@ -411,7 +411,7 @@ class DatastoreTable implements DatastoreClass {
 
     // Add the datastore identity column as the PK
     DatastoreField idColumn = addDatastoreField(OID.class.getName(),
-        storeMgr.getIdentifierFactory().newIdentifier(IdentifierFactory.COLUMN, colmd.getName()),
+        storeMgr.getIdentifierFactory().newIdentifier(IdentifierType.COLUMN, colmd.getName()),
         datastoreIDMapping, colmd);
     idColumn.setAsPrimaryKey();
 
@@ -493,7 +493,7 @@ class DatastoreTable implements DatastoreClass {
               throw new NucleusException(LOCALISER.msg("057006", mmd.getName())).setFatal();
             }
 
-            // Check if auto-increment and that it is supported by this RDBMS
+            // Check if auto-increment and that it is supported by this datastore
             if ((mmd.getValueStrategy() == IdentityStrategy.IDENTITY) &&
                 !dba.supportsOption(DatastoreAdapter.IDENTITY_COLUMNS)) {
               throw new NucleusException(LOCALISER.msg("057020",
@@ -647,7 +647,7 @@ class DatastoreTable implements DatastoreClass {
     for (int i = 0; i < cmd.getPKMemberPositions().length; i++) {
       AbstractMemberMetaData fmd = cmd
           .getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[i]);
-      JavaTypeMapping mapping = refTable.getFieldMapping(fmd);
+      JavaTypeMapping mapping = refTable.getMemberMapping(fmd);
       if (mapping == null) {
         //probably due to invalid metadata defined by the user
         throw new NucleusUserException("Cannot find mapping for field " + fmd.getFullFieldName() +
@@ -657,7 +657,7 @@ class DatastoreTable implements DatastoreClass {
 
       JavaTypeMapping masterMapping = storeMgr.getMappingManager()
           .getMapping(clr.classForName(mapping.getType()));
-      masterMapping.setFieldInformation(fmd, this); // Update field info in mapping
+      masterMapping.setMemberInformation(fmd, this); // Update field info in mapping
       pkMappings[i] = masterMapping;
 
       // Loop through each id column in the reference table and add the same here
@@ -691,7 +691,7 @@ class DatastoreTable implements DatastoreClass {
           // Currently we only use the column namings from the users definition but we could easily
           // take more of their details.
           idColumn = addDatastoreField(refColumn.getStoredJavaType(),
-              storeMgr.getIdentifierFactory().newIdentifier(IdentifierFactory.COLUMN,
+              storeMgr.getIdentifierFactory().newIdentifier(IdentifierType.COLUMN,
                   userdefinedColumn.getName()),
               m, refColumn.getColumnMetaData());
         } else {
@@ -745,7 +745,7 @@ class DatastoreTable implements DatastoreClass {
       for (int i = 0; i < countPkFields; i++) {
         AbstractMemberMetaData pkfmd = cmd
             .getMetaDataForManagedMemberAtAbsolutePosition(primaryKeyFieldNumbers[i]);
-        consumer.consumeMapping(getFieldMapping(pkfmd), pkfmd);
+        consumer.consumeMapping(getMemberMapping(pkfmd), pkfmd);
       }
     }
   }
@@ -765,8 +765,8 @@ class DatastoreTable implements DatastoreClass {
     }
   }
 
-  public void provideMappingsForFields(MappingConsumer consumer,
-      AbstractMemberMetaData[] fieldMetaData, boolean includeSecondaryTables) {
+  public void provideMappingsForMembers(MappingConsumer consumer, AbstractMemberMetaData[] mmds,
+      boolean includeSecondaryTables) {
   }
 
   public void provideVersionMappings(MappingConsumer consumer) {

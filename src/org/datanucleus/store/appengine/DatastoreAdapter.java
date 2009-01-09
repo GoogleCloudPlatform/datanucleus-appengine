@@ -5,8 +5,8 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
+import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.adapter.MappedDatastoreAdapter;
 import org.datanucleus.store.mapped.expression.BooleanExpression;
 import org.datanucleus.store.mapped.expression.CharacterExpression;
 import org.datanucleus.store.mapped.expression.LogicSetExpression;
@@ -30,7 +30,7 @@ import java.util.HashSet;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreAdapter implements MappedDatastoreAdapter {
+class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter {
 
   public DatastoreAdapter() {
     supportedOptions.add(IDENTITY_COLUMNS);
@@ -90,8 +90,8 @@ class DatastoreAdapter implements MappedDatastoreAdapter {
     return "\"";
   }
 
-  public int getDatastoreIdentifierMaxLength(int identifierType) {
-    return 999;
+  public int getDatastoreIdentifierMaxLength(IdentifierType identifierType) {
+    return 99;
   }
 
   public int getMaxForeignKeys() {

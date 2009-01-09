@@ -127,7 +127,7 @@ class DatastoreRelationFieldManager {
             ammd.getAbstractClassMetaData().getFullClassName(),
             fieldManager.getClassLoaderResolver());
         // Based on ParameterSetter
-        JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
+        JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);
         if (mapping instanceof EmbeddedPCMapping ||
             mapping instanceof SerialisedPCMapping ||
             mapping instanceof SerialisedReferenceMapping ||
@@ -178,7 +178,7 @@ class DatastoreRelationFieldManager {
   Object fetchRelationField(AbstractMemberMetaData ammd) {
     DatastoreClass dc = getStoreManager().getDatastoreClass(
         ammd.getAbstractClassMetaData().getFullClassName(), fieldManager.getClassLoaderResolver());
-    JavaTypeMapping mapping = dc.getFieldMappingInDatastoreClass(ammd);
+    JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);
     // Based on ResultSetGetter
     Object value;
     if (mapping instanceof EmbeddedPCMapping ||

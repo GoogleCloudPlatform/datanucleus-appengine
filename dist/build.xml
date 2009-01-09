@@ -53,7 +53,6 @@
         <!--<include name="persistence-api-1.0.2.jar"/>-->
         <include name="datanucleus-enhancer*"/>
         <include name="datanucleus-jpa*"/>
-        <include name="datanucleus-rdbms-*src*"/>
         <include name="datanucleus-core-*src*"/>
       </zipfileset>
       <zipfileset prefix="${zip.prefix}" dir="${orm.lib.dir}/split">
@@ -79,12 +78,6 @@
     <mkdir dir="${orm.lib.dir}/split"/>
     <java dir="${orm.lib.dir}" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
       <arg value="--input_jar=datanucleus-core-1.1.0.m1.jar"/>
-      <arg value="--output_directory=split"/>
-      <arg value="--max_file_size=1000000"/>
-      <arg value="--replicate_manifests=true"/>
-    </java>
-    <java dir="${orm.lib.dir}" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
-      <arg value="--input_jar=datanucleus-rdbms-1.1.0.m1.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
       <arg value="--replicate_manifests=true"/>

@@ -13,10 +13,10 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.expression.ExpressionHelper;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
-import org.datanucleus.store.mapped.mapping.Mappings;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 
@@ -74,10 +74,10 @@ class DependentDeleteRequest {
     AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
     String fullClassName = ((AbstractClassMetaData) relatedMmds[0].getParent()).getFullClassName();
     DatastoreClass refTable = storeMgr.getDatastoreClass(fullClassName, clr);
-    JavaTypeMapping refMapping = refTable.getFieldMapping(fmd.getMappedBy());
+    JavaTypeMapping refMapping = refTable.getMemberMapping(fmd.getMappedBy());
     if (refMapping.isNullable()) {
       // Null out the relationship to the object being deleted.
-      refMapping.setObject(om, owningEntity, Mappings.getParametersIndex(1, refMapping), sm.getObject());
+      refMapping.setObject(om, owningEntity, ExpressionHelper.getParametersIndex(1, refMapping), sm.getObject());
 
       // TODO(maxr): Do I need to manually request an update now?
     }

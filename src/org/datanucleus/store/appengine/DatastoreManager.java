@@ -31,12 +31,12 @@ import org.datanucleus.store.mapped.FetchStatement;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.StatementExpressionIndex;
+import org.datanucleus.store.mapped.StatementMappingForClass;
+import org.datanucleus.store.mapped.StatementMappingIndex;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
-import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.Collection;
@@ -190,7 +190,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
-      StatementExpressionIndex[] stmtExprIndex) {
+      StatementMappingForClass resultMappings) {
     return new KeyOnlyFieldManager((Key) obj);
   }
 
@@ -200,23 +200,26 @@ public class DatastoreManager extends MappedStoreManager {
     return key;
   }
 
-  public FieldManager getFieldManagerForStatementGeneration(StateManager elementSM, Object stmt,
-      StatementExpressionIndex[] stmtExprIndex, boolean checkNonNullable) {
+  @Override
+  public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
+      StatementMappingIndex[] stmtMappings, boolean checkNonNullable) {
     // TODO(maxr)
     return null;
   }
 
+  @Override
   public boolean insertValuesOnInsert(DatastoreMapping datastoreMapping) {
     return true;
   }
 
+  @Override
   public boolean allowsBatching() {
     return false;
   }
 
-  public ResultObjectFactory newResultObjectFactory(DatastoreClass table, int[] fieldNumbers,
-      AbstractClassMetaData acmd, StatementExpressionIndex[] statementExpressionIndex,
-      int[] datastoreIdentityExpressionIndex, int[] versionIndex, boolean ignoreCache,
+  @Override
+  public ResultObjectFactory newResultObjectFactory(DatastoreClass table,
+      AbstractClassMetaData acmd, StatementMappingForClass mappingDefinition, boolean ignoreCache,
       boolean discriminator, boolean hasMetaDataInResults, FetchPlan fetchPlan,
       Class persistentClass) {
     // TODO(maxr)

@@ -14,6 +14,7 @@ import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.AbstractMappingManager;
 import org.datanucleus.store.mapped.mapping.DatastoreMappingFactory;
@@ -59,8 +60,8 @@ class DatastoreMappingManager extends AbstractMappingManager {
   // Mostly copied from RDBMSMappingManager.createDatastoreField
   public DatastoreField createDatastoreField(JavaTypeMapping mapping, String javaType,
       int datastoreFieldIndex) {
-    AbstractMemberMetaData fmd = mapping.getFieldMetaData();
-    int roleForField = mapping.getRoleForField();
+    AbstractMemberMetaData fmd = mapping.getMemberMetaData();
+    int roleForField = mapping.getRoleForMember();
     DatastoreContainerObject datastoreContainer = mapping.getDatastoreContainer();
 
     // Take the column MetaData from the component that this mappings role relates to
@@ -101,10 +102,10 @@ class DatastoreMappingManager extends AbstractMappingManager {
     if (colmd.getName() == null) {
       // No name specified, so generate the identifier from the field name
       if (roleForField == FieldRole.ROLE_FIELD) {
-        identifier = idFactory.newIdentifier(IdentifierFactory.COLUMN, fmd.getName());
+        identifier = idFactory.newIdentifier(IdentifierType.COLUMN, fmd.getName());
         int i = 0;
         while (datastoreContainer.hasDatastoreField(identifier)) {
-          identifier = idFactory.newIdentifier(IdentifierFactory.COLUMN, fmd.getName() + "_" + i);
+          identifier = idFactory.newIdentifier(IdentifierType.COLUMN, fmd.getName() + "_" + i);
           i++;
         }
       } else if (roleForField == FieldRole.ROLE_COLLECTION_ELEMENT) {
@@ -154,7 +155,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
 
   public DatastoreField createDatastoreField(JavaTypeMapping mapping, String javaType,
       ColumnMetaData colmd) {
-    AbstractMemberMetaData fmd = mapping.getFieldMetaData();
+    AbstractMemberMetaData fmd = mapping.getMemberMetaData();
     DatastoreContainerObject datastoreContainer = mapping.getDatastoreContainer();
     MappedStoreManager storeMgr = datastoreContainer.getStoreManager();
 
@@ -170,10 +171,10 @@ class DatastoreMappingManager extends AbstractMappingManager {
     if (colmd.getName() == null) {
       // No name specified, so generate the identifier from the field name
       DatastoreIdentifier identifier = idFactory
-          .newIdentifier(IdentifierFactory.COLUMN, fmd.getName());
+          .newIdentifier(IdentifierType.COLUMN, fmd.getName());
       int i = 0;
       while (datastoreContainer.hasDatastoreField(identifier)) {
-        identifier = idFactory.newIdentifier(IdentifierFactory.COLUMN, fmd.getName() + "_" + i);
+        identifier = idFactory.newIdentifier(IdentifierType.COLUMN, fmd.getName() + "_" + i);
         i++;
       }
 
