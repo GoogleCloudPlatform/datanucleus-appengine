@@ -1,7 +1,7 @@
 <!-- ant build for the hello orm demo app -->
 <project name="helloorm" default="launch" basedir=".">
 
-  <property name="orm.lib.dir" value="../.."/>
+  <property name="helloorm.orm.lib.dir" value="../.."/>
   <property file="../demos.properties"/>
 
   <target name="clean" description="clean up">
@@ -35,7 +35,7 @@
       </fileset>
     </copy>
     <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
-      <lib dir="${orm.lib.dir}">
+      <lib dir="${helloorm.orm.lib.dir}">
         <include name="datanucleus-appengine-0.6.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
@@ -67,12 +67,12 @@
   </target>
 
   <path id="helloorm.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/jdo2-api-2.2.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/persistence-api-1.0.2.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-local-runtime.jar"/>
     <pathelement location="${sdk.lib.dir}/servlet-api-2.5.jar"/>
@@ -88,19 +88,19 @@
   </target>
 
   <path id="enhancer.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/jdo2-api-2.2.jar"/>
     <pathelement location="persistence-api-1.0.2.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0000.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0001.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0002.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0003.jar"/>
-    <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0000.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0001.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0002.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0000.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0001.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0002.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/datanucleus-rdbms-1.1.0.m1-0003.jar"/>
+    <pathelement location="${helloorm.orm.lib.dir}/asm-3.1.jar"/>
     <pathelement location="classes"/>
   </path>
 

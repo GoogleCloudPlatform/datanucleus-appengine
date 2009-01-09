@@ -551,7 +551,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   private void assertQuerySupported(Class<?> clazz, String query,
       List<FilterPredicate> addedFilters, List<SortPredicate> addedSorts, Object... bindVariables) {
     Query q;
-    if (query.isEmpty()) {
+    if (query.equals("")) {
       q = pm.newQuery(clazz);
     } else {
       q = pm.newQuery(clazz, query);

@@ -8,14 +8,43 @@
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
+  <property name="src.dir" value="../src"/>
+  <property name="compile.dest.dir" value="classes"/>
+  <property name="orm.lib.dir" value="../lib"/>
 
-  <target name="dist" depends="split" description="Build the datanucleus appengine distribution">
+  <path id="appengine.plugin.classpath">
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+    <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-rdbms-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
+  </path>
+
+  <target name="compile" description="Compile the datanucleus appengine plugin">
+    <delete dir="${compile.dest.dir}"/>
+    <mkdir dir="${compile.dest.dir}"/>
+    <javac classpathref="appengine.plugin.classpath" debug="on" source="1.5" target="1.5"
+        srcdir="${src.dir}" destdir="${compile.dest.dir}"/>
+  </target>
+
+  <target name="jar" depends="compile" description="Jar the compiled datanucleus appengine plugin">
+    <!-- need to copy over all non-java resources -->
+    <copy todir="${compile.dest.dir}">
+      <fileset dir="${src.dir}">
+        <include name="**/*.xml"/>
+        <include name="**/*.properties"/>
+        <include name="**/*.MF"/>
+      </fileset>
+    </copy>
+    <jar destfile="${orm.jar}" basedir="${compile.dest.dir}"/>
+  </target>
+
+  <target name="dist" depends="compile, jar, split" description="Build the datanucleus appengine distribution">
     <zip destfile="${orm.source.zip}">
-      <fileset dir="../src" includes="**/*"/>
+      <fileset dir="${src.dir}" includes="**/*"/>
     </zip>
-    <copy file="../datanucleus-appengine-SNAPSHOT.jar" tofile="datanucleus-appengine-${version}.jar"/>
     <zip destfile="${dist.target}">
-      <zipfileset prefix="${zip.prefix}" dir="../lib">
+      <zipfileset prefix="${zip.prefix}" dir="${orm.lib.dir}">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2.jar"/>
         <!-- Don't ship txn and jpa jars-->
@@ -27,7 +56,7 @@
         <include name="datanucleus-rdbms-*src*"/>
         <include name="datanucleus-core-*src*"/>
       </zipfileset>
-      <zipfileset prefix="${zip.prefix}" dir="../lib/split">
+      <zipfileset prefix="${zip.prefix}" dir="${orm.lib.dir}/split">
         <include name="*.jar"/>
       </zipfileset>
       <zipfileset prefix="${zip.prefix}" file="${orm.jar}"/>
@@ -38,7 +67,7 @@
         <include name="doc/**"/>
       </zipfileset>
     </zip>
-    <delete dir="../lib/split"/>
+    <delete dir="${orm.lib.dir}/split"/>
     <delete file="${orm.jar}"/>
     <delete file="${orm.source.zip}"/>
   </target>
@@ -47,14 +76,14 @@
                                     Typically we would let the appcfg script do this for us,
                                     but because of some special requirements that datanucleus
                                     has we need to do this ourselves.">
-    <mkdir dir="../lib/split"/>
-    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
+    <mkdir dir="${orm.lib.dir}/split"/>
+    <java dir="${orm.lib.dir}" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
       <arg value="--input_jar=datanucleus-core-1.1.0.m1.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
       <arg value="--replicate_manifests=true"/>
     </java>
-    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="../lib/JarSplitter_deploy.jar">
+    <java dir="${orm.lib.dir}" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
       <arg value="--input_jar=datanucleus-rdbms-1.1.0.m1.jar"/>
       <arg value="--output_directory=split"/>
       <arg value="--max_file_size=1000000"/>
@@ -84,7 +113,7 @@
     <!-- Now setup a directory that contains the sdk jars we need to run the demos -->
     <mkdir dir="${orm.sdk.tmp.dir}"/>
     <copy todir="${orm.sdk.tmp.dir}">
-      <fileset dir="../lib">
+      <fileset dir="${orm.lib.dir}">
         <include name="appengine-api.jar"/>
         <include name="appengine-local-runtime.jar"/>
         <include name="servlet-api-2.5.jar"/>
@@ -96,7 +125,7 @@
     <!-- Copy over the jta and jpa jars which we don't ship with the distro -->
     <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
     <copy todir="${orm.tmp.dir}/${zip.prefix}">
-      <fileset dir="../lib">
+      <fileset dir="${orm.lib.dir}">
         <include name="transaction-api-1.1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
       </fileset>
