@@ -235,7 +235,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       VersionMetaData vmd = cmd.getVersionMetaData();
       Object curVersion = sm.getObjectManager().getApiAdapter().getVersion(sm);
       if (curVersion != null) {
-        NucleusLogger.DATASTORE.debug("Getting entity with key " + entity.getKey());        
+        NucleusLogger.DATASTORE.debug("Getting entity with key " + entity.getKey());
         // Fetch the latest and greatest version of the entity from the datastore
         // to see if anyone has made a change underneath us.  We need to execute
         // the fetch outside a txn to guarantee that we see the latest version.
@@ -282,7 +282,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     Object pk = getPk(sm);
     if (pk == null) {
       throw new IllegalStateException(
-          "Primary key for object of type " + sm.getClassMetaData().getName() + " is null.");      
+          "Primary key for object of type " + sm.getClassMetaData().getName() + " is null.");
     } else if (pk instanceof Key) {
       return (Key) pk;
     } else if (pk instanceof String) {

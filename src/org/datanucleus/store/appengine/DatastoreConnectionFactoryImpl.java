@@ -27,7 +27,7 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
    * contains a key with this name, the returned connection will not be
    * associated with a datastore transaction.
    */
-  static final String NO_TXN_PROPERTY = DatastoreConnectionFactoryImpl.class.getName() + ".no_txn"; 
+  static final String NO_TXN_PROPERTY = DatastoreConnectionFactoryImpl.class.getName() + ".no_txn";
 
   private OMFContext omfContext;
 

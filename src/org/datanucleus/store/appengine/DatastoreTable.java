@@ -97,8 +97,7 @@ class DatastoreTable implements DatastoreClass {
   /**
    * Index to the props, keyed by name.
    */
-  protected Map<DatastoreIdentifier, DatastoreProperty> datastorePropertiesByName =
-      Maps.newHashMap();
+  protected Map<String, DatastoreProperty> datastorePropertiesByName = Maps.newHashMap();
 
   /**
    * Mapping for datastore identity (optional).
@@ -217,12 +216,12 @@ class DatastoreTable implements DatastoreClass {
     DatastoreIdentifier colName = prop.getIdentifier();
 
     datastoreProperties.add(prop);
-    datastorePropertiesByName.put(colName, prop);
+    datastorePropertiesByName.put(colName.getIdentifierName(), prop);
     return prop;
   }
 
   protected boolean hasColumnName(DatastoreIdentifier colName) {
-    return datastorePropertiesByName.get(colName) != null;
+    return getDatastoreField(colName) != null;
   }
 
 
@@ -230,8 +229,11 @@ class DatastoreTable implements DatastoreClass {
     return (hasColumnName(identifier));
   }
 
+  DatastoreField getDatastoreField(String colName) {
+    return datastorePropertiesByName.get(colName);
+  }
   public DatastoreField getDatastoreField(DatastoreIdentifier identifier) {
-    return datastorePropertiesByName.get(identifier);
+    return getDatastoreField(identifier.getIdentifierName());
   }
 
   public JavaTypeMapping getIDMapping() {

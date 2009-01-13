@@ -155,7 +155,7 @@ class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter 
   }
 
   public QueryExpression newQueryStatement(DatastoreContainerObject table, DatastoreIdentifier rangeVar, ClassLoaderResolver clr) {
-    return new DatastoreQueryExpression(table, clr);
+    return new DatastoreQueryExpression((DatastoreTable) table, clr);
   }
 
   public NumericExpression toNumericExpression(CharacterExpression expr) {

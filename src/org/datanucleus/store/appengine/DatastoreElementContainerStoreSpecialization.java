@@ -6,6 +6,7 @@ import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.PreparedQuery;
 import com.google.apphosting.api.datastore.Query;
+import com.google.apphosting.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
@@ -16,6 +17,7 @@ import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.util.Localiser;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 /**
@@ -48,23 +50,29 @@ class DatastoreElementContainerStoreSpecialization extends BaseElementContainerS
     return getNumChildren(parentEntity.getKey(), ecs);
   }
 
-  private PreparedQuery prepareChildrenQuery(Key parentKey, ElementContainerStore ecs) {
-    String kind =
-        storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(ecs.getEmd()).getIdentifierName();
+  private PreparedQuery prepareChildrenQuery(Key parentKey, Iterable<SortPredicate> sortPredicates,
+                                             ElementContainerStore ecs) {
+    String kind = storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(
+        ecs.getEmd()).getIdentifierName();
     Query q = new Query(kind, parentKey);
+    for (SortPredicate sp : sortPredicates) {
+      q.addSort(sp.getPropertyName(), sp.getDirection());
+    }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
     return ds.prepare(q);
   }
 
-  List<?> getChildren(Key parentKey, ElementContainerStore ecs, ObjectManager om) {
+  List<?> getChildren(Key parentKey, Iterable<SortPredicate> sortPredicates,
+                      ElementContainerStore ecs, ObjectManager om) {
     List<Object> result = new ArrayList<Object>();
-    for (Entity e : prepareChildrenQuery(parentKey, ecs).asIterable()) {
+    for (Entity e : prepareChildrenQuery(parentKey, sortPredicates, ecs).asIterable()) {
       result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false));
     }
     return result;
   }
 
   int getNumChildren(Key parentKey, ElementContainerStore ecs) {
-    return prepareChildrenQuery(parentKey, ecs).countEntities();
+    return prepareChildrenQuery(
+        parentKey, Collections.<SortPredicate>emptyList(), ecs).countEntities();
   }
 }

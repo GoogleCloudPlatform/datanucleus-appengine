@@ -14,6 +14,7 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyJPA;
 import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeJPA;
+import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.easymock.EasyMock;
 
 import java.util.List;
@@ -388,11 +389,52 @@ public class JPAOneToManyTest extends JPATestCase {
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
   }
 
+  public void testFindWithOrderBy() throws EntityNotFoundException {
+    Entity pojoEntity = new Entity(HasOneToManyWithOrderByJPA.class.getSimpleName());
+    ldth.ds.put(pojoEntity);
+
+    Entity bookEntity1 = Book.newBookEntity(pojoEntity.getKey(), "auth1", "22222", "title 1");
+    ldth.ds.put(bookEntity1);
+
+    Entity bookEntity2 = Book.newBookEntity(pojoEntity.getKey(), "auth2", "22222", "title 2");
+    ldth.ds.put(bookEntity2);
+
+    Entity bookEntity3 = Book.newBookEntity(pojoEntity.getKey(), "auth1", "22221", "title 0");
+    ldth.ds.put(bookEntity3);
+
+    beginTxn();
+    HasOneToManyWithOrderByJPA pojo = em.find(HasOneToManyWithOrderByJPA.class, KeyFactory.encodeKey(pojoEntity.getKey()));
+    assertNotNull(pojo);
+    assertNotNull(pojo.getBooksByAuthorAndTitle());
+    assertEquals(3, pojo.getBooksByAuthorAndTitle().size());
+    assertEquals("title 2", pojo.getBooksByAuthorAndTitle().get(0).getTitle());
+    assertEquals("title 0", pojo.getBooksByAuthorAndTitle().get(1).getTitle());
+    assertEquals("title 1", pojo.getBooksByAuthorAndTitle().get(2).getTitle());
+
+    assertNotNull(pojo.getBooksByIdAndAuthor());
+    assertEquals(3, pojo.getBooksByIdAndAuthor().size());
+    assertEquals("title 0", pojo.getBooksByIdAndAuthor().get(0).getTitle());
+    assertEquals("title 2", pojo.getBooksByIdAndAuthor().get(1).getTitle());
+    assertEquals("title 1", pojo.getBooksByIdAndAuthor().get(2).getTitle());
+
+    assertNotNull(pojo.getBooksByAuthorAndId());
+    assertEquals(3, pojo.getBooksByAuthorAndId().size());
+    assertEquals("title 2", pojo.getBooksByAuthorAndId().get(0).getTitle());
+    assertEquals("title 1", pojo.getBooksByAuthorAndId().get(1).getTitle());
+    assertEquals("title 0", pojo.getBooksByAuthorAndId().get(2).getTitle());
+
+    commitTxn();
+  }
+
+  public void testFindWithIdInOrderBy() {
+
+  }
+
   public void testFind() throws EntityNotFoundException {
     Entity pojoEntity = new Entity(HasOneToManyJPA.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
-    Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth", "22222", "the title");
+    Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth1", "22222", "title 1");
     ldth.ds.put(bookEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
@@ -407,8 +449,10 @@ public class JPAOneToManyTest extends JPATestCase {
     HasOneToManyJPA pojo = em.find(HasOneToManyJPA.class, KeyFactory.encodeKey(pojoEntity.getKey()));
     assertNotNull(pojo);
     assertNotNull(pojo.getBooks());
-    assertEquals("auth", pojo.getBooks().get(0).getAuthor());
+    assertEquals(1, pojo.getBooks().size());
+    assertEquals("auth1", pojo.getBooks().get(0).getAuthor());
     assertNotNull(pojo.getHasKeyPks());
+    assertEquals(1, pojo.getHasKeyPks().size());
     assertEquals("yar", pojo.getHasKeyPks().get(0).getStr());
     assertNotNull(pojo.getBidirChildren());
     assertEquals("yap", pojo.getBidirChildren().get(0).getChildVal());

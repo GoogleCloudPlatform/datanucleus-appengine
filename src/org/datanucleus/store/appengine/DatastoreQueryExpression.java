@@ -1,8 +1,11 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.apphosting.api.datastore.Query.SortDirection;
+import com.google.apphosting.api.datastore.Query.SortPredicate;
 import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -19,6 +22,7 @@ import org.datanucleus.store.mapped.expression.StringLiteral;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 
@@ -34,10 +38,17 @@ import java.util.List;
 class DatastoreQueryExpression implements QueryExpression {
 
   private final List<BooleanExpression> andConditions = Lists.newArrayList();
-  private final DatastoreContainerObject mainTable;
+  private final List<SortPredicate> sortPredicates = Lists.newArrayList();
+  private final DatastoreTable mainTable;
   private final ClassLoaderResolver clr;
+  /**
+   * We only set this member if the first sort order is on the pk of the table.
+   * If no other sort order is set, we never add it to the list of sort
+   * predicates.  If another sort order _is_ set we add this one first.
+   */
+  private boolean ignoreSubsequentSorts;
 
-  DatastoreQueryExpression(DatastoreContainerObject table, ClassLoaderResolver clr) {
+  DatastoreQueryExpression(DatastoreTable table, ClassLoaderResolver clr) {
     this.mainTable = table;
     this.clr = clr;
   }
@@ -78,6 +89,63 @@ class DatastoreQueryExpression implements QueryExpression {
     }
     StringLiteral stringLiteral = (StringLiteral) appended.get(0);
     return KeyFactory.decodeKey(stringLiteral.getValue().toString());
+  }
+
+  Collection<SortPredicate> getSortPredicates() {
+    return sortPredicates;
+  }
+
+  public void setOrdering(ScalarExpression[] exprs, boolean[] descending) {
+    if (exprs.length != descending.length) {
+      throw new IllegalArgumentException(
+          "Expression array and descending array are not the same size.");
+    }
+    if (ignoreSubsequentSorts) {
+      return;
+    }
+    for (int i = 0; i < exprs.length && !ignoreSubsequentSorts; i++) {
+      if (!(exprs[i] instanceof ScalarExpression.DatastoreFieldExpression)) {
+        throw new UnsupportedOperationException(
+            "Expression of type " + exprs[i].getClass().getName() + " not supported.");
+      }
+      ScalarExpression.DatastoreFieldExpression dfe = (ScalarExpression.DatastoreFieldExpression) exprs[i];
+      String propertyName = dfe.toString();
+      boolean isPrimaryKey = isPrimaryKey(propertyName);
+      if (isPrimaryKey) {
+        // sorting by id requires us to use a reserved property name
+        propertyName = Entity.KEY_RESERVED_PROPERTY;
+      }
+      SortPredicate sortPredicate = new SortPredicate(
+          propertyName, descending[i] ? SortDirection.DESCENDING : SortDirection.ASCENDING);
+      boolean addPredicate = true;
+      if (isPrimaryKey) {
+        // User wants to sort by pk.  Since pk is guaranteed to be unique, set a
+        // flag so we know there's no point in adding any more sort predicates
+        ignoreSubsequentSorts = true;
+        // Don't even bother adding if the first sort is id ASC (this is the
+        // default sort so there's no point in making the datastore figure this
+        // out).
+        if (sortPredicate.getDirection() == SortDirection.ASCENDING && sortPredicates.isEmpty()) {
+          addPredicate = false;
+        }
+      }
+      if (addPredicate) {
+        sortPredicates.add(sortPredicate);
+      }
+    }
+  }
+
+  boolean isPrimaryKey(String propertyName) {
+    return mainTable.getDatastoreField(propertyName).isPrimaryKey();
+  }
+
+  public void andCondition(BooleanExpression condition) {
+    andConditions.add(condition);
+  }
+
+  public void andCondition(BooleanExpression condition, boolean unionQueries) {
+    // we don't support union so just ignore the unionQueries param
+    andConditions.add(condition);
   }
 
   public void setParent(QueryExpression parentQueryExpr) {
@@ -195,15 +263,6 @@ class DatastoreQueryExpression implements QueryExpression {
     throw new UnsupportedOperationException();
   }
 
-  public void andCondition(BooleanExpression condition) {
-    andConditions.add(condition);
-  }
-
-  public void andCondition(BooleanExpression condition, boolean unionQueries) {
-    // we don't support union so just ignore the unionQueries param
-    andConditions.add(condition);
-  }
-
   public void crossJoin(LogicSetExpression tableExpr, boolean unionQueries) {
     throw new UnsupportedOperationException();
   }
@@ -248,9 +307,6 @@ class DatastoreQueryExpression implements QueryExpression {
 
   public void setHaving(BooleanExpression expr) {
     throw new UnsupportedOperationException();
-  }
-
-  public void setOrdering(ScalarExpression[] exprs, boolean[] descending) {
   }
 
   public void setUpdates(ScalarExpression[] exprs) {

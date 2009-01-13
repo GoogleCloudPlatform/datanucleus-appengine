@@ -60,16 +60,18 @@ class DatastoreAbstractListStoreSpecialization extends DatastoreAbstractCollecti
       handler.locateObject(ownerSM);
       parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);
     }
-    return getChildren(parentEntity.getKey(), als, om).listIterator();
+    DatastoreQueryExpression dqe = (DatastoreQueryExpression) stmt;
+    return getChildren(parentEntity.getKey(), dqe.getSortPredicates(), als, om).listIterator();
   }
 
   public List internalGetRange(ObjectManager om, boolean useUpdateLock, QueryExpression stmt,
                                ResultObjectFactory getROF, ElementContainerStore ecs) {
-    Key parentKey = ((DatastoreQueryExpression)stmt).getParentKey();
+    DatastoreQueryExpression dqe = (DatastoreQueryExpression) stmt;
+    Key parentKey = dqe.getParentKey();
     if (parentKey == null) {
       throw new UnsupportedOperationException("Could not extract parent key from query expression.");
     }
-    return getChildren(parentKey, ecs, om);
+    return getChildren(parentKey, dqe.getSortPredicates(), ecs, om);
   }
 
   public int[] internalShift(StateManager ownerSM, ManagedConnection conn, boolean batched,
