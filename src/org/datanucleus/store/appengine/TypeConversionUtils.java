@@ -185,8 +185,8 @@ final class TypeConversionUtils {
    * @return A representation of the datastore property value that can be set
    * on the pojo.
    */
-  public static Object datastoreValueToPojoValue(ClassLoaderResolver clr, Object value,
-                                                 AbstractMemberMetaData ammd) {
+  public static Object datastoreValueToPojoValue(
+      ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
     if (value == null) {
       // nothing to convert
       return value;

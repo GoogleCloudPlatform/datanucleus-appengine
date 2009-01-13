@@ -21,6 +21,8 @@ public class AllTests {
     suite.addTestSuite(JDOQLQueryTest.class);
     suite.addTestSuite(JPQLQueryTest.class);
     suite.addTestSuite(StreamingQueryResultTest.class);
+    suite.addTestSuite(SerializationTest.class);
+    suite.addTestSuite(SerializationManagerTest.class);
     suite.addTestSuite(JDOFetchTest.class);
     suite.addTestSuite(JDOInsertionTest.class);
     suite.addTestSuite(JDOUpdateTest.class);

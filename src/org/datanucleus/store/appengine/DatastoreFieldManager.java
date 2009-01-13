@@ -1,6 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Blob;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
@@ -67,6 +68,8 @@ public class DatastoreFieldManager implements FieldManager {
 
   private final DatastoreRelationFieldManager relationFieldManager;
 
+  private final SerializationManager serializationManager;
+
   // Not final because we will reallocate if we hit an ancestor pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
@@ -89,6 +92,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
+    this.serializationManager = new SerializationManager();
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
@@ -178,9 +182,21 @@ public class DatastoreFieldManager implements FieldManager {
         // of primitive types.  We need to make sure we convert
         // appropriately.
         value = TypeConversionUtils.datastoreValueToPojoValue(clr, value, getMetaData(fieldNumber));
+        if (ammd.isSerialized()) {
+          value = deserializeFieldValue(value, clr, ammd);
+        }
       }
       return value;
     }
+  }
+
+  private Object deserializeFieldValue(
+      Object value, ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
+    if (!(value instanceof Blob)) {
+      throw new NucleusException(
+          "Datastore value is of type " + value.getClass().getName() + " (must be Blob).");
+    }
+    return serializationManager.deserialize(clr, ammd, (Blob) value);
   }
 
   private AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
@@ -430,6 +446,9 @@ public class DatastoreFieldManager implements FieldManager {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (value != null ) {
+        if (ammd.isSerialized()) {
+          value = serializationManager.serialize(clr, ammd, value);
+        }
         if (value.getClass().isArray()) {
           if (TypeConversionUtils.pojoPropertyIsByteArray(getMetaData(fieldNumber))) {
             value = TypeConversionUtils.convertByteArrayToBlob(value);
