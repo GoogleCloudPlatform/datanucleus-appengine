@@ -1,3 +1,4 @@
+// Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Entity;
@@ -6,8 +7,10 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.Transaction;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -16,11 +19,10 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.MappedStoreManager;
 
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.LinkedList;
 
 import javax.jdo.spi.JDOImplHelper;
 
@@ -61,21 +63,21 @@ public class DatastoreFieldManager implements FieldManager {
   // true if we instantiated the entity ourselves.
   private final boolean createdWithoutEntity;
 
-  private final MappedStoreManager storeManager;
+  private final DatastoreManager storeManager;
+
+  private final DatastoreRelationFieldManager relationFieldManager;
 
   // Not final because we will reallocate if we hit an ancestor pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
   private Entity datastoreEntity;
 
-  private final DatastoreRelationFieldManager relationFieldManager;
-
   // We'll assign this if we have an ancestor member and we store a value
   // into it.
   private AbstractMemberMetaData ancestorMemberMetaData;
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
-      MappedStoreManager storeManager, Entity datastoreEntity) {
+      DatastoreManager storeManager, Entity datastoreEntity) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
@@ -93,7 +95,8 @@ public class DatastoreFieldManager implements FieldManager {
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
-              + ">.  This is almost certainly a bug in App Engine ORM.");
+              + ">.  One way this can happen is if you attempt to fetch an object of one type using"
+              + "a Key of a different type.");
     }
   }
 
@@ -104,13 +107,13 @@ public class DatastoreFieldManager implements FieldManager {
    * has been returned by the datastore (get or query), or after the entity has
    * been put into the datastore.
    */
-  public DatastoreFieldManager(StateManager stateManager, MappedStoreManager storeManager,
+  public DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
       Entity datastoreEntity) {
     this(stateManager, false, storeManager, datastoreEntity);
   }
 
   public DatastoreFieldManager(StateManager stateManager, String kind,
-      MappedStoreManager storeManager) {
+      DatastoreManager storeManager) {
     this(stateManager, true, storeManager, new Entity(kind));
   }
 
@@ -151,7 +154,8 @@ public class DatastoreFieldManager implements FieldManager {
     if (ammd.getEmbeddedMetaData() != null) {
       return fetchEmbeddedField(ammd);
     } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE) {
-      return relationFieldManager.fetchRelationField(ammd);
+      return relationFieldManager.fetchRelationField(
+          getClassLoaderResolver(), getClassMetaData(), ammd);
     }
 
     Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
@@ -169,10 +173,11 @@ public class DatastoreFieldManager implements FieldManager {
       throw exceptionForUnexpectedKeyType("Ancestor key", fieldNumber);
     } else {
       if (value != null) {
+        ClassLoaderResolver clr = getClassLoaderResolver();
         // Datanucleus invokes this method for the object versions
         // of primitive types.  We need to make sure we convert
         // appropriately.
-        value = TypeConversionUtils.datastoreValueToPojoValue(value, getMetaData(fieldNumber));
+        value = TypeConversionUtils.datastoreValueToPojoValue(clr, value, getMetaData(fieldNumber));
       }
       return value;
     }
@@ -286,15 +291,46 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   /**
-   * If the datastore entity doesn't have a parent and some other
-   * pojo in the cascade chain registered itself as the parent for
-   * this pojo, recreate the datastore entity with the parent pojo's
-   * key as the ancestor.
-   *
-   * @return The key that was assigned, if any.
+   * @see DatastoreRelationFieldManager#establishEntityGroup(KeyRegistry)
    */
   Object establishEntityGroup() {
-    return relationFieldManager.establishEntityGroup();
+    return relationFieldManager.establishEntityGroup(getKeyRegistry());
+  }
+
+  /**
+   * Get the {@link KeyRegistry} associated with the current datasource
+   * connection.  There's a little bit of fancy footwork involved here
+   * because, by default, asking the storeManager for a connection will
+   * allocate a transactional connection if no connection has already been
+   * established.  That's acceptable behavior if the datasource has not been
+   * configured to allow writes outside of transactions, but if the datsaource
+   * _has_ been configured to allow writes outside of transactions,
+   * establishing a transaction is not the right thing to do.  So, we set
+   * a property on the currently active transaction (the datanucleus
+   * transaction, not the datastore transaction) to indicate that if a
+   * connection gets allocated, don't establish a datastore transaction.
+   * Note that even if nontransactional writes are enabled, if there
+   * is already a connection available then setting the property is a no-op.
+   */
+  private KeyRegistry getKeyRegistry() {
+    ObjectManager om = getObjectManager();
+    Transaction txn = om.getTransaction();
+    Map<String, Object> options = txn.getOptions();
+    boolean containsKey = options.containsKey(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY);
+    try {
+      if (txn.getNontransactionalWrite()) {
+        options.put(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY, true);
+      }
+      ManagedConnection mconn = storeManager.getConnection(om);
+      return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
+    } finally {
+      // Make sure we revert the map back to its original state.
+      // The only case we need to wory about is the one where the key wasn't
+      // originally in the map.
+      if (!containsKey) {
+        options.remove(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY);
+      }
+    }
   }
 
   private void storeStringAncestorPK(String value) {
@@ -391,6 +427,7 @@ public class DatastoreFieldManager implements FieldManager {
         }
       }
     } else {
+      ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (value != null ) {
         if (value.getClass().isArray()) {
@@ -410,11 +447,10 @@ public class DatastoreFieldManager implements FieldManager {
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
         }
       }
-      ClassLoaderResolver clr = getClassLoaderResolver();
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
       } else if (ammd.getRelationType(clr) != Relation.NONE) {
-        relationFieldManager.storeRelationField(ammd, value);
+        relationFieldManager.storeRelationField(clr, getClassMetaData(), ammd, value, createdWithoutEntity);
       } else {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
@@ -425,7 +461,7 @@ public class DatastoreFieldManager implements FieldManager {
    * @see DatastoreRelationFieldManager#storeRelations
    */
   boolean storeRelations() {
-    return relationFieldManager.storeRelations();
+    return relationFieldManager.storeRelations(getKeyRegistry());
   }
 
   ClassLoaderResolver getClassLoaderResolver() {
@@ -517,14 +553,14 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   IdentifierFactory getIdentifierFactory() {
-    return ((MappedStoreManager) getObjectManager().getStoreManager()).getIdentifierFactory();
+    return storeManager.getIdentifierFactory();
   }
 
   AbstractMemberMetaData getAncestorMemberMetaData() {
     return ancestorMemberMetaData;
   }
 
-  MappedStoreManager getStoreManager() {
+  DatastoreManager getStoreManager() {
     return storeManager;
   }
 

@@ -49,7 +49,6 @@ public class JPATestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    assertTrue(DatastoreRelationFieldManager.PARENT_KEY_MAP.get().isEmpty());
     boolean throwIfActiveTxn = !failed;
     failed = false;
     ldth.tearDown(throwIfActiveTxn);

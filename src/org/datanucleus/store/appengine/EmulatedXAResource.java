@@ -1,56 +1,49 @@
+// Copyright 2009 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Transaction;
-
 /**
  * This emulated XAResource only supports a small subset of XA functionality.
- * Currently it only supports single, non-distributed transactions.
+ * There's no underlying transaction, just some simple state management.
+ * Instances of this class are instantiated and used when the datasource has
+ * been configured as nontransactional and the user is not explicitly doing
+ * any transaction management.
  *
  * @author Erick Armbrust <earmbrust@google.com>
+ * @author Max Ross <maxr@google.com>
  */
 class EmulatedXAResource implements XAResource {
-  final DatastoreService datastoreService;
-  private Transaction currentTxn;
 
-  public EmulatedXAResource(DatastoreService datastoreService) {
-    this.datastoreService = datastoreService;
-  }
+  private enum State {NEW, ACTIVE, INACTIVE}
 
-  Transaction getCurrentTransaction() {
-    return currentTxn;
-  }
+  private State state = State.NEW;
+
+  private final KeyRegistry keyRegistry = new KeyRegistry();
 
   public void start(Xid xid, int flags) throws XAException {
-    // A transaction will only be started if non-transactional reads/writes
-    // are turned off.
-    if (currentTxn == null) {
-      currentTxn = datastoreService.beginTransaction();
-    } else {
+    if (state != State.NEW) {
       throw new XAException("Nested transactions are not supported");
     }
+    state = State.ACTIVE;
   }
 
   public void commit(Xid arg0, boolean arg1) throws XAException {
-    if (currentTxn != null) {
-      currentTxn.commit();
-      currentTxn = null;
-    } else {
+    if (state != State.ACTIVE) {
       throw new XAException("A transaction has not been started, cannot commit");
     }
+    keyRegistry.clear();
+    state = State.INACTIVE;
   }
 
   public void rollback(Xid xid) throws XAException {
-    if (currentTxn != null) {
-      currentTxn.rollback();
-      currentTxn = null;
-    } else {
-      throw new XAException("A transaction has not been started, cannot roll back");
+    if (state != State.ACTIVE) {
+      throw new XAException("A transaction has not been started, cannot rollback");
     }
+    keyRegistry.clear();
+    state = State.INACTIVE;
   }
 
   public void end(Xid xid, int flags) throws XAException {
@@ -80,5 +73,9 @@ class EmulatedXAResource implements XAResource {
 
   public boolean setTransactionTimeout(int seconds) throws XAException {
     return false;
+  }
+  
+  KeyRegistry getKeyRegistry() {
+    return keyRegistry;
   }
 }

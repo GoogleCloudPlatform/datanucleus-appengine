@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
 
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ManagedConnection;
@@ -23,6 +22,13 @@ import javax.transaction.xa.XAResource;
  */
 public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
 
+  /**
+   * If the map passed as an argument to {@link #createManagedConnection}
+   * contains a key with this name, the returned connection will not be
+   * associated with a datastore transaction.
+   */
+  static final String NO_TXN_PROPERTY = DatastoreConnectionFactoryImpl.class.getName() + ".no_txn"; 
+
   private OMFContext omfContext;
 
   /**
@@ -39,22 +45,22 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
   /**
    * {@inheritDoc}
    */
-  public ManagedConnection getConnection(ObjectManager om, Map o) {
-    @SuppressWarnings("unchecked")
-    Map<Object, Object> options = o;
-    Map<Object, Object> addedOptions = Maps.newHashMap();
-    if (options != null) {
-      addedOptions.putAll(options);
-    }
-    return omfContext.getConnectionManager().allocateConnection(this, om,
-        addedOptions);
+  public ManagedConnection getConnection(ObjectManager om, Map options) {
+    return omfContext.getConnectionManager().allocateConnection(this, om, options);
   }
 
   /**
    * {@inheritDoc}
    */
   public ManagedConnection createManagedConnection(ObjectManager om, Map transactionOptions) {
-    return new DatastoreManagedConnection();
+    EmulatedXAResource resource;
+    if (transactionOptions != null && transactionOptions.containsKey(NO_TXN_PROPERTY)) {
+      resource = new EmulatedXAResource();
+    } else {
+      resource =
+        new DatastoreXAResource(DatastoreServiceFactoryInternal.getDatastoreService());
+    }
+    return new DatastoreManagedConnection(resource);
   }
 
   static class DatastoreManagedConnection implements ManagedConnection {
@@ -63,14 +69,18 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
     private final List<ManagedConnectionResourceListener> listeners = Lists.newArrayList();
     private final DatastoreService datastoreService =
         DatastoreServiceFactoryInternal.getDatastoreService();
-    private final XAResource emulatedXAResource = new EmulatedXAResource(datastoreService);
+    private final XAResource datastoreXAResource;
+
+    DatastoreManagedConnection(XAResource datastoreXAResource) {
+      this.datastoreXAResource = datastoreXAResource;
+    }
 
     public Object getConnection() {
       return datastoreService;
     }
 
     public XAResource getXAResource() {
-      return emulatedXAResource;
+      return datastoreXAResource;
     }
 
     public void release() {

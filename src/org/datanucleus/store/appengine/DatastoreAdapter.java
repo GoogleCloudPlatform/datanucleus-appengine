@@ -24,9 +24,9 @@ import java.util.HashSet;
 
 /**
  * Adapter for the App Engine datastore.
- * TODO(maxr): Don't extend rdbms.adapter.DatabaseAdapter
- * Currently necessary to get the identifier factory stuff
- * to work.
+ * Only the pieces necessary to get the identifier factory stuff
+ * to work have been implemented.  A lot of this doesn't seem
+ * to apply to the datastore anyway.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -39,7 +39,7 @@ class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter 
     supportedOptions.add(IDENTIFIERS_UPPERCASE);
   }
 
-  protected Collection<String> supportedOptions = new HashSet<String>();
+  private final Collection<String> supportedOptions = new HashSet<String>();
 
   public MappingManager getMappingManager(MappedStoreManager mappedStoreManager) {
     return new DatastoreMappingManager(mappedStoreManager);
@@ -155,7 +155,7 @@ class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter 
   }
 
   public QueryExpression newQueryStatement(DatastoreContainerObject table, DatastoreIdentifier rangeVar, ClassLoaderResolver clr) {
-    return null;
+    return new DatastoreQueryExpression(table, clr);
   }
 
   public NumericExpression toNumericExpression(CharacterExpression expr) {

@@ -1,19 +1,19 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
+import com.google.apphosting.api.datastore.Entity;
+import com.google.common.base.Function;
+import com.google.common.collect.AbstractIterator;
+import com.google.common.collect.Lists;
+
 import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.Query;
 
-import java.util.Iterator;
-import java.util.ListIterator;
-import java.util.List;
-import java.util.NoSuchElementException;
 import java.util.ArrayList;
-
-import com.google.apphosting.api.datastore.Entity;
-import com.google.common.collect.Lists;
-import com.google.common.collect.AbstractIterator;
-import com.google.common.base.Function;
+import java.util.Iterator;
+import java.util.List;
+import java.util.ListIterator;
+import java.util.NoSuchElementException;
 
 /**
  * An {@link AbstractQueryResult} implementation that streams results, converting
@@ -45,7 +45,7 @@ class StreamingQueryResult extends AbstractQueryResult {
   private final ArrayList<Object> resolvedPojos = Lists.newArrayList();
 
   /**
-   * Constrctus a StreamingQueryResult
+   * Constructs a StreamingQueryResult
    *
    * @param query The query which yields the results.
    * @param lazyEntities The result of the query.

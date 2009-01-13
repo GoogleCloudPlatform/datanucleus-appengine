@@ -8,16 +8,17 @@ import com.google.common.collect.ImmutableMapBuilder;
 import com.google.common.collect.Lists;
 import com.google.common.collect.PrimitiveArrays;
 
-import java.util.Map;
-import java.util.List;
-import java.util.Arrays;
-import java.lang.reflect.Array;
-
-import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ContainerMetaData;
-import org.datanucleus.metadata.CollectionMetaData;
-import org.datanucleus.metadata.ArrayMetaData;
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
+import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ArrayMetaData;
+import org.datanucleus.metadata.CollectionMetaData;
+import org.datanucleus.metadata.ContainerMetaData;
+
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Utility methods for converting between datastore types and pojo types.
@@ -175,6 +176,8 @@ final class TypeConversionUtils {
   /**
    * Performs type conversions on a datastore property value.
    *
+   * @param clr class loader resolver to use for string to class
+   * conversions
    * @param value The datastore value.
    * @param ammd The meta data for the pojo property which will eventually
    * receive the result of the conversion.
@@ -182,29 +185,30 @@ final class TypeConversionUtils {
    * @return A representation of the datastore property value that can be set
    * on the pojo.
    */
-  public static Object datastoreValueToPojoValue(Object value, AbstractMemberMetaData ammd) {
+  public static Object datastoreValueToPojoValue(ClassLoaderResolver clr, Object value,
+                                                 AbstractMemberMetaData ammd) {
     if (value == null) {
       // nothing to convert
       return value;
     }
     ContainerMetaData cmd = ammd.getContainer();
     if (pojoPropertyIsArray(ammd)) {
-      String pojoTypeStr = ((ArrayMetaData)cmd).getElementType();
-      Class<?> pojoType = classForName(pojoTypeStr);
+      String memberTypeStr = ((ArrayMetaData)cmd).getElementType();
+      Class<?> memberType = classForName(clr, memberTypeStr);
 
       if (value instanceof Blob) {
-        if (pojoType != Byte.TYPE && pojoType != Byte.class) {
-          throw new NucleusException("Cannot convert a Blob to an array of type " + pojoTypeStr);
+        if (memberType != Byte.TYPE && memberType != Byte.class) {
+          throw new NucleusException("Cannot convert a Blob to an array of type " + memberTypeStr);
         }
-        value = convertDatastoreBlobToByteArray((Blob) value, pojoType);
+        value = convertDatastoreBlobToByteArray((Blob) value, memberType);
       } else {
         // The pojo property is an array.  The datastore only supports
         // Collections so we need to translate.
-        value = convertDatastoreListToPojoArray((List<?>) value, pojoType);
+        value = convertDatastoreListToPojoArray((List<?>) value, memberType);
       }
     } else if (pojoPropertyIsCollection(ammd)) {
       String pojoTypeStr = ((CollectionMetaData)cmd).getElementType();
-      Class<?> pojoType = classForName(pojoTypeStr);
+      Class<?> pojoType = classForName(clr, pojoTypeStr);
       value = convertDatastoreListToPojoCollection((List<?>) value, pojoType);
     } else {
       value = getDatastoreTypeToPojoTypeFunc(Functions.identity(), ammd).apply(value);
@@ -257,17 +261,13 @@ final class TypeConversionUtils {
     return datastoreList.toArray(array);
   }
 
-  private static Class<?> classForName(String typeStr) {
+  private static Class<?> classForName(ClassLoaderResolver clr, String typeStr) {
     // If typeStr is a primitive it is not a class we can look up using
     // Class.forName.  Consult our map of primitive classnames to see
     // if this is the case.
     Class<?> clazz = PrimitiveUtils.PRIMITIVE_CLASSNAMES.get(typeStr);
     if (clazz == null) {
-      try {
-        clazz = Class.forName(typeStr);
-      } catch (ClassNotFoundException e) {
-        throw new NucleusException("Could not locate container element type " + typeStr, e);
-      }
+      clazz = clr.classForName(typeStr);
     }
     return clazz;
   }

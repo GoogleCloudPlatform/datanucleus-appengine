@@ -16,8 +16,6 @@ import org.datanucleus.StateManager;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.KitchenSink;
 import org.easymock.EasyMock;
@@ -53,15 +51,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
-      }
-
-      @Override
-      IdentifierFactory getIdentifierFactory() {
-        return DatastoreFieldManagerTest.this.getIdentifierFactory();
       }
 
       @Override
@@ -170,15 +163,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, entity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), entity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
-      }
-
-      @Override
-      IdentifierFactory getIdentifierFactory() {
-        return DatastoreFieldManagerTest.this.getIdentifierFactory();
       }
 
       @Override
@@ -245,15 +233,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, null, ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
-      }
-
-      @Override
-      IdentifierFactory getIdentifierFactory() {
-        return DatastoreFieldManagerTest.this.getIdentifierFactory();
       }
 
       @Override
@@ -326,7 +309,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(om.getClassLoaderResolver()).andReturn(clr).anyTimes();
     EasyMock.expect(om.getStoreManager()).andReturn(getStoreManager()).anyTimes();
     EasyMock.replay(om);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, null, entity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, getStoreManager(), entity) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -350,7 +333,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
     // now we create a field manager where we don't provide the entity
     // in the constructor
-    fieldManager = new DatastoreFieldManager(sm, HasAncestorJDO.class.getSimpleName(), null) {
+    fieldManager = new DatastoreFieldManager(
+        sm, HasAncestorJDO.class.getSimpleName(), getStoreManager()) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -397,13 +381,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     }
   }
 
-  private MappedStoreManager getStoreManager() {
-    return ((MappedStoreManager)((JDOPersistenceManagerFactory)pmf).getOMFContext()
-        .getStoreManager());
+  private DatastoreManager getStoreManager() {
+    return
+        ((DatastoreManager)((JDOPersistenceManagerFactory)pmf).getOMFContext().getStoreManager());
   }
-
-  private IdentifierFactory getIdentifierFactory() {
-    return getStoreManager().getIdentifierFactory();
-  }
-
 }

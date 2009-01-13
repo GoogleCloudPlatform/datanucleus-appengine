@@ -38,6 +38,7 @@ public class AllTests {
     suite.addTestSuite(JDOOneToOneTest.class);
     suite.addTestSuite(JPAImplicitEntityGroupTest.class);
     suite.addTestSuite(JDOImplicitEntityGroupTest.class);
+    suite.addTestSuite(JPAOneToManyTest.class);
     return suite;
   }
 }

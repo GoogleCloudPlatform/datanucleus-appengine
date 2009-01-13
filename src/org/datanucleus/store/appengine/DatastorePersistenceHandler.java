@@ -23,6 +23,7 @@ import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.NucleusLogger;
 
 /**
@@ -55,9 +56,19 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     return txn.getNontransactionalWrite();
   }
 
-  private Transaction getCurrentTransaction(StateManager sm) {
-    ManagedConnection mconn = storeMgr.getConnection(sm.getObjectManager());
-    return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
+  /**
+   * Get the active transaction.  Establishes a transaction if one is not
+   * currently active.
+   */
+  private Transaction getCurrentTransaction(ObjectManager om) {
+    ManagedConnection mconn = storeMgr.getConnection(om);
+    // I'm a little worried about this cast since there are scenarios
+    // in which the XA Resource is not a DatsatoreXAResource but rather a
+    // EmulatedXAResource.  However, this should only be the case when
+    // nontransactional writes are enabled, and we should not be calling
+    // this method when nontransactional writes are enabled.
+    // TODO(maxr): Check that nontransactional writes are disabled.
+    return ((DatastoreXAResource) mconn.getXAResource()).getCurrentTransaction();
   }
 
   private Entity getWithoutTxn(Key key) throws EntityNotFoundException {
@@ -72,8 +83,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       if (isNontransactionalRead(sm)) {
         entity = getWithoutTxn(key);
       } else {
-        txn = getCurrentTransaction(sm);
-        entity = datastoreService.get(getCurrentTransaction(sm), key);
+        txn = getCurrentTransaction(sm.getObjectManager());
+        entity = datastoreService.get(txn, key);
       }
       setAssociatedEntity(sm, txn, entity);
       return entity;
@@ -85,23 +96,23 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private void put(StateManager sm, Entity entity) {
-    NucleusLogger.DATASTORE.debug("Putting entity with key" + entity.getKey());
+    NucleusLogger.DATASTORE.debug("Putting entity with key " + entity.getKey());
     Transaction txn = null;
     if (isNontransactionalWrite(sm)) {
       datastoreService.put(entity);
     } else {
-      txn = getCurrentTransaction(sm);
-      datastoreService.put(getCurrentTransaction(sm), entity);
+      txn = getCurrentTransaction(sm.getObjectManager());
+      datastoreService.put(txn, entity);
     }
     setAssociatedEntity(sm, txn, entity);
   }
 
   private void delete(StateManager sm, Key key) {
-    NucleusLogger.DATASTORE.debug("Deleting entity with key" + key);
+    NucleusLogger.DATASTORE.debug("Deleting entity with key " + key);
     if (isNontransactionalWrite(sm)) {
       datastoreService.delete(key);
     } else {
-      datastoreService.delete(getCurrentTransaction(sm), key);
+      datastoreService.delete(getCurrentTransaction(sm.getObjectManager()), key);
     }
   }
 
@@ -258,6 +269,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
+  /**
+   * Get the primary key of the object associated with the provided
+   * state manager.  Can return {@code null}.
+   */
   private Object getPk(StateManager sm) {
     return sm.getObjectManager().getApiAdapter()
         .getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
@@ -265,13 +280,16 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   private Key getPkAsKey(StateManager sm) {
     Object pk = getPk(sm);
-    if (pk instanceof Key) {
+    if (pk == null) {
+      throw new IllegalStateException(
+          "Primary key for object of type " + sm.getClassMetaData().getName() + " is null.");      
+    } else if (pk instanceof Key) {
       return (Key) pk;
     } else if (pk instanceof String) {
       return KeyFactory.decodeKey((String) pk);
     } else {
       throw new IllegalStateException(
-          "Primary key for type " + sm.getClassMetaData().getName()
+          "Primary key for object of type " + sm.getClassMetaData().getName()
               + " is of unexpected type " + pk.getClass().getName()
               + " (must be String or " + Key.class.getName() + ")");
     }
@@ -284,15 +302,23 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     sm.setAssociatedValue(txn, entity);
   }
 
+  Entity getAssociatedEntityForCurrentTransaction(StateManager sm) {
+    return getAssociatedEntity(sm, getCurrentTransaction(sm.getObjectManager()));
+  }
+
   private Entity getAssociatedEntity(StateManager sm, Transaction txn) {
     return (Entity) sm.getAssociatedValue(txn);
   }
 
   public void fetchObject(StateManager sm, int fieldNumbers[]) {
+    if (fieldNumbers == null || fieldNumbers.length == 0) {
+      return;
+    }
+
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
-    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm.getObjectManager()));
     if (entity == null) {
       Key pk = getPkAsKey(sm);
       entity = get(sm, pk);
@@ -305,8 +331,28 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
           EntityUtils.getVersionFromEntity(
               getIdentifierFactory(sm), cmd.getVersionMetaData(), entity));
     }
+    runPostFetchMappingCallbacks(sm, fieldNumbers);
+
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementFetchCount();
+    }
+  }
+
+  private void runPostFetchMappingCallbacks(StateManager sm, int[] fieldNumbers) {
+    AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
+    for (int i = 0; i < fmds.length; i++) {
+      fmds[i] =
+          sm.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
+    }
+
+    ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+    DatastoreClass dc = storeMgr.getDatastoreClass(sm.getObject().getClass().getName(), clr);
+    FetchMappingConsumer consumer = new FetchMappingConsumer(sm.getClassMetaData());
+    dc.provideMappingsForMembers(consumer, fmds, true);
+    dc.provideDatastoreIdMappings(consumer);
+    dc.providePrimaryKeyMappings(consumer);
+    for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
+      callback.postFetch(sm);
     }
   }
 
@@ -314,7 +360,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm.getObjectManager()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(sm);
@@ -336,7 +382,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm));
+    Entity entity = getAssociatedEntity(sm, getCurrentTransaction(sm.getObjectManager()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(sm);

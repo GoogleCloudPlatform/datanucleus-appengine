@@ -10,6 +10,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -19,6 +20,7 @@ import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.metadata.MetaData;
+import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.plugin.ConfigurationElement;
@@ -29,13 +31,20 @@ import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
+import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.mapping.CorrespondentColumnsMapper;
+import org.datanucleus.store.mapped.mapping.DatastoreMapping;
+import org.datanucleus.store.mapped.mapping.IndexMapping;
+import org.datanucleus.store.mapped.mapping.IntegerMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.LongMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.OIDMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.util.Localiser;
+import org.datanucleus.util.MultiMap;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
@@ -63,6 +72,9 @@ class DatastoreTable implements DatastoreClass {
   protected static final Localiser LOCALISER =
       Localiser.getInstance("org.datanucleus.store.appengine.Localisation",
       DatastoreManager.class.getClassLoader());
+
+  /** All callbacks for class tables waiting to be performed. */
+  private static final MultiMap callbacks = new MultiMap();
 
   private final MappedStoreManager storeMgr;
   private final AbstractClassMetaData cmd;
@@ -114,6 +126,8 @@ class DatastoreTable implements DatastoreClass {
    * code that populates is specific to the appengine plugin.
    */
   private final List<AbstractMemberMetaData> dependentMemberMetaData = Lists.newArrayList();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Maps.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Maps.newHashMap();
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
@@ -181,12 +195,7 @@ class DatastoreTable implements DatastoreClass {
       return null;
     }
 
-    // Check if we manage this field
-    JavaTypeMapping m = fieldMappingsMap.get(mmd);
-    if (m != null) {
-        return m;
-    }
-    return null;
+    return fieldMappingsMap.get(mmd);
   }
 
   public JavaTypeMapping getMemberMappingInDatastoreClass(AbstractMemberMetaData mmd) {
@@ -252,6 +261,7 @@ class DatastoreTable implements DatastoreClass {
   public void buildMapping() {
     initializePK();
     initializeNonPK();
+    runCallBacks();
   }
 
   private void initializeNonPK() {
@@ -317,6 +327,22 @@ class DatastoreTable implements DatastoreClass {
               if (elementCmd == null) {
                 // Elements that are reference types or non-PC will come through here
               } else {
+                AbstractClassMetaData[] elementCmds;
+                // TODO : Cater for interface elements, and get the metadata for the implementation classes here
+                if (elementCmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE) {
+                  elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
+                } else {
+                  elementCmds = new ClassMetaData[1];
+                  elementCmds[0] = elementCmd;
+                }
+
+                // Run callbacks for each of the element classes.
+                for (AbstractClassMetaData elementCmd1 : elementCmds) {
+                  callbacks.put(elementCmd1.getFullClassName(), new CallBack(fmd));
+                  DatastoreTable dt =
+                      (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
+                  dt.runCallBacks();
+                }
               }
             } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
               // 1-N ForeignKey map, so add FK to value table
@@ -352,7 +378,10 @@ class DatastoreTable implements DatastoreClass {
     if (absoluteFieldNumber > highestFieldNumber) {
       highestFieldNumber = absoluteFieldNumber;
     }
-    if (fmd.isDependent()) {
+
+    // isDependent() returns false for one-to-many even with cascade delete.
+    // Not sure why but that's why we check both isDependent and isCascadeDelete
+    if (fmd.isDependent() || fmd.isCascadeDelete()) {
       dependentMemberMetaData.add(fmd);
     }
   }
@@ -673,9 +702,9 @@ class DatastoreTable implements DatastoreClass {
 
         ColumnMetaData userdefinedColumn = null;
         if (userdefinedCols != null) {
-          for (int k = 0; k < userdefinedCols.length; k++) {
-            if (refColumn.getIdentifier().toString().equals(userdefinedCols[k].getTarget())) {
-              userdefinedColumn = userdefinedCols[k];
+          for (ColumnMetaData userdefinedCol : userdefinedCols) {
+            if (refColumn.getIdentifier().toString().equals(userdefinedCol.getTarget())) {
+              userdefinedColumn = userdefinedCol;
               break;
             }
           }
@@ -685,7 +714,7 @@ class DatastoreTable implements DatastoreClass {
         }
 
         // Add this application identity column
-        DatastoreField idColumn = null;
+        DatastoreField idColumn;
         if (userdefinedColumn != null) {
           // User has provided a name for this column
           // Currently we only use the column namings from the users definition but we could easily
@@ -767,6 +796,14 @@ class DatastoreTable implements DatastoreClass {
 
   public void provideMappingsForMembers(MappingConsumer consumer, AbstractMemberMetaData[] mmds,
       boolean includeSecondaryTables) {
+    for (AbstractMemberMetaData aFieldMetaData : mmds) {
+      JavaTypeMapping fieldMapping = fieldMappingsMap.get(aFieldMetaData);
+      if (fieldMapping != null) {
+        if (!aFieldMetaData.isPrimaryKey()) {
+          consumer.consumeMapping(fieldMapping, aFieldMetaData);
+        }
+      }
+    }
   }
 
   public void provideVersionMappings(MappingConsumer consumer) {
@@ -782,7 +819,15 @@ class DatastoreTable implements DatastoreClass {
   }
 
   public JavaTypeMapping getExternalMapping(AbstractMemberMetaData fmd, int mappingType) {
-    return null;
+    if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK) {
+      return getExternalFkMappings().get(fmd);
+    } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK_DISCRIM) {
+      return null; //getExternalFkDiscriminatorMappings().get(fmd);
+    } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX) {
+      return null; //getExternalOrderMappings().get(fmd);
+    } else {
+      return null;
+    }
   }
 
   public AbstractMemberMetaData getMetaDataForExternalMapping(JavaTypeMapping mapping,
@@ -808,5 +853,234 @@ class DatastoreTable implements DatastoreClass {
 
   public List<AbstractMemberMetaData> getDependentMemberMetaData() {
     return dependentMemberMetaData;
+  }
+
+  private Map<AbstractMemberMetaData, JavaTypeMapping> getExternalFkMappings() {
+    return externalFkMappings;
+  }
+
+  /**
+   * Accessor for all of the order mappings (used by FK Lists, Collections, Arrays)
+   * @return The mappings for the order columns.
+   **/
+  private Map<AbstractMemberMetaData, JavaTypeMapping> getExternalOrderMappings() {
+    return externalOrderMappings;
+  }
+
+  /**
+   * Execute the callbacks for the classes that this table maps to.
+   */
+  private void runCallBacks() {
+    Collection c = (Collection) callbacks.remove(cmd.getFullClassName());
+    if (c == null) {
+      return;
+    }
+    for (Object aC : c) {
+      CallBack callback = (CallBack) aC;
+
+      if (callback.fmd.getJoinMetaData() == null) {
+        // 1-N FK relationship
+        AbstractMemberMetaData ownerFmd = callback.fmd;
+        if (ownerFmd.getMappedBy() != null) {
+          // Bidirectional (element has a PC mapping to the owner)
+          // Check that the "mapped-by" field in the other class actually exists
+          AbstractMemberMetaData fmd = cmd.getMetaDataForMember(ownerFmd.getMappedBy());
+          if (fmd == null) {
+            throw new NucleusUserException(LOCALISER.msg("057036",
+                                                         ownerFmd.getMappedBy(),
+                                                         cmd.getFullClassName(),
+                                                         ownerFmd.getFullFieldName()));
+          }
+
+          JavaTypeMapping orderMapping = null;
+
+          // Add the order mapping as necessary
+          addOrderMapping(ownerFmd, orderMapping);
+        } else {
+          // Unidirectional (element knows nothing about the owner)
+          String ownerClassName = ownerFmd.getAbstractClassMetaData().getFullClassName();
+          JavaTypeMapping fkMapping = new PersistenceCapableMapping();
+          fkMapping.initialize(dba, ownerClassName);
+          JavaTypeMapping orderMapping = null;
+
+          // Get the owner id mapping of the "1" end
+          JavaTypeMapping ownerIdMapping =
+              storeMgr.getDatastoreClass(ownerClassName, clr).getIDMapping();
+          ColumnMetaDataContainer colmdContainer = null;
+          if (ownerFmd.hasCollection() || ownerFmd.hasArray()) {
+            // 1-N Collection/array
+            colmdContainer = ownerFmd.getElementMetaData();
+          } else if (ownerFmd.hasMap() && ownerFmd.getKeyMetaData() != null
+                     && ownerFmd.getKeyMetaData().getMappedBy() != null) {
+            // 1-N Map with key stored in the value
+            colmdContainer = ownerFmd.getValueMetaData();
+          } else if (ownerFmd.hasMap() && ownerFmd.getValueMetaData() != null
+                     && ownerFmd.getValueMetaData().getMappedBy() != null) {
+            // 1-N Map with value stored in the key
+            colmdContainer = ownerFmd.getKeyMetaData();
+          }
+          CorrespondentColumnsMapper correspondentColumnsMapping =
+              new CorrespondentColumnsMapper(colmdContainer, ownerIdMapping, true);
+          int countIdFields = ownerIdMapping.getNumberOfDatastoreFields();
+          for (int i = 0; i < countIdFields; i++) {
+            DatastoreMapping refDatastoreMapping = ownerIdMapping.getDataStoreMapping(i);
+            JavaTypeMapping mapping = storeMgr.getMappingManager()
+                    .getMapping(refDatastoreMapping.getJavaTypeMapping().getJavaType());
+            ColumnMetaData colmd = correspondentColumnsMapping.getColumnMetaDataByIdentifier(
+                    refDatastoreMapping.getDatastoreField().getIdentifier());
+            if (colmd == null) {
+              throw new NucleusUserException(LOCALISER.msg(
+                  "057035",
+                  refDatastoreMapping.getDatastoreField().getIdentifier(),
+                  toString())).setFatal();
+            }
+
+            DatastoreIdentifier identifier;
+            IdentifierFactory idFactory = storeMgr.getIdentifierFactory();
+            if (colmd.getName() == null || colmd.getName().length() < 1) {
+              // No user provided name so generate one
+              identifier = idFactory.newForeignKeyFieldIdentifier(
+                  ownerFmd, null, refDatastoreMapping.getDatastoreField().getIdentifier(),
+                  storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(mapping.getJavaType()),
+                  FieldRole.ROLE_OWNER);
+            } else {
+              // User-defined name
+              identifier = idFactory.newDatastoreFieldIdentifier(colmd.getName());
+            }
+            DatastoreField refColumn =
+                addDatastoreField(mapping.getJavaType().getName(), identifier, mapping, colmd);
+            refDatastoreMapping.getDatastoreField().copyConfigurationTo(refColumn);
+
+            if ((colmd.getAllowsNull() == null) ||
+                (colmd.getAllowsNull() != null && colmd.isAllowsNull())) {
+              // User either wants it nullable, or havent specified anything, so make it nullable
+              refColumn.setNullable();
+            }
+
+            fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
+                .createDatastoreMapping(mapping, refColumn,
+                                        refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
+            ((PersistenceCapableMapping) fkMapping).addJavaTypeMapping(mapping);
+          }
+
+          // Save the external FK
+          getExternalFkMappings().put(ownerFmd, fkMapping);
+
+          // Add the order mapping as necessary
+          addOrderMapping(ownerFmd, orderMapping);
+        }
+      }
+    }
+  }
+
+  private JavaTypeMapping addOrderMapping(AbstractMemberMetaData fmd, JavaTypeMapping orderMapping) {
+    boolean needsOrderMapping = false;
+    OrderMetaData omd = fmd.getOrderMetaData();
+    if (fmd.hasArray()) {
+      // Array field always has the index mapping
+      needsOrderMapping = true;
+    } else if (List.class.isAssignableFrom(fmd.getType())) {
+      // List field
+      needsOrderMapping = !(omd != null && !omd.isIndexedList());
+    } else if (java.util.Collection.class.isAssignableFrom(fmd.getType()) &&
+               omd != null && omd.isIndexedList() && omd.getMappedBy() == null) {
+      // Collection field with <order> and is indexed list so needs order mapping
+      needsOrderMapping = true;
+    }
+
+    if (needsOrderMapping) {
+      // if the field is list or array type, add index column
+      if (orderMapping == null) {
+        // Create new order mapping since we need one and we aren't using a shared FK
+        orderMapping = this.addOrderColumn(fmd);
+      }
+      getExternalOrderMappings().put(fmd, orderMapping);
+    }
+
+    return orderMapping;
+  }
+
+  /**
+   * Adds an ordering column to the element table (this) in inverse list relationships. Used to
+   * store the position of the element in the List. If the &lt;order&gt; provides a mapped-by, this
+   * will return the existing column mapping.
+   *
+   * @param fmd The MetaData for the column to map to
+   * @return The Mapping for the order column
+   */
+  private JavaTypeMapping addOrderColumn(AbstractMemberMetaData fmd) {
+    Class indexType = Integer.class;
+    JavaTypeMapping indexMapping = new IndexMapping();
+    indexMapping.initialize(dba, indexType.getName());
+    IdentifierFactory idFactory = storeMgr.getIdentifierFactory();
+    DatastoreIdentifier indexColumnName = null;
+    ColumnMetaData colmd = null;
+
+    // Allow for any user definition in OrderMetaData
+    OrderMetaData omd = fmd.getOrderMetaData();
+    if (omd != null) {
+      colmd =
+          (omd.getColumnMetaData() != null && omd.getColumnMetaData().length > 0 ? omd
+              .getColumnMetaData()[0] : null);
+      if (omd.getMappedBy() != null) {
+        // User has defined ordering using the column(s) of an existing field.
+        JavaTypeMapping orderMapping = getMemberMapping(omd.getMappedBy());
+        if (orderMapping == null) {
+          throw new NucleusUserException(LOCALISER.msg("057021",
+                                                       fmd.getFullFieldName(), omd.getMappedBy()));
+        }
+        if (!(orderMapping instanceof IntegerMapping) && !(orderMapping instanceof LongMapping)) {
+          throw new NucleusUserException(LOCALISER.msg("057022",
+                                                       fmd.getFullFieldName(), omd.getMappedBy()));
+        }
+        return orderMapping;
+      }
+
+      String colName;
+      if (omd.getColumnMetaData() != null && omd.getColumnMetaData().length > 0
+          && omd.getColumnMetaData()[0].getName() != null) {
+        // User-defined name so create an identifier using it
+        colName = omd.getColumnMetaData()[0].getName();
+        indexColumnName = idFactory.newDatastoreFieldIdentifier(colName);
+      }
+    }
+    if (indexColumnName == null) {
+      // No name defined so generate one
+      indexColumnName = idFactory.newForeignKeyFieldIdentifier(fmd, null, null,
+                                                               storeMgr.getOMFContext()
+                                                                   .getTypeManager().isDefaultEmbeddedType(
+                                                                   indexType),
+                                                               FieldRole.ROLE_INDEX);
+    }
+
+    DatastoreField column =
+        addDatastoreField(indexType.getName(), indexColumnName, indexMapping, colmd);
+    if (colmd == null || (colmd.getAllowsNull() == null) ||
+        (colmd.getAllowsNull() != null && colmd.isAllowsNull())) {
+      // User either wants it nullable, or havent specified anything, so make it nullable
+      column.setNullable();
+    }
+
+    storeMgr.getMappingManager().createDatastoreMapping(indexMapping, column, indexType.getName());
+
+    return indexMapping;
+  }
+
+  /**
+   * Callbacks is used for inverse relationships to run some operation in the target table. The
+   * operation is creation of columns, indexes, or whatever needed.
+   */
+  private static class CallBack {
+
+    final AbstractMemberMetaData fmd;
+
+    /**
+     * Default constructor
+     *
+     * @param fmd The FieldMetaData
+     */
+    public CallBack(AbstractMemberMetaData fmd) {
+      this.fmd = fmd;
+    }
   }
 }

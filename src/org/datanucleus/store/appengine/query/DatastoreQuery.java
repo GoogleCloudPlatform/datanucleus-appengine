@@ -22,9 +22,16 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
-import org.datanucleus.query.expression.*;
+import org.datanucleus.query.expression.DyadicExpression;
+import org.datanucleus.query.expression.Expression;
+import org.datanucleus.query.expression.JoinExpression;
+import org.datanucleus.query.expression.Literal;
+import org.datanucleus.query.expression.OrderExpression;
+import org.datanucleus.query.expression.ParameterExpression;
+import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -161,7 +168,7 @@ public class DatastoreQuery implements Serializable {
 
       Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
         public Object apply(Entity entity) {
-          return entityToPojo(entity, acmd, clr, (MappedStoreManager) om.getStoreManager());
+          return entityToPojo(entity, acmd, clr, (DatastoreManager) om.getStoreManager());
         }
       };
       return new StreamingQueryResult(query, entities, entityToPojoFunc);
@@ -215,22 +222,39 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, final MappedStoreManager storeMgr) {
+      final ClassLoaderResolver clr, final DatastoreManager storeMgr) {
+    return entityToPojo(entity, acmd, clr, storeMgr, query.getObjectManager(), query.getIgnoreCache());
+  }
+
+  /**
+   * Converts the provided entity to a pojo.
+   *
+   * @param entity The entity to convert
+   * @param acmd The meta data for the pojo class
+   * @param clr The classloader resolver
+   * @param storeMgr The store manager
+   * @param om The object manager
+   * @param ignoreCache Whether or not the cache should be ignored when the
+   * object manager attempts to find the pojo
+   * @return The pojo that corresponds to the provided entity.
+   */
+  public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
+      final ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om,
+      boolean ignoreCache) {
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
         sm.replaceFields(
-            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
       }
       public void fetchNonLoadedFields(StateManager sm) {
         sm.replaceNonLoadedFields(
-            acmd.getAllMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
       }
       public FetchPlan getFetchPlanForLoading() {
         return null;
       }
     };
-    return query.getObjectManager().findObjectUsingAID(
-        clr.classForName(acmd.getFullClassName()), fv, query.getIgnoreCache(), true);
+    return om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
   }
 
   private void validate(QueryCompilation compilation) {
