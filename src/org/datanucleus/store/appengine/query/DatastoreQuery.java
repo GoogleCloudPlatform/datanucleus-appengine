@@ -19,6 +19,7 @@ import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
@@ -149,6 +150,10 @@ public class DatastoreQuery implements Serializable {
       final ClassLoaderResolver clr = om.getClassLoaderResolver();
       final AbstractClassMetaData acmd =
           om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+      if (acmd == null) {
+        throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
+            + ".  Perhaps you need to run the enhancer on this class?");
+      }
       String kind =
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
