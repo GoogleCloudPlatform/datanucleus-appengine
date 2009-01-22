@@ -1,6 +1,8 @@
 // Copyright 2009 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.apphosting.api.datastore.Transaction;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -77,5 +79,13 @@ class EmulatedXAResource implements XAResource {
   
   KeyRegistry getKeyRegistry() {
     return keyRegistry;
+  }
+
+  /**
+   * @return The current transaction, or {@code null} if the datasource does
+   * not support transactions.
+   */
+  Transaction getCurrentTransaction() {
+    return null;
   }
 }

@@ -10,7 +10,7 @@ import javax.jdo.PersistenceManagerFactory;
 public final class PMF {
 
   public static final PersistenceManagerFactory pmf =
-      JDOHelper.getPersistenceManagerFactory("datanucleus.properties");
+      JDOHelper.getPersistenceManagerFactory("transactional");
 
   private PMF() {}
 }

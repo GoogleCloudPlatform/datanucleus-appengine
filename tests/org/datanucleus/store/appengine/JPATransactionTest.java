@@ -3,12 +3,17 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.DatastoreService;
 import com.google.apphosting.api.datastore.Entity;
+import com.google.apphosting.api.datastore.EntityNotFoundException;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Transaction;
 
 import junit.framework.TestCase;
 
+import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_no_txn_allowed;
+import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_no_txn_not_allowed;
+import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.transactional_no_txn_allowed;
+import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.transactional_no_txn_not_allowed;
 import org.datanucleus.test.Book;
 import org.easymock.EasyMock;
 
@@ -18,9 +23,21 @@ import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 
 /**
+ * Verifies jpa txn behavior across the following variables:
+ * datasource type (txn | nontxn)
+ * programmatic txn demarcation (yes | no)
+ * operation (read | write)
+ * support for that operation outside a txn (yes | no)
+ *
+ * See https://spreadsheets.google.com/a/google.com/pub?key=p8C3zgqqUfpstFKZ4ns1bQg
+ * for all the gory details.
+ *
  * @author Erick Armbrust <earmbrust@google.com>
+ * @author Max Ross <maxr@google.com>
  */
 public class JPATransactionTest extends TestCase {
+
+  private static int handleCounter = 0;
 
   private LocalDatastoreTestHelper ldth;
   private DatastoreService mockDatastoreService = EasyMock.createMock(DatastoreService.class);
@@ -47,22 +64,22 @@ public class JPATransactionTest extends TestCase {
   }
 
   /**
-   * A new EntityManager should be fetched on a per-test basis.  The
+   * A new EntityManagerFactory should be fetched on a per-test basis.  The
    * DatastoreService within the DatastorePersistenceHandler is obtained via the
    * DatastoreServiceFactory, so this ensures that the "injected" factory impl
    * is returned.
    */
-  private EntityManager getEntityManager(String unit) {
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory(unit);
-    return emf.createEntityManager();
+  private EntityManagerFactory getEntityManagerFactory(String unit) {
+    return Persistence.createEntityManagerFactory(unit);
   }
 
-  public void testTransactionalWrite() throws Exception {
+  private void testWritePermutationWithExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation) {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.put(
-        EasyMock.isA(Transaction.class),
+        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn("0");
+    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++));
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -71,94 +88,223 @@ public class JPATransactionTest extends TestCase {
     b1.setAuthor("Joe Blow");
     b1.setIsbn("12345");
 
-    EntityManager em = getEntityManager("transactional");
     EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
     try {
       em.persist(b1);
     } finally {
-      txn.commit();
+      if (explicitDemarcation) {
+        txn.commit();
+      }
     }
-
     EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
   }
 
-  public void testNontransactionalWrite() throws Exception {
-    EasyMock.expect(mockDatastoreService.put(EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.replay(mockDatastoreService);
+  private void testReadPermutationWithExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation) throws EntityNotFoundException {
 
-    Book b1 = new Book();
-    b1.setTitle("Foo Bar");
-    b1.setAuthor("Joe Blow");
-    b1.setIsbn("12345");
-
-    EntityManager em = getEntityManager("nontransactional");
-    EntityTransaction txn = em.getTransaction();
-    txn.begin();
-    try {
-      em.persist(b1);
-    } finally {
-      txn.commit();
-    }
-
-    EasyMock.verify(mockDatastoreService);
-  }
-
-  public void testTransactionalRead() throws Exception {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
-        EasyMock.isA(Transaction.class),
+        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andReturn("1");
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
-    Entity b1 = Book.newBookEntity("Joe Blow", "12345", "Foo Bar");
-    ldth.ds.put(b1);
+    Entity entity = Book.newBookEntity("jimmy", "123456", "great american novel");
+    ldth.ds.put(entity);
 
-    EntityManager em = getEntityManager("transactional");
     EntityTransaction txn = em.getTransaction();
-    txn.begin();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
     try {
-      em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
+      em.find(Book.class, KeyFactory.encodeKey(entity.getKey()));
     } finally {
-      txn.commit();
+      if (explicitDemarcation) {
+        txn.commit();
+      }
     }
 
     EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
   }
 
-  public void testNontransactionalRead_Txn() throws Exception {
-    mockTxn.commit();
-    EasyMock.expectLastCall();
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+  private void testWritePermutationWithoutExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation) {
+    EasyMock.expect(mockDatastoreService.put(EasyMock.isA(Entity.class))).andReturn(null);
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    Book b1 = new Book();
+    b1.setTitle("Foo Bar");
+    b1.setAuthor("Joe Blow");
+    b1.setIsbn("12345");
+
+    EntityTransaction txn = em.getTransaction();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      em.persist(b1);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testReadPermutationWithoutExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation) throws EntityNotFoundException {
     EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.replay(mockDatastoreService, mockTxn);
 
-    Entity b1 = Book.newBookEntity("Joe Blow", "12345", "Foo Bar");
-    ldth.ds.put(b1);
+    Entity entity = Book.newBookEntity("jimmy", "123456", "great american novel");
+    ldth.ds.put(entity);
 
-    EntityManager em = getEntityManager("nontransactional");
-    em.getTransaction().begin();
+    EntityTransaction txn = em.getTransaction();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
     try {
-      em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
+      em.find(Book.class, KeyFactory.encodeKey(entity.getKey()));
     } finally {
-      em.getTransaction().commit();
-      em.close();
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testWritePermutationWithoutDatastoreWrite(
+      EntityManager em, boolean explicitDemarcation) {
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    Book b1 = new Book();
+    b1.setTitle("Foo Bar");
+    b1.setAuthor("Joe Blow");
+    b1.setIsbn("12345");
+
+    EntityTransaction txn = em.getTransaction();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      em.persist(b1);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
     }
 
     EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
   }
 
-  public void testNontransactionalRead_NoTxn() throws Exception {
-    EasyMock.expect(mockDatastoreService.get(EasyMock.isA(Key.class))).andReturn(null);
-    EasyMock.replay(mockDatastoreService);
+  private static final boolean EXPLICIT_DEMARCATION = true;
+  private static final boolean NO_EXPLICIT_DEMARCATION = false;
 
-    Entity b1 = Book.newBookEntity("Joe Blow", "12345", "Foo Bar");
-    ldth.ds.put(b1);
+  public void testWritesWithDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_no_txn_not_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testWritePermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
 
-    EntityManager em = getEntityManager("nontransactional");
-    em.find(Book.class, KeyFactory.encodeKey(b1.getKey()));
-    EasyMock.verify(mockDatastoreService);
+    emf = getEntityManagerFactory(transactional_no_txn_allowed.name());
+    em = emf.createEntityManager();
+    testWritePermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+  }
+
+  public void testReadsWithDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_no_txn_not_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testReadPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+    emf = getEntityManagerFactory(transactional_no_txn_allowed.name());
+    em = emf.createEntityManager();
+    testReadPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+  }
+
+  public void testWritesWithoutDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(nontransactional_no_txn_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testWritePermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_no_txn_not_allowed.name());
+    em = emf.createEntityManager();
+    testWritePermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+
+    em.close();
+    emf.close();
+  }
+
+  public void testReadsWithoutDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_no_txn_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testReadPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_no_txn_allowed.name());
+    em = emf.createEntityManager();
+    testReadPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    testReadPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_no_txn_not_allowed.name());
+    em = emf.createEntityManager();
+    testReadPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION);
+    testReadPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION);
+
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(transactional_no_txn_not_allowed.name());
+    em = emf.createEntityManager();
+    testReadPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+  }
+
+  public void testWritesWithNoDatastoreWrite() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_no_txn_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testWritePermutationWithoutDatastoreWrite(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_no_txn_allowed.name());
+    em = emf.createEntityManager();
+    testWritePermutationWithoutDatastoreWrite(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(transactional_no_txn_not_allowed.name());
+    em = emf.createEntityManager();
+    testWritePermutationWithoutDatastoreWrite(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(
+        JPATestCase.EntityManagerFactoryName.nontransactional_no_txn_not_allowed.name());
+    em = emf.createEntityManager();
+    testWritePermutationWithoutDatastoreWrite(em, NO_EXPLICIT_DEMARCATION);
+    em.close();
+    emf.close();
   }
 }

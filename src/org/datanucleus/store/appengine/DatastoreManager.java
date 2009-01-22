@@ -3,8 +3,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.common.collect.Maps;
-import com.google.common.collect.Sets;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
@@ -14,6 +12,7 @@ import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.StateManager;
+import org.datanucleus.ConnectionFactoryRegistry;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -51,6 +50,8 @@ import org.datanucleus.util.NucleusLogger;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -68,7 +69,9 @@ public class DatastoreManager extends MappedStoreManager {
    * @param omfContext The OMFContext
    */
   public DatastoreManager(ClassLoaderResolver clr, OMFContext omfContext) {
-    super("appengine", clr, omfContext);
+    // Make sure we add required property values before we invoke
+    // out parent's constructor.
+    super("appengine", clr, addDefaultPropertyValues(omfContext));
 
     // Check if datastore api is in CLASSPATH.  Don't let the hard-coded
     // jar name upset you, it's just used for error messages.  The check will
@@ -76,13 +79,24 @@ public class DatastoreManager extends MappedStoreManager {
     ClassUtils.assertClassForJarExistsInClasspath(
         clr, "com.google.apphosting.api.datastore.DatastoreService", "appengine-api.jar");
 
-    PersistenceConfiguration conf = omfContext.getPersistenceConfiguration();
-    conf.setProperty("datanucleus.attachSameDatastore", "true");
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(omfContext);
     logConfiguration();
+  }
+
+  private static OMFContext addDefaultPropertyValues(OMFContext omfContext) {
+
+    PersistenceConfiguration conf = omfContext.getPersistenceConfiguration();
+    // There is only one datastore so set this to true no matter what.
+    conf.setProperty("datanucleus.attachSameDatastore", Boolean.TRUE.toString());
+    // Only set this if a value has not been provided
+    if (conf.getProperty(DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY) == null) {
+      conf.setProperty(
+          DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
+    }
+    return omfContext;
   }
 
   @Override
@@ -137,7 +151,7 @@ public class DatastoreManager extends MappedStoreManager {
     if (idFactoryClassName == null) {
       throw new NucleusUserException(idFactoryName).setFatal();
     }
-    Map<String, String> props = Maps.newHashMap();
+    Map<String, String> props = new HashMap<String, String>();
     addStringPropIfNotNull(conf, props, "datanucleus.mapping.Catalog", "DefaultCatalog");
     addStringPropIfNotNull(conf, props, "datanucleus.mapping.Schema", "DefaultSchema");
     addStringPropIfNotNull(conf, props, "datanucleus.identifier.case", "RequiredCase");
@@ -171,7 +185,7 @@ public class DatastoreManager extends MappedStoreManager {
   }
   @Override
   public Collection<String> getSupportedOptions() {
-    Set<String> opts = Sets.newHashSet();
+    Set<String> opts = new HashSet<String>();
     opts.add("TransactionIsolationLevel.read-committed");
     opts.add("BackedSCO");
     return opts;
@@ -490,7 +504,29 @@ public class DatastoreManager extends MappedStoreManager {
     }
   }
 
+  @Override
   public DatastorePersistenceHandler getPersistenceHandler() {
     return (DatastorePersistenceHandler) super.getPersistenceHandler();
+  }
+
+  // For testing
+  String getTxConnectionFactoryName() {
+    return txConnectionFactoryName;
+  }
+
+  // For testing
+  String getNonTxConnectionFactoryName() {
+    return nontxConnectionFactoryName;
+  }
+
+  /**
+   * Helper method to determine if the connection factory associated with this
+   * manager is transactional.
+   */
+  boolean connectionFactoryIsTransactional() {
+    ConnectionFactoryRegistry registry = getOMFContext().getConnectionFactoryRegistry();
+    DatastoreConnectionFactoryImpl connFactory =
+        (DatastoreConnectionFactoryImpl) registry.lookupConnectionFactory(txConnectionFactoryName);
+    return connFactory.isTransactional();
   }
 }

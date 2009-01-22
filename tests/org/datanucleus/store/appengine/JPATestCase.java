@@ -37,14 +37,23 @@ public class JPATestCase extends TestCase {
     em = emf.createEntityManager();
   }
 
-  protected enum EntityManagerFactoryName { transactional, nontransactional }
+  protected enum EntityManagerFactoryName {
+    // nonTransactionalRead and nonTransactionalWrite are true
+    transactional_no_txn_allowed,
+    // nonTransactionalRead and nonTransactionalWrite are false
+    transactional_no_txn_not_allowed,
+    // nonTransactionalRead and nonTransactionalWrite are true
+    nontransactional_no_txn_allowed,
+    // nonTransactionalRead and nonTransactionalWrite are false
+    nontransactional_no_txn_not_allowed
+  }
 
   /**
    * By default we use a datasource that requires txns.
    * Override this if your test needs to use a different instance.
    */
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
-    return EntityManagerFactoryName.transactional;
+    return EntityManagerFactoryName.transactional_no_txn_not_allowed;
   }
 
   @Override

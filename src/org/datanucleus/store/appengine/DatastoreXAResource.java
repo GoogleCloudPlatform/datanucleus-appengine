@@ -32,6 +32,7 @@ class DatastoreXAResource extends EmulatedXAResource {
     this.datastoreService = datastoreService;
   }
 
+  @Override
   Transaction getCurrentTransaction() {
     return currentTxn;
   }

@@ -17,7 +17,7 @@ public class JPAFetchTest extends JPATestCase {
 
   @Override
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
-    return EntityManagerFactoryName.nontransactional;
+    return EntityManagerFactoryName.nontransactional_no_txn_allowed;
   }
 
   public void testSimpleFetch() {
@@ -33,7 +33,8 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetchWithNonTransactionalDatasource() {
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory("nontransactional");
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory(
+        EntityManagerFactoryName.nontransactional_no_txn_not_allowed.name());
     EntityManager em = emf.createEntityManager();
     try {
       Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));

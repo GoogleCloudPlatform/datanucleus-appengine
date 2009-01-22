@@ -4,10 +4,8 @@
     xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
         http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd" version="1.0">
 
-    <persistence-unit name="transactional">
+    <persistence-unit name="transactional_no_txn_not_allowed">
         <properties>
-            <property name="datanucleus.NontransactionalRead" value="false"/>
-            <property name="datanucleus.NontransactionalWrite" value="false"/>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.identifier.case" value="PreserveCase"/>
             <!-- TODO(maxr) Remove once Andy's change is in -->
@@ -15,7 +13,7 @@
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="nontransactional">
+    <persistence-unit name="transactional_no_txn_allowed">
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>
@@ -23,6 +21,28 @@
             <property name="datanucleus.identifier.case" value="PreserveCase"/>
             <!-- TODO(maxr) Remove once Andy's change is in -->
             <property name="datanucleus.maxFetchDepth" value="-1"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="nontransactional_no_txn_not_allowed">
+        <properties>
+            <property name="datanucleus.ConnectionURL" value="appengine"/>
+            <property name="datanucleus.identifier.case" value="PreserveCase"/>
+            <!-- TODO(maxr) Remove once Andy's change is in -->
+            <property name="datanucleus.maxFetchDepth" value="-1"/>
+            <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
+        </properties>
+    </persistence-unit>
+
+    <persistence-unit name="nontransactional_no_txn_allowed">
+        <properties>
+            <property name="datanucleus.NontransactionalRead" value="true"/>
+            <property name="datanucleus.NontransactionalWrite" value="true"/>
+            <property name="datanucleus.ConnectionURL" value="appengine"/>
+            <property name="datanucleus.identifier.case" value="PreserveCase"/>
+            <!-- TODO(maxr) Remove once Andy's change is in -->
+            <property name="datanucleus.maxFetchDepth" value="-1"/>
+            <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
         </properties>
     </persistence-unit>
 

@@ -25,7 +25,7 @@ public class JDOTestCase extends TestCase {
     super.setUp();
     ldth = new LocalDatastoreTestHelper();
     ldth.setUp();
-    pmf = JDOHelper.getPersistenceManagerFactory("jdo_tests.properties");
+    pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
     pm = pmf.getPersistenceManager();
   }
 
@@ -37,6 +37,16 @@ public class JDOTestCase extends TestCase {
       failed = true;
       throw t;
     }
+  }
+
+  public enum PersistenceManagerFactoryName { transactional, nontransactional }
+
+  /**
+   * By default we use a datasource that requires txns.
+   * Override this if your test needs to use a different instance.
+   */
+  protected PersistenceManagerFactoryName getPersistenceManagerFactoryName() {
+    return PersistenceManagerFactoryName.transactional;
   }
 
   @Override
@@ -81,5 +91,5 @@ public class JDOTestCase extends TestCase {
       }
     }
   }
-
+  
 }

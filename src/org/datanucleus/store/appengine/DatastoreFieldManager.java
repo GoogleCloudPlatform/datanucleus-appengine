@@ -11,7 +11,6 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
-import org.datanucleus.Transaction;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -330,23 +329,8 @@ public class DatastoreFieldManager implements FieldManager {
    */
   private KeyRegistry getKeyRegistry() {
     ObjectManager om = getObjectManager();
-    Transaction txn = om.getTransaction();
-    Map<String, Object> options = txn.getOptions();
-    boolean containsKey = options.containsKey(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY);
-    try {
-      if (txn.getNontransactionalWrite()) {
-        options.put(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY, true);
-      }
-      ManagedConnection mconn = storeManager.getConnection(om);
-      return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
-    } finally {
-      // Make sure we revert the map back to its original state.
-      // The only case we need to wory about is the one where the key wasn't
-      // originally in the map.
-      if (!containsKey) {
-        options.remove(DatastoreConnectionFactoryImpl.NO_TXN_PROPERTY);
-      }
-    }
+    ManagedConnection mconn = storeManager.getConnection(om);
+    return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 
   private void storeStringAncestorPK(String value) {

@@ -15,6 +15,10 @@ import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Name;
 import org.datanucleus.test.Person;
 
+import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManager;
+import javax.jdo.PersistenceManagerFactory;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -174,9 +178,9 @@ public class JDOInsertionTest extends JDOTestCase {
     Entity entity = ldth.ds.get(KeyFactory.decodeKey(p.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("first"));
-    assertEquals("jam", entity.getProperty("last"));  
+    assertEquals("jam", entity.getProperty("last"));
     assertEquals("anotherjimmy", entity.getProperty("anotherFirst"));
-    assertEquals("anotherjam", entity.getProperty("anotherLast"));  
+    assertEquals("anotherjam", entity.getProperty("anotherLast"));
   }
 
   public void testNullEmbeddable() throws EntityNotFoundException {
@@ -194,6 +198,70 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals("jam", entity.getProperty("last"));
     assertNull(entity.getProperty("anotherFirst"));
     assertNull(entity.getProperty("anotherLast"));
+  }
+
+  private void insertAndFetchInSameTxn(boolean enabledNonTxnWrite) {
+    Person p = new Person();
+    Name name = new Name();
+    name.setFirst("jimmy");
+    name.setLast("jam");
+    p.setName(name);
+
+    beginTxn();
+    pm.currentTransaction().setNontransactionalWrite(enabledNonTxnWrite);
+    pm.makePersistent(p);
+    commitTxn();
+
+    Person p2 = new Person();
+    p2.setAnotherName(name);
+
+    beginTxn();
+    pm.currentTransaction().setNontransactionalWrite(enabledNonTxnWrite);
+    pm.makePersistent(p2);
+    pm.getObjectById(Person.class, p.getId());
+    commitTxn();
+  }
+
+
+  public void testInsertAndFetchInSameTxn_WritesNeedTxn() {
+    insertAndFetchInSameTxn(false);
+  }
+
+  public void testInsertAndFetchInSameTxn_WritesDoNotNeedTxn() {
+    insertAndFetchInSameTxn(true);
+  }
+
+  public void testFetchOfCachedPojo() throws Exception {
+    PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory(
+        PersistenceManagerFactoryName.nontransactional.name());
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      Flight f1 = new Flight();
+      f1.setOrigin("BOS");
+      f1.setDest("MIA");
+      f1.setMe(2);
+      f1.setYou(4);
+      f1.setName("Harold");
+      f1.setFlightNumber(23);
+
+      pm.currentTransaction().begin();
+      pm.makePersistent(f1);
+      pm.currentTransaction().commit();
+
+      Flight f2 = new Flight();
+      f2.setOrigin("BOS");
+      f2.setDest("MIA");
+      f2.setMe(2);
+      f2.setYou(4);
+      f2.setName("Harold");
+      f2.setFlightNumber(24);
+
+      pm.makePersistent(f2);
+      pm.getObjectById(Flight.class, f1.getId());
+    } finally {
+      pm.close();
+      pmf.close();
+    }
   }
 }
 

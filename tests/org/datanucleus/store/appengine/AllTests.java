@@ -42,6 +42,8 @@ public class AllTests {
     suite.addTestSuite(JDOImplicitEntityGroupTest.class);
     suite.addTestSuite(JPAOneToManyTest.class);
     suite.addTestSuite(DatastoreQueryExpressionTest.class);
+    suite.addTestSuite(JDODataSourceConfigTest.class);
+    suite.addTestSuite(JPADataSourceConfigTest.class);
     return suite;
   }
 }

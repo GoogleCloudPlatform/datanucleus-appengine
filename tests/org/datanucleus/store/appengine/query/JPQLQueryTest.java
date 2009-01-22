@@ -49,7 +49,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   @Override
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
-    return EntityManagerFactoryName.nontransactional;
+    return EntityManagerFactoryName.nontransactional_no_txn_allowed;
   }
 
   public void testUnsupportedFilters() {
