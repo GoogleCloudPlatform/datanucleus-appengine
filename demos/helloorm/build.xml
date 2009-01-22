@@ -36,7 +36,7 @@
     </copy>
     <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
       <lib dir="${helloorm.orm.lib.dir}">
-        <include name="datanucleus-appengine-0.6.jar"/>
+        <include name="datanucleus-appengine-0.7.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0002.jar"/>

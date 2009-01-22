@@ -36,3 +36,9 @@ these by hand for now.
 VERSION 0.6
 - Implicitly assign entity groups when creating dependent children (1 to 1 only)
 - Support for jdk 5.
+
+VERSION 0.7
+- Removed dependency on datanucleus' rdbms jar
+- Support for @OneToMany when the member is of type List
+- Support for serialized members.
+- Support for custom serialization strategies.
