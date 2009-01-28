@@ -2,7 +2,7 @@
 <project name="gae" default="testdist">
 
   <property name="version.major" value="0"/>
-  <property name="version.minor" value="7"/>
+  <property name="version.minor" value="8"/>
   <property name="version" value="${version.major}.${version.minor}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -94,8 +94,11 @@
       It should look like this:
       /tmp/testdist/lib
       /tmp/testdist/lib/appengine-api.jar
-      /tmp/testdist/lib/appengine-local-runtime.jar
-      /tmp/testdist/lib/servlet-api-2.5 .jar
+      /tmp/testdist/lib/appengine-tools-api.jar
+      /tmp/testdist/lib/impl/appengine-local-runtime.jar
+      /tmp/testdist/lib/shared/servlet-api-2.5 .jar
+      /tmp/testdist/lib/shared/jsp-api-2.1 .jar
+      /tmp/testdist/lib/shared/appengine-local-runtime-shared.jar
       /tmp/testdist/appengine-orm
       /tmp/testdist/appengine-orm/<orm distro>
      -->
@@ -107,8 +110,23 @@
     <copy todir="${orm.sdk.tmp.dir}">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-api.jar"/>
+        <include name="appengine-tools-api.jar"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmp.dir}/impl"/>
+    <copy todir="${orm.sdk.tmp.dir}/impl">
+      <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime.jar"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmp.dir}/shared"/>
+    <copy todir="${orm.sdk.tmp.dir}/shared">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-local-runtime-shared.jar"/>
         <include name="servlet-api-2.5.jar"/>
+        <include name="jsp-api-2.1.jar"/>
       </fileset>
     </copy>
 

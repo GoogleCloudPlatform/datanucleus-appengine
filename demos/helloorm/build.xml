@@ -12,7 +12,8 @@
   </target>
 
   <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" jar="${sdk.lib.dir}/appengine-local-runtime.jar" classpath="">
+    <java fork="true" classpath="${sdk.lib.dir}/appengine-tools-api.jar"
+          classname="com.google.apphosting.tools.development.DevAppServerMain">
       <arg value="exploded"/>
     </java>
   </target>
@@ -36,7 +37,7 @@
     </copy>
     <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
       <lib dir="${helloorm.orm.lib.dir}">
-        <include name="datanucleus-appengine-0.7.jar"/>
+        <include name="datanucleus-appengine-0.8.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0002.jar"/>
@@ -72,8 +73,7 @@
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0003.jar"/>
     <pathelement location="${helloorm.orm.lib.dir}/datanucleus-core-1.1.0.m1-0004.jar"/>
     <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
-    <pathelement location="${sdk.lib.dir}/appengine-local-runtime.jar"/>
-    <pathelement location="${sdk.lib.dir}/servlet-api-2.5.jar"/>
+    <pathelement location="${sdk.lib.dir}/shared/servlet-api-2.5.jar"/>
   </path>
 
   <!-- TODO(maxr): Implement this check -->

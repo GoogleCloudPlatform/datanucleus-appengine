@@ -42,3 +42,7 @@ VERSION 0.7
 - Support for @OneToMany when the member is of type List
 - Support for serialized members.
 - Support for custom serialization strategies.
+
+VERSION 0.8
+- Support for non-transactional datasources.
+- Fixed a nasty ClassCastException related to transaction management.
