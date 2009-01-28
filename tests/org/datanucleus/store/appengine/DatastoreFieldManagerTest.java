@@ -7,7 +7,6 @@ import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Link;
 import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.users.User;
-import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.JDOClassLoaderResolver;
@@ -131,26 +130,26 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertTrue(Arrays.equals(new Link[] {KitchenSink.LINK1, KitchenSink.LINK2},
         (Link[]) fieldManager.fetchObjectField(iter.next())));
 
-    assertEquals(Lists.newArrayList("p", "q"), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(11, 12), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(13L, 14L), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList((short) 15, (short) 16),
+    assertEquals(Utils.newArrayList("p", "q"), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(11, 12), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(13L, 14L), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList((short) 15, (short) 16),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList('q', 'r'), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList((byte) 0x8, (byte) 0x9),
+    assertEquals(Utils.newArrayList('q', 'r'), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList((byte) 0x8, (byte) 0x9),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(22.44d, 23.55d), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(23.44f, 24.55f), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(true, false), fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2),
+    assertEquals(Utils.newArrayList(22.44d, 23.55d), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(23.44f, 24.55f), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(true, false), fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(KitchenSink.USER1, KitchenSink.USER2),
+    assertEquals(Utils.newArrayList(KitchenSink.USER1, KitchenSink.USER2),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(KitchenSink.BLOB1, KitchenSink.BLOB2),
+    assertEquals(Utils.newArrayList(KitchenSink.BLOB1, KitchenSink.BLOB2),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(KitchenSink.TEXT1, KitchenSink.TEXT2),
+    assertEquals(Utils.newArrayList(KitchenSink.TEXT1, KitchenSink.TEXT2),
         fieldManager.fetchObjectField(iter.next()));
-    assertEquals(Lists.newArrayList(KitchenSink.LINK1, KitchenSink.LINK2),
+    assertEquals(Utils.newArrayList(KitchenSink.LINK1, KitchenSink.LINK2),
         fieldManager.fetchObjectField(iter.next()));
 
   }

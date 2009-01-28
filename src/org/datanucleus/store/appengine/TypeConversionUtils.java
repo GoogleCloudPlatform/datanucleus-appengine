@@ -2,10 +2,6 @@
 package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Blob;
-import com.google.common.base.Function;
-import com.google.common.base.Functions;
-import com.google.common.collect.ImmutableMapBuilder;
-import com.google.common.collect.Lists;
 import com.google.common.collect.PrimitiveArrays;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -14,9 +10,12 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ContainerMetaData;
+import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.Utils.Function;
 
 import java.lang.reflect.Array;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -79,18 +78,22 @@ final class TypeConversionUtils {
    * the true primitive class and the object version.
    */
   private static final Map<Class<?>, Function<Object, Object>> DATASTORE_TYPE_TO_POJO_TYPE_FUNC =
-      new ImmutableMapBuilder<Class<?>, Function<Object, Object>>()
-      .put(Integer.class, LONG_TO_INTEGER)
-      .put(Integer.TYPE, LONG_TO_INTEGER)
-      .put(Short.class, LONG_TO_SHORT)
-      .put(Short.TYPE, LONG_TO_SHORT)
-      .put(Byte.class, LONG_TO_BYTE)
-      .put(Byte.TYPE, LONG_TO_BYTE)
-      .put(Character.class, LONG_TO_CHARACTER)
-      .put(Character.TYPE, LONG_TO_CHARACTER)
-      .put(Float.class, DOUBLE_TO_FLOAT)
-      .put(Float.TYPE, DOUBLE_TO_FLOAT)
-      .getMap();
+      buildDatastoreToPojoTypeFuncMap();
+
+  private static Map<Class<?>, Function<Object, Object>> buildDatastoreToPojoTypeFuncMap() {
+    Map<Class<?>, Function<Object, Object>> map = new HashMap<Class<?>, Function<Object, Object>>();
+    map.put(Integer.class, LONG_TO_INTEGER);
+    map.put(Integer.TYPE, LONG_TO_INTEGER);
+    map.put(Short.class, LONG_TO_SHORT);
+    map.put(Short.TYPE, LONG_TO_SHORT);
+    map.put(Byte.class, LONG_TO_BYTE);
+    map.put(Byte.TYPE, LONG_TO_BYTE);
+    map.put(Character.class, LONG_TO_CHARACTER);
+    map.put(Character.TYPE, LONG_TO_CHARACTER);
+    map.put(Float.class, DOUBLE_TO_FLOAT);
+    map.put(Float.TYPE, DOUBLE_TO_FLOAT);
+    return map;
+  }
 
   /**
    * @param metaData The meta data we'll consult.
@@ -155,7 +158,7 @@ final class TypeConversionUtils {
     // special case logic for Character, which is not supported by the datastore
     if (value.getClass().getComponentType().isPrimitive()) {
       if (value.getClass().getComponentType().equals(Character.TYPE)) {
-        return Lists.transform(PrimitiveArrays.asList((char[]) value), CHARACTER_TO_LONG);
+        return Utils.transform(PrimitiveArrays.asList((char[]) value), CHARACTER_TO_LONG);
       }
       // Primitive arrays do not extend Object[] so they need
       // special handling.
@@ -168,7 +171,7 @@ final class TypeConversionUtils {
   private static List<?> convertNonPrimitivePojoArrayToDatastoreList(Object[] array) {
     // special case logic for Character, which is not supported by the datastore
     if (array.getClass().getComponentType().equals(Character.class)) {
-      return Lists.transform(Arrays.asList((Character[]) array), CHARACTER_TO_LONG);
+      return Utils.transform(Arrays.asList((Character[]) array), CHARACTER_TO_LONG);
     }
     return Arrays.asList(array);
   }
@@ -211,7 +214,7 @@ final class TypeConversionUtils {
       Class<?> pojoType = classForName(clr, pojoTypeStr);
       value = convertDatastoreListToPojoCollection((List<?>) value, pojoType);
     } else {
-      value = getDatastoreTypeToPojoTypeFunc(Functions.identity(), ammd).apply(value);
+      value = getDatastoreTypeToPojoTypeFunc(Utils.identity(), ammd).apply(value);
     }
     return value;
   }
@@ -241,7 +244,7 @@ final class TypeConversionUtils {
       List<?> datastoreList, Class<?> pojoType) {
     Function<Object, Object> func = DATASTORE_TYPE_TO_POJO_TYPE_FUNC.get(pojoType);
     if (func != null) {
-      datastoreList = Lists.transform(datastoreList, func);
+      datastoreList = Utils.transform(datastoreList, func);
     }
     return datastoreList;
   }

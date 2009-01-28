@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.StateManager;
@@ -11,6 +10,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -35,7 +35,7 @@ class DatastoreRelationFieldManager {
   private final DatastoreFieldManager fieldManager;
 
   // Events that know how to store relations.
-  private final List<StoreRelationEvent> storeRelationEvents = Lists.newArrayList();
+  private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
 
   DatastoreRelationFieldManager(DatastoreFieldManager fieldManager) {
     this.fieldManager = fieldManager;

@@ -2,7 +2,6 @@
 package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.datastore.Entity;
-import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
@@ -10,6 +9,7 @@ import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -94,9 +94,9 @@ class DependentDeleteRequest {
     /**
      * Fields in a 1-1 relation with FK in the table of the other object.
      */
-    private final List<AbstractMemberMetaData> oneToOneNonOwnerFields = Lists.newArrayList();
+    private final List<AbstractMemberMetaData> oneToOneNonOwnerFields = Utils.newArrayList();
 
-    private final List<MappingCallbacks> callbacks = Lists.newArrayList();
+    private final List<MappingCallbacks> callbacks = Utils.newArrayList();
 
     private final ClassLoaderResolver clr;
 

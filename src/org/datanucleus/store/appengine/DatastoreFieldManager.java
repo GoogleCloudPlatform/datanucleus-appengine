@@ -5,7 +5,6 @@ import com.google.apphosting.api.datastore.Blob;
 import com.google.apphosting.api.datastore.Entity;
 import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
@@ -19,6 +18,7 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.appengine.Utils;
 
 import java.util.LinkedList;
 import java.util.List;
@@ -444,7 +444,7 @@ public class DatastoreFieldManager implements FieldManager {
           // Datastore doesn't support Character so translate into
           // a list of Longs.  All other Collections can pass straight
           // through.
-          value = Lists.transform((List<Character>) value, TypeConversionUtils.CHARACTER_TO_LONG);
+          value = Utils.transform((List<Character>) value, TypeConversionUtils.CHARACTER_TO_LONG);
         } else if (value instanceof Character) {
           // Datastore doesn't support Character so translate into a Long.
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);

@@ -1,9 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.common.collect.Lists;
-import com.google.common.collect.Maps;
-
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -25,6 +22,7 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.plugin.ConfigurationElement;
 import org.datanucleus.sco.SCOUtils;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.exceptions.NoSuchPersistentFieldException;
 import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.mapped.DatastoreAdapter;
@@ -85,19 +83,20 @@ class DatastoreTable implements DatastoreClass {
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
    */
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap = Maps.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap =
+      Utils.newHashMap();
 
   /**
    * All the properties in the table.  Even though the datastore is schemaless,
    * the mappings provided by the ORM effectively impose a schema.  This allows
    * us to know, up front, what properties we can expect.
    */
-  private final List<DatastoreProperty> datastoreProperties = Lists.newArrayList();
+  private final List<DatastoreProperty> datastoreProperties = Utils.newArrayList();
 
   /**
    * Index to the props, keyed by name.
    */
-  protected Map<String, DatastoreProperty> datastorePropertiesByName = Maps.newHashMap();
+  protected Map<String, DatastoreProperty> datastorePropertiesByName = Utils.newHashMap();
 
   /**
    * Mapping for datastore identity (optional).
@@ -124,9 +123,12 @@ class DatastoreTable implements DatastoreClass {
    * Dependent fields.  Unlike pretty much the rest of this class, this member and the
    * code that populates is specific to the appengine plugin.
    */
-  private final List<AbstractMemberMetaData> dependentMemberMetaData = Lists.newArrayList();
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Maps.newHashMap();
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Maps.newHashMap();
+  private final List<AbstractMemberMetaData> dependentMemberMetaData =
+      Utils.newArrayList();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings =
+      Utils.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings =
+      Utils.newHashMap();
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {

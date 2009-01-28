@@ -6,9 +6,9 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.KeyFactory;
 import com.google.apphosting.api.datastore.Query.SortDirection;
 import com.google.apphosting.api.datastore.Query.SortPredicate;
-import com.google.common.collect.Lists;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
@@ -37,8 +37,8 @@ import java.util.List;
  */
 class DatastoreQueryExpression implements QueryExpression {
 
-  private final List<BooleanExpression> andConditions = Lists.newArrayList();
-  private final List<SortPredicate> sortPredicates = Lists.newArrayList();
+  private final List<BooleanExpression> andConditions = Utils.newArrayList();
+  private final List<SortPredicate> sortPredicates = Utils.newArrayList();
   private final DatastoreTable mainTable;
   private final ClassLoaderResolver clr;
   /**

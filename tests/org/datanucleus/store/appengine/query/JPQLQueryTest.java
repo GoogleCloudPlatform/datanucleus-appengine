@@ -6,12 +6,11 @@ import com.google.apphosting.api.datastore.Query.FilterOperator;
 import com.google.apphosting.api.datastore.Query.FilterPredicate;
 import com.google.apphosting.api.datastore.Query.SortDirection;
 import com.google.apphosting.api.datastore.Query.SortPredicate;
-import com.google.common.collect.Lists;
-import com.google.common.collect.Sets;
 
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasKeyPkJPA;
@@ -19,7 +18,9 @@ import org.datanucleus.test.HasKeyPkJPA;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -60,7 +61,8 @@ public class JPQLQueryTest extends JPATestCase {
     // group by, and the group by gets seen first.
     assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author HAVING title = 'foo'", DatastoreQuery.GROUP_BY_OP);
 
-    Set<Expression.Operator> unsupportedOps = Sets.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
+    Set<Expression.Operator> unsupportedOps =
+        new HashSet<Expression.Operator>(DatastoreQuery.UNSUPPORTED_OPERATORS);
     baseQuery += "WHERE ";
     assertQueryUnsupportedByOrm(baseQuery + "title = 'foo' OR title = 'bar'", Expression.OP_OR, unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "NOT title = 'foo'", Expression.OP_NOT, unsupportedOps);
@@ -80,9 +82,9 @@ public class JPQLQueryTest extends JPATestCase {
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");
 
-    assertEquals(Sets.newHashSet(Expression.OP_CONCAT, Expression.OP_COM,
+    assertEquals(new HashSet<Expression.Operator>(Arrays.asList(Expression.OP_CONCAT, Expression.OP_COM,
         Expression.OP_NEG, Expression.OP_IS, Expression.OP_BETWEEN,
-        Expression.OP_ISNOT), unsupportedOps);
+        Expression.OP_ISNOT)), unsupportedOps);
   }
 
   public void testSupportedFilters() {
@@ -91,28 +93,28 @@ public class JPQLQueryTest extends JPATestCase {
     assertQuerySupported(baseQuery, NO_FILTERS, NO_SORTS);
 
     baseQuery += "WHERE ";
-    assertQuerySupported(baseQuery + "title = 2", Lists.newArrayList(TITLE_EQ_2), NO_SORTS);
-    assertQuerySupported(baseQuery + "title = \"2\"", Lists.newArrayList(TITLE_EQ_2STR), NO_SORTS);
-    assertQuerySupported(baseQuery + "(title = 2)", Lists.newArrayList(TITLE_EQ_2), NO_SORTS);
-    assertQuerySupported(baseQuery + "title = 2 AND isbn = 4", Lists.newArrayList(TITLE_EQ_2,
+    assertQuerySupported(baseQuery + "title = 2", Utils.newArrayList(TITLE_EQ_2), NO_SORTS);
+    assertQuerySupported(baseQuery + "title = \"2\"", Utils.newArrayList(TITLE_EQ_2STR), NO_SORTS);
+    assertQuerySupported(baseQuery + "(title = 2)", Utils.newArrayList(TITLE_EQ_2), NO_SORTS);
+    assertQuerySupported(baseQuery + "title = 2 AND isbn = 4", Utils.newArrayList(TITLE_EQ_2,
         ISBN_EQ_4), NO_SORTS);
-    assertQuerySupported(baseQuery + "(title = 2 AND isbn = 4)", Lists.newArrayList(TITLE_EQ_2,
+    assertQuerySupported(baseQuery + "(title = 2 AND isbn = 4)", Utils.newArrayList(TITLE_EQ_2,
         ISBN_EQ_4), NO_SORTS);
-    assertQuerySupported(baseQuery + "(title = 2) AND (isbn = 4)", Lists.newArrayList(
+    assertQuerySupported(baseQuery + "(title = 2) AND (isbn = 4)", Utils.newArrayList(
         TITLE_EQ_2, ISBN_EQ_4), NO_SORTS);
-    assertQuerySupported(baseQuery + "title > 2", Lists.newArrayList(TITLE_GT_2), NO_SORTS);
-    assertQuerySupported(baseQuery + "title >= 2", Lists.newArrayList(TITLE_GTE_2), NO_SORTS);
-    assertQuerySupported(baseQuery + "isbn < 4", Lists.newArrayList(ISBN_LT_4), NO_SORTS);
-    assertQuerySupported(baseQuery + "isbn <= 4", Lists.newArrayList(ISBN_LTE_4), NO_SORTS);
+    assertQuerySupported(baseQuery + "title > 2", Utils.newArrayList(TITLE_GT_2), NO_SORTS);
+    assertQuerySupported(baseQuery + "title >= 2", Utils.newArrayList(TITLE_GTE_2), NO_SORTS);
+    assertQuerySupported(baseQuery + "isbn < 4", Utils.newArrayList(ISBN_LT_4), NO_SORTS);
+    assertQuerySupported(baseQuery + "isbn <= 4", Utils.newArrayList(ISBN_LTE_4), NO_SORTS);
 
     baseQuery = "SELECT FROM " + Book.class.getName() + " ";
-    assertQuerySupported(baseQuery + "ORDER BY title ASC", NO_FILTERS, Lists.newArrayList(TITLE_ASC));
-    assertQuerySupported(baseQuery + "ORDER BY isbn DESC", NO_FILTERS, Lists.newArrayList(ISBN_DESC));
+    assertQuerySupported(baseQuery + "ORDER BY title ASC", NO_FILTERS, Utils.newArrayList(TITLE_ASC));
+    assertQuerySupported(baseQuery + "ORDER BY isbn DESC", NO_FILTERS, Utils.newArrayList(ISBN_DESC));
     assertQuerySupported(baseQuery + "ORDER BY title ASC, isbn DESC", NO_FILTERS,
-        Lists.newArrayList(TITLE_ASC, ISBN_DESC));
+        Utils.newArrayList(TITLE_ASC, ISBN_DESC));
 
     assertQuerySupported(baseQuery + "WHERE title = 2 AND isbn = 4 ORDER BY title ASC, isbn DESC",
-        Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), Lists.newArrayList(TITLE_ASC, ISBN_DESC));
+        Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4), Utils.newArrayList(TITLE_ASC, ISBN_DESC));
   }
 
   public void test2Equals2OrderBy() {
@@ -286,16 +288,16 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBindVariables() {
 
     assertQuerySupported("select from " + Book.class.getName() + " where title = :title",
-        Lists.newArrayList(TITLE_EQ_2), NO_SORTS, "title", 2L);
+        Utils.newArrayList(TITLE_EQ_2), NO_SORTS, "title", 2L);
 
     assertQuerySupported("select from " + Book.class.getName()
         + " where title = :title AND isbn = :isbn",
-        Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4), NO_SORTS, "title", 2L, "isbn", 4L);
+        Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4), NO_SORTS, "title", 2L, "isbn", 4L);
 
     assertQuerySupported("select from " + Book.class.getName()
         + " where title = :title AND isbn = :isbn order by title asc, isbn desc",
-        Lists.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
-        Lists.newArrayList(TITLE_ASC, ISBN_DESC), "title", 2L, "isbn", 4L);
+        Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
+        Utils.newArrayList(TITLE_ASC, ISBN_DESC), "title", 2L, "isbn", 4L);
   }
 
   public void testKeyQuery() {

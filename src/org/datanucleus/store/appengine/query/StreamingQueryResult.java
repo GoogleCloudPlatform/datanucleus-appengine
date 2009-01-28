@@ -2,10 +2,10 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.apphosting.api.datastore.Entity;
-import com.google.common.base.Function;
 import com.google.common.collect.AbstractIterator;
-import com.google.common.collect.Lists;
 
+import org.datanucleus.store.appengine.Utils.Function;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.Query;
 
@@ -42,7 +42,7 @@ class StreamingQueryResult extends AbstractQueryResult {
    * it clear that we depend on the constant time indexing that
    * {@link ArrayList} provides.
    */
-  private final ArrayList<Object> resolvedPojos = Lists.newArrayList();
+  private final ArrayList<Object> resolvedPojos = Utils.newArrayList();
 
   /**
    * Constructs a StreamingQueryResult

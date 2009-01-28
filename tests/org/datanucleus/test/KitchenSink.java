@@ -7,7 +7,8 @@ import com.google.apphosting.api.datastore.Key;
 import com.google.apphosting.api.datastore.Link;
 import com.google.apphosting.api.datastore.Text;
 import com.google.apphosting.api.users.User;
-import com.google.common.collect.Lists;
+
+import org.datanucleus.store.appengine.Utils;
 
 import java.lang.reflect.Field;
 import java.util.Arrays;
@@ -156,20 +157,20 @@ public class KitchenSink {
     ks.textArray = new Text[] {TEXT1, TEXT2};
     ks.linkArray = new Link[] {LINK1, LINK2};
 
-    ks.strList = Lists.newArrayList("p", "q");
-    ks.integerList = Lists.newArrayList(11, 12);
-    ks.longList = Lists.newArrayList(13L, 14L);
-    ks.shortList = Lists.newArrayList((short) 15, (short) 16);
-    ks.charList = Lists.newArrayList('q', 'r');
-    ks.byteList = Lists.newArrayList((byte) 0x8, (byte) 0x9);
-    ks.doubleList = Lists.newArrayList(22.44d, 23.55d);
-    ks.floatList = Lists.newArrayList(23.44f, 24.55f);
-    ks.booleanList = Lists.newArrayList(true, false);
-    ks.dateList = Lists.newArrayList(DATE1, DATE2);
-    ks.userList = Lists.newArrayList(USER1, USER2);
-    ks.blobList = Lists.newArrayList(BLOB1, BLOB2);
-    ks.textList = Lists.newArrayList(TEXT1, TEXT2);
-    ks.linkList = Lists.newArrayList(LINK1, LINK2);
+    ks.strList = Utils.newArrayList("p", "q");
+    ks.integerList = Utils.newArrayList(11, 12);
+    ks.longList = Utils.newArrayList(13L, 14L);
+    ks.shortList = Utils.newArrayList((short) 15, (short) 16);
+    ks.charList = Utils.newArrayList('q', 'r');
+    ks.byteList = Utils.newArrayList((byte) 0x8, (byte) 0x9);
+    ks.doubleList = Utils.newArrayList(22.44d, 23.55d);
+    ks.floatList = Utils.newArrayList(23.44f, 24.55f);
+    ks.booleanList = Utils.newArrayList(true, false);
+    ks.dateList = Utils.newArrayList(DATE1, DATE2);
+    ks.userList = Utils.newArrayList(USER1, USER2);
+    ks.blobList = Utils.newArrayList(BLOB1, BLOB2);
+    ks.textList = Utils.newArrayList(TEXT1, TEXT2);
+    ks.linkList = Utils.newArrayList(LINK1, LINK2);
     return ks;
   }
 
@@ -207,43 +208,43 @@ public class KitchenSink {
     entity.setProperty("blobVal", BLOB1);
     entity.setProperty("textVal", TEXT1);
     entity.setProperty("linkVal", LINK1);
-    entity.setProperty("strArray", Lists.newArrayList("a", "b"));
-    entity.setProperty("primitiveIntArray", Lists.newArrayList(1L, 2L));
-    entity.setProperty("integerArray", Lists.newArrayList(3L, 4L));
-    entity.setProperty("primitiveLongArray", Lists.newArrayList(5L, 6L));
-    entity.setProperty("longArray", Lists.newArrayList(7L, 8L));
-    entity.setProperty("primitiveShortArray", Lists.newArrayList((long)(short) 9, (long)(short) 10));
-    entity.setProperty("shortArray", Lists.newArrayList((long)(short) 11, (long)(short) 12));
-    entity.setProperty("primitiveCharArray", Lists.newArrayList((long) 'a', (long) 'b'));
-    entity.setProperty("characterArray", Lists.newArrayList((long) 'c', (long) 'd'));
-    entity.setProperty("primitiveFloatArray", Lists.newArrayList((double) 1.01f, (double) 1.02f));
-    entity.setProperty("floatArray", Lists.newArrayList((double) 1.03f, (double) 1.04f));
-    entity.setProperty("primitiveDoubleArray", Lists.newArrayList(2.01d, 2.02d));
-    entity.setProperty("doubleArray", Lists.newArrayList(2.03d, 2.04d));
+    entity.setProperty("strArray", Utils.newArrayList("a", "b"));
+    entity.setProperty("primitiveIntArray", Utils.newArrayList(1L, 2L));
+    entity.setProperty("integerArray", Utils.newArrayList(3L, 4L));
+    entity.setProperty("primitiveLongArray", Utils.newArrayList(5L, 6L));
+    entity.setProperty("longArray", Utils.newArrayList(7L, 8L));
+    entity.setProperty("primitiveShortArray", Utils.newArrayList((long)(short) 9, (long)(short) 10));
+    entity.setProperty("shortArray", Utils.newArrayList((long)(short) 11, (long)(short) 12));
+    entity.setProperty("primitiveCharArray", Utils.newArrayList((long) 'a', (long) 'b'));
+    entity.setProperty("characterArray", Utils.newArrayList((long) 'c', (long) 'd'));
+    entity.setProperty("primitiveFloatArray", Utils.newArrayList((double) 1.01f, (double) 1.02f));
+    entity.setProperty("floatArray", Utils.newArrayList((double) 1.03f, (double) 1.04f));
+    entity.setProperty("primitiveDoubleArray", Utils.newArrayList(2.01d, 2.02d));
+    entity.setProperty("doubleArray", Utils.newArrayList(2.03d, 2.04d));
     entity.setProperty("primitiveByteArray", new Blob(new byte[] {0xb, 0xc}));
     entity.setProperty("byteArray", new Blob(new byte[] {0xe, 0xf}));
-    entity.setProperty("primitiveBooleanArray", Lists.newArrayList(true, false));
-    entity.setProperty("booleanArray", Lists.newArrayList(false, true));
-    entity.setProperty("dateArray", Lists.newArrayList(DATE1, DATE2));
-    entity.setProperty("userArray", Lists.newArrayList(USER1, USER2));
-    entity.setProperty("blobArray", Lists.newArrayList(BLOB1, BLOB2));
-    entity.setProperty("textArray", Lists.newArrayList(TEXT1, TEXT2));
-    entity.setProperty("linkArray", Lists.newArrayList(LINK1, LINK2));
+    entity.setProperty("primitiveBooleanArray", Utils.newArrayList(true, false));
+    entity.setProperty("booleanArray", Utils.newArrayList(false, true));
+    entity.setProperty("dateArray", Utils.newArrayList(DATE1, DATE2));
+    entity.setProperty("userArray", Utils.newArrayList(USER1, USER2));
+    entity.setProperty("blobArray", Utils.newArrayList(BLOB1, BLOB2));
+    entity.setProperty("textArray", Utils.newArrayList(TEXT1, TEXT2));
+    entity.setProperty("linkArray", Utils.newArrayList(LINK1, LINK2));
 
-    entity.setProperty("strList", Lists.newArrayList("p", "q"));
-    entity.setProperty("integerList", Lists.newArrayList(11L, 12L));
-    entity.setProperty("longList", Lists.newArrayList(13L, 14L));
-    entity.setProperty("shortList", Lists.newArrayList((long) (short) 15, (long) (short) 16));
-    entity.setProperty("byteList", Lists.newArrayList((long) (byte) 0x8, (long) (byte) 0x9));
-    entity.setProperty("charList", Lists.newArrayList((long) 'q', (long) 'r'));
-    entity.setProperty("doubleList", Lists.newArrayList(22.44d, 23.55d));
-    entity.setProperty("floatList", Lists.newArrayList((double) 23.44f, (double) 24.55f));
-    entity.setProperty("booleanList", Lists.newArrayList(true, false));
-    entity.setProperty("dateList", Lists.newArrayList(DATE1, DATE2));
-    entity.setProperty("userList", Lists.newArrayList(USER1, USER2));
-    entity.setProperty("blobList", Lists.newArrayList(BLOB1, BLOB2));
-    entity.setProperty("textList", Lists.newArrayList(TEXT1, TEXT2));
-    entity.setProperty("linkList", Lists.newArrayList(LINK1, LINK2));
+    entity.setProperty("strList", Utils.newArrayList("p", "q"));
+    entity.setProperty("integerList", Utils.newArrayList(11L, 12L));
+    entity.setProperty("longList", Utils.newArrayList(13L, 14L));
+    entity.setProperty("shortList", Utils.newArrayList((long) (short) 15, (long) (short) 16));
+    entity.setProperty("byteList", Utils.newArrayList((long) (byte) 0x8, (long) (byte) 0x9));
+    entity.setProperty("charList", Utils.newArrayList((long) 'q', (long) 'r'));
+    entity.setProperty("doubleList", Utils.newArrayList(22.44d, 23.55d));
+    entity.setProperty("floatList", Utils.newArrayList((double) 23.44f, (double) 24.55f));
+    entity.setProperty("booleanList", Utils.newArrayList(true, false));
+    entity.setProperty("dateList", Utils.newArrayList(DATE1, DATE2));
+    entity.setProperty("userList", Utils.newArrayList(USER1, USER2));
+    entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
+    entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));
+    entity.setProperty("linkList", Utils.newArrayList(LINK1, LINK2));
     return entity;
   }
 
@@ -258,7 +259,7 @@ public class KitchenSink {
   public static final List<String> KITCHEN_SINK_FIELDS = getKitchenSinkFields();
 
   private static List<String> getKitchenSinkFields() {
-    List<String> fields = Lists.newArrayList();
+    List<String> fields = Utils.newArrayList();
     for (Field f : KitchenSink.class.getDeclaredFields()) {
       fields.add(f.getName());
     }
