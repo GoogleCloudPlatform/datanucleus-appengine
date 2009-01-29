@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -26,7 +25,7 @@ class DatastoreProperty implements DatastoreField {
   private ColumnMetaData columnMetaData;
 
   /** Table containing this column in the datastore. */
-  private final DatastoreContainerObject table;
+  private final DatastoreTable table;
 
   /** Datastore mapping for this column. */
   private DatastoreMapping datastoreMapping = null;
@@ -40,7 +39,14 @@ class DatastoreProperty implements DatastoreField {
   /** Flag indicated whether or not this is a pk */
   private boolean isPrimaryKey;
 
-  public DatastoreProperty(DatastoreContainerObject table, String javaType,
+  /**
+   * {@link #getMemberMetaData()} typically derives this from the parent of
+   * {@link #columnMetaData} but if this member is set it just returns
+   * it directly.
+   */
+  private AbstractMemberMetaData ammd;
+
+  public DatastoreProperty(DatastoreTable table, String javaType,
       DatastoreIdentifier identifier, ColumnMetaData colmd) {
     this.table = table;
     this.storedJavaType = javaType;
@@ -86,7 +92,7 @@ class DatastoreProperty implements DatastoreField {
     this.datastoreMapping = mapping;
   }
 
-  public DatastoreContainerObject getDatastoreContainerObject() {
+  public DatastoreTable getDatastoreContainerObject() {
     return table;
   }
 
@@ -162,9 +168,16 @@ class DatastoreProperty implements DatastoreField {
   }
 
   public AbstractMemberMetaData getMemberMetaData() {
+    if (ammd != null) {
+      return ammd;
+    }
     if (columnMetaData != null && columnMetaData.getParent() instanceof AbstractMemberMetaData) {
         return (AbstractMemberMetaData)columnMetaData.getParent();
     }
     return null;
+  }
+
+  void setMemberMetaData(AbstractMemberMetaData ammd) {
+    this.ammd = ammd;
   }
 }

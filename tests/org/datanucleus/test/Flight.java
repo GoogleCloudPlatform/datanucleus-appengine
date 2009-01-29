@@ -18,8 +18,6 @@ import javax.jdo.annotations.VersionStrategy;
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 @Version(strategy = VersionStrategy.VERSION_NUMBER)
 public class Flight {
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
   @Persistent
   private String origin;
@@ -75,6 +73,8 @@ public class Flight {
     this.me = me;
   }
 
+  @PrimaryKey
+  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   public String getId() {
     return id;
   }

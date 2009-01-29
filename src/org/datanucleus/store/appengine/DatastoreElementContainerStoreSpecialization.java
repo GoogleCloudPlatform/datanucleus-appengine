@@ -15,6 +15,7 @@ import org.datanucleus.store.appengine.query.DatastoreQuery;
 import org.datanucleus.store.mapped.scostore.BaseElementContainerStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.util.Localiser;
+import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -27,6 +28,8 @@ import java.util.List;
  * @author Max Ross <maxr@google.com>
  */
 class DatastoreElementContainerStoreSpecialization extends BaseElementContainerStoreSpecialization {
+
+  private static final NucleusLogger logger = NucleusLogger.DATASTORE_RETRIEVE;
 
   protected final DatastoreManager storeMgr;
 
@@ -55,8 +58,10 @@ class DatastoreElementContainerStoreSpecialization extends BaseElementContainerS
     String kind = storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(
         ecs.getEmd()).getIdentifierName();
     Query q = new Query(kind, parentKey);
+    logger.debug("Preparing to query for all children of " + parentKey + " of kind " + kind);
     for (SortPredicate sp : sortPredicates) {
       q.addSort(sp.getPropertyName(), sp.getDirection());
+      logger.debug("  Added sort: " + sp.getPropertyName() + " " + sp.getDirection());
     }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
     return ds.prepare(q);
@@ -67,6 +72,9 @@ class DatastoreElementContainerStoreSpecialization extends BaseElementContainerS
     List<Object> result = new ArrayList<Object>();
     for (Entity e : prepareChildrenQuery(parentKey, sortPredicates, ecs).asIterable()) {
       result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false));
+      if (logger.isDebugEnabled()) {
+        logger.debug("Retrieved entity with key " + e.getKey());
+      }
     }
     return result;
   }

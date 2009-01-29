@@ -1,11 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.NullValue;
@@ -22,6 +24,7 @@ import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -30,6 +33,9 @@ class DatastoreRelationFieldManager {
 
   // Needed for relation management in datanucleus.
   private static final int[] NOT_USED = {0};
+  static final int IS_ANCESTOR_VALUE = -1;
+  private static final int[] IS_ANCESTOR_VALUE_ARR = {IS_ANCESTOR_VALUE};
+  static final String ANCESTOR_KEY_PROPERTY = "____ANCESTOR_KEY____";
 
   private final DatastoreFieldManager fieldManager;
 
@@ -68,10 +74,10 @@ class DatastoreRelationFieldManager {
 
   void storeRelationField(final ClassLoaderResolver clr, final AbstractClassMetaData acmd,
                           final AbstractMemberMetaData ammd, final Object value,
-                          final boolean isInsert) {
+                          final boolean isInsert, final InsertMappingConsumer consumer) {
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
-        DatastoreClass dc = getStoreManager().getDatastoreClass(
+        DatastoreTable table = (DatastoreTable) getStoreManager().getDatastoreClass(
             ammd.getAbstractClassMetaData().getFullClassName(),
             fieldManager.getClassLoaderResolver());
 
@@ -79,26 +85,20 @@ class DatastoreRelationFieldManager {
         int fieldNumber = ammd.getAbsoluteFieldNumber();
         // Based on ParameterSetter
         try {
-          JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);
+          JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(ammd);
           if (mapping instanceof EmbeddedPCMapping ||
               mapping instanceof SerialisedPCMapping ||
               mapping instanceof SerialisedReferenceMapping ||
               mapping instanceof PersistenceCapableMapping ||
               mapping instanceof InterfaceMapping) {
-            mapping.setObject(
-                fieldManager.getObjectManager(),
-                fieldManager.getEntity(),
-                NOT_USED,
-                value,
-                sm,
-                fieldNumber);
+            setObjectViaMapping(mapping, table, value, sm, fieldNumber);
             // Make sure the field is wrapped where appropriate
             sm.wrapSCOField(fieldNumber, value, false, true, true);
           } else {
             if (isInsert) {
-              runPostInsertMappingCallbacks(dc, clr, acmd);
+              runPostInsertMappingCallbacks(consumer);
             } else {
-              runPostUpdateMappingCallbacks(dc, clr, acmd);
+              runPostUpdateMappingCallbacks(consumer);
             }
           }
         } catch (NotYetFlushedException e) {
@@ -106,6 +106,31 @@ class DatastoreRelationFieldManager {
             throw e;
           }
           sm.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
+        }
+      }
+
+      private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
+                                       StateManager sm, int fieldNumber) {
+        Entity entity = fieldManager.getEntity();
+        mapping.setObject(
+            fieldManager.getObjectManager(),
+            entity,
+            table.isBidirectionalFK(ammd) ? IS_ANCESTOR_VALUE_ARR : NOT_USED,
+            value,
+            sm,
+            fieldNumber);
+
+        // If the field we're setting is the one side of an owned many-to-one,
+        // its pk needs to be the ancestor of the key of the entity we're
+        // currently populating.  We look for a magic property that tells
+        // us if this change needs to be made.  See
+        // DatastoreFKMapping.setObject for all the gory details.
+        Object ancestorKey = entity.getProperty(ANCESTOR_KEY_PROPERTY);
+        if (ancestorKey != null) {
+          entity.removeProperty(ANCESTOR_KEY_PROPERTY);
+          String ancestorKeyStr = ancestorKey instanceof Key ?
+                                  KeyFactory.encodeKey((Key) ancestorKey) : (String) ancestorKey;
+          fieldManager.recreateEntityWithAncestor(ancestorKeyStr);
         }
       }
     };
@@ -129,28 +154,14 @@ class DatastoreRelationFieldManager {
     }
   }
 
-  private DependentInsertMappingConsumer buildMappingConsumerForWrite(DatastoreClass dc,
-                                                                      ClassLoaderResolver clr,
-                                                                      AbstractClassMetaData acmd) {
-    DependentInsertMappingConsumer consumer = new DependentInsertMappingConsumer(clr, acmd);
-    dc.provideDatastoreIdMappings(consumer);
-    dc.provideNonPrimaryKeyMappings(consumer);
-    dc.providePrimaryKeyMappings(consumer);
-    return consumer;
-  }
-
-  private void runPostInsertMappingCallbacks(DatastoreClass dc, ClassLoaderResolver clr,
-                                             AbstractClassMetaData acmd) {
-    DependentInsertMappingConsumer consumer = buildMappingConsumerForWrite(dc, clr, acmd);
+  private void runPostInsertMappingCallbacks(InsertMappingConsumer consumer) {
     StateManager sm = getStateManager();
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
       callback.postInsert(sm);
     }
   }
 
-  private void runPostUpdateMappingCallbacks(DatastoreClass dc, ClassLoaderResolver clr,
-                                             AbstractClassMetaData acmd) {
-    DependentInsertMappingConsumer consumer = buildMappingConsumerForWrite(dc, clr, acmd);
+  private void runPostUpdateMappingCallbacks(InsertMappingConsumer consumer) {
     StateManager sm = getStateManager();
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
       callback.postUpdate(sm);
@@ -164,11 +175,40 @@ class DatastoreRelationFieldManager {
    * key as the ancestor.
    *
    * @param keyRegistry the key registry
+   * @param consumer the mapping consumer
    * @return The parent key if the pojo class has an ancestor property.
    */
-  public Object establishEntityGroup(KeyRegistry keyRegistry) {
-    Key parentKey = keyRegistry.getRegisteredKey(getStateManager().getObject());
-    if (parentKey != null && fieldManager.getEntity().getParent() == null) {
+  Object establishEntityGroup(KeyRegistry keyRegistry, InsertMappingConsumer consumer) {
+    if (fieldManager.getEntity().getParent() != null) {
+      // Entity already has a parent so nothing to do.
+      return null;
+    }
+    StateManager sm = getStateManager();
+    Key parentKey = keyRegistry.getRegisteredKey(sm.getObject());
+    if (parentKey == null) {
+      // We don't have a registered key for the object associated with the
+      // state manager but there might be one tied to the foreign key
+      // mappings for this object.  I can't explain why, but for
+      // JPA the first mechanism works and for JDO the second mechanism works.
+      // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of
+      // the KeyRegistry and figure out how to make the DataNucleus mechanism
+      // work for JPA.
+      Set<JavaTypeMapping> externalFKMappings = consumer.getExternalFKMappings();
+      for (JavaTypeMapping fkMapping : externalFKMappings) {
+        Object fkValue = sm.getAssociatedValue(fkMapping);
+        if (fkValue != null) {
+          ApiAdapter adapter = fieldManager.getStoreManager().getOMFContext().getApiAdapter();
+          Object keyOrString = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(fkValue));
+          if (keyOrString instanceof Key) {
+            parentKey = (Key) keyOrString;
+          } else {
+            parentKey = KeyFactory.decodeKey((String) keyOrString);
+          }
+          break;
+        }
+      }
+    }
+    if (parentKey != null) {
       fieldManager.recreateEntityWithAncestor(KeyFactory.encodeKey(parentKey));
       if (getAncestorMemberMetaData() != null) {
         return getAncestorMemberMetaData().getType().equals(Key.class)
@@ -178,8 +218,7 @@ class DatastoreRelationFieldManager {
     return null;
   }
 
-  Object fetchRelationField(ClassLoaderResolver clr, AbstractClassMetaData acmd,
-                            AbstractMemberMetaData ammd) {
+  Object fetchRelationField(ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
     DatastoreClass dc = getStoreManager().getDatastoreClass(
         ammd.getAbstractClassMetaData().getFullClassName(), fieldManager.getClassLoaderResolver());
     JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);

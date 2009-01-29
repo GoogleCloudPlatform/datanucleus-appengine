@@ -26,6 +26,8 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.NucleusLogger;
 
+import java.util.Map;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -81,7 +83,12 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private void put(StateManager sm, Entity entity) {
-    NucleusLogger.DATASTORE.debug("Putting entity with key " + entity.getKey());
+    if (NucleusLogger.DATASTORE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE.debug("Putting entity with key " + entity.getKey());
+      for (Map.Entry<String, Object> entry : entity.getProperties().entrySet()) {
+        NucleusLogger.DATASTORE.debug("  " + entry.getKey() + " : " + entry.getValue());
+      }
+    }
     Transaction txn = getCurrentTransaction(sm.getObjectManager());
     if (txn == null) {
       datastoreService.put(entity);
@@ -139,8 +146,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind, storeMgr);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
-    Object assignedAncestorPk = fieldMgr.establishEntityGroup();
+    InsertMappingConsumer consumer = fieldMgr.getInsertMappingConsumer();
+
+    Object assignedAncestorPk = fieldMgr.establishEntityGroup(consumer);
     Entity entity = fieldMgr.getEntity();
+    fieldMgr.handleHiddenFields(consumer);
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT);
 
     // TODO(earmbrust): Allow for non-transactional read/write.

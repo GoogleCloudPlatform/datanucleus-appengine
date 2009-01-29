@@ -17,11 +17,15 @@ import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import javax.jdo.spi.JDOImplHelper;
 
@@ -53,6 +57,8 @@ public class DatastoreFieldManager implements FieldManager {
       "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
           + "mapped to %s, which cannot accept null values.";
 
+  private static final int[] NOT_USED = {0};
+
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
@@ -67,6 +73,8 @@ public class DatastoreFieldManager implements FieldManager {
   private final DatastoreRelationFieldManager relationFieldManager;
 
   private final SerializationManager serializationManager;
+
+  private final InsertMappingConsumer insertMappingConsumer;
 
   // Not final because we will reallocate if we hit an ancestor pk field
   // and the key of the current value does not have a parent, or if the pk
@@ -91,6 +99,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.datastoreEntity = datastoreEntity;
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
     this.serializationManager = new SerializationManager();
+    this.insertMappingConsumer = buildMappingConsumerForWrite(getClassMetaData());
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
@@ -98,7 +107,7 @@ public class DatastoreFieldManager implements FieldManager {
       throw new NucleusException(
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
               + ">.  One way this can happen is if you attempt to fetch an object of one type using"
-              + "a Key of a different type.");
+              + " a Key of a different type.");
     }
   }
 
@@ -156,8 +165,7 @@ public class DatastoreFieldManager implements FieldManager {
     if (ammd.getEmbeddedMetaData() != null) {
       return fetchEmbeddedField(ammd);
     } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE) {
-      return relationFieldManager.fetchRelationField(
-          getClassLoaderResolver(), getClassMetaData(), ammd);
+      return relationFieldManager.fetchRelationField(getClassLoaderResolver(), ammd);
     }
 
     Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
@@ -305,10 +313,10 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   /**
-   * @see DatastoreRelationFieldManager#establishEntityGroup(KeyRegistry)
+   * @see DatastoreRelationFieldManager#establishEntityGroup
    */
-  Object establishEntityGroup() {
-    return relationFieldManager.establishEntityGroup(getKeyRegistry());
+  Object establishEntityGroup(InsertMappingConsumer consumer) {
+    return relationFieldManager.establishEntityGroup(getKeyRegistry(), consumer);
   }
 
   /**
@@ -452,7 +460,8 @@ public class DatastoreFieldManager implements FieldManager {
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
       } else if (ammd.getRelationType(clr) != Relation.NONE) {
-        relationFieldManager.storeRelationField(clr, getClassMetaData(), ammd, value, createdWithoutEntity);
+        relationFieldManager.storeRelationField(
+            clr, getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
       } else {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
@@ -564,6 +573,42 @@ public class DatastoreFieldManager implements FieldManager {
 
   DatastoreManager getStoreManager() {
     return storeManager;
+  }
+
+  /**
+   * In JDO, 1-to-many relationsihps that are expressed using a
+   * {@link List} are ordered by a column in the child
+   * table that stores the position of the child in the parent's list.
+   * This function is responsible for making sure the appropriate values
+   * for these columns find their way into the Entity.
+   */
+  void handleHiddenFields(InsertMappingConsumer consumer) {
+    Set<JavaTypeMapping> orderMappings = consumer.getExternalOrderMappings();
+    // External order columns (optional)
+    for (JavaTypeMapping orderMapping : orderMappings) {
+      Object orderValue = getStateManager().getAssociatedValue(orderMapping);
+      if (orderValue == null) {
+        // No order value so use -1
+        orderValue = -1;
+      }
+      orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
+    }
+  }
+
+  private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd) {
+    DatastoreClass dc = getStoreManager().getDatastoreClass(
+        acmd.getFullClassName(), getClassLoaderResolver());
+    InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
+    dc.provideDatastoreIdMappings(consumer);
+    dc.provideNonPrimaryKeyMappings(consumer);
+    dc.providePrimaryKeyMappings(consumer);
+    dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+    dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
+    return consumer;
+  }
+
+   InsertMappingConsumer getInsertMappingConsumer() {
+    return insertMappingConsumer;
   }
 
   /**

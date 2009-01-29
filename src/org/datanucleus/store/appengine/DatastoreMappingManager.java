@@ -50,7 +50,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
       JavaTypeMapping mapping, DatastoreField prop) {
     // for now we're just usting a single DatastoreMapping impl for everything.
     org.datanucleus.store.mapped.mapping.DatastoreMapping datastoreMapping =
-        DatastoreMappingFactory.createMapping(DatastoreMapping.class, mapping, storeMgr, prop);
+        DatastoreMappingFactory.createMapping(DatastoreFKMapping.class, mapping, storeMgr, prop);
     if (prop != null) {
       prop.setDatastoreMapping(datastoreMapping);
     }

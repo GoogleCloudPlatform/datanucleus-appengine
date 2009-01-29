@@ -426,10 +426,6 @@ public class JPAOneToManyTest extends JPATestCase {
     commitTxn();
   }
 
-  public void testFindWithIdInOrderBy() {
-
-  }
-
   public void testFind() throws EntityNotFoundException {
     Entity pojoEntity = new Entity(HasOneToManyJPA.class.getSimpleName());
     ldth.ds.put(pojoEntity);

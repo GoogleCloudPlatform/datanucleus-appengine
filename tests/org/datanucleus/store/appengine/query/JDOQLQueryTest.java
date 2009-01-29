@@ -179,6 +179,33 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("3", result.get(3).getName());
   }
 
+  public void testSetFilter() {
+    ldth.ds.put(newFlightEntity("1", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlightEntity("2", "yam", "bam", 2, 2));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName());
+    q.setFilter("origin == \"yam\" && you == 2");
+    @SuppressWarnings("unchecked")
+    List<Flight> result = (List<Flight>) q.execute();
+    assertEquals(1, result.size());
+  }
+
+  // TODO(maxr) The filter is invalid because it uses
+  // 'AND' instead of '&&'.  When we fix bug 1596691
+  // this test will start to fail (good!), and at that
+  // point we can modify this test to veirify the correct
+  // behavior instead of the incorrect behavior.
+  public void testSetInvalidFilter() {
+    ldth.ds.put(newFlightEntity("1", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlightEntity("2", "yam", "bam", 2, 2));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName());
+    q.setFilter("origin == \"yam\" AND you == 2");
+    @SuppressWarnings("unchecked")
+    List<Flight> result = (List<Flight>) q.execute();
+    assertEquals(2, result.size());
+  }
+
   public void testDefaultOrderingIsAsc() {
     ldth.ds.put(newFlightEntity("1", "yam", "bam", 1, 2));
     ldth.ds.put(newFlightEntity("2", "yam", "bam", 1, 1));

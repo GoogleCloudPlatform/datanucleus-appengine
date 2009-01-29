@@ -8,6 +8,7 @@ import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
+import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -18,11 +19,11 @@ import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.OrderMetaData;
+import org.datanucleus.metadata.PropertyMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.plugin.ConfigurationElement;
 import org.datanucleus.sco.SCOUtils;
-import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.exceptions.NoSuchPersistentFieldException;
 import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.mapped.DatastoreAdapter;
@@ -83,8 +84,7 @@ class DatastoreTable implements DatastoreClass {
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
    */
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap =
-      Utils.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap = Utils.newHashMap();
 
   /**
    * All the properties in the table.  Even though the datastore is schemaless,
@@ -123,12 +123,10 @@ class DatastoreTable implements DatastoreClass {
    * Dependent fields.  Unlike pretty much the rest of this class, this member and the
    * code that populates is specific to the appengine plugin.
    */
-  private final List<AbstractMemberMetaData> dependentMemberMetaData =
-      Utils.newArrayList();
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings =
-      Utils.newHashMap();
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings =
-      Utils.newHashMap();
+  private final List<AbstractMemberMetaData> dependentMemberMetaData = Utils.newArrayList();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
+  private final Set<AbstractMemberMetaData> bidirectionalFkMemberMetaData = Utils.newHashSet();
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
@@ -346,6 +344,11 @@ class DatastoreTable implements DatastoreClass {
                   DatastoreTable dt =
                       (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
                   dt.runCallBacks();
+                  if (fmd.getMappedBy() != null) {
+                    // This element type has a many-to-one pointing back.
+                    // We assume that our pk is part of the pk of the element type.
+                    dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
+                  }
                 }
               }
             } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
@@ -374,6 +377,10 @@ class DatastoreTable implements DatastoreClass {
     }
   }
 
+  private void markFieldAsParentKeyProvider(String mappedBy) {
+    bidirectionalFkMemberMetaData.add(getFieldMetaData(mappedBy));
+  }
+
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
     AbstractMemberMetaData fmd = fieldMapping.getMemberMetaData();
     fieldMappingsMap.put(fmd, fieldMapping);
@@ -383,11 +390,19 @@ class DatastoreTable implements DatastoreClass {
       highestFieldNumber = absoluteFieldNumber;
     }
 
-    // isDependent() returns false for one-to-many even with cascade delete.
-    // Not sure why but that's why we check both isDependent and isCascadeDelete
-    if (fmd.isDependent() || fmd.isCascadeDelete()) {
+    if (isDependent(fmd)) {
       dependentMemberMetaData.add(fmd);
     }
+  }
+
+  private boolean isDependent(AbstractMemberMetaData ammd) {
+    // isDependent() returns false for one-to-many even with cascade delete.
+    // Not sure why but that's why we check both isDependent and isCascadeDelete
+    if (ammd.isDependent() || ammd.isCascadeDelete()) {
+      return true;
+    }
+    CollectionMetaData cmd = ammd.getCollection();
+    return cmd != null && cmd.isDependentElement();
   }
 
   public boolean managesField(String fieldName) {
@@ -820,6 +835,21 @@ class DatastoreTable implements DatastoreClass {
   }
 
   public void provideExternalMappings(MappingConsumer consumer, int mappingType) {
+    if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK) {
+      for (AbstractMemberMetaData fmd : externalFkMappings.keySet()) {
+        JavaTypeMapping fieldMapping = externalFkMappings.get(fmd);
+        if (fieldMapping != null) {
+          consumer.consumeMapping(fieldMapping, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+        }
+      }
+    } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX) {
+      for (AbstractMemberMetaData fmd : externalOrderMappings.keySet()) {
+        JavaTypeMapping fieldMapping = externalOrderMappings.get(fmd);
+        if (fieldMapping != null) {
+          consumer.consumeMapping(fieldMapping, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
+        }
+      }
+    }
   }
 
   public JavaTypeMapping getExternalMapping(AbstractMemberMetaData fmd, int mappingType) {
@@ -828,7 +858,7 @@ class DatastoreTable implements DatastoreClass {
     } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK_DISCRIM) {
       return null; //getExternalFkDiscriminatorMappings().get(fmd);
     } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX) {
-      return null; //getExternalOrderMappings().get(fmd);
+      return getExternalOrderMappings().get(fmd);
     } else {
       return null;
     }
@@ -836,6 +866,15 @@ class DatastoreTable implements DatastoreClass {
 
   public AbstractMemberMetaData getMetaDataForExternalMapping(JavaTypeMapping mapping,
       int mappingType) {
+    if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK) {
+      Set entries = getExternalFkMappings().entrySet();
+      for (Object entry1 : entries) {
+        Map.Entry entry = (Map.Entry) entry1;
+        if (entry.getValue() == mapping) {
+          return (AbstractMemberMetaData) entry.getKey();
+        }
+      }
+    }
     return null;
   }
 
@@ -895,11 +934,8 @@ class DatastoreTable implements DatastoreClass {
                                                          cmd.getFullClassName(),
                                                          ownerFmd.getFullFieldName()));
           }
-
-          JavaTypeMapping orderMapping = null;
-
           // Add the order mapping as necessary
-          addOrderMapping(ownerFmd, orderMapping);
+          addOrderMapping(ownerFmd, null);
         } else {
           // Unidirectional (element knows nothing about the owner)
           String ownerClassName = ownerFmd.getAbstractClassMetaData().getFullClassName();
@@ -996,7 +1032,7 @@ class DatastoreTable implements DatastoreClass {
       // if the field is list or array type, add index column
       if (orderMapping == null) {
         // Create new order mapping since we need one and we aren't using a shared FK
-        orderMapping = this.addOrderColumn(fmd);
+        orderMapping = addOrderColumn(fmd);
       }
       getExternalOrderMappings().put(fmd, orderMapping);
     }
@@ -1065,9 +1101,18 @@ class DatastoreTable implements DatastoreClass {
       column.setNullable();
     }
 
-    storeMgr.getMappingManager().createDatastoreMapping(indexMapping, column, indexType.getName());
-
+    DatastoreFKMapping fkMapping =
+        (DatastoreFKMapping) storeMgr.getMappingManager().createDatastoreMapping(
+            indexMapping, column, indexType.getName());
+    DatastoreProperty field = fkMapping.getDatastoreField();
+    DatastoreTable elementTable = field.getDatastoreContainerObject();
+    PropertyMetaData pmd = new PropertyMetaData(elementTable.getClassMetaData(), indexColumnName.getIdentifierName());
+    field.setMemberMetaData(pmd);
     return indexMapping;
+  }
+
+  boolean isBidirectionalFK(AbstractMemberMetaData ammd) {
+    return bidirectionalFkMemberMetaData.contains(ammd);
   }
 
   /**
@@ -1086,5 +1131,13 @@ class DatastoreTable implements DatastoreClass {
     public CallBack(AbstractMemberMetaData fmd) {
       this.fmd = fmd;
     }
+  }
+
+  public String toString() {
+    return cmd.toString();
+  }
+
+  public AbstractClassMetaData getClassMetaData() {
+    return cmd;
   }
 }

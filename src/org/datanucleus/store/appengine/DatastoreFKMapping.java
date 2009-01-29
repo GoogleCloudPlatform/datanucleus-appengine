@@ -13,7 +13,7 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 /**
  * Represents a mapping for the datastore.  We throw
  * {@link UnsupportedOperationException} for quite a few of these operations
- * because we expect this class to only be used for storing pks.  Pks are
+ * because this class should only be used for storing foreign keys.  These are
  * guaranteed to be of type String or {@link Key}.  We deny service for
  * everything else.
  *
@@ -21,16 +21,16 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
  *
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreMapping implements org.datanucleus.store.mapped.mapping.DatastoreMapping {
+public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.DatastoreMapping {
 
   private final JavaTypeMapping mapping;
   private final MappedStoreManager storeMgr;
-  private final DatastoreField field;
+  private final DatastoreProperty field;
 
-  public DatastoreMapping(JavaTypeMapping mapping, MappedStoreManager storeMgr, DatastoreField field) {
+  public DatastoreFKMapping(JavaTypeMapping mapping, MappedStoreManager storeMgr, DatastoreField field) {
     this.mapping = mapping;
     this.storeMgr = storeMgr;
-    this.field = field;
+    this.field = (DatastoreProperty) field;
     if (mapping != null) {
       // Register this datastore mapping with the owning JavaTypeMapping
       mapping.addDataStoreMapping(this);
@@ -42,7 +42,7 @@ public class DatastoreMapping implements org.datanucleus.store.mapped.mapping.Da
     return true;
   }
 
-  public DatastoreField getDatastoreField() {
+  public DatastoreProperty getDatastoreField() {
     return field;
   }
 
@@ -111,9 +111,25 @@ public class DatastoreMapping implements org.datanucleus.store.mapped.mapping.Da
   }
 
   public void setObject(Object datastoreEntity, int paramIndex, Object value) {
-    AbstractMemberMetaData ammd = field.getMemberMetaData();
-    String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
-    ((Entity) datastoreEntity).setProperty(propName, value);
+    // This awful.  In the case of a bidirectional one-to-many, the pk of the
+    // child object needs to have the pk of the parent object as its ancestor.
+    // We can get the pk of the parent object from the parent instance that
+    // is set on the child, but since you can only specify an ancestor key
+    // when you create an Entity, we need to rebuild the Entity with this
+    // new key.  There's no easy way to rebuild the Entity down in this function,
+    // so we instead set a magic property on the entity whose value is the ancestor
+    // key with the expectation that someone upstream will see it, remove it,
+    // and then recreate the entity on our behalf.  Like I said, this is awful.
+    if (paramIndex == DatastoreRelationFieldManager.IS_ANCESTOR_VALUE) {
+      if (value != null) {
+        ((Entity) datastoreEntity).setProperty(
+            DatastoreRelationFieldManager.ANCESTOR_KEY_PROPERTY, value);
+      }
+    } else {
+      AbstractMemberMetaData ammd = field.getMemberMetaData();
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
+      ((Entity) datastoreEntity).setProperty(propName, value);
+    }
   }
 
   public boolean getBoolean(Object resultSet, int exprIndex) {
