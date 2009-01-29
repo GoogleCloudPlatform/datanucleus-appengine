@@ -1,7 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Transaction;
+import com.google.appengine.api.datastore.Transaction;
 
 /**
  * @author Max Ross <maxr@google.com>

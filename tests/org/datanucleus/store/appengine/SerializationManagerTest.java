@@ -1,7 +1,7 @@
 // Copyright 2009 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Blob;
+import com.google.appengine.api.datastore.Blob;
 
 import junit.framework.TestCase;
 

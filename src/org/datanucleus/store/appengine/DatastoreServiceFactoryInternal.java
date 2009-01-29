@@ -1,8 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 
 /**
  * {@link DatastoreServiceFactory} doesn't provide an easy way to configure
@@ -31,10 +31,10 @@ public final class DatastoreServiceFactoryInternal {
   /**
    * @return If a {@link DatastoreService} to return has been explicitly provided by a
    * call to
-   * {@link #setDatastoreService(com.google.apphosting.api.datastore.DatastoreService)},
+   * {@link #setDatastoreService(com.google.appengine.api.datastore.DatastoreService)},
    * the explicitly provided instance.  Otherwise a {@link DatastoreService}
    * constructed by calling.
-   * {@link com.google.apphosting.api.datastore.DatastoreServiceFactory#getDatastoreService()}
+   * {@link com.google.appengine.api.datastore.DatastoreServiceFactory#getDatastoreService()}
    * .
    */
   public static DatastoreService getDatastoreService() {

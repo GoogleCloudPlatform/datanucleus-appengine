@@ -1,7 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Blob;
+import com.google.appengine.api.datastore.Blob;
 import com.google.common.collect.PrimitiveArrays;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -10,7 +10,6 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ContainerMetaData;
-import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 
 import java.lang.reflect.Array;

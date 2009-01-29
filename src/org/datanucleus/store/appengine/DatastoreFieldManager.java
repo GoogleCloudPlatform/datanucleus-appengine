@@ -1,10 +1,10 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Blob;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Blob;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
@@ -18,7 +18,6 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.appengine.Utils;
 
 import java.util.LinkedList;
 import java.util.List;

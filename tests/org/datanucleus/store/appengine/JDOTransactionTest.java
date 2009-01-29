@@ -1,11 +1,11 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.EntityNotFoundException;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 
 import junit.framework.TestCase;
 
@@ -38,8 +38,8 @@ public class JDOTransactionTest extends TestCase {
 
   private LocalDatastoreTestHelper ldth;
   private DatastoreService mockDatastoreService = EasyMock.createMock(DatastoreService.class);
-  private com.google.apphosting.api.datastore.Transaction mockTxn = EasyMock.createMock(
-      com.google.apphosting.api.datastore.Transaction.class);
+  private com.google.appengine.api.datastore.Transaction mockTxn = EasyMock.createMock(
+      com.google.appengine.api.datastore.Transaction.class);
   private DatastoreServiceRecordingImpl recordingImpl;
 
   @Override
@@ -76,7 +76,7 @@ public class JDOTransactionTest extends TestCase {
       boolean nonTransactionalWrite) {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.put(
-        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
+        EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++));
     mockTxn.commit();
@@ -111,7 +111,7 @@ public class JDOTransactionTest extends TestCase {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
-        EasyMock.isA(com.google.apphosting.api.datastore.Transaction.class),
+        EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andReturn("1");
     mockTxn.commit();

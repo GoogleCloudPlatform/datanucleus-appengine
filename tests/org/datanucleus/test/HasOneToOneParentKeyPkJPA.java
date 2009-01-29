@@ -1,7 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import com.google.apphosting.api.datastore.Key;
+import com.google.appengine.api.datastore.Key;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;

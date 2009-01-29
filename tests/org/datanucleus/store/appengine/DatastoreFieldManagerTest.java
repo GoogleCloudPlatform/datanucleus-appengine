@@ -1,12 +1,12 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Blob;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.Link;
-import com.google.apphosting.api.datastore.Text;
-import com.google.apphosting.api.users.User;
+import com.google.appengine.api.datastore.Blob;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Link;
+import com.google.appengine.api.datastore.Text;
+import com.google.appengine.api.users.User;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.JDOClassLoaderResolver;

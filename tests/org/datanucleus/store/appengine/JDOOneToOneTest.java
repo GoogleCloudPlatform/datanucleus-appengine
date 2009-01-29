@@ -1,12 +1,12 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.EntityNotFoundException;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.Transaction;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
@@ -596,7 +596,7 @@ public class JDOOneToOneTest extends JDOTestCase {
 
   private int countForClass(Class<?> clazz) {
     return ldth.ds.prepare(
-        new com.google.apphosting.api.datastore.Query(clazz.getSimpleName())).countEntities();
+        new com.google.appengine.api.datastore.Query(clazz.getSimpleName())).countEntities();
   }
 
   private void assertCountsInDatastore(int expectedParent, int expectedChildren) {

@@ -1,10 +1,10 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.apphosting.api.ApiProxy;
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
-import com.google.apphosting.api.datastore.Transaction;
 import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 
 import java.io.File;

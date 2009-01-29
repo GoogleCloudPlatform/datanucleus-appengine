@@ -1,14 +1,14 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.FetchOptions;
-import static com.google.apphosting.api.datastore.FetchOptions.Builder.withLimit;
-import static com.google.apphosting.api.datastore.FetchOptions.Builder.withOffset;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.Query;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;

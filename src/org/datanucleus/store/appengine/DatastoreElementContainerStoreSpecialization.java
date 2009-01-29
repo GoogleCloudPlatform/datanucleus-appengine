@@ -1,12 +1,12 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.PreparedQuery;
-import com.google.apphosting.api.datastore.Query;
-import com.google.apphosting.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;

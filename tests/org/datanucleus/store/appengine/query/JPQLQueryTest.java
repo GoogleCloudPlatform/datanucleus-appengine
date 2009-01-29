@@ -1,11 +1,11 @@
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.KeyFactory;
-import com.google.apphosting.api.datastore.Query.FilterOperator;
-import com.google.apphosting.api.datastore.Query.FilterPredicate;
-import com.google.apphosting.api.datastore.Query.SortDirection;
-import com.google.apphosting.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;

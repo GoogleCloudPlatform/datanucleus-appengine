@@ -1,7 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import com.google.apphosting.api.datastore.Entity;
+import com.google.appengine.api.datastore.Entity;
 
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;

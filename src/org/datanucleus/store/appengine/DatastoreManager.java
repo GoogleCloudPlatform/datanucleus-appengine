@@ -1,18 +1,18 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
+import org.datanucleus.ConnectionFactoryRegistry;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.StateManager;
-import org.datanucleus.ConnectionFactoryRegistry;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -77,7 +77,7 @@ public class DatastoreManager extends MappedStoreManager {
     // jar name upset you, it's just used for error messages.  The check will
     // succeed so long as the class is available on the classpath
     ClassUtils.assertClassForJarExistsInClasspath(
-        clr, "com.google.apphosting.api.datastore.DatastoreService", "appengine-api.jar");
+        clr, "com.google.appengine.api.datastore.DatastoreService", "appengine-api.jar");
 
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);

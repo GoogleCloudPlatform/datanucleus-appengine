@@ -1,9 +1,9 @@
 // Copyright 2009 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.Query.SortDirection;
-import com.google.apphosting.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import junit.framework.TestCase;
 

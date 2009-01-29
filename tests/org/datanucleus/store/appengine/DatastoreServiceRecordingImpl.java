@@ -1,13 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.EntityNotFoundException;
-import com.google.apphosting.api.datastore.Key;
-import com.google.apphosting.api.datastore.PreparedQuery;
-import com.google.apphosting.api.datastore.Query;
-import com.google.apphosting.api.datastore.Transaction;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Transaction;
 
 import java.util.Collection;
 import java.util.Map;

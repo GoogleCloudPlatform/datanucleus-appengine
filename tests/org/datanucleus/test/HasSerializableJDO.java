@@ -1,8 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import com.google.appengine.api.datastore.Blob;
 import com.google.apphosting.api.DatastorePb;
-import com.google.apphosting.api.datastore.Blob;
 import com.google.io.protocol.ProtocolMessage;
 
 import org.datanucleus.exceptions.NucleusException;
