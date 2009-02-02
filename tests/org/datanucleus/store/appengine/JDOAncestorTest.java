@@ -18,9 +18,9 @@ public class JDOAncestorTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.encodeKey(flightKey));
+    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.keyToString(flightKey));
     makePersistentInTxn(ha);
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
@@ -34,9 +34,9 @@ public class JDOAncestorTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.encodeKey(flightKey), "named key");
+    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.keyToString(flightKey), "named key");
     makePersistentInTxn(ha);
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
@@ -55,8 +55,8 @@ public class JDOAncestorTest extends JDOTestCase {
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.encodeKey(flightEntity.getKey()), ha.getAncestorId());
+    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
     commitTxn();
   }
 
@@ -68,17 +68,17 @@ public class JDOAncestorTest extends JDOTestCase {
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.encodeKey(flightEntity.getKey()), ha.getAncestorId());
-    assertEquals("named key", KeyFactory.decodeKey(ha.getId()).getName());
-    assertEquals("parent named key", KeyFactory.decodeKey(ha.getId()).getParent().getName());
+    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
+    assertEquals("named key", KeyFactory.stringToKey(ha.getId()).getName());
+    assertEquals("parent named key", KeyFactory.stringToKey(ha.getId()).getParent().getName());
     commitTxn();
   }
 
   public void testInsertWithNullAncestor() {
     HasAncestorJDO ha = new HasAncestorJDO(null);
     makePersistentInTxn(ha);
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertNull(keyWithParent.getParent());
   }
 }

@@ -122,7 +122,7 @@ public class JPATransactionTest extends TestCase {
       txn.begin();
     }
     try {
-      em.find(Book.class, KeyFactory.encodeKey(entity.getKey()));
+      em.find(Book.class, KeyFactory.keyToString(entity.getKey()));
     } finally {
       if (explicitDemarcation) {
         txn.commit();
@@ -172,7 +172,7 @@ public class JPATransactionTest extends TestCase {
       txn.begin();
     }
     try {
-      em.find(Book.class, KeyFactory.encodeKey(entity.getKey()));
+      em.find(Book.class, KeyFactory.keyToString(entity.getKey()));
     } finally {
       if (explicitDemarcation) {
         txn.commit();

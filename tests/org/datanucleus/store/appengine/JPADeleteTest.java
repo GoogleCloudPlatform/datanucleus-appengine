@@ -22,7 +22,7 @@ public class JPADeleteTest extends JPATestCase {
   public void testSimpleDelete() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     KitchenSink ks;
     beginTxn();
     ks = em.find(KitchenSink.class, keyStr);
@@ -40,7 +40,7 @@ public class JPADeleteTest extends JPATestCase {
   public void testSimpleDeleteWithNamedKey() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
     assertEquals("named key", key.getName());
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     KitchenSink ks;
     beginTxn();
     ks = em.find(KitchenSink.class, keyStr);
@@ -60,7 +60,7 @@ public class JPADeleteTest extends JPATestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 
@@ -92,7 +92,7 @@ public class JPADeleteTest extends JPATestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 

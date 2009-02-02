@@ -126,7 +126,7 @@ public class JDOTransactionTest extends TestCase {
       txn.begin();
     }
     try {
-      pm.getObjectById(Flight.class, KeyFactory.encodeKey(f1.getKey()));
+      pm.getObjectById(Flight.class, KeyFactory.keyToString(f1.getKey()));
     } finally {
       if (explicitDemarcation) {
         txn.commit();
@@ -182,7 +182,7 @@ public class JDOTransactionTest extends TestCase {
       txn.begin();
     }
     try {
-      pm.getObjectById(Flight.class, KeyFactory.encodeKey(f1.getKey()));
+      pm.getObjectById(Flight.class, KeyFactory.keyToString(f1.getKey()));
     } finally {
       if (explicitDemarcation) {
         txn.commit();
@@ -235,7 +235,7 @@ public class JDOTransactionTest extends TestCase {
       txn.begin();
     }
     try {
-      pm.getObjectById(Flight.class, KeyFactory.encodeKey(f1.getKey()));
+      pm.getObjectById(Flight.class, KeyFactory.keyToString(f1.getKey()));
       fail("Expected exception");
     } catch (TransactionNotReadableException e) {
       // good

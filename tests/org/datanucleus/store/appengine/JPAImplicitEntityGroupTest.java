@@ -28,10 +28,10 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(parent);
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.decodeKey(child.getId()));
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.decodeKey(parent.getId()));
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
   }
 
@@ -46,10 +46,10 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
     assertEquals(parent.getId(), child.getAncestorId());
 
-    Entity childEntity = ldth.ds.get(KeyFactory.decodeKey(child.getId()));
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.decodeKey(parent.getId()));
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeall"));
   }
 
@@ -66,10 +66,10 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 //
 //    assertEquals(parent.getId(), child.getAncestorKey());
 //
-//    Entity childEntity = ldth.ds.get(KeyFactory.decodeKey(child.getKey()));
+//    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
 //    assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 //
-//    Entity parentEntity = ldth.ds.get(KeyFactory.decodeKey(parent.getId()));
+//    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
 //    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeallwithkeyancestor"));
 //  }
 
@@ -100,10 +100,10 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(parent);
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.decodeKey(child.getId()));
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentNull(childEntity, childEntity.getKey());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.decodeKey(parent.getId()));
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertKeyParentNull(childEntity, (Key) parentEntity.getProperty("cascaderemove"));
   }
 
@@ -159,7 +159,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJPA parent = em.find(
-        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.encodeKey(parentEntity.getKey()));
+        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     assertNotNull(parent.getCascadeAllChild());
     em.remove(parent);
     commitTxn();
@@ -189,7 +189,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJPA parent = em.find(
-        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.encodeKey(parentEntity.getKey()));
+        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     assertNotNull(parent.getCascadeAllChild());
     assertKeyParentEquals(parent.getId(), childEntity, parent.getCascadeAllChild().getId());
     em.remove(parent.getCascadeAllChild());
@@ -215,7 +215,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJPA parent = em.find(
-        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.encodeKey(parentEntity.getKey()));
+        HasOneToOnesWithDifferentCascadesJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     assertNotNull(parent.getCascadeRemoveChild());
     assertKeyParentEquals(parent.getId(), childEntity, parent.getCascadeRemoveChild().getId());
     em.remove(parent.getCascadeRemoveChild());
@@ -246,10 +246,10 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.merge(parent);
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.decodeKey(child.getId()));
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.decodeKey(parent.getId()));
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
 
   }

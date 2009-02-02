@@ -3,7 +3,8 @@
 
   <property name="version.major" value="0"/>
   <property name="version.minor" value="8"/>
-  <property name="version" value="${version.major}.${version.minor}"/>
+  <property name="version.point" value="1"/>
+  <property name="version" value="${version.major}.${version.minor}.${version.point}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
@@ -118,6 +119,8 @@
     <copy todir="${orm.sdk.tmp.dir}/impl">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime.jar"/>
+        <include name="appengine-api-stubs.jar"/>
+        <include name="appengine-api.jar"/>
       </fileset>
     </copy>
 
@@ -127,6 +130,7 @@
         <include name="appengine-local-runtime-shared.jar"/>
         <include name="servlet-api-2.5.jar"/>
         <include name="jsp-api-2.1.jar"/>
+        <include name="el-api-2.1.jar"/>
       </fileset>
     </copy>
 

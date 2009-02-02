@@ -24,7 +24,7 @@ public class JPAInsertionTest extends JPATestCase {
     em.persist(b1);
     commitTxn();
     assertNotNull(b1.getId());
-    Entity entity = ldth.ds.get(KeyFactory.decodeKey(b1.getId()));
+    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
@@ -40,8 +40,8 @@ public class JPAInsertionTest extends JPATestCase {
     beginTxn();
     em.persist(b1);
     commitTxn();
-    assertEquals("named key", KeyFactory.decodeKey(b1.getId()).getName());
-    Entity entity = ldth.ds.get(KeyFactory.decodeKey(b1.getId()));
+    assertEquals("named key", KeyFactory.stringToKey(b1.getId()).getName());
+    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
@@ -88,7 +88,7 @@ public class JPAInsertionTest extends JPATestCase {
 //    em.persist(hk1);
 //    txn.commit();
 //
-//    Entity reloaded = ldth.ds.get(KeyFactory.decodeKey(hk1.getKey()));
+//    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(hk1.getKey()));
 //    assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
 //  }
 
@@ -96,13 +96,13 @@ public class JPAInsertionTest extends JPATestCase {
     Entity e = new Entity("yam");
     ldth.ds.put(e);
     HasStringAncestorKeyPkJPA hk1 = new HasStringAncestorKeyPkJPA();
-    hk1.setAncestorKey(KeyFactory.encodeKey(e.getKey()));
+    hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
     beginTxn();
     em.persist(hk1);
     commitTxn();
 
     Entity reloaded = ldth.ds.get(hk1.getKey());
-    assertEquals(hk1.getAncestorKey(), KeyFactory.encodeKey(reloaded.getKey().getParent()));
+    assertEquals(hk1.getAncestorKey(), KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
 

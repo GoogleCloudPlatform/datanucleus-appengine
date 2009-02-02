@@ -16,18 +16,18 @@ public final class TestUtils {
   private TestUtils() {}
 
   public static void assertKeyParentEquals(String parentKey, Entity childEntity, Key childKey) {
-    assertEquals(KeyFactory.decodeKey(parentKey), childEntity.getKey().getParent());
-    assertEquals(KeyFactory.decodeKey(parentKey), childKey.getParent());
+    assertEquals(KeyFactory.stringToKey(parentKey), childEntity.getKey().getParent());
+    assertEquals(KeyFactory.stringToKey(parentKey), childKey.getParent());
   }
 
   public static void assertKeyParentEquals(String parentKey, Entity childEntity, String childKey) {
-    assertEquals(KeyFactory.decodeKey(parentKey), childEntity.getKey().getParent());
-    assertEquals(KeyFactory.decodeKey(parentKey), KeyFactory.decodeKey(childKey).getParent());
+    assertEquals(KeyFactory.stringToKey(parentKey), childEntity.getKey().getParent());
+    assertEquals(KeyFactory.stringToKey(parentKey), KeyFactory.stringToKey(childKey).getParent());
   }
 
   public static void assertKeyParentNull(Entity childEntity, String childKey) {
     assertNull(childEntity.getKey().getParent());
-    assertNull(KeyFactory.decodeKey(childKey).getParent());
+    assertNull(KeyFactory.stringToKey(childKey).getParent());
   }
 
   public static void assertKeyParentNull(Entity childEntity, Key childKey) {

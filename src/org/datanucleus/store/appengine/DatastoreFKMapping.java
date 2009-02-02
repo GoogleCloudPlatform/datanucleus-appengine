@@ -107,7 +107,7 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
   public void setString(Object datastoreEntity, int paramIndex, String value) {
     // Currently only using the mapping for relations, so we know this
     // value can be converted to a key.
-    setObject(datastoreEntity, paramIndex, KeyFactory.decodeKey(value));
+    setObject(datastoreEntity, paramIndex, KeyFactory.stringToKey(value));
   }
 
   public void setObject(Object datastoreEntity, int paramIndex, Object value) {

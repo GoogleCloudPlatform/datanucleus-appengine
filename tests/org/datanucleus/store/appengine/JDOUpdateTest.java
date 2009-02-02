@@ -22,7 +22,7 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testSimpleUpdate() throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -50,7 +50,7 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testSimpleUpdateWithNamedKey() throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -80,7 +80,7 @@ public class JDOUpdateTest extends JDOTestCase {
       throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -111,7 +111,7 @@ public class JDOUpdateTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -131,7 +131,7 @@ public class JDOUpdateTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -152,7 +152,7 @@ public class JDOUpdateTest extends JDOTestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
@@ -183,7 +183,7 @@ public class JDOUpdateTest extends JDOTestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 

@@ -133,13 +133,13 @@ public class DatastoreFieldManager implements FieldManager {
     // TODO(maxr): validate that a class only has a single ancestor key.
     if (isPK(fieldNumber)) {
       // If this is pk field, transform the Key into its String representation.
-      return KeyFactory.encodeKey(datastoreEntity.getKey());
+      return KeyFactory.keyToString(datastoreEntity.getKey());
     } else if (isAncestorPK(fieldNumber)) {
       Key parentKey = datastoreEntity.getKey().getParent();
       if (parentKey == null) {
         return null;
       }
-      return KeyFactory.encodeKey(parentKey);
+      return KeyFactory.keyToString(parentKey);
     }
     return (String) fetchObjectField(fieldNumber);
   }
@@ -267,7 +267,7 @@ public class DatastoreFieldManager implements FieldManager {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     String propertyName = getPropertyName(fieldNumber);
     final String msg = String.format(ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT,
-        datastoreEntity.getKind(), KeyFactory.encodeKey(datastoreEntity.getKey()), propertyName,
+        datastoreEntity.getKind(), KeyFactory.keyToString(datastoreEntity.getKey()), propertyName,
         ammd.getFullFieldName());
     throw new NullPointerException(msg);
   }
@@ -364,9 +364,9 @@ public class DatastoreFieldManager implements FieldManager {
     Entity old = datastoreEntity;
     if (old.getKey().getName() != null) {
       datastoreEntity =
-          new Entity(old.getKind(), old.getKey().getName(), KeyFactory.decodeKey(value));
+          new Entity(old.getKind(), old.getKey().getName(), KeyFactory.stringToKey(value));
     } else {
-      datastoreEntity = new Entity(old.getKind(), KeyFactory.decodeKey(value));
+      datastoreEntity = new Entity(old.getKind(), KeyFactory.stringToKey(value));
     }
     copyProperties(old, datastoreEntity);
   }
@@ -506,7 +506,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   private void storeAncestorKeyPK(Key key) {
     if (key != null) {
-      storeStringAncestorPK(KeyFactory.encodeKey(key));
+      storeStringAncestorPK(KeyFactory.keyToString(key));
     } else {
       storeStringAncestorPK(null);
     }

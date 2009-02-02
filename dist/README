@@ -46,3 +46,7 @@ VERSION 0.7
 VERSION 0.8
 - Support for non-transactional datasources.
 - Fixed a nasty ClassCastException related to transaction management.
+
+VERSION 0.8.1
+- One To Many bug fixes
+- Method renames

@@ -18,11 +18,11 @@ public class JPAAncestorTest extends JPATestCase {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.encodeKey(flightKey));
+    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(flightKey));
     beginTxn();
     em.persist(ha);
     commitTxn();
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
@@ -36,11 +36,11 @@ public class JPAAncestorTest extends JPATestCase {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.encodeKey(flightKey), "named key");
+    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(flightKey), "named key");
     beginTxn();
     em.persist(ha);
     commitTxn();
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
@@ -59,8 +59,8 @@ public class JPAAncestorTest extends JPATestCase {
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.encodeKey(flightEntity.getKey()), ha.getAncestorId());
+    HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
     commitTxn();
   }
 
@@ -72,10 +72,10 @@ public class JPAAncestorTest extends JPATestCase {
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.encodeKey(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.encodeKey(flightEntity.getKey()), ha.getAncestorId());
-    assertEquals("named key", KeyFactory.decodeKey(ha.getId()).getName());
-    assertEquals("named parent key", KeyFactory.decodeKey(ha.getId()).getParent().getName());
+    HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
+    assertEquals("named key", KeyFactory.stringToKey(ha.getId()).getName());
+    assertEquals("named parent key", KeyFactory.stringToKey(ha.getId()).getParent().getName());
     commitTxn();
   }
 
@@ -84,7 +84,7 @@ public class JPAAncestorTest extends JPATestCase {
     beginTxn();
     em.persist(ha);
     commitTxn();
-    Key keyWithParent = KeyFactory.decodeKey(ha.getId());
+    Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertNull(keyWithParent.getParent());
   }
 }

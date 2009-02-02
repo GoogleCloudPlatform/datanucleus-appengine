@@ -78,7 +78,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     } catch (EntityNotFoundException e) {
       throw new NucleusObjectNotFoundException(
           "Could not retrieve entity of type " + sm.getClassMetaData().getName()
-          + " with key " + KeyFactory.encodeKey(key));
+          + " with key " + KeyFactory.keyToString(key));
     }
   }
 
@@ -169,7 +169,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     if (pkType.equals(Key.class)) {
       newObjectId = entity.getKey();
     } else if (pkType.equals(String.class)) {
-      newObjectId = KeyFactory.encodeKey(entity.getKey());
+      newObjectId = KeyFactory.keyToString(entity.getKey());
     } else {
       throw new IllegalStateException(
           "Primary key for type " + sm.getClassMetaData().getName()
@@ -220,7 +220,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       AbstractClassMetaData cmd, Entity entity, String details) {
     return new NucleusOptimisticException(
         "Optimistic concurrency exception updating " + cmd.getFullClassName()
-            + " with pk " + KeyFactory.encodeKey(entity.getKey()) + ".  " + details);
+            + " with pk " + KeyFactory.keyToString(entity.getKey()) + ".  " + details);
   }
 
   private void handleVersioningBeforeWrite(StateManager sm, Entity entity,
@@ -281,7 +281,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     } else if (pk instanceof Key) {
       return (Key) pk;
     } else if (pk instanceof String) {
-      return KeyFactory.decodeKey((String) pk);
+      return KeyFactory.stringToKey((String) pk);
     } else {
       throw new IllegalStateException(
           "Primary key for object of type " + sm.getClassMetaData().getName()

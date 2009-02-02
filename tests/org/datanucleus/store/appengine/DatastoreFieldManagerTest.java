@@ -63,7 +63,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     };
 
     FieldPositionIterator iter = new FieldPositionIterator(acmd);
-    assertEquals(KeyFactory.encodeKey(ksEntity.getKey()),fieldManager.fetchStringField(iter.next()));
+    assertEquals(KeyFactory.keyToString(ksEntity.getKey()),fieldManager.fetchStringField(iter.next()));
     assertEquals("strVal", fieldManager.fetchStringField(iter.next()));
     assertEquals(true, fieldManager.fetchBooleanField(iter.next()));
     assertEquals(true, fieldManager.fetchBooleanField(iter.next()));
@@ -348,7 +348,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     ldth.ds.put(ksEntity);
 
     // non-null value is ok
-    fieldManager.storeStringField(ancestorPkFieldPos, KeyFactory.encodeKey(ksEntity.getKey()));
+    fieldManager.storeStringField(ancestorPkFieldPos, KeyFactory.keyToString(ksEntity.getKey()));
     Entity newEntity = fieldManager.getEntity();
     assertEquals(ksEntity.getKey(), newEntity.getParent());
   }

@@ -13,7 +13,7 @@
 
   <target name="launch" description="launch the app" depends="explode">
     <java fork="true" classpath="${sdk.lib.dir}/appengine-tools-api.jar"
-          classname="com.google.apphosting.tools.development.DevAppServerMain">
+          classname="com.google.appengine.tools.development.DevAppServerMain">
       <arg value="exploded"/>
     </java>
   </target>
@@ -37,7 +37,7 @@
     </copy>
     <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
       <lib dir="${helloorm.orm.lib.dir}">
-        <include name="datanucleus-appengine-0.8.jar"/>
+        <include name="datanucleus-appengine-0.8.1.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0000.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0001.jar"/>
         <include name="datanucleus-core-1.1.0.m1-0002.jar"/>

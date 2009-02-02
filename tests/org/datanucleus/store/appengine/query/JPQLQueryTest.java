@@ -307,11 +307,11 @@ public class JPQLQueryTest extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
             + " where id = :key");
-    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
-    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
 
     // now issue the same query, but instead of providing a String version of
     // the key, provide the Key itself.
@@ -319,7 +319,7 @@ public class JPQLQueryTest extends JPATestCase {
     @SuppressWarnings("unchecked")
     List<Book> books2 = (List<Book>) q.getResultList();
     assertEquals(1, books2.size());
-    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books2.get(0).getId()));
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(books2.get(0).getId()));
   }
 
   public void testKeyQuery_KeyPk() {
@@ -342,11 +342,11 @@ public class JPQLQueryTest extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
             + " where id = :key order by isbn ASC");
-    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
-    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
   }
 
   public void testKeyQuery_MultipleFilters() {
@@ -356,11 +356,11 @@ public class JPQLQueryTest extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
             + " where id = :key and isbn = \"67890\"");
-    q.setParameter("key", KeyFactory.encodeKey(bookEntity.getKey()));
+    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
-    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
   }
 
   public void testKeyQuery_NonEqualityFilter() {
@@ -373,11 +373,11 @@ public class JPQLQueryTest extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
             + " where id > :key");
-    q.setParameter("key", KeyFactory.encodeKey(bookEntity1.getKey()));
+    q.setParameter("key", KeyFactory.keyToString(bookEntity1.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
-    assertEquals(bookEntity2.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+    assertEquals(bookEntity2.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
   }
 
   public void testKeyQuery_SortByKey() {
@@ -393,7 +393,7 @@ public class JPQLQueryTest extends JPATestCase {
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(2, books.size());
-    assertEquals(bookEntity2.getKey(), KeyFactory.decodeKey(books.get(0).getId()));
+    assertEquals(bookEntity2.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
   }
 
   public void testAncestorQuery() {
@@ -404,12 +404,12 @@ public class JPQLQueryTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasAncestorJPA.class.getName() + " where ancestorId = :ancId");
-    q.setParameter("ancId", KeyFactory.encodeKey(bookEntity.getKey()));
+    q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
 
     @SuppressWarnings("unchecked")
     List<HasAncestorJPA> haList = (List<HasAncestorJPA>) q.getResultList();
     assertEquals(1, haList.size());
-    assertEquals(bookEntity.getKey(), KeyFactory.decodeKey(haList.get(0).getAncestorId()));
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
     assertEquals(
         bookEntity.getKey(), getDatastoreQuery(q).getMostRecentDatastoreQuery().getAncestor());
@@ -425,7 +425,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasAncestorJPA.class.getName() + " where ancestorId > :ancId");
-    q.setParameter("ancId", KeyFactory.encodeKey(bookEntity.getKey()));
+    q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
     try {
       q.getResultList();
       fail ("expected udfe");

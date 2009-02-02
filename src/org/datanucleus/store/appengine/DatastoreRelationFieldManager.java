@@ -129,7 +129,7 @@ class DatastoreRelationFieldManager {
         if (ancestorKey != null) {
           entity.removeProperty(ANCESTOR_KEY_PROPERTY);
           String ancestorKeyStr = ancestorKey instanceof Key ?
-                                  KeyFactory.encodeKey((Key) ancestorKey) : (String) ancestorKey;
+                                  KeyFactory.keyToString((Key) ancestorKey) : (String) ancestorKey;
           fieldManager.recreateEntityWithAncestor(ancestorKeyStr);
         }
       }
@@ -202,17 +202,17 @@ class DatastoreRelationFieldManager {
           if (keyOrString instanceof Key) {
             parentKey = (Key) keyOrString;
           } else {
-            parentKey = KeyFactory.decodeKey((String) keyOrString);
+            parentKey = KeyFactory.stringToKey((String) keyOrString);
           }
           break;
         }
       }
     }
     if (parentKey != null) {
-      fieldManager.recreateEntityWithAncestor(KeyFactory.encodeKey(parentKey));
+      fieldManager.recreateEntityWithAncestor(KeyFactory.keyToString(parentKey));
       if (getAncestorMemberMetaData() != null) {
         return getAncestorMemberMetaData().getType().equals(Key.class)
-            ? parentKey : KeyFactory.encodeKey(parentKey);
+            ? parentKey : KeyFactory.keyToString(parentKey);
       }
     }
     return null;

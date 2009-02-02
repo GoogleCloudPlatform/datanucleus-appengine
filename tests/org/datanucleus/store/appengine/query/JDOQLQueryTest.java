@@ -378,9 +378,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where id == key parameters String key");
     @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
     assertEquals(1, flights.size());
-    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+    assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
   }
 
   public void testKeyQuery_KeyPk() {
@@ -403,9 +403,9 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + Flight.class.getName()
             + " where id == key parameters String key order by id asc");
     @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
     assertEquals(1, flights.size());
-    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+    assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
   }
 
   public void testKeyQuery_MultipleFilters() {
@@ -416,9 +416,9 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + Flight.class.getName()
             + " where id == key && origin == \"yam\" parameters String key");
     @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
     assertEquals(1, flights.size());
-    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+    assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
   }
 
   public void testKeyQuery_NonEqualityFilter() {
@@ -430,9 +430,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     javax.jdo.Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where id > key parameters String key");
     @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.encodeKey(flightEntity1.getKey()));
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.keyToString(flightEntity1.getKey()));
     assertEquals(1, flights.size());
-    assertEquals(flightEntity2.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
+    assertEquals(flightEntity2.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
   }
 
   public void testKeyQuery_SortByKey() {
@@ -447,8 +447,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute();
     assertEquals(2, flights.size());
-    assertEquals(flightEntity2.getKey(), KeyFactory.decodeKey(flights.get(0).getId()));
-    assertEquals(flightEntity1.getKey(), KeyFactory.decodeKey(flights.get(1).getId()));
+    assertEquals(flightEntity2.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+    assertEquals(flightEntity1.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
   }
 
   public void testAncestorQueryWithStringAncestor() {
@@ -462,9 +462,9 @@ public class JDOQLQueryTest extends JDOTestCase {
             + " where ancestorId == ancId parameters String ancId");
     @SuppressWarnings("unchecked")
     List<HasAncestorJDO> haList =
-        (List<HasAncestorJDO>) q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+        (List<HasAncestorJDO>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
     assertEquals(1, haList.size());
-    assertEquals(flightEntity.getKey(), KeyFactory.decodeKey(haList.get(0).getAncestorId()));
+    assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
     assertEquals(
         flightEntity.getKey(), getDatastoreQuery(q).getMostRecentDatastoreQuery().getAncestor());
@@ -498,7 +498,7 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + HasAncestorJDO.class.getName()
             + " where ancestorId > ancId parameters String ancId");
     try {
-      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -532,7 +532,7 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + HasAncestorJDO.class.getName()
             + " where ancestorId == ancId parameters String ancId order by ancestorId ASC");
     try {
-      q.execute(KeyFactory.encodeKey(flightEntity.getKey()));
+      q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good

@@ -496,7 +496,7 @@ public class DatastoreManager extends MappedStoreManager {
     }
 
     public String fetchStringField(int fieldNumber) {
-      return KeyFactory.encodeKey(key);
+      return KeyFactory.keyToString(key);
     }
 
     public Object fetchObjectField(int fieldNumber) {

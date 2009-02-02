@@ -23,7 +23,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testSimpleFetch() {
     Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     Book book = em.find(Book.class, keyStr);
     assertNotNull(book);
     assertEquals(keyStr, book.getId());
@@ -39,7 +39,7 @@ public class JPAFetchTest extends JPATestCase {
     try {
       Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
 
-      String keyStr = KeyFactory.encodeKey(key);
+      String keyStr = KeyFactory.keyToString(key);
       Book book = em.find(Book.class, keyStr);
       assertNotNull(book);
       assertEquals(keyStr, book.getId());
@@ -55,20 +55,20 @@ public class JPAFetchTest extends JPATestCase {
   public void testSimpleFetchWithNamedKey() {
     Key key = ldth.ds.put(Book.newBookEntity("named key", "max", "47", "yam"));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     Book book = em.find(Book.class, keyStr);
     assertNotNull(book);
     assertEquals(keyStr, book.getId());
     assertEquals("max", book.getAuthor());
     assertEquals("47", book.getIsbn());
     assertEquals("yam", book.getTitle());
-    assertEquals("named key", KeyFactory.decodeKey(book.getId()).getName());
+    assertEquals("named key", KeyFactory.stringToKey(book.getId()).getName());
   }
 
   public void testFetchNonExistent() {
     Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
     ldth.ds.delete(key);
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     assertNull(em.find(Book.class, keyStr));
   }
 }

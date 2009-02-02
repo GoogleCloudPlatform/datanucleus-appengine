@@ -4,8 +4,8 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
-import com.google.apphosting.tools.development.ApiProxyLocalImpl;
 
 import java.io.File;
 

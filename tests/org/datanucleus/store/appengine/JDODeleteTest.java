@@ -23,7 +23,7 @@ public class JDODeleteTest extends JDOTestCase {
   public void testSimpleDelete() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
@@ -43,11 +43,11 @@ public class JDODeleteTest extends JDOTestCase {
   public void testSimpleDelete_NamedKey() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
-    assertEquals("named key", KeyFactory.decodeKey(ks.key).getName());
+    assertEquals("named key", KeyFactory.stringToKey(ks.key).getName());
     pm.deletePersistent(ks);
     commitTxn();
     beginTxn();
@@ -65,7 +65,7 @@ public class JDODeleteTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -86,7 +86,7 @@ public class JDODeleteTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Flight flight = pm.getObjectById(Flight.class, keyStr);
 
@@ -109,7 +109,7 @@ public class JDODeleteTest extends JDOTestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
@@ -141,7 +141,7 @@ public class JDODeleteTest extends JDOTestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 

@@ -87,7 +87,7 @@ class DatastoreQueryExpression implements QueryExpression {
       return null;
     }
     StringLiteral stringLiteral = (StringLiteral) appended.get(0);
-    return KeyFactory.decodeKey(stringLiteral.getValue().toString());
+    return KeyFactory.stringToKey(stringLiteral.getValue().toString());
   }
 
   Collection<SortPredicate> getSortPredicates() {

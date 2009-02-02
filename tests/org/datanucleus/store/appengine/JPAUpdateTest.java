@@ -23,7 +23,7 @@ public class JPAUpdateTest extends JPATestCase {
   public void testUpdateAfterFetch() throws EntityNotFoundException {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     Book book = em.find(Book.class, keyStr);
 
@@ -58,7 +58,7 @@ public class JPAUpdateTest extends JPATestCase {
     em.merge(b);
     commitTxn();
 
-    Entity bookCheck = ldth.ds.get(KeyFactory.decodeKey(b.getId()));
+    Entity bookCheck = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertEquals("max", bookCheck.getProperty("author"));
     assertEquals("22333", bookCheck.getProperty("isbn"));
     assertEquals("not yam", bookCheck.getProperty("title"));
@@ -69,7 +69,7 @@ public class JPAUpdateTest extends JPATestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
     hv.setValue("value");
@@ -100,7 +100,7 @@ public class JPAUpdateTest extends JPATestCase {
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
 

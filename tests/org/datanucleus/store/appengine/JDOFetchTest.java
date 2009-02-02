@@ -35,7 +35,7 @@ public class JDOFetchTest extends JDOTestCase {
   public void testSimpleFetch() {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     Flight flight = pm.getObjectById(Flight.class, keyStr);
     assertNotNull(flight);
     assertEquals(keyStr, flight.getId());
@@ -49,17 +49,17 @@ public class JDOFetchTest extends JDOTestCase {
   public void testSimpleFetch_NamedKey() {
     Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     Flight flight = pm.getObjectById(Flight.class, keyStr);
     assertNotNull(flight);
     assertEquals(keyStr, flight.getId());
-    assertEquals("named key", KeyFactory.decodeKey(flight.getId()).getName());
+    assertEquals("named key", KeyFactory.stringToKey(flight.getId()).getName());
   }
 
   public void testFetchNonExistent() {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     ldth.ds.delete(key);
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     try {
       pm.getObjectById(Flight.class, keyStr);
       fail("expected onfe");
@@ -71,7 +71,7 @@ public class JDOFetchTest extends JDOTestCase {
   public void testKitchenSinkFetch() {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
-    String keyStr = KeyFactory.encodeKey(key);
+    String keyStr = KeyFactory.keyToString(key);
     KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
     assertNotNull(ks);
     assertEquals(keyStr, ks.key);
@@ -104,7 +104,7 @@ public class JDOFetchTest extends JDOTestCase {
     HasStringAncestorKeyPkJDO hk =
         pm.getObjectById(HasStringAncestorKeyPkJDO.class, child.getKey());
     assertNotNull(hk.getKey());
-    assertEquals(parent.getKey(), KeyFactory.decodeKey(hk.getAncestorKey()));
+    assertEquals(parent.getKey(), KeyFactory.stringToKey(hk.getAncestorKey()));
   }
 
   public void testFetchWithStringPkAndKeyAncestor() {
@@ -113,7 +113,7 @@ public class JDOFetchTest extends JDOTestCase {
     Entity child = new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parent.getKey());
     ldth.ds.put(child);
     HasKeyAncestorKeyStringPkJDO hk =
-        pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, KeyFactory.encodeKey(child.getKey()));
+        pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(child.getKey()));
     assertNotNull(hk.getKey());
     assertEquals(parent.getKey(), hk.getAncestorKey());
   }
@@ -125,7 +125,7 @@ public class JDOFetchTest extends JDOTestCase {
     // The model object's id is of type Key but we're going to look it up using
     // a string-encoded Key
     try {
-      pm.getObjectById(HasStringAncestorKeyPkJDO.class, KeyFactory.encodeKey(entity.getKey()));
+      pm.getObjectById(HasStringAncestorKeyPkJDO.class, KeyFactory.keyToString(entity.getKey()));
       fail("Expected JDOUserException");
     } catch (JDOUserException e) {
       // good
@@ -153,7 +153,7 @@ public class JDOFetchTest extends JDOTestCase {
     e.setProperty("anotherFirst", "anotherjimmy");
     e.setProperty("anotherLast", "anotherjam");
     ldth.ds.put(e);
-    Person p = pm.getObjectById(Person.class, KeyFactory.encodeKey(e.getKey()));
+    Person p = pm.getObjectById(Person.class, KeyFactory.keyToString(e.getKey()));
     assertNotNull(p);
     assertNotNull(p.getName());
     assertEquals("jimmy", p.getName().getFirst());
@@ -168,7 +168,7 @@ public class JDOFetchTest extends JDOTestCase {
     e.setProperty("first", "jimmy");
     e.setProperty("last", "jam");
     ldth.ds.put(e);
-    Person p = pm.getObjectById(Person.class, KeyFactory.encodeKey(e.getKey()));
+    Person p = pm.getObjectById(Person.class, KeyFactory.keyToString(e.getKey()));
     assertNotNull(p);
     assertNotNull(p.getName());
     assertEquals("jimmy", p.getName().getFirst());

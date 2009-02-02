@@ -437,7 +437,7 @@ public class DatastoreQuery implements Serializable {
       if (ammd.isPrimaryKey()) {
         propName = Entity.KEY_RESERVED_PROPERTY;
         if (value instanceof String) {
-          value = KeyFactory.decodeKey((String) value);
+          value = KeyFactory.stringToKey((String) value);
         }
       } else {
         propName = determinePropertyName(ammd);
@@ -464,7 +464,7 @@ public class DatastoreQuery implements Serializable {
           query.getSingleStringQuery());
     }
     // value must be String or Key
-    Key ancestor = (value instanceof String) ? KeyFactory.decodeKey((String) value) : (Key) value;
+    Key ancestor = (value instanceof String) ? KeyFactory.stringToKey((String) value) : (Key) value;
     qd.query.setAncestor(ancestor);
   }
 

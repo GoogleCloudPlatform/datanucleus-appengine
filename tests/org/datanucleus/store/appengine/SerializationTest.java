@@ -32,7 +32,7 @@ public class SerializationTest extends JDOTestCase {
     pm.makePersistent(hasSerializable);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.decodeKey(hasSerializable.getId()));
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(hasSerializable.getId()));
     Blob yamBlob = (Blob) e.getProperty("yam");
     assertNotNull(yamBlob);
     HasSerializableJDO.Yam reloadedYam = (HasSerializableJDO.Yam)
@@ -63,7 +63,7 @@ public class SerializationTest extends JDOTestCase {
     ldth.ds.put(e);
     beginTxn();
     HasSerializableJDO hasSerializable = pm.getObjectById(
-        HasSerializableJDO.class, KeyFactory.encodeKey(e.getKey()));
+        HasSerializableJDO.class, KeyFactory.keyToString(e.getKey()));
     assertNotNull(hasSerializable);
     assertNotNull(hasSerializable.getYam());
     assertEquals(yam.getStr1(), hasSerializable.getYam().getStr1());
