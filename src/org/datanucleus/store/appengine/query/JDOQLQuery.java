@@ -2,6 +2,7 @@
 package org.datanucleus.store.appengine.query;
 
 import org.datanucleus.ObjectManager;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 
 import java.util.List;
@@ -58,6 +59,15 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   protected List<?> performExecute(Map parameters) {
     @SuppressWarnings("unchecked")
     Map<String, ?> params = parameters;
+    if (range != null && !"".equals(range)) {
+      // Range is of the format "from, to"
+      String[] fromTo = range.split(",");
+      if (fromTo.length != 2) {
+        throw new NucleusUserException("Malformed RANGE clause: " + range);
+      }
+      fromInclNo = Long.parseLong(fromTo[0].trim());
+      toExclNo = Long.parseLong(fromTo[1].trim());
+    }
     return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
   }
 

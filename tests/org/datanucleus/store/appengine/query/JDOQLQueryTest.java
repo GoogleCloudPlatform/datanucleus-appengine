@@ -360,6 +360,61 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(0, result8.size());
   }
 
+  public void testOffsetLimitSingleStringQuery() {
+    ldth.ds.put(newFlightEntity("1", "yam", "bam", 1, 2));
+    ldth.ds.put(newFlightEntity("2", "yam", "bam", 1, 1));
+    ldth.ds.put(newFlightEntity("3", "yam", "bam", 2, 1));
+    ldth.ds.put(newFlightEntity("4", "yam", "bam", 2, 2));
+    ldth.ds.put(newFlightEntity("5", "notyam", "bam", 2, 2));
+    ldth.ds.put(newFlightEntity("5", "yam", "notbam", 2, 2));
+    String queryFormat =
+        "select from " + Flight.class.getName()
+            + " where origin == \"yam\" && dest == \"bam\""
+            + " order by you asc, me desc range %d,%d";
+    Query q = pm.newQuery(String.format(queryFormat, 0, 0));
+    @SuppressWarnings("unchecked")
+    List<Flight> result1 = (List<Flight>) q.execute();
+    assertEquals(0, result1.size());
+
+    q = pm.newQuery(String.format(queryFormat, 1, 0));
+    @SuppressWarnings("unchecked")
+    List<Flight> result2 = (List<Flight>) q.execute();
+    assertEquals(0, result2.size());
+
+    q = pm.newQuery(String.format(queryFormat, 0, 1));
+    @SuppressWarnings("unchecked")
+    List<Flight> result3 = (List<Flight>) q.execute();
+    assertEquals(1, result3.size());
+
+    q = pm.newQuery(String.format(queryFormat, 0, 2));
+    @SuppressWarnings("unchecked")
+    List<Flight> result4 = (List<Flight>) q.execute();
+    assertEquals(2, result4.size());
+    assertEquals("1", result4.get(0).getName());
+
+    q = pm.newQuery(String.format(queryFormat, 1, 2));
+    @SuppressWarnings("unchecked")
+    List<Flight> result5 = (List<Flight>) q.execute();
+    assertEquals(1, result5.size());
+    assertEquals("2", result5.get(0).getName());
+
+    q = pm.newQuery(String.format(queryFormat, 2, 5));
+    @SuppressWarnings("unchecked")
+    List<Flight> result6 = (List<Flight>) q.execute();
+    assertEquals(2, result6.size());
+    assertEquals("4", result6.get(0).getName());
+
+    q = pm.newQuery(String.format(queryFormat, 2, 2));
+    @SuppressWarnings("unchecked")
+    List<Flight> result7 = (List<Flight>) q.execute();
+    assertEquals(0, result7.size());
+
+    q = pm.newQuery(String.format(queryFormat, 2, 1));
+    @SuppressWarnings("unchecked")
+    List<Flight> result8 = (List<Flight>) q.execute();
+    assertEquals(0, result8.size());
+  }
+
   public void testSerialization() throws IOException {
     Query q = pm.newQuery("select from " + Flight.class.getName());
     q.execute();
