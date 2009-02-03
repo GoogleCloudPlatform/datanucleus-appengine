@@ -36,7 +36,18 @@
         <include name="**/*.MF"/>
       </fileset>
     </copy>
-    <jar destfile="${orm.jar}" basedir="${compile.dest.dir}"/>
+    <jar destfile="${orm.jar}" basedir="${compile.dest.dir}">
+      <manifest>
+        <attribute name="Manifest-Version" value="1.0"/>
+        <attribute name="Bundle-ManifestVersion" value="2"/>
+        <attribute name="Bundle-Name" value="DataNucleus AppEngine"/>
+        <attribute name="Bundle-SymbolicName" value="org.datanucleus.store.appengine;singleton:=true"/>
+        <attribute name="Bundle-Version" value="${version}"/>
+        <attribute name="Bundle-Vendor" value="Google"/>
+        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.1.0.m4)&quot;"/>
+        <attribute name="Import-Package" value="javax.jdo, javax.jdo.annotations, javax.jdo.datastore, javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.persistence.spi"/>
+      </manifest>
+    </jar>
   </target>
 
   <target name="dist" depends="compile, jar, split" description="Build the datanucleus appengine distribution">
