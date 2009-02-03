@@ -28,6 +28,8 @@ import javax.jdo.annotations.PrimaryKey;
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class KitchenSink {
+  public enum KitchenSinkEnum {ONE, TWO}
+
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   public String key;
@@ -50,6 +52,7 @@ public class KitchenSink {
   @Persistent public Double doubleVal;
   @Persistent public double doublePrimVal;
   @Persistent public Date dateVal;
+  @Persistent public KitchenSinkEnum ksEnum;
   @Persistent(defaultFetchGroup = "true") public User userVal;
   @Persistent(defaultFetchGroup = "true") public Blob blobVal;
   @Persistent(defaultFetchGroup = "true") public Text textVal;
@@ -73,6 +76,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public boolean[] primitiveBooleanArray;
   @Persistent(defaultFetchGroup = "true") public Boolean[] booleanArray;
   @Persistent(defaultFetchGroup = "true") public Date[] dateArray;
+  @Persistent(defaultFetchGroup = "true") public KitchenSinkEnum[] ksEnumArray;
   @Persistent(defaultFetchGroup = "true") public User[] userArray;
   @Persistent(defaultFetchGroup = "true") public Blob[] blobArray;
   @Persistent(defaultFetchGroup = "true") public Text[] textArray;
@@ -88,6 +92,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public List<Float> floatList;
   @Persistent(defaultFetchGroup = "true") public List<Boolean> booleanList;
   @Persistent(defaultFetchGroup = "true") public List<Date> dateList;
+  @Persistent(defaultFetchGroup = "true") public List<KitchenSinkEnum> ksEnumList;
   @Persistent(defaultFetchGroup = "true") public List<User> userList;
   @Persistent(defaultFetchGroup = "true") public List<Blob> blobList;
   @Persistent(defaultFetchGroup = "true") public List<Text> textList;
@@ -129,6 +134,7 @@ public class KitchenSink {
     ks.doubleVal = 2.22d;
     ks.doublePrimVal = 2.22d;
     ks.dateVal = DATE1;
+    ks.ksEnum = KitchenSinkEnum.ONE;
     ks.userVal = USER1;
     ks.blobVal = BLOB1;
     ks.textVal = TEXT1;
@@ -152,6 +158,7 @@ public class KitchenSink {
     ks.primitiveBooleanArray = new boolean[] {true, false};
     ks.booleanArray = new Boolean[] {Boolean.FALSE, Boolean.TRUE};
     ks.dateArray = new Date[] {DATE1, DATE2};
+    ks.ksEnumArray = new KitchenSinkEnum[] {KitchenSinkEnum.TWO, KitchenSinkEnum.ONE};
     ks.userArray = new User[] {USER1, USER2};
     ks.blobArray = new Blob[] {BLOB1, BLOB2};
     ks.textArray = new Text[] {TEXT1, TEXT2};
@@ -167,6 +174,7 @@ public class KitchenSink {
     ks.floatList = Utils.newArrayList(23.44f, 24.55f);
     ks.booleanList = Utils.newArrayList(true, false);
     ks.dateList = Utils.newArrayList(DATE1, DATE2);
+    ks.ksEnumList = Utils.newArrayList(KitchenSinkEnum.TWO, KitchenSinkEnum.ONE);
     ks.userList = Utils.newArrayList(USER1, USER2);
     ks.blobList = Utils.newArrayList(BLOB1, BLOB2);
     ks.textList = Utils.newArrayList(TEXT1, TEXT2);
@@ -204,6 +212,7 @@ public class KitchenSink {
     entity.setProperty("doublePrimVal", 2.22d);
     entity.setProperty("doubleVal", 2.22d);
     entity.setProperty("dateVal", DATE1);
+    entity.setProperty("ksEnum", KitchenSinkEnum.ONE.name());
     entity.setProperty("userVal", USER1);
     entity.setProperty("blobVal", BLOB1);
     entity.setProperty("textVal", TEXT1);
@@ -226,6 +235,8 @@ public class KitchenSink {
     entity.setProperty("primitiveBooleanArray", Utils.newArrayList(true, false));
     entity.setProperty("booleanArray", Utils.newArrayList(false, true));
     entity.setProperty("dateArray", Utils.newArrayList(DATE1, DATE2));
+    entity.setProperty("ksEnumArray",
+                       Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
     entity.setProperty("userArray", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobArray", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textArray", Utils.newArrayList(TEXT1, TEXT2));
@@ -241,6 +252,8 @@ public class KitchenSink {
     entity.setProperty("floatList", Utils.newArrayList((double) 23.44f, (double) 24.55f));
     entity.setProperty("booleanList", Utils.newArrayList(true, false));
     entity.setProperty("dateList", Utils.newArrayList(DATE1, DATE2));
+    entity.setProperty("ksEnumList",
+                       Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
     entity.setProperty("userList", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));
@@ -376,6 +389,15 @@ public class KitchenSink {
     if (key != null ? !key.equals(that.key) : that.key != null) {
       return false;
     }
+    if (ksEnum != that.ksEnum) {
+      return false;
+    }
+    if (!Arrays.equals(ksEnumArray, that.ksEnumArray)) {
+      return false;
+    }
+    if (ksEnumList != null ? !ksEnumList.equals(that.ksEnumList) : that.ksEnumList != null) {
+      return false;
+    }
     if (!Arrays.equals(linkArray, that.linkArray)) {
       return false;
     }
@@ -481,6 +503,7 @@ public class KitchenSink {
     temp = doublePrimVal != +0.0d ? Double.doubleToLongBits(doublePrimVal) : 0L;
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + (dateVal != null ? dateVal.hashCode() : 0);
+    result = 31 * result + (ksEnum != null ? ksEnum.hashCode() : 0);
     result = 31 * result + (userVal != null ? userVal.hashCode() : 0);
     result = 31 * result + (blobVal != null ? blobVal.hashCode() : 0);
     result = 31 * result + (textVal != null ? textVal.hashCode() : 0);
@@ -505,6 +528,7 @@ public class KitchenSink {
         31 * result + (primitiveBooleanArray != null ? Arrays.hashCode(primitiveBooleanArray) : 0);
     result = 31 * result + (booleanArray != null ? Arrays.hashCode(booleanArray) : 0);
     result = 31 * result + (dateArray != null ? Arrays.hashCode(dateArray) : 0);
+    result = 31 * result + (ksEnumArray != null ? Arrays.hashCode(ksEnumArray) : 0);
     result = 31 * result + (userArray != null ? Arrays.hashCode(userArray) : 0);
     result = 31 * result + (blobArray != null ? Arrays.hashCode(blobArray) : 0);
     result = 31 * result + (textArray != null ? Arrays.hashCode(textArray) : 0);
@@ -519,6 +543,7 @@ public class KitchenSink {
     result = 31 * result + (floatList != null ? floatList.hashCode() : 0);
     result = 31 * result + (booleanList != null ? booleanList.hashCode() : 0);
     result = 31 * result + (dateList != null ? dateList.hashCode() : 0);
+    result = 31 * result + (ksEnumList != null ? ksEnumList.hashCode() : 0);
     result = 31 * result + (userList != null ? userList.hashCode() : 0);
     result = 31 * result + (blobList != null ? blobList.hashCode() : 0);
     result = 31 * result + (textList != null ? textList.hashCode() : 0);

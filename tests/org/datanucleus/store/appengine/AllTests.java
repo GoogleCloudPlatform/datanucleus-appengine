@@ -48,6 +48,8 @@ public class AllTests {
     suite.addTestSuite(DatastoreQueryExpressionTest.class);
     suite.addTestSuite(JDODataSourceConfigTest.class);
     suite.addTestSuite(JPADataSourceConfigTest.class);
+    suite.addTestSuite(JDOEnumTest.class);
+    suite.addTestSuite(JPAEnumTest.class);
     return suite;
   }
 }

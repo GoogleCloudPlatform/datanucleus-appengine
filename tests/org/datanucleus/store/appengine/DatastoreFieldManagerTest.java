@@ -82,6 +82,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(2.22d, fieldManager.fetchDoubleField(iter.next()));
     assertEquals(2.22d, fieldManager.fetchDoubleField(iter.next()));
     assertEquals(KitchenSink.DATE1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.KitchenSinkEnum.ONE, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.USER1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.BLOB1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.TEXT1, fieldManager.fetchObjectField(iter.next()));
@@ -121,6 +122,9 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
         (Boolean[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new Date[] {KitchenSink.DATE1, KitchenSink.DATE2},
         (Date[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new KitchenSink.KitchenSinkEnum[]
+        {KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE},
+        (KitchenSink.KitchenSinkEnum[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new User[] {KitchenSink.USER1, KitchenSink.USER2},
         (User[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new Blob[] {KitchenSink.BLOB1, KitchenSink.BLOB2},
@@ -143,6 +147,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(Utils.newArrayList(true, false), fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2),
         fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE),
+        fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.USER1, KitchenSink.USER2),
         fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.BLOB1, KitchenSink.BLOB2),
@@ -151,7 +157,6 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
         fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.LINK1, KitchenSink.LINK2),
         fieldManager.fetchObjectField(iter.next()));
-
   }
 
   public void testFetchingNullsForNotNullFields() {
@@ -264,10 +269,58 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     fieldManager.storeObjectField(iter.next(), 2.22d);
     fieldManager.storeDoubleField(iter.next(), 2.22d);
     fieldManager.storeObjectField(iter.next(), KitchenSink.DATE1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.KitchenSinkEnum.ONE);
     fieldManager.storeObjectField(iter.next(), KitchenSink.USER1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.BLOB1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.TEXT1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.LINK1);
+
+    fieldManager.storeObjectField(iter.next(), new String[] {"a", "b"});
+    fieldManager.storeObjectField(iter.next(), new int[] {1, 2});
+    fieldManager.storeObjectField(iter.next(), new Integer[] {3, 4});
+    fieldManager.storeObjectField(iter.next(), new long[] {5L, 6L});
+    fieldManager.storeObjectField(iter.next(), new Long[] {7L, 8L});
+    fieldManager.storeObjectField(iter.next(), new short[] {(short) 9, (short) 10});
+    fieldManager.storeObjectField(iter.next(), new Short[] {(short) 11, (short) 12});
+    fieldManager.storeObjectField(iter.next(), new char[] {'a', 'b'});
+    fieldManager.storeObjectField(iter.next(), new Character[] {'c', 'd'});
+    fieldManager.storeObjectField(iter.next(), new float[] {1.01f, 1.02f});
+    fieldManager.storeObjectField(iter.next(), new Float[] {1.03f, 1.04f});
+    fieldManager.storeObjectField(iter.next(), new double[] {2.01d, 2.02d});
+    fieldManager.storeObjectField(iter.next(), new Double[] {2.03d, 2.04d});
+    fieldManager.storeObjectField(iter.next(), new byte[] {0xb, 0xc});
+    fieldManager.storeObjectField(iter.next(), new Byte[] {0xe, 0xf});
+    fieldManager.storeObjectField(iter.next(), new boolean[] {true, false});
+    fieldManager.storeObjectField(iter.next(), new Boolean[] {Boolean.FALSE, Boolean.TRUE});
+    fieldManager.storeObjectField(iter.next(), new Date[] {KitchenSink.DATE1, KitchenSink.DATE2});
+    fieldManager.storeObjectField(iter.next(), new KitchenSink.KitchenSinkEnum[]
+        {KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE});
+    fieldManager.storeObjectField(iter.next(), new User[] {KitchenSink.USER1, KitchenSink.USER2});
+    fieldManager.storeObjectField(iter.next(), new Blob[] {KitchenSink.BLOB1, KitchenSink.BLOB2});
+    fieldManager.storeObjectField(iter.next(), new Text[] {KitchenSink.TEXT1, KitchenSink.TEXT2});
+    fieldManager.storeObjectField(iter.next(), new Link[] {KitchenSink.LINK1, KitchenSink.LINK2});
+
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList("p", "q"));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList(11, 12));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList(13L, 14L));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList((short) 15, (short) 16));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList('q', 'r'));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList((byte) 0x8, (byte) 0x9));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList(22.44d, 23.55d));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList(23.44f, 24.55f));
+    fieldManager.storeObjectField(iter.next(), Utils.newArrayList(true, false));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.USER1, KitchenSink.USER2));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.BLOB1, KitchenSink.BLOB2));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.TEXT1, KitchenSink.TEXT2));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(KitchenSink.LINK1, KitchenSink.LINK2));
 
     Iterator<Field> fieldIter = Arrays.asList(KitchenSink.class.getDeclaredFields()).iterator();
     fieldIter.next(); // skip the key field
@@ -289,6 +342,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(2.22d, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(2.22d, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.DATE1, ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(KitchenSink.KitchenSinkEnum.ONE.name(),
+                 ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.USER1, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.BLOB1, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.TEXT1, ksEntity.getProperty(fieldIter.next().getName()));

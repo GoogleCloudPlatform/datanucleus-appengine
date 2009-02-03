@@ -13,6 +13,7 @@ import org.datanucleus.metadata.ContainerMetaData;
 import org.datanucleus.store.appengine.Utils.Function;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -244,6 +245,11 @@ final class TypeConversionUtils {
     Function<Object, Object> func = DATASTORE_TYPE_TO_POJO_TYPE_FUNC.get(pojoType);
     if (func != null) {
       datastoreList = Utils.transform(datastoreList, func);
+    } else if (Enum.class.isAssignableFrom(pojoType)) {
+      @SuppressWarnings("unchecked")
+      Class<Enum> enumClass = (Class<Enum>) pojoType;
+      datastoreList = new ArrayList<Object>(
+          Arrays.asList(convertStringListToEnumArray(datastoreList, enumClass)));
     }
     return datastoreList;
   }
@@ -261,6 +267,15 @@ final class TypeConversionUtils {
     }
     Object[] array = (Object[]) Array.newInstance(pojoType, datastoreList.size());
     return datastoreList.toArray(array);
+  }
+
+  private static Object[] convertStringListToEnumArray(List<?> datastoreList, Class<Enum> pojoType) {
+    Object[] result = (Object[]) Array.newInstance(pojoType, datastoreList.size());
+    int i = 0;
+    for (Object obj : datastoreList) {
+      result[i++] = obj == null ? null : Enum.valueOf(pojoType, (String) obj);
+    }
+    return result;
   }
 
   private static Class<?> classForName(ClassLoaderResolver clr, String typeStr) {
@@ -298,4 +313,12 @@ final class TypeConversionUtils {
       return Long.valueOf(character);
     }
   };
+
+  public static List<String> convertEnumsToStringList(Iterable<Enum> enums) {
+    List<String> result = Utils.newArrayList();
+    for (Enum e : enums) {
+      result.add(e == null ? null : e.name());
+    }
+    return result;
+  }
 }

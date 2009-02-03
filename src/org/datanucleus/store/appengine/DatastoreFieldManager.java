@@ -26,6 +26,8 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Arrays;
+import java.util.Collection;
 
 import javax.jdo.spi.JDOImplHelper;
 
@@ -197,6 +199,10 @@ public class DatastoreFieldManager implements FieldManager {
         value = TypeConversionUtils.datastoreValueToPojoValue(clr, value, getMetaData(fieldNumber));
         if (ammd.isSerialized()) {
           value = deserializeFieldValue(value, clr, ammd);
+        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
+          @SuppressWarnings("unchecked")
+          Class<Enum> enumClass = ammd.getType();
+          value = Enum.valueOf(enumClass, (String) value);
         }
       }
       return value;
@@ -425,40 +431,42 @@ public class DatastoreFieldManager implements FieldManager {
     storeObjectField(fieldNumber, value);
   }
 
+  private void storePrimaryKey(int fieldNumber, Object value) {
+    if (fieldIsOfTypeKey(fieldNumber)) {
+      storeKeyPK(fieldNumber, (Key) value);
+    } else {
+      throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
+    }
+  }
+
+  private void storeAncestorField(int fieldNumber, Object value) {
+    if (datastoreEntity.getParent() == null) {
+      if (fieldIsOfTypeKey(fieldNumber)) {
+        storeAncestorKeyPK((Key) value);
+      } else {
+        throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
+      }
+    }
+  }
+
   public void storeObjectField(int fieldNumber, Object value) {
     if (isPK(fieldNumber)) {
-      if (fieldIsOfTypeKey(fieldNumber)) {
-        storeKeyPK(fieldNumber, (Key) value);
-      } else {
-        throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
-      }
+      storePrimaryKey(fieldNumber, value);
     } else if (isAncestorPK(fieldNumber)) {
-      if (datastoreEntity.getParent() == null) {
-        if (fieldIsOfTypeKey(fieldNumber)) {
-          storeAncestorKeyPK((Key) value);
-        } else {
-          throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
-        }
-      }
+      storeAncestorField(fieldNumber, value);
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (value != null ) {
         if (ammd.isSerialized()) {
           value = serializationManager.serialize(clr, ammd, value);
+        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
+          value = ((Enum) value).name();
         }
         if (value.getClass().isArray()) {
-          if (TypeConversionUtils.pojoPropertyIsByteArray(getMetaData(fieldNumber))) {
-            value = TypeConversionUtils.convertByteArrayToBlob(value);
-          } else {
-            // Translate all arrays to lists before storing.
-            value = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
-          }
-        } else if (TypeConversionUtils.pojoPropertyIsCharacterCollection(ammd)) {
-          // Datastore doesn't support Character so translate into
-          // a list of Longs.  All other Collections can pass straight
-          // through.
-          value = Utils.transform((List<Character>) value, TypeConversionUtils.CHARACTER_TO_LONG);
+          value = convertArrayValue(ammd, value);
+        } else if (Collection.class.isAssignableFrom(value.getClass())) {
+          value = convertCollectionValue(ammd, value);
         } else if (value instanceof Character) {
           // Datastore doesn't support Character so translate into a Long.
           value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
@@ -473,6 +481,37 @@ public class DatastoreFieldManager implements FieldManager {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
     }
+  }
+
+  private Object convertCollectionValue(AbstractMemberMetaData ammd, Object value) {
+    Object result = value;
+    if (TypeConversionUtils.pojoPropertyIsCharacterCollection(ammd)) {
+      // Datastore doesn't support Character so translate into
+      // a list of Longs.  All other Collections can pass straight
+      // through.
+      @SuppressWarnings("unchecked")
+      List<Character> chars = (List<Character>) value;
+      result = Utils.transform(chars, TypeConversionUtils.CHARACTER_TO_LONG);
+    } else if (Enum.class.isAssignableFrom(
+        getClassLoaderResolver().classForName(ammd.getCollection().getElementType()))) {
+      @SuppressWarnings("unchecked")
+      Iterable<Enum> enums = (Iterable<Enum>) value; 
+      result = TypeConversionUtils.convertEnumsToStringList(enums);
+    }
+    return result;
+  }
+
+  private Object convertArrayValue(AbstractMemberMetaData ammd, Object value) {
+    Object result;
+    if (TypeConversionUtils.pojoPropertyIsByteArray(ammd)) {
+      result = TypeConversionUtils.convertByteArrayToBlob(value);
+    } else if (Enum.class.isAssignableFrom(ammd.getType().getComponentType())) {
+      result = TypeConversionUtils.convertEnumsToStringList(Arrays.<Enum>asList((Enum[]) value));
+    } else {
+      // Translate all arrays to lists before storing.
+      result = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
+    }
+    return result;
   }
 
   /**
