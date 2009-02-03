@@ -8,6 +8,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
+import java.util.Arrays;
 import java.util.IdentityHashMap;
 import java.util.Map;
 
@@ -49,6 +50,9 @@ class KeyRegistry {
       stateMgr.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
       Object dependentValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
       if (dependentValue != null) {
+        if (dependentValue instanceof Object[]) {
+          dependentValue  = Arrays.asList((Object[]) dependentValue);
+        }
         if (dependentValue instanceof Iterable) {
           // TODO(maxr): Make sure we're not pulling back unnecessary data
           // when we iterate over the values.

@@ -1,72 +1,35 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import java.util.ArrayList;
-import java.util.List;
-
-import javax.jdo.annotations.Element;
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
+import java.util.Collection;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasOneToManyJDO {
+public interface HasOneToManyJDO {
+  Collection<BidirectionalChildJDO> getBidirChildren();
+  void addBidirChild(BidirectionalChildJDO child);
+  void nullBidirChildren();
+  void clearBidirChildren();
+  Collection<Flight> getFlights();
+  void addFlight(Flight flight);
+  void nullFlights();
+  void clearFlights();
+  Collection<HasKeyPkJDO> getHasKeyPks();
+  void addHasKeyPk(HasKeyPkJDO hasKeyPk);
+  void nullHasKeyPks();
+  void clearHasKeyPks();
+  String getVal();
+  void setVal(String val);
+  String getId();
+  void addBidirChildAtPosition(BidirectionalChildJDO bidir, int pos);
+  void addFlightAtPosition(Flight f, int pos);
+  void addHasKeyPkAtPosition(HasKeyPkJDO hasKeyPk, int pos);
+  void removeBidirChildAtPosition(int i);
+  void removeFlightAtPosition(int i);
+  void removeHasKeyPkAtPosition(int i);
 
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
-
-  @Persistent
-  private String val;
-
-  @Persistent(mappedBy = "parent")
-  @Element(dependent = "true")
-  private List<BidirectionalChildJDO> bidirChildren = new ArrayList<BidirectionalChildJDO>();
-
-  @Element(dependent = "true")
-  private List<Flight> flights = new ArrayList<Flight>();
-
-  @Element(dependent = "true")
-  private List<HasKeyPkJDO> hasKeyPks = new ArrayList<HasKeyPkJDO>();
-
-  public String getId() {
-    return id;
-  }
-
-  public List<BidirectionalChildJDO> getBidirChildren() {
-    return bidirChildren;
-  }
-
-  public void setBidirChildren(List<BidirectionalChildJDO> bidirChildren) {
-    this.bidirChildren = bidirChildren;
-  }
-
-  public List<Flight> getFlights() {
-    return flights;
-  }
-
-  public void setFlights(List<Flight> flights) {
-    this.flights = flights;
-  }
-
-  public List<HasKeyPkJDO> getHasKeyPks() {
-    return hasKeyPks;
-  }
-
-  public void setHasKeyPks(List<HasKeyPkJDO> hasKeyPks) {
-    this.hasKeyPks = hasKeyPks;
-  }
-
-  public String getVal() {
-    return val;
-  }
-
-  public void setVal(String val) {
-    this.val = val;
-  }
+  void addAtPosition(int i, BidirectionalChildJDO bidir);
+  void addAtPosition(int i, Flight f);
+  void addAtPosition(int i, HasKeyPkJDO hasKeyPk);
 }

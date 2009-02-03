@@ -40,8 +40,11 @@ public class AllTests {
     suite.addTestSuite(JDOOneToOneTest.class);
     suite.addTestSuite(JPAImplicitEntityGroupTest.class);
     suite.addTestSuite(JDOImplicitEntityGroupTest.class);
-    suite.addTestSuite(JPAOneToManyTest.class);
-    suite.addTestSuite(JDOOneToManyTest.class);
+    suite.addTestSuite(JPAOneToManyListTest.class);
+    suite.addTestSuite(JPAOneToManySetTest.class);
+    suite.addTestSuite(JDOOneToManyListTest.class);
+    suite.addTestSuite(JDOOneToManySetTest.class);
+    suite.addTestSuite(JDOOneToManyArrayTest.class);
     suite.addTestSuite(DatastoreQueryExpressionTest.class);
     suite.addTestSuite(JDODataSourceConfigTest.class);
     suite.addTestSuite(JPADataSourceConfigTest.class);

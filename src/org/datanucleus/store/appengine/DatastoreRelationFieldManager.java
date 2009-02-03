@@ -115,7 +115,7 @@ class DatastoreRelationFieldManager {
         mapping.setObject(
             fieldManager.getObjectManager(),
             entity,
-            table.isBidirectionalFK(ammd) ? IS_ANCESTOR_VALUE_ARR : NOT_USED,
+            table.isParentKeyProvider(ammd) ? IS_ANCESTOR_VALUE_ARR : NOT_USED,
             value,
             sm,
             fieldNumber);

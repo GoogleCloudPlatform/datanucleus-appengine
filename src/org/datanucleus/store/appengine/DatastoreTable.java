@@ -8,7 +8,6 @@ import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
-import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -84,7 +83,8 @@ class DatastoreTable implements DatastoreClass {
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
    */
-  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap = Utils.newHashMap();
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap =
+      Utils.newHashMap();
 
   /**
    * All the properties in the table.  Even though the datastore is schemaless,
@@ -126,7 +126,7 @@ class DatastoreTable implements DatastoreClass {
   private final List<AbstractMemberMetaData> dependentMemberMetaData = Utils.newArrayList();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
-  private final Set<AbstractMemberMetaData> bidirectionalFkMemberMetaData = Utils.newHashSet();
+  private final Set<AbstractMemberMetaData> parentKeyProviders = Utils.newHashSet();
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
@@ -378,7 +378,7 @@ class DatastoreTable implements DatastoreClass {
   }
 
   private void markFieldAsParentKeyProvider(String mappedBy) {
-    bidirectionalFkMemberMetaData.add(getFieldMetaData(mappedBy));
+    parentKeyProviders.add(getFieldMetaData(mappedBy));
   }
 
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
@@ -396,13 +396,12 @@ class DatastoreTable implements DatastoreClass {
   }
 
   private boolean isDependent(AbstractMemberMetaData ammd) {
-    // isDependent() returns false for one-to-many even with cascade delete.
-    // Not sure why but that's why we check both isDependent and isCascadeDelete
-    if (ammd.isDependent() || ammd.isCascadeDelete()) {
-      return true;
-    }
-    CollectionMetaData cmd = ammd.getCollection();
-    return cmd != null && cmd.isDependentElement();
+    // ammd.isDependent() returns false for one-to-many even with cascade delete.
+    // Not sure why but that's why we check both requiresAncestor and isCascadeDelete
+    return ammd.isDependent()
+           || ammd.isCascadeDelete()
+           || ammd.getCollection() != null
+           || ammd.getArray() != null;
   }
 
   public boolean managesField(String fieldName) {
@@ -705,7 +704,7 @@ class DatastoreTable implements DatastoreClass {
 
       JavaTypeMapping masterMapping = storeMgr.getMappingManager()
           .getMapping(clr.classForName(mapping.getType()));
-      masterMapping.setMemberInformation(fmd, this); // Update field info in mapping
+      masterMapping.setMemberMetaData(fmd); // Update field info in mapping
       pkMappings[i] = masterMapping;
 
       // Loop through each id column in the reference table and add the same here
@@ -1111,8 +1110,8 @@ class DatastoreTable implements DatastoreClass {
     return indexMapping;
   }
 
-  boolean isBidirectionalFK(AbstractMemberMetaData ammd) {
-    return bidirectionalFkMemberMetaData.contains(ammd);
+  boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
+    return parentKeyProviders.contains(ammd);
   }
 
   /**

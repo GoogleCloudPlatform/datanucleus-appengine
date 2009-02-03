@@ -38,8 +38,8 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
   }
 
   public boolean isNullable() {
-    // all fields are nullable
-    return true;
+    // all fks are currently not nullable
+    return false;
   }
 
   public DatastoreProperty getDatastoreField() {

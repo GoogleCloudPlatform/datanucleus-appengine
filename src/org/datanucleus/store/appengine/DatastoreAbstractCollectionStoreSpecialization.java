@@ -1,17 +1,14 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Key;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
+import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
-import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.mapped.DatastoreContainerObject;
-import org.datanucleus.store.mapped.DatastoreIdentifier;
-import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.query.DiscriminatorIteratorStatement;
-import org.datanucleus.store.mapped.query.UnionIteratorStatement;
 import org.datanucleus.store.mapped.scostore.AbstractCollectionStore;
 import org.datanucleus.store.mapped.scostore.AbstractCollectionStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
@@ -23,7 +20,7 @@ import org.datanucleus.util.Localiser;
  * 
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreAbstractCollectionStoreSpecialization 
+abstract class DatastoreAbstractCollectionStoreSpecialization
     extends DatastoreElementContainerStoreSpecialization
     implements AbstractCollectionStoreSpecialization {
 
@@ -33,57 +30,28 @@ class DatastoreAbstractCollectionStoreSpecialization
   }
 
   public boolean updateEmbeddedElement(StateManager sm, Object element, int fieldNumber,
-                                       Object value, JavaTypeMapping fieldMapping,
-                                       MappedStoreManager storeMgr, ElementContainerStore ecs) {
+      Object value, JavaTypeMapping fieldMapping, ElementContainerStore ecs) {
     // TODO(maxr)
-    return false;
+    throw new UnsupportedOperationException();
   }
 
-  public boolean contains(StateManager sm, Object element, AbstractCollectionStore acs) {
-    // TODO(maxr)
-    return false;
+  public boolean contains(StateManager ownerSM, Object element, AbstractCollectionStore acs) {
+    // Since we only support owned relationships right now, we can
+    // check containment simply by looking to see if the element's
+    // Key contains the parnet Key.
+    ObjectManager om = ownerSM.getObjectManager();
+    Key childKey = extractElementKey(om, element);
+    if (childKey.getParent() == null) {
+      return false;
+    }
+    Key parentKey = extractElementKey(om, ownerSM.getObject());
+    return childKey.getParent().equals(parentKey);
   }
 
   public int[] internalRemove(StateManager ownerSM, ManagedConnection conn, boolean batched,
                               Object element, boolean executeNow, AbstractCollectionStore acs)
       throws MappedDatastoreException {
     // TODO(maxr)
-    return new int[0];
-  }
-
-  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
-                                                                          Class[] cls,
-                                                                          boolean includeSubclasses,
-                                                                          MappedStoreManager storeMgr,
-                                                                          boolean selectDiscriminator) {
-    // TODO(maxr)
-    return null;
-  }
-
-  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
-                                                                          Class[] cls, boolean b,
-                                                                          MappedStoreManager storeMgr,
-                                                                          boolean b1,
-                                                                          boolean allowsNull,
-                                                                          DatastoreContainerObject containerTable,
-                                                                          JavaTypeMapping elementMapping,
-                                                                          DatastoreIdentifier elmIdentifier) {
-    // TODO(maxr)
-    return null;
-  }
-
-  public UnionIteratorStatement newUnionIteratorStatement(ClassLoaderResolver clr,
-                                                          Class candidateType,
-                                                          boolean includeSubclasses,
-                                                          StoreManager storeMgr, Class sourceType,
-                                                          JavaTypeMapping sourceMapping,
-                                                          DatastoreContainerObject sourceTable,
-                                                          boolean sourceJoin, Boolean withMetadata,
-                                                          boolean joinToExcludeTargetSubclasses,
-                                                          boolean allowsNull) {
-    return new DatastoreUnionIteratorStatement(clr, candidateType, includeSubclasses, storeMgr,
-                                               sourceType, sourceMapping, sourceTable, sourceJoin,
-                                               withMetadata, joinToExcludeTargetSubclasses,
-                                               allowsNull);
+    throw new UnsupportedOperationException();
   }
 }

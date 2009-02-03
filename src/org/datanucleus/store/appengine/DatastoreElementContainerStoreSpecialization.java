@@ -4,14 +4,23 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.store.appengine.query.DatastoreQuery;
+import org.datanucleus.store.mapped.DatastoreContainerObject;
+import org.datanucleus.store.mapped.DatastoreIdentifier;
+import org.datanucleus.store.mapped.expression.QueryExpression;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.query.DiscriminatorIteratorStatement;
+import org.datanucleus.store.mapped.query.UnionIteratorStatement;
 import org.datanucleus.store.mapped.scostore.BaseElementContainerStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.util.Localiser;
@@ -20,6 +29,7 @@ import org.datanucleus.util.NucleusLogger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.ListIterator;
 
 /**
  * Datastore-specific extension to
@@ -27,11 +37,11 @@ import java.util.List;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreElementContainerStoreSpecialization extends BaseElementContainerStoreSpecialization {
+abstract class DatastoreElementContainerStoreSpecialization extends BaseElementContainerStoreSpecialization {
 
   private static final NucleusLogger logger = NucleusLogger.DATASTORE_RETRIEVE;
 
-  protected final DatastoreManager storeMgr;
+  final DatastoreManager storeMgr;
 
   DatastoreElementContainerStoreSpecialization(Localiser localiser, ClassLoaderResolver clr,
                                                DatastoreManager storeMgr) {
@@ -53,12 +63,20 @@ class DatastoreElementContainerStoreSpecialization extends BaseElementContainerS
     return getNumChildren(parentEntity.getKey(), ecs);
   }
 
-  private PreparedQuery prepareChildrenQuery(Key parentKey, Iterable<SortPredicate> sortPredicates,
-                                             ElementContainerStore ecs) {
+  PreparedQuery prepareChildrenQuery(
+      Key parentKey,
+      Iterable<FilterPredicate> filterPredicates,
+      Iterable<SortPredicate> sortPredicates,
+      ElementContainerStore ecs) {
     String kind = storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(
         ecs.getEmd()).getIdentifierName();
     Query q = new Query(kind, parentKey);
     logger.debug("Preparing to query for all children of " + parentKey + " of kind " + kind);
+    for (FilterPredicate fp : filterPredicates) {
+      q.addFilter(fp.getPropertyName(), fp.getOperator(), fp.getValue());
+      logger.debug(
+          "  Added filter: " + fp.getPropertyName() + " " + fp.getOperator() + " " + fp.getValue());
+    }
     for (SortPredicate sp : sortPredicates) {
       q.addSort(sp.getPropertyName(), sp.getDirection());
       logger.debug("  Added sort: " + sp.getPropertyName() + " " + sp.getDirection());
@@ -67,20 +85,74 @@ class DatastoreElementContainerStoreSpecialization extends BaseElementContainerS
     return ds.prepare(q);
   }
 
-  List<?> getChildren(Key parentKey, Iterable<SortPredicate> sortPredicates,
-                      ElementContainerStore ecs, ObjectManager om) {
+  List<?> getChildren(Key parentKey, Iterable<FilterPredicate> filterPredicates,
+      Iterable<SortPredicate> sortPredicates, ElementContainerStore ecs, ObjectManager om) {
     List<Object> result = new ArrayList<Object>();
-    for (Entity e : prepareChildrenQuery(parentKey, sortPredicates, ecs).asIterable()) {
+    int numChildren = 0;
+    for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, ecs).asIterable()) {
+      numChildren++;
       result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false));
       if (logger.isDebugEnabled()) {
         logger.debug("Retrieved entity with key " + e.getKey());
       }
     }
+    logger.debug(String.format("Query had %d result%s.", numChildren, numChildren == 1 ? "" : "s"));
     return result;
   }
 
   int getNumChildren(Key parentKey, ElementContainerStore ecs) {
     return prepareChildrenQuery(
-        parentKey, Collections.<SortPredicate>emptyList(), ecs).countEntities();
+        parentKey,
+        Collections.<FilterPredicate>emptyList(),
+        Collections.<SortPredicate>emptyList(),
+        ecs).countEntities();
+  }
+
+  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
+      Class[] cls, boolean includeSubclasses, boolean selectDiscriminator) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Discriminators not supported.");
+  }
+
+  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
+      Class[] cls, boolean b, boolean b1, boolean allowsNull,
+      DatastoreContainerObject containerTable, JavaTypeMapping elementMapping,
+      DatastoreIdentifier elmIdentifier) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Discriminators not supported.");
+  }
+
+  public UnionIteratorStatement newUnionIteratorStatement(ClassLoaderResolver clr,
+      Class candidateType, boolean includeSubclasses, Class sourceType,
+      JavaTypeMapping sourceMapping, DatastoreContainerObject sourceTable, boolean sourceJoin,
+      Boolean withMetadata, boolean joinToExcludeTargetSubclasses, boolean allowsNull) {
+    return new DatastoreUnionIteratorStatement(clr, candidateType, includeSubclasses, storeMgr,
+                                               sourceType, sourceMapping, sourceTable, sourceJoin,
+                                               withMetadata, joinToExcludeTargetSubclasses,
+                                               allowsNull);
+  }
+
+  ListIterator listIterator(
+      QueryExpression stmt, ObjectManager om,StateManager ownerSM, ElementContainerStore ecs) {
+    // for now we're just going to perform an ancestor query using the owning
+    // object
+    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
+    Entity parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);
+    if (parentEntity == null) {
+      handler.locateObject(ownerSM);
+      parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);
+    }
+    DatastoreQueryExpression dqe = (DatastoreQueryExpression) stmt;
+    return getChildren(
+        parentEntity.getKey(),
+        dqe.getFilterPredicates(),
+        dqe.getSortPredicates(),
+        ecs, om).listIterator();
+  }
+
+  protected Key extractElementKey(ObjectManager om, Object element) {
+    ApiAdapter apiAdapter = om.getApiAdapter();
+    Object id = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(element));
+    return id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
   }
 }

@@ -2,6 +2,7 @@
 package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.jpa.annotations.Extension;
 
@@ -31,6 +32,10 @@ public class HasKeyPkJPA {
   public HasKeyPkJPA() {
   }
 
+  public HasKeyPkJPA(String name) {
+    id = KeyFactory.createKey(getClass().getSimpleName(), name);
+  }
+
   public Key getAncestorId() {
     return ancestorId;
   }
@@ -54,5 +59,26 @@ public class HasKeyPkJPA {
 
   public void setStr(String str) {
     this.str = str;
+  }
+
+  public boolean equals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    HasKeyPkJPA that = (HasKeyPkJPA) o;
+
+    if (id != null ? !id.equals(that.id) : that.id != null) {
+      return false;
+    }
+
+    return true;
+  }
+
+  public int hashCode() {
+    return (id != null ? id.hashCode() : 0);
   }
 }

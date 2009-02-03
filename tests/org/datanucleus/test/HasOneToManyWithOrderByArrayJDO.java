@@ -2,6 +2,7 @@
 package org.datanucleus.test;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
@@ -17,37 +18,47 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasOneToManyWithOrderByJDO implements HasOneToManyWithOrderByJDOInterface {
+public class HasOneToManyWithOrderByArrayJDO implements HasOneToManyWithOrderByJDOInterface {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
 
+  @Persistent(dependentElement = "true")
   @Element(dependent = "true")
   @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="origin DESC, dest ASC"))
-  private List<Flight> flightsByOrigAndDest = new ArrayList<Flight>();
+  private Flight[] flightsByOrigAndDest;
 
+  @Persistent(dependentElement = "true")
   @Element(dependent = "true")
   @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="id DESC, origin ASC"))
-  private List<Flight> flightsByIdAndOrig = new ArrayList<Flight>();
+  private Flight[] flightsByIdAndOrig;
 
+  @Persistent(dependentElement = "true")
   @Element(dependent = "true")
   @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="origin DESC, id ASC"))
-  private List<Flight> flightsByOrigAndId = new ArrayList<Flight>();
+  private Flight[] flightsByOrigAndId;
 
   public String getId() {
     return id;
   }
 
+  private List asList(Object[] arr) {
+    if (arr == null) {
+      return new ArrayList<Object>();
+    }
+    return Arrays.asList(arr);
+  }
+
   public List<Flight> getFlightsByOrigAndDest() {
-    return flightsByOrigAndDest;
+    return asList(flightsByOrigAndDest);
   }
 
   public List<Flight> getFlightsByIdAndOrig() {
-    return flightsByIdAndOrig;
+    return asList(flightsByIdAndOrig);
   }
 
   public List<Flight> getFlightsByOrigAndId() {
-    return flightsByOrigAndId;
+    return asList(flightsByOrigAndId);
   }
 }

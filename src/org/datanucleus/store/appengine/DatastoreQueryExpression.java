@@ -4,6 +4,7 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 
@@ -13,7 +14,9 @@ import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.expression.BooleanExpression;
+import org.datanucleus.store.mapped.expression.IntegerLiteral;
 import org.datanucleus.store.mapped.expression.LogicSetExpression;
+import org.datanucleus.store.mapped.expression.NumericExpression;
 import org.datanucleus.store.mapped.expression.QueryExpression;
 import org.datanucleus.store.mapped.expression.ScalarExpression;
 import org.datanucleus.store.mapped.expression.StatementText;
@@ -22,8 +25,10 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 
 import java.lang.reflect.Field;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Datastore specific implementation of a {@link QueryExpression}.
@@ -35,6 +40,8 @@ import java.util.List;
  * @author Max Ross <maxr@google.com>
  */
 class DatastoreQueryExpression implements QueryExpression {
+
+  private static final Map<String, Query.FilterOperator> FILTER_OPERATOR_MAP = buildFilterOperatorMap();
 
   private final List<BooleanExpression> andConditions = Utils.newArrayList();
   private final List<SortPredicate> sortPredicates = Utils.newArrayList();
@@ -53,6 +60,47 @@ class DatastoreQueryExpression implements QueryExpression {
   }
 
   /**
+   * Some sillyness to get around the fact that the {@link ScalarExpression}
+   * constants are of a type that is protected.
+   */
+  private static String getSymbol(Object op) {
+    return op.toString().trim();
+  }
+
+  private static Map<String, Query.FilterOperator> buildFilterOperatorMap() {
+    Map<String, Query.FilterOperator> map = Utils.newHashMap();
+    map.put(getSymbol(ScalarExpression.OP_EQ), Query.FilterOperator.EQUAL);
+    map.put(getSymbol(ScalarExpression.OP_GT), Query.FilterOperator.GREATER_THAN);
+    map.put(getSymbol(ScalarExpression.OP_GTEQ), Query.FilterOperator.GREATER_THAN_OR_EQUAL);
+    map.put(getSymbol(ScalarExpression.OP_LT), Query.FilterOperator.LESS_THAN);
+    map.put(getSymbol(ScalarExpression.OP_LTEQ), Query.FilterOperator.LESS_THAN_OR_EQUAL);
+    return map;
+  }
+
+  private static final Field APPENDED_FIELD = getAppendedField();
+
+  // TODO(maxr) Add an accessor to StatementText.
+  private static Field getAppendedField() {
+    Field field;
+    try {
+      field = StatementText.class.getDeclaredField("appended");
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+    field.setAccessible(true);
+    return field;
+  }
+
+  // TODO(maxr) Add accessor for StatementText.appended (datanuc change)
+  private List<?> getAppended(StatementText st) {
+    try {
+      return (List<?>) APPENDED_FIELD.get(st);
+    } catch (IllegalAccessException e) {
+      return null;
+    }
+  }
+
+  /**
    * Extract the parent key from the expression.  This is totally fragile and
    * needs to be rewritten.
    *
@@ -62,24 +110,14 @@ class DatastoreQueryExpression implements QueryExpression {
    * @return The key of the parent in the query.
    */
   Key getParentKey() {
-    // We are relying on the query having a single 'and' condition where
-    // the first element of the conditoin is a StringLiteral whose value
+    // We are relying on the query having at least one 'and' condition where
+    // the first element of the first condition is a StringLiteral whose value
     // is the string version of the parent key.  Like I said, totally fragile.
-    if (andConditions.size() > 1) {
+    if (andConditions.size() < 1) {
       return null;
     }
-    Field appendedField;
-    List appended;
-    try {
-      appendedField = StatementText.class.getDeclaredField("appended");
-      appendedField.setAccessible(true);
-      StatementText st = andConditions.get(0).toStatementText(ScalarExpression.FILTER);
-      appended = (List) appendedField.get(st);
-    } catch (NoSuchFieldException e) {
-      return null;
-    } catch (IllegalAccessException e) {
-      return null;
-    }
+    List<?> appended =
+        getAppended(andConditions.get(0).toStatementText(ScalarExpression.PROJECTION));
     if (appended.isEmpty()) {
       return null;
     }
@@ -137,6 +175,52 @@ class DatastoreQueryExpression implements QueryExpression {
   boolean isPrimaryKey(String propertyName) {
     return mainTable.getDatastoreField(propertyName).isPrimaryKey();
   }
+
+  List<Query.FilterPredicate> getFilterPredicates() {
+    if (andConditions.size() == 1) {
+      return Collections.emptyList();
+    }
+    List<Query.FilterPredicate> filters = Utils.newArrayList();
+    // We assume the first and condition is the fk so we start
+    // with the second.
+    for (BooleanExpression expr : andConditions.subList(1, andConditions.size())) {
+      filters.add(getFilterPredicate(expr));
+    }
+    return filters;
+  }
+
+  private Query.FilterPredicate getFilterPredicate(BooleanExpression expr) {
+    StatementText st = expr.toStatementText(ScalarExpression.PROJECTION);
+    List<?> appended =
+        getAppended(expr.toStatementText(ScalarExpression.PROJECTION));
+
+    if (!(appended.get(0) instanceof NumericExpression)) {
+      throw new UnsupportedOperationException(
+          "Cannot transform " + st.toString() + " into a Filter Predicate.");
+    }
+    NumericExpression numExpr = (NumericExpression) appended.get(0);
+    List<?> innerAppended = getAppended(numExpr.toStatementText(ScalarExpression.PROJECTION));
+    if (innerAppended.size() != 1 || !(innerAppended.get(0) instanceof String)) {
+      throw new UnsupportedOperationException(
+          "Cannot transform " + st.toString() + " into a Filter Predicate.");
+    }
+
+    String propertyName = (String) innerAppended.get(0);
+
+    String opString = (String) appended.get(1);
+
+    if (!(appended.get(2) instanceof IntegerLiteral)) {
+      throw new UnsupportedOperationException(
+          "Cannot transform " + st.toString() + " into a Filter Predicate.");
+    }
+    Object value = ((IntegerLiteral) appended.get(2)).getValue();
+    Query.FilterOperator op = FILTER_OPERATOR_MAP.get(opString.trim());
+    if (op == null) {
+      throw new UnsupportedOperationException("Unsupported operator in expression " + st.toString());
+    }
+    return new Query.FilterPredicate(propertyName, op, value);
+  }
+
 
   public void andCondition(BooleanExpression condition) {
     andConditions.add(condition);
@@ -350,5 +434,9 @@ class DatastoreQueryExpression implements QueryExpression {
 
   public void reset() {
     throw new UnsupportedOperationException();
+  }
+
+  public boolean hasNucleusTypeExpression() {
+    return false;
   }
 }

@@ -29,6 +29,8 @@ import java.util.Set;
 
 import javax.jdo.spi.JDOImplHelper;
 
+// TODO(maxr): Make this a base class and extract 2 subclasses - one for
+// reads and one for writes.
 /**
  * FieldManager for converting app engine datastore entities into POJOs and
  * vice-versa.
@@ -86,7 +88,7 @@ public class DatastoreFieldManager implements FieldManager {
   private AbstractMemberMetaData ancestorMemberMetaData;
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
-      DatastoreManager storeManager, Entity datastoreEntity) {
+      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
@@ -99,7 +101,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.datastoreEntity = datastoreEntity;
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
     this.serializationManager = new SerializationManager();
-    this.insertMappingConsumer = buildMappingConsumerForWrite(getClassMetaData());
+    this.insertMappingConsumer = buildMappingConsumerForWrite(getClassMetaData(), fieldNumbers);
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
@@ -118,14 +120,19 @@ public class DatastoreFieldManager implements FieldManager {
    * has been returned by the datastore (get or query), or after the entity has
    * been put into the datastore.
    */
-  public DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
-      Entity datastoreEntity) {
-    this(stateManager, false, storeManager, datastoreEntity);
+  DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
+      Entity datastoreEntity, int[] fieldNumbers) {
+    this(stateManager, false, storeManager, datastoreEntity, fieldNumbers);
   }
 
-  public DatastoreFieldManager(StateManager stateManager, String kind,
+  public DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
+      Entity datastoreEntity) {
+    this(stateManager, false, storeManager, datastoreEntity, new int[0]);
+  }
+
+  DatastoreFieldManager(StateManager stateManager, String kind,
       DatastoreManager storeManager) {
-    this(stateManager, true, storeManager, new Entity(kind));
+    this(stateManager, true, storeManager, new Entity(kind), new int[0]);
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -267,7 +274,7 @@ public class DatastoreFieldManager implements FieldManager {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     String propertyName = getPropertyName(fieldNumber);
     final String msg = String.format(ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT,
-        datastoreEntity.getKind(), KeyFactory.keyToString(datastoreEntity.getKey()), propertyName,
+        datastoreEntity.getKind(), datastoreEntity.getKey(), propertyName,
         ammd.getFullFieldName());
     throw new NullPointerException(msg);
   }
@@ -315,8 +322,8 @@ public class DatastoreFieldManager implements FieldManager {
   /**
    * @see DatastoreRelationFieldManager#establishEntityGroup
    */
-  Object establishEntityGroup(InsertMappingConsumer consumer) {
-    return relationFieldManager.establishEntityGroup(getKeyRegistry(), consumer);
+  Object establishEntityGroup() {
+    return relationFieldManager.establishEntityGroup(getKeyRegistry(), insertMappingConsumer);
   }
 
   /**
@@ -582,8 +589,8 @@ public class DatastoreFieldManager implements FieldManager {
    * This function is responsible for making sure the appropriate values
    * for these columns find their way into the Entity.
    */
-  void handleHiddenFields(InsertMappingConsumer consumer) {
-    Set<JavaTypeMapping> orderMappings = consumer.getExternalOrderMappings();
+  void handleHiddenFields() {
+    Set<JavaTypeMapping> orderMappings = insertMappingConsumer.getExternalOrderMappings();
     // External order columns (optional)
     for (JavaTypeMapping orderMapping : orderMappings) {
       Object orderValue = getStateManager().getAssociatedValue(orderMapping);
@@ -595,20 +602,30 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd) {
+  private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd, int[] fieldNumbers) {
     DatastoreClass dc = getStoreManager().getDatastoreClass(
         acmd.getFullClassName(), getClassLoaderResolver());
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     dc.provideDatastoreIdMappings(consumer);
-    dc.provideNonPrimaryKeyMappings(consumer);
     dc.providePrimaryKeyMappings(consumer);
-    dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-    dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
+    if (createdWithoutEntity) {
+      // This is the insert case.  We want to fill the consumer with mappings
+      // for everything.
+      dc.provideNonPrimaryKeyMappings(consumer);
+      dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+      dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
+    } else {
+      // This is the update case.  We only want to fill the consumer mappings
+      // for the specific fields that were provided.
+      AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
+      if (fieldNumbers.length > 0) {
+        for (int i = 0; i < fieldNumbers.length; i++) {
+          fmds[i] = acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
+        }
+      }
+      dc.provideMappingsForMembers(consumer, fmds, false);
+    }
     return consumer;
-  }
-
-   InsertMappingConsumer getInsertMappingConsumer() {
-    return insertMappingConsumer;
   }
 
   /**

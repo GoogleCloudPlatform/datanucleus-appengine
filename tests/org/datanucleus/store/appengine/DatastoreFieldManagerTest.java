@@ -50,7 +50,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -162,7 +162,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), entity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), entity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -232,7 +232,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity) {
+        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -308,7 +308,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(om.getClassLoaderResolver()).andReturn(clr).anyTimes();
     EasyMock.expect(om.getStoreManager()).andReturn(getStoreManager()).anyTimes();
     EasyMock.replay(om);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, getStoreManager(), entity) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, getStoreManager(), entity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;

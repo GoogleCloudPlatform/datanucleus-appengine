@@ -18,8 +18,6 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
-import org.datanucleus.sco.IncompatibleFieldTypeException;
-import org.datanucleus.sco.SCOUtils;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
@@ -33,18 +31,17 @@ import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementMappingForClass;
-import org.datanucleus.store.mapped.StatementMappingIndex;
-import org.datanucleus.store.mapped.mapping.ArrayMapping;
-import org.datanucleus.store.mapped.mapping.CollectionMapping;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.mapping.MapMapping;
-import org.datanucleus.store.mapped.scostore.FKListStore;
+import org.datanucleus.store.mapped.scostore.FKArrayStoreSpecialization;
+import org.datanucleus.store.mapped.scostore.FKListStoreSpecialization;
+import org.datanucleus.store.mapped.scostore.FKMapStore;
+import org.datanucleus.store.mapped.scostore.FKSetStore;
+import org.datanucleus.store.mapped.scostore.JoinArrayStore;
+import org.datanucleus.store.mapped.scostore.JoinListStore;
+import org.datanucleus.store.mapped.scostore.JoinMapStore;
+import org.datanucleus.store.mapped.scostore.JoinSetStore;
 import org.datanucleus.store.query.ResultObjectFactory;
-import org.datanucleus.store.scostore.ArrayStore;
-import org.datanucleus.store.scostore.CollectionStore;
-import org.datanucleus.store.scostore.MapStore;
-import org.datanucleus.store.scostore.Store;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.NucleusLogger;
 
@@ -52,7 +49,6 @@ import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -226,13 +222,6 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   @Override
-  public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
-      StatementMappingIndex[] stmtMappings, boolean checkNonNullable) {
-    // TODO(maxr)
-    return null;
-  }
-
-  @Override
   public boolean insertValuesOnInsert(DatastoreMapping datastoreMapping) {
     return true;
   }
@@ -242,174 +231,58 @@ public class DatastoreManager extends MappedStoreManager {
     return false;
   }
 
-  @Override
+  public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
+      StatementMappingForClass stmtMappings, boolean checkNonNullable) {
+    // TODO(maxr)
+    return null;
+  }
+
   public ResultObjectFactory newResultObjectFactory(DatastoreClass table,
       AbstractClassMetaData acmd, StatementMappingForClass mappingDefinition, boolean ignoreCache,
-      boolean discriminator, boolean hasMetaDataInResults, FetchPlan fetchPlan,
-      Class persistentClass) {
-    return new DatastoreResultObjectFactory();
-  }
-
-  // TODO(maxr) This method is very similar to a method of the same name in
-  // RDBMSManager.  Push it up into MappedStoreManager so we don't have so
-  // much duplication.
-  private void assertCompatibleFieldType(AbstractMemberMetaData fmd, ClassLoaderResolver clr, Class type,
-          Class expectedMappingType) {
-    DatastoreClass ownerTable = getDatastoreClass(fmd.getClassName(), clr);
-    if (ownerTable == null) {
-      // Class doesn't manage its own table (uses subclass-table, or superclass-table?)
-      AbstractClassMetaData fieldTypeCmd =
-          getMetaDataManager().getMetaDataForClass(fmd.getClassName(), clr);
-      AbstractClassMetaData[] tableOwnerCmds = getClassesManagingTableForClass(fieldTypeCmd, clr);
-      if (tableOwnerCmds != null && tableOwnerCmds.length == 1) {
-        ownerTable = getDatastoreClass(tableOwnerCmds[0].getFullClassName(), clr);
-      }
-    }
-
-    if (ownerTable != null) {
-      JavaTypeMapping m = ownerTable.getMemberMapping(fmd);
-      if (!expectedMappingType.isAssignableFrom(m.getClass())) {
-        throw new IncompatibleFieldTypeException(fmd.getFullFieldName(),
-                                                 type.getName(), fmd.getTypeName());
-      }
-    }
-  }
-
-  // TODO(maxr) This method is very similar to a method of the same name in
-  // RDBMSManager.  Push it up into MappedStoreManager so we don't have so
-  // much duplication.
-  public Store getBackingStoreForField(ClassLoaderResolver clr, AbstractMemberMetaData fmd,
-                                       Class type) {
-    if (fmd != null && fmd.isSerialized()) {
-      return null;
-    }
-
-    if (fmd.getMap() != null) {
-      assertCompatibleFieldType(fmd, clr, type, MapMapping.class);
-      return getBackingStoreForMap(fmd, clr);
-    }
-    if (fmd.getArray() != null) {
-      assertCompatibleFieldType(fmd, clr, type, ArrayMapping.class);
-      return getBackingStoreForArray(fmd, clr);
-    }
-    assertCompatibleFieldType(fmd, clr, type, CollectionMapping.class);
-
-    return getBackingStoreForCollection(fmd, clr, type);
-  }
-
-  // TODO(maxr) This method is very similar to a method of the same name in
-  // RDBMSManager.  Push it up into MappedStoreManager so we don't have so
-  // much duplication.
-  /**
-   * Method to return a backing store for a Collection, consistent with this store and the
-   * instantiated type.
-   *
-   * @param fmd MetaData for the field that has this collection
-   * @param clr ClassLoader resolver
-   * @return The backing store of this collection in this store
-   */
-  private CollectionStore getBackingStoreForCollection(AbstractMemberMetaData fmd,
-                                                       ClassLoaderResolver clr, Class type) {
-    CollectionStore store = null;
-    DatastoreContainerObject datastoreTable = getDatastoreContainerObject(fmd);
-    if (type == null) {
-      // No type to base it on so create it based on the field declared type
-      if (datastoreTable == null) {
-        // We need a "FK" relation.
-        if (List.class.isAssignableFrom(fmd.getType())) {
-          store =
-              new FKListStore(fmd, this, clr,
-                              new DatastoreFKListStoreSpecialization(LOCALISER, clr, this));
-        } else {
-          // store = new FKSetStore(fmd, this, clr);
-        }
-      } else {
-//              CollectionTable collTable = (CollectionTable) datastoreTable;
-//              // We need a "JoinTable" relation.
-//              if (List.class.isAssignableFrom(fmd.getType()))
-//              {
-//                  store = new JoinListStore(fmd, clr, collTable, collTable.getOwnerMapping(),
-//                      collTable.getElementMapping(), collTable.getOrderMapping(),
-//                      collTable.getRelationDiscriminatorMapping(), collTable.getRelationDiscriminatorValue(),
-//                      collTable.isEmbeddedElement(), collTable.isSerialisedElement(),
-//                      this, new RDBMSJoinListStoreSpecialization(LOCALISER, clr, this));
-//              }
-//              else
-//              {
-//                  store = new JoinSetStore(fmd, collTable, clr);
-//              }
-      }
-    } else {
-      // Instantiated type specified so use it to pick the associated backing store
-      if (datastoreTable == null) {
-        if (SCOUtils.isListBased(type)) {
-          // List required
-          store =
-              new FKListStore(fmd, this, clr,
-                              new DatastoreFKListStoreSpecialization(LOCALISER, clr, this));
-        } else {
-          // Set required
-          // store = new FKSetStore(fmd, this, clr);
-        }
-      } else {
-//              CollectionTable collTable = (CollectionTable) datastoreTable;
-//              if (SCOUtils.isListBased(type))
-//              {
-//                  // List required
-//                  store = new JoinListStore(fmd, clr, collTable, collTable.getOwnerMapping(),
-//                      collTable.getElementMapping(), collTable.getOrderMapping(),
-//                      collTable.getRelationDiscriminatorMapping(), collTable.getRelationDiscriminatorValue(),
-//                      collTable.isEmbeddedElement(), collTable.isSerialisedElement(),
-//                      this, new RDBMSJoinListStoreSpecialization(LOCALISER, clr, this));
-//              }
-//              else
-//              {
-//                  // Set required
-//                  store = new JoinSetStore(fmd, collTable, clr);
-//              }
-      }
-    }
-    return store;
-  }
-
-  // TODO(maxr) This method is very similar to a method of the same name in
-  // RDBMSManager.  Push it up into MappedStoreManager so we don't have so
-  // much duplication.
-  private MapStore getBackingStoreForMap(AbstractMemberMetaData fmd, ClassLoaderResolver clr) {
+      boolean discriminator, FetchPlan fetchPlan, Class persistentClass) {
+    // TODO(maxr)
     return null;
-//      MapStore store = null;
-//      DatastoreContainerObject datastoreTable = getDatastoreContainerObject(fmd);
-//      if (datastoreTable == null)
-//      {
-//          store = new FKMapStore(fmd, this, clr);
-//      }
-//      else
-//      {
-//          store = new JoinMapStore((MapTable)datastoreTable, clr);
-//      }
-//      return store;
   }
 
-  // TODO(maxr) This method is very similar to a method of the same name in
-  // RDBMSManager.  Push it up into MappedStoreManager so we don't have so
-  // much duplication.
-  private ArrayStore getBackingStoreForArray(AbstractMemberMetaData fmd, ClassLoaderResolver clr) {
-    return null;
-//      ArrayStore store = null;
-//      DatastoreContainerObject datastoreTable = getDatastoreContainerObject(fmd);
-//      if (datastoreTable != null)
-//      {
-//          ArrayTable arrayTable = (ArrayTable) datastoreTable;
-//          store = new JoinArrayStore(arrayTable, arrayTable.getOwnerFieldMetaData(), arrayTable.getOwnerMapping(),
-//              arrayTable.getElementMapping(), arrayTable.getOrderMapping(), arrayTable.getRelationDiscriminatorMapping(),
-//              arrayTable.getRelationDiscriminatorValue(), arrayTable.getElementType(), arrayTable.isEmbeddedElement(),
-//              arrayTable.isSerialisedElement(), clr, new RDBMSJoinArrayStoreSpecialization(LOCALISER, clr, this));
-//      }
-//      else
-//      {
-//          store = new FKArrayStore(fmd, this, clr, new RDBMSFKArrayStoreSpecialization(LOCALISER, clr, this));
-//      }
-//      return store;
+  protected FKListStoreSpecialization newFKListStoreSpecialization(ClassLoaderResolver clr) {
+    return new DatastoreFKListStoreSpecialization(LOCALISER, clr, this);
+  }
+
+  protected FKSetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    return new DatastoreFKSetStore(ammd, this, clr);
+  }
+
+  protected FKArrayStoreSpecialization newFKArrayStoreSpecialization(ClassLoaderResolver clr) {
+    return new DatastoreFKArrayStoreSpecialization(LOCALISER, clr, this);
+  }
+
+  protected FKMapStore newFKMapStore(AbstractMemberMetaData clr, ClassLoaderResolver amd) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("FK Maps not supported.");
+  }
+
+  protected JoinArrayStore newJoinArrayStore(DatastoreContainerObject arrayTable,
+      ClassLoaderResolver clr) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Arrays not supported.");
+  }
+
+  protected JoinMapStore newJoinMapStore(DatastoreContainerObject mapTable,
+      ClassLoaderResolver clr) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Maps not supported.");
+  }
+
+  protected JoinListStore newJoinListStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
+      DatastoreContainerObject table) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Lists not supported.");
+  }
+
+  protected JoinSetStore newJoinSetStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
+      DatastoreContainerObject table) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Sets not supported.");
   }
 
   /**
