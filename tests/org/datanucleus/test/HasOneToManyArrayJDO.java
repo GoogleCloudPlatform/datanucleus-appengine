@@ -5,6 +5,7 @@ import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Collection;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -175,4 +176,13 @@ public class HasOneToManyArrayJDO implements HasOneToManyJDO {
   public void addAtPosition(int i, HasKeyPkJDO hasKeyPk) {
     hasKeyPks = (HasKeyPkJDO[]) addAtPosition(i, hasKeyPks, hasKeyPk);
   }
+
+  public void removeFlights(Collection<Flight> flights) {
+    throw new UnsupportedOperationException();
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildJDO> bidirChildren) {
+    throw new UnsupportedOperationException();
+  }
+
 }

@@ -1,4 +1,4 @@
-// Copyright 2008 Google Inc. All Rightss Reserved.
+// Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
@@ -111,7 +111,7 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
   }
 
   public void setObject(Object datastoreEntity, int paramIndex, Object value) {
-    // This awful.  In the case of a bidirectional one-to-many, the pk of the
+    // This is awful.  In the case of a bidirectional one-to-many, the pk of the
     // child object needs to have the pk of the parent object as its ancestor.
     // We can get the pk of the parent object from the parent instance that
     // is set on the child, but since you can only specify an ancestor key
@@ -125,7 +125,14 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
         ((Entity) datastoreEntity).setProperty(
             DatastoreRelationFieldManager.ANCESTOR_KEY_PROPERTY, value);
       }
-    } else {
+    } else if (paramIndex != DatastoreRelationFieldManager.IS_FK_VALUE) {
+      // Similar madness here.  Most of the time we want to just set the
+      // given value on the entity, but if this is a foreign key value we
+      // want to just swallow the update.  The reason is that we only
+      // maintain fks as ancestors in the key itself.  The updates we'll
+      // swallow are DataNucleus adding "hidden" back pointers to parent
+      // objects.  We don't want these.  The back pointer is the parent
+      // of the key itself.
       AbstractMemberMetaData ammd = field.getMemberMetaData();
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
       ((Entity) datastoreEntity).setProperty(propName, value);
@@ -168,7 +175,9 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
     throw new UnsupportedOperationException("Should only be using this for keys.");
   }
 
-  public Object getObject(Object resultSet, int exprIndex) {
-    throw new UnsupportedOperationException("Should only be using this for keys.");
+  public Object getObject(Object datastoreEntity, int exprIndex) {
+    AbstractMemberMetaData ammd = field.getMemberMetaData();
+    String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
+    return ((Entity) datastoreEntity).getProperty(propName);
   }
 }

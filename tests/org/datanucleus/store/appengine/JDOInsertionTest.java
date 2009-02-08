@@ -200,37 +200,6 @@ public class JDOInsertionTest extends JDOTestCase {
     assertNull(entity.getProperty("anotherLast"));
   }
 
-  private void insertAndFetchInSameTxn(boolean enabledNonTxnWrite) {
-    Person p = new Person();
-    Name name = new Name();
-    name.setFirst("jimmy");
-    name.setLast("jam");
-    p.setName(name);
-
-    beginTxn();
-    pm.currentTransaction().setNontransactionalWrite(enabledNonTxnWrite);
-    pm.makePersistent(p);
-    commitTxn();
-
-    Person p2 = new Person();
-    p2.setAnotherName(name);
-
-    beginTxn();
-    pm.currentTransaction().setNontransactionalWrite(enabledNonTxnWrite);
-    pm.makePersistent(p2);
-    pm.getObjectById(Person.class, p.getId());
-    commitTxn();
-  }
-
-
-  public void testInsertAndFetchInSameTxn_WritesNeedTxn() {
-    insertAndFetchInSameTxn(false);
-  }
-
-  public void testInsertAndFetchInSameTxn_WritesDoNotNeedTxn() {
-    insertAndFetchInSameTxn(true);
-  }
-
   public void testFetchOfCachedPojo() throws Exception {
     PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory(
         PersistenceManagerFactoryName.nontransactional.name());

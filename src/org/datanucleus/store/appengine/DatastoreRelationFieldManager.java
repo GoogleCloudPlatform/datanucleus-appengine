@@ -1,20 +1,24 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
-import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.store.appengine.query.DatastoreQuery;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.DatastoreClass;
-import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -24,7 +28,6 @@ import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 
 import java.util.List;
-import java.util.Set;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -37,6 +40,9 @@ class DatastoreRelationFieldManager {
   private static final int[] IS_ANCESTOR_VALUE_ARR = {IS_ANCESTOR_VALUE};
   static final String ANCESTOR_KEY_PROPERTY = "____ANCESTOR_KEY____";
 
+  public static final int IS_FK_VALUE = -2;
+  private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
+
   private final DatastoreFieldManager fieldManager;
 
   // Events that know how to store relations.
@@ -48,14 +54,10 @@ class DatastoreRelationFieldManager {
 
   /**
    * Applies all the relation events that have been built up.
-   *
-   * @return {@code true} if any of the events modified the parent
-   * in such a way that the parent needs to be repersisted, {@link false}
-   * otherwise.
    */
-  boolean storeRelations(KeyRegistry keyRegistry) {
+  void storeRelations(KeyRegistry keyRegistry) {
     if (storeRelationEvents.isEmpty()) {
-      return false;
+      return;
     }
     if (fieldManager.getEntity().getKey() != null) {
       keyRegistry.registerKey(getStoreManager(), getStateManager(), fieldManager);
@@ -64,20 +66,18 @@ class DatastoreRelationFieldManager {
       event.apply();
     }
     storeRelationEvents.clear();
-    // TODO(maxr) Detect changes that modify the parent.
-    return true;
   }
 
-  private MappedStoreManager getStoreManager() {
+  private DatastoreManager getStoreManager() {
     return fieldManager.getStoreManager();
   }
 
-  void storeRelationField(final ClassLoaderResolver clr, final AbstractClassMetaData acmd,
+  void storeRelationField(final AbstractClassMetaData acmd,
                           final AbstractMemberMetaData ammd, final Object value,
                           final boolean isInsert, final InsertMappingConsumer consumer) {
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
-        DatastoreTable table = (DatastoreTable) getStoreManager().getDatastoreClass(
+        DatastoreTable table = getStoreManager().getDatastoreClass(
             ammd.getAbstractClassMetaData().getFullClassName(),
             fieldManager.getClassLoaderResolver());
 
@@ -92,11 +92,10 @@ class DatastoreRelationFieldManager {
               mapping instanceof PersistenceCapableMapping ||
               mapping instanceof InterfaceMapping) {
             setObjectViaMapping(mapping, table, value, sm, fieldNumber);
-            // Make sure the field is wrapped where appropriate
             sm.wrapSCOField(fieldNumber, value, false, true, true);
           } else {
             if (isInsert) {
-              runPostInsertMappingCallbacks(consumer);
+              runPostInsertMappingCallbacks(consumer, value);
             } else {
               runPostUpdateMappingCallbacks(consumer);
             }
@@ -115,7 +114,7 @@ class DatastoreRelationFieldManager {
         mapping.setObject(
             fieldManager.getObjectManager(),
             entity,
-            table.isParentKeyProvider(ammd) ? IS_ANCESTOR_VALUE_ARR : NOT_USED,
+            table.isParentKeyProvider(ammd) ? IS_ANCESTOR_VALUE_ARR : IS_FK_VALUE_ARR,
             value,
             sm,
             fieldNumber);
@@ -145,16 +144,10 @@ class DatastoreRelationFieldManager {
     // dependent or not because we need the parent key in the child table.
     // TODO(maxr) Support storing child keys in the parent table as a list
     // property.
-    if (ammd.isDependent() || ammd.getRelationType(clr) == Relation.ONE_TO_MANY_BI ||
-        ammd.getRelationType(clr) == Relation.ONE_TO_MANY_UNI) {
-      storeRelationEvents.add(event);
-    } else {
-      // not dependent so just apply right away
-      event.apply();
-    }
+    storeRelationEvents.add(event);
   }
 
-  private void runPostInsertMappingCallbacks(InsertMappingConsumer consumer) {
+  private void runPostInsertMappingCallbacks(InsertMappingConsumer consumer, Object value) {
     StateManager sm = getStateManager();
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
       callback.postInsert(sm);
@@ -168,57 +161,8 @@ class DatastoreRelationFieldManager {
     }
   }
 
-  /**
-   * If the datastore entity doesn't have a parent and some other
-   * pojo in the cascade chain registered itself as the parent for
-   * this pojo, recreate the datastore entity with the parent pojo's
-   * key as the ancestor.
-   *
-   * @param keyRegistry the key registry
-   * @param consumer the mapping consumer
-   * @return The parent key if the pojo class has an ancestor property.
-   */
-  Object establishEntityGroup(KeyRegistry keyRegistry, InsertMappingConsumer consumer) {
-    if (fieldManager.getEntity().getParent() != null) {
-      // Entity already has a parent so nothing to do.
-      return null;
-    }
-    StateManager sm = getStateManager();
-    Key parentKey = keyRegistry.getRegisteredKey(sm.getObject());
-    if (parentKey == null) {
-      // We don't have a registered key for the object associated with the
-      // state manager but there might be one tied to the foreign key
-      // mappings for this object.  I can't explain why, but for
-      // JPA the first mechanism works and for JDO the second mechanism works.
-      // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of
-      // the KeyRegistry and figure out how to make the DataNucleus mechanism
-      // work for JPA.
-      Set<JavaTypeMapping> externalFKMappings = consumer.getExternalFKMappings();
-      for (JavaTypeMapping fkMapping : externalFKMappings) {
-        Object fkValue = sm.getAssociatedValue(fkMapping);
-        if (fkValue != null) {
-          ApiAdapter adapter = fieldManager.getStoreManager().getOMFContext().getApiAdapter();
-          Object keyOrString = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(fkValue));
-          if (keyOrString instanceof Key) {
-            parentKey = (Key) keyOrString;
-          } else {
-            parentKey = KeyFactory.stringToKey((String) keyOrString);
-          }
-          break;
-        }
-      }
-    }
-    if (parentKey != null) {
-      fieldManager.recreateEntityWithAncestor(KeyFactory.keyToString(parentKey));
-      if (getAncestorMemberMetaData() != null) {
-        return getAncestorMemberMetaData().getType().equals(Key.class)
-            ? parentKey : KeyFactory.keyToString(parentKey);
-      }
-    }
-    return null;
-  }
-
-  Object fetchRelationField(ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
+  Object fetchRelationField(
+      ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
     DatastoreClass dc = getStoreManager().getDatastoreClass(
         ammd.getAbstractClassMetaData().getFullClassName(), fieldManager.getClassLoaderResolver());
     JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);
@@ -236,14 +180,41 @@ class DatastoreRelationFieldManager {
     } else {
       int relationType = ammd.getRelationType(clr);
       if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
-        // Extract the related key from the entity
-        String propName = EntityUtils.getPropertyName(fieldManager.getIdentifierFactory(), ammd);
-        Key relatedKey = (Key) fieldManager.getEntity().getProperty(propName);
-        value = mapping.getObject(fieldManager.getObjectManager(), relatedKey, NOT_USED);
+        // Even though the mapping is 1 to 1, we model it as a 1 to many and then
+        // just throw a runtime exception if we get multiple children.  We would
+        // prefer to store the child id on the parent, but we can't because creating
+        // a parent and child at the same time involves 3 distinct writes:
+        // 1) We put the parent object in order to get a Key.
+        // 2) We put the child object, which needs the Key of the parent as
+        // the ancestor of its own Key so that parent and child reside in the
+        // same entity group.
+        // 3) We re-put the parent object, adding the Key of the child object
+        // as a property on the parent.
+        // The problem is that the datastore does not support multiple writes
+        // to the same entity within a single transaction, so there's no way
+        // to perform this sequence of events atomically, and that's a problem.
+
+        // We have 2 scenarios here.  The first is that we're loading the parent
+        // side of a 1 to 1 and we want the child.  In that scenario we're going
+        // to issue an ancestor query against the child table with the expectation
+        // that there is either 1 result or 0.
+
+        // The second scearnio is that we're loading the child side of a
+        // bidirectional 1 to 1 and we want the parent.  In that scenario
+        // the key of the parent is part of the child's key so we can just
+        // issue a fetch using the parent's key.
+        DatastoreTable table = getStoreManager().getDatastoreClass(
+            ammd.getAbstractClassMetaData().getFullClassName(),
+            fieldManager.getClassLoaderResolver());
+        if (table.isParentKeyProvider(ammd)) {
+          // bidir 1 to 1 and we are the child
+          value = lookupParent(ammd, mapping);
+        } else {
+          // bidir 1 to 1 and we are the parent
+          value = lookupOneToOneChild(ammd, clr);
+        }
       } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        // Extract the parent key from the entity
-        Key parentKey = fieldManager.getEntity().getParent();
-        value = mapping.getObject(fieldManager.getObjectManager(), parentKey, NOT_USED);
+        value = lookupParent(ammd, mapping);
       } else {
         value = null;
       }
@@ -252,8 +223,44 @@ class DatastoreRelationFieldManager {
     return getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
   }
 
-  private AbstractMemberMetaData getAncestorMemberMetaData() {
-    return fieldManager.getAncestorMemberMetaData();
+  private Object lookupParent(AbstractMemberMetaData ammd, JavaTypeMapping mapping) {
+    Key parentKey = fieldManager.getEntity().getParent();
+    if (parentKey == null) {
+      // unexpected
+      throw new NucleusDataStoreException("Field " + ammd.getFullFieldName() + " is an ancestor "
+                                          + "provider but the entity does not have a parent.");
+    }
+    ObjectManager om = getStateManager().getObjectManager();
+    return mapping.getObject(om, parentKey, NOT_USED);
+  }
+
+  private Object lookupOneToOneChild(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    ObjectManager om = getStateManager().getObjectManager();
+    AbstractClassMetaData childClassMetaData =
+        om.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+    String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(
+        childClassMetaData).getIdentifierName();
+    Entity parentEntity = fieldManager.getEntity();
+    // We're going to issue a query for all entities of the given kind with
+    // the parent entity's key as their ancestor.  There should be only 1.
+    Query q = new Query(kind, parentEntity.getKey());
+    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService();
+    List<Entity> results = datastoreService.prepare(q).asList(withLimit(2));
+    Object value;
+    if (results.size() > 1) {
+      throw new NucleusDataStoreException(ammd.getFullFieldName() + " is mapped as a 1 to 1 "
+                                          + "relationship but there is more than one enity "
+                                          + "of kind " + kind + " that is a child of "
+                                          + parentEntity.getKey());
+    } else if (results.isEmpty()) {
+      value = null;
+    } else {
+      // Exactly one result
+      value = DatastoreQuery.entityToPojo(
+          results.get(0), childClassMetaData, clr, getStoreManager(), om, false);
+    }
+    // TODO(maxr) Figure out how to hook this up to a StateManager!
+    return value;
   }
 
   private StateManager getStateManager() {

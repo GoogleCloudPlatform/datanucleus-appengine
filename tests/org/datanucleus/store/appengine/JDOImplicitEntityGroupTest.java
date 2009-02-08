@@ -32,8 +32,11 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
+    beginTxn();
+    parent = pm.getObjectById(HasOneToOneJDO.class, parent.getId());
+    assertNotNull(parent.getHasParent());
+    assertNotNull(parent.getHasParent().getParent());
+    commitTxn();
   }
 
   public void testOneToOnePersistChildWithAncestorCascadeAll() throws EntityNotFoundException {
@@ -46,15 +49,14 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     commitTxn();
 
     beginTxn();
+    parent = pm.getObjectById(HasOneToOnesWithDifferentCascadesJDO.class, parent.getId());
+    assertNotNull(parent.getCascadeAllChild());
     child = pm.getObjectById(HasAncestorJDO.class, child.getId());
     assertEquals(parent.getId(), child.getAncestorId());
     commitTxn();
 
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
-
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeall"));
   }
 
   public void testOneToOnePersistChildWithKeyAncestorCascadeAll() throws EntityNotFoundException {
@@ -67,15 +69,14 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     commitTxn();
 
     beginTxn();
+    parent = pm.getObjectById(HasOneToOnesWithDifferentCascadesJDO.class, parent.getId());
     child = pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, child.getKey());
     assertEquals(parent.getId(), KeyFactory.keyToString(child.getAncestorKey()));
+    assertNotNull(parent.getCascadeAllChildWithKeyAncestor());
     commitTxn();
 
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
-
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeallwithkeyancestor"));
   }
 
   public void testOneToOnePersistCascadePersist() throws EntityNotFoundException {
@@ -84,14 +85,18 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     parent.setCascadePersistChild(child);
 
     beginTxn();
-    try {
-      pm.makePersistent(parent);
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    } finally {
-      rollbackTxn();
-    }
+    pm.makePersistent(parent);
+    commitTxn();
+
+    beginTxn();
+    parent = pm.getObjectById(HasOneToOnesWithDifferentCascadesJDO.class, parent.getId());
+    child = pm.getObjectById(HasAncestorJDO.class, child.getId());
+    assertEquals(parent.getId(), child.getAncestorId());
+    assertNotNull(parent.getCascadePersistChild());
+    commitTxn();
+
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
+    assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
@@ -108,9 +113,6 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentNull(childEntity, childEntity.getKey());
-
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentNull(childEntity, (Key) parentEntity.getProperty("cascaderemove"));
   }
 
   public void testOneToOnePersistCascadeAll_OverrideParentManually() {
@@ -253,12 +255,12 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
     pm.makePersistent(parent);
     commitTxn();
+    beginTxn();
+    parent = pm.getObjectById(HasOneToOneJDO.class, parent.getId());
+    assertNotNull(parent.getHasParent());
+    commitTxn();
 
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
-
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
-
   }
 }

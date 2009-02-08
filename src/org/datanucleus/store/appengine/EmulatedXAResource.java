@@ -85,7 +85,7 @@ class EmulatedXAResource implements XAResource {
    * @return The current transaction, or {@code null} if the datasource does
    * not support transactions.
    */
-  Transaction getCurrentTransaction() {
+  DatastoreTransaction getCurrentTransaction() {
     return null;
   }
 }

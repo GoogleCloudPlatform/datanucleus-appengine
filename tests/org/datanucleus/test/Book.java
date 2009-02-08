@@ -24,6 +24,10 @@ public class Book {
     this.id = namedKey;
   }
 
+  public void setId(String id) {
+    this.id = id;
+  }
+
   public Book() {
     this(null);
   }

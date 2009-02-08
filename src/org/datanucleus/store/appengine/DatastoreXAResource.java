@@ -2,7 +2,8 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.Transaction;
+
+import org.datanucleus.util.NucleusLogger;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
@@ -26,14 +27,14 @@ class DatastoreXAResource extends EmulatedXAResource {
   /**
    * The current datastore transaction.
    */
-  private Transaction currentTxn;
+  private DatastoreTransaction currentTxn;
 
   public DatastoreXAResource(DatastoreService datastoreService) {
     this.datastoreService = datastoreService;
   }
 
   @Override
-  Transaction getCurrentTransaction() {
+  DatastoreTransaction getCurrentTransaction() {
     return currentTxn;
   }
 
@@ -43,7 +44,9 @@ class DatastoreXAResource extends EmulatedXAResource {
     // A transaction will only be started if non-transactional reads/writes
     // are turned off.
     if (currentTxn == null) {
-      currentTxn = datastoreService.beginTransaction();
+      currentTxn = new DatastoreTransaction(datastoreService.beginTransaction());
+      NucleusLogger.DATASTORE.debug(
+          "Started new datastore transaction: " + currentTxn.getInnerTxn().getId());
     } else {
       throw new XAException("Nested transactions are not supported");
     }
@@ -54,6 +57,8 @@ class DatastoreXAResource extends EmulatedXAResource {
     super.commit(arg0, arg1);
     if (currentTxn != null) {
       currentTxn.commit();
+      NucleusLogger.DATASTORE.debug(
+          "Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
       throw new XAException("A transaction has not been started, cannot commit");
@@ -65,6 +70,8 @@ class DatastoreXAResource extends EmulatedXAResource {
     super.rollback(xid);
     if (currentTxn != null) {
       currentTxn.rollback();
+      NucleusLogger.DATASTORE.debug(
+          "Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
       throw new XAException("A transaction has not been started, cannot roll back");

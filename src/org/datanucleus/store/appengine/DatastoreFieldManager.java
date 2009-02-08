@@ -10,6 +10,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -17,7 +18,6 @@ import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
-import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
@@ -326,10 +326,85 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   /**
-   * @see DatastoreRelationFieldManager#establishEntityGroup
+   * Currently all relationships are parent-child.  If a datastore entity
+   * doesn't have a parent there are 3 places we can look for one.
+   * 1)  It's possible that a pojo in the cascade chain registered itself as
+   * the parent.
+   * 2)  It's possible that the pojo has an external foreign key mapping
+   * to the object that owns it, in which case we can use the key of that field
+   * as the parent.
+   * 3)  It's possible that the pojo has a field containing the parent that is
+   * not an external foreign key mapping but is labeled as an "ancestor
+   * provider" (this is an app engine orm term).  In this case, as with
+   * #2, we can use the key of that field as the parent.
+   *
+   * It _should_ be possible to get rid of at least one of these
+   * mechanisms, most likely the first.
+   *
+   * @return The parent key if the pojo class has an ancestor property.
+   * Note that a return value of {@code null} does not mean that an entity
+   * group was not established, it just means the pojo doesn't have a distinct
+   * field for the ancestor.
    */
   Object establishEntityGroup() {
-    return relationFieldManager.establishEntityGroup(getKeyRegistry(), insertMappingConsumer);
+    if (getEntity().getParent() != null) {
+      // Entity already has a parent so nothing to do.
+      return null;
+    }
+    StateManager sm = getStateManager();
+    // Mechanism 1
+    Key parentKey = getKeyRegistry().getRegisteredKey(sm.getObject());
+    if (parentKey == null) {
+      // Mechanism 2
+      parentKey = getParentKeyFromExternalFKMappings(sm);
+    }
+    if (parentKey == null) {
+      // Mechanism 3
+      parentKey = getParentKeyFromAncestorField(sm);
+    }
+    if (parentKey != null) {
+
+      recreateEntityWithAncestor(KeyFactory.keyToString(parentKey));
+
+      if (getAncestorMemberMetaData() != null) {
+        return getAncestorMemberMetaData().getType().equals(Key.class)
+            ? parentKey : KeyFactory.keyToString(parentKey);
+      }
+    }
+    return null;
+  }
+
+  private Key getIdForObject(Object pc) {
+    ApiAdapter adapter = getStoreManager().getOMFContext().getApiAdapter();
+    Object keyOrString = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
+    return keyOrString instanceof Key ?
+           (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
+  }
+
+  private Key getParentKeyFromAncestorField(StateManager sm) {
+    AbstractMemberMetaData ancestorField = insertMappingConsumer.getAncestorMappingField();
+    if (ancestorField == null) {
+      return null;
+    }
+    Object parent = sm.provideField(ancestorField.getAbsoluteFieldNumber());
+    return parent == null ? null : getIdForObject(parent);
+  }
+
+  private Key getParentKeyFromExternalFKMappings(StateManager sm) {
+    // We don't have a registered key for the object associated with the
+    // state manager but there might be one tied to the foreign key
+    // mappings for this object.  If this is the Many side of a bidirectional
+    // One To Many it might also be available on the parent object.
+    // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of
+    // the KeyRegistry.
+    Set<JavaTypeMapping> externalFKMappings = insertMappingConsumer.getExternalFKMappings();
+    for (JavaTypeMapping fkMapping : externalFKMappings) {
+      Object fkValue = sm.getAssociatedValue(fkMapping);
+      if (fkValue != null) {
+        return getIdForObject(fkValue);
+      }
+    }
+    return null;
   }
 
   /**
@@ -411,7 +486,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private static void copyProperties(Entity src, Entity dest) {
+  static void copyProperties(Entity src, Entity dest) {
     for (Map.Entry<String, Object> entry : src.getProperties().entrySet()) {
       dest.setProperty(entry.getKey(), entry.getValue());
     }
@@ -476,7 +551,7 @@ public class DatastoreFieldManager implements FieldManager {
         storeEmbeddedField(ammd, value);
       } else if (ammd.getRelationType(clr) != Relation.NONE) {
         relationFieldManager.storeRelationField(
-            clr, getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
+            getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
       } else {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
@@ -517,8 +592,8 @@ public class DatastoreFieldManager implements FieldManager {
   /**
    * @see DatastoreRelationFieldManager#storeRelations
    */
-  boolean storeRelations() {
-    return relationFieldManager.storeRelations(getKeyRegistry());
+  void storeRelations() {
+    relationFieldManager.storeRelations(getKeyRegistry());
   }
 
   ClassLoaderResolver getClassLoaderResolver() {
@@ -609,7 +684,7 @@ public class DatastoreFieldManager implements FieldManager {
     return datastoreEntity;
   }
 
-  IdentifierFactory getIdentifierFactory() {
+  private IdentifierFactory getIdentifierFactory() {
     return storeManager.getIdentifierFactory();
   }
 
@@ -626,27 +701,46 @@ public class DatastoreFieldManager implements FieldManager {
    * {@link List} are ordered by a column in the child
    * table that stores the position of the child in the parent's list.
    * This function is responsible for making sure the appropriate values
-   * for these columns find their way into the Entity.
+   * for these columns find their way into the Entity.  In certain scenarios,
+   * DataNucleus does not make the index of the container element being
+   * written available until later on in the workflow.  The expectation
+   * is that we will insert the record without the index and then perform
+   * an update later on when the value becomes available.  This is problematic
+   * for the App Engine datastore because we can only write an entity once
+   * per transaction.  So, to get around this, we detect the case where the
+   * index is not available and instruct the caller to hold off writing.
+   * Later on in the workflow, when DataNucleus calls down into our plugin
+   * to request the update with the index, we perform the insert.  This will
+   * break someday.  Fortunately we have tests so we should find out.
+   *
+   * @return {@code true} if the caller (expected to be
+   * {@link DatastorePersistenceHandler#insertObject}) should delay its write
+   * of this object.
    */
-  void handleHiddenFields() {
+  boolean handleIndexFields() {
     Set<JavaTypeMapping> orderMappings = insertMappingConsumer.getExternalOrderMappings();
-    // External order columns (optional)
+    boolean delayWrite = false;
     for (JavaTypeMapping orderMapping : orderMappings) {
+      delayWrite = true;
+      // DataNucleus hides the value in the state mamanger, keyed by the
+      // mapping for the order field.
       Object orderValue = getStateManager().getAssociatedValue(orderMapping);
-      if (orderValue == null) {
-        // No order value so use -1
-        orderValue = -1;
+      if (orderValue != null) {
+        // We got a value!  Set it on the entity.
+        delayWrite = false;
+        orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
       }
-      orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
     }
+    return delayWrite;
   }
 
   private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd, int[] fieldNumbers) {
-    DatastoreClass dc = getStoreManager().getDatastoreClass(
+    DatastoreTable dc = getStoreManager().getDatastoreClass(
         acmd.getFullClassName(), getClassLoaderResolver());
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     dc.provideDatastoreIdMappings(consumer);
     dc.providePrimaryKeyMappings(consumer);
+    dc.provideAncestorMappingField(consumer);
     if (createdWithoutEntity) {
       // This is the insert case.  We want to fill the consumer with mappings
       // for everything.

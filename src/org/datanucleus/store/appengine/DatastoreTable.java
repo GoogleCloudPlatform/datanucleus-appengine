@@ -56,7 +56,7 @@ import java.util.Set;
  * we need to represent this logically in order to take care of all the nice
  * mapping logic that datanucleus does for us.
  *
- * This code is largely copied AbstractClassTable, ClassTable, TableImpl,
+ * This code is largely copied from AbstractClassTable, ClassTable, TableImpl,
  * and AbstractTable
  *
  * TODO(maxr): Refactor the RDBMS classes into the mapped package so we can
@@ -64,7 +64,7 @@ import java.util.Set;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreTable implements DatastoreClass {
+public class DatastoreTable implements DatastoreClass {
 
   /** Localiser for messages. */
   protected static final Localiser LOCALISER =
@@ -121,12 +121,12 @@ class DatastoreTable implements DatastoreClass {
 
   /**
    * Dependent fields.  Unlike pretty much the rest of this class, this member and the
-   * code that populates is specific to the appengine plugin.
+   * code that populates it is specific to the appengine plugin.
    */
-  private final List<AbstractMemberMetaData> dependentMemberMetaData = Utils.newArrayList();
+  private final List<AbstractMemberMetaData> sameEntityGroupMemberMetaData = Utils.newArrayList();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
-  private final Set<AbstractMemberMetaData> parentKeyProviders = Utils.newHashSet();
+  private AbstractMemberMetaData ancestorMappingField;
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
@@ -309,6 +309,16 @@ class DatastoreTable implements DatastoreClass {
             if (fmd.getJoinMetaData() == null) {
               needsFKToContainerOwner = true;
             }
+          } else if (relationType == Relation.ONE_TO_ONE_BI) {
+            if (fmd.getMappedBy() != null) {
+              // This element type has a many-to-one pointing back.
+              // We assume that our pk is part of the pk of the element type.
+              DatastoreTable dt =
+                  (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+              dt.runCallBacks();
+              dt.markFieldAsParentKeyProvider(fmd.getName());
+            }
+
           }
 
           if (needsFKToContainerOwner) {
@@ -378,7 +388,11 @@ class DatastoreTable implements DatastoreClass {
   }
 
   private void markFieldAsParentKeyProvider(String mappedBy) {
-    parentKeyProviders.add(getFieldMetaData(mappedBy));
+    if (ancestorMappingField != null) {
+      throw new NucleusException(
+          "App Engine ORM does not support multiple parent key provider fields.");
+    }
+    ancestorMappingField = getFieldMetaData(mappedBy);
   }
 
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
@@ -390,18 +404,13 @@ class DatastoreTable implements DatastoreClass {
       highestFieldNumber = absoluteFieldNumber;
     }
 
-    if (isDependent(fmd)) {
-      dependentMemberMetaData.add(fmd);
+    if (isInSameEntityGroup(fmd)) {
+      sameEntityGroupMemberMetaData.add(fmd);
     }
   }
 
-  private boolean isDependent(AbstractMemberMetaData ammd) {
-    // ammd.isDependent() returns false for one-to-many even with cascade delete.
-    // Not sure why but that's why we check both requiresAncestor and isCascadeDelete
-    return ammd.isDependent()
-           || ammd.isCascadeDelete()
-           || ammd.getCollection() != null
-           || ammd.getArray() != null;
+  private boolean isInSameEntityGroup(AbstractMemberMetaData ammd) {
+    return ammd.getRelationType(clr) != Relation.NONE;
   }
 
   public boolean managesField(String fieldName) {
@@ -893,8 +902,8 @@ class DatastoreTable implements DatastoreClass {
     return null;
   }
 
-  public List<AbstractMemberMetaData> getDependentMemberMetaData() {
-    return dependentMemberMetaData;
+  public List<AbstractMemberMetaData> getSameEntityGroupMemberMetaData() {
+    return sameEntityGroupMemberMetaData;
   }
 
   private Map<AbstractMemberMetaData, JavaTypeMapping> getExternalFkMappings() {
@@ -1110,8 +1119,14 @@ class DatastoreTable implements DatastoreClass {
     return indexMapping;
   }
 
-  boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
-    return parentKeyProviders.contains(ammd);
+  public boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
+    return ammd.equals(ancestorMappingField);
+  }
+
+  void provideAncestorMappingField(InsertMappingConsumer consumer) {
+    if (ancestorMappingField != null) {
+      consumer.setAncestorMappingField(ancestorMappingField);
+    }
   }
 
   /**

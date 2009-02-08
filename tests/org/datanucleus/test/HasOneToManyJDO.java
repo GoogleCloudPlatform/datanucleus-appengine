@@ -28,6 +28,8 @@ public interface HasOneToManyJDO {
   void removeBidirChildAtPosition(int i);
   void removeFlightAtPosition(int i);
   void removeHasKeyPkAtPosition(int i);
+  void removeFlights(Collection<Flight> flights);
+  void removeBidirChildren(Collection<BidirectionalChildJDO> bidirChildren);
 
   void addAtPosition(int i, BidirectionalChildJDO bidir);
   void addAtPosition(int i, Flight f);

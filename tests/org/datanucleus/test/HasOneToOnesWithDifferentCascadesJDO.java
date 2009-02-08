@@ -20,20 +20,16 @@ public class HasOneToOnesWithDifferentCascadesJDO {
   private String id;
 
   @Persistent(dependent = "true")
-  @Column(name="cascadeall")
   private HasAncestorJDO cascadeAllChild;
 
   @Persistent(dependent = "true")
-  @Column(name = "cascadeallwithkeyancestor")
   private HasKeyAncestorKeyStringPkJDO cascadeAllChildWithKeyAncestor;
 
   @Persistent(dependent = "false")
-  @Column(name = "cascadepersist")
   private HasAncestorJDO cascadePersistChild;
 
   @Persistent(dependent = "false")
   @Extension(vendorName="datanucleus", key="cascade-persist", value="false")
-  @Column(name = "cascaderemove")
   private HasAncestorJDO cascadeRemoveChild;
 
   public String getId() {

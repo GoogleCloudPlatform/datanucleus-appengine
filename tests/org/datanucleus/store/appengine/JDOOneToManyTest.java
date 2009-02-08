@@ -19,6 +19,7 @@ import org.datanucleus.test.HasOneToManyWithOrderByJDOInterface;
 import org.easymock.EasyMock;
 
 import java.util.List;
+import java.util.Collections;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -196,6 +197,7 @@ abstract class JDOOneToManyTest extends JDOTestCase {
     commitTxn();
 
     beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertNotNull(pojo.getId());
     assertEquals(1, pojo.getFlights().size());
     assertEquals(1, pojo.getHasKeyPks().size());
@@ -854,6 +856,10 @@ abstract class JDOOneToManyTest extends JDOTestCase {
       ldth.ds.put(bidirEntity);
 
       Transaction txn = EasyMock.createMock(Transaction.class);
+      EasyMock.expect(txn.getId()).andReturn("1").times(2);
+      txn.commit();
+      EasyMock.expectLastCall();
+      EasyMock.replay(txn);
       EasyMock.expect(ds.beginTransaction()).andReturn(txn);
       // the only get we're going to perform is for the pojo
       EasyMock.expect(ds.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
@@ -896,6 +902,111 @@ abstract class JDOOneToManyTest extends JDOTestCase {
     commitTxn();
     assertCountsInDatastore(pojoClass, bidirClass, 0, 0);
   }
+
+  void testRemoveAll(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1,
+                     BidirectionalChildJDO bidir2, BidirectionalChildJDO bidir3)
+      throws EntityNotFoundException {
+    Flight f1 = new Flight();
+    Flight f2 = new Flight();
+    Flight f3 = new Flight();
+    pojo.addFlight(f1);
+    pojo.addFlight(f2);
+    pojo.addFlight(f3);
+
+    pojo.addBidirChild(bidir1);
+    pojo.addBidirChild(bidir2);
+    pojo.addBidirChild(bidir3);
+
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    String f2Id = f2.getId();
+    String bidir2Id = bidir2.getId();
+    pojo.removeFlights(Collections.singleton(f2));
+    assertFalse(pojo.getFlights().contains(f2));
+    assertTrue(pojo.getFlights().contains(f1));
+    assertTrue(pojo.getFlights().contains(f3));
+    pojo.removeBidirChildren(Collections.singleton(bidir2));
+    assertFalse(pojo.getBidirChildren().contains(bidir2));
+    assertTrue(pojo.getBidirChildren().contains(bidir1));
+    assertTrue(pojo.getBidirChildren().contains(bidir3));
+    commitTxn();
+    beginTxn();
+
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+
+    assertEquals(2, pojo.getFlights().size());
+    assertFalse(pojo.getFlights().contains(f2));
+    assertTrue(pojo.getFlights().contains(f1));
+    assertTrue(pojo.getFlights().contains(f3));
+
+    assertEquals(2, pojo.getBidirChildren().size());
+    assertFalse(pojo.getBidirChildren().contains(bidir2));
+    assertTrue(pojo.getBidirChildren().contains(bidir1));
+    assertTrue(pojo.getBidirChildren().contains(bidir3));
+    commitTxn();
+
+    Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
+    Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
+    if (isIndexed()) {
+      assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX"));
+      assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX"));
+      assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
+      assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
+    }
+    try {
+      ldth.ds.get(KeyFactory.stringToKey(f2Id));
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+    try {
+      ldth.ds.get(KeyFactory.stringToKey(bidir2Id));
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+  }
+
+//  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
+//                   BidirectionalChildJDO bidir3) {
+//
+//    Flight f1 = new Flight();
+//    Flight f2 = new Flight();
+//    Flight f3 = new Flight();
+//    pojo.addFlight(f1);
+//    pojo.addFlight(f2);
+//    pojo.addFlight(f3);
+//
+//    pojo.addBidirChild(bidir1);
+//    pojo.addBidirChild(bidir2);
+//    pojo.addBidirChild(bidir3);
+//
+//    beginTxn();
+//    pm.makePersistent(pojo);
+//    commitTxn();
+//    beginTxn();
+//    assertEquals(0, pojo.indexOf(f1));
+//    assertEquals(1, pojo.indexOf(f2));
+//    assertEquals(2, pojo.indexOf(f3));
+//    assertEquals(0, pojo.indexOf(bidir1));
+//    assertEquals(1, pojo.indexOf(bidir2));
+//    assertEquals(2, pojo.indexOf(bidir3));
+//    commitTxn();
+//
+//    beginTxn();
+//    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+//    assertEquals(0, pojo.indexOf(f1));
+//    assertEquals(1, pojo.indexOf(f2));
+//    assertEquals(2, pojo.indexOf(f3));
+//    assertEquals(0, pojo.indexOf(bidir1));
+//    assertEquals(1, pojo.indexOf(bidir2));
+//    assertEquals(2, pojo.indexOf(bidir3));
+//    commitTxn();
+//  }
 
   int countForClass(Class<?> clazz) {
     return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();

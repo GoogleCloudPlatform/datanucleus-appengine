@@ -4,7 +4,11 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.DatastoreConfig;
+import com.google.appengine.api.datastore.ImplicitTransactionManagementPolicy;
+import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.tools.development.ApiProxyLocalImpl;
+import com.google.appengine.tools.development.LocalRpcService;
 import com.google.apphosting.api.ApiProxy;
 
 import java.io.File;
@@ -47,7 +51,10 @@ public class LocalDatastoreTestHelper {
         throw new UnsupportedOperationException();
       }
     });
-
+//    LocalRpcService svc = ((ApiProxyLocalImpl)ApiProxy.getDelegate()).getService("datastore_v3");
+//    ((LocalDatastoreService) svc).setMaxTransactionLifetime(Integer.MAX_VALUE);
+//    svc.stop();
+//    svc.start();
   }
 
   public void tearDown(boolean exceptionIfActiveTxn) {

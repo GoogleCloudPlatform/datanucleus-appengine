@@ -1,16 +1,16 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
+import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -76,6 +76,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
   }
 
   public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+
     Flight f = newFlight();
     beginTxn();
     pm.makePersistent(f);
@@ -96,8 +98,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
     pm.makePersistent(pojo);
     commitTxn();
 
-    Entity FlightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    assertNotNull(FlightEntity);
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    assertNotNull(flightEntity);
 
     assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
         countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
@@ -105,6 +107,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
   }
 
   public void testUpdate_ClearOutChild_NoDelete() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+
     Flight f = newFlight();
     beginTxn();
     pm.makePersistent(f);
@@ -125,8 +129,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
     pm.makePersistent(pojo);
     commitTxn();
 
-    Entity FlightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    assertNotNull(FlightEntity);
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    assertNotNull(flightEntity);
     assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
         countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
     assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
@@ -183,6 +187,11 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
     assertEquals(0, pojo.getHasKeyPks().indexOf(hasKeyPk1));
     assertEquals(1, pojo.getHasKeyPks().indexOf(hasKeyPk2));
     commitTxn();
+  }
+
+  public void testRemoveAll() throws EntityNotFoundException {
+    testRemoveAll(new HasOneToManyListJDO(), new BidirectionalChildListJDO(),
+                  new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
   }
 
   boolean isIndexed() {

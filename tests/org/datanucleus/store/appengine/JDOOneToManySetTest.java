@@ -1,15 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.BidirectionalChildSetJDO;
-import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasOneToManySetJDO;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
+import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.BidirectionalChildListJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -52,63 +50,6 @@ public class JDOOneToManySetTest extends JDOOneToManyTest {
     testUpdate_ClearOutChildren(pojo, bidir);
   }
 
-  public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
-    Flight f = newFlight();
-    beginTxn();
-    pm.makePersistent(f);
-    commitTxn();
-    HasOneToManyWithNonDeletingCascadeJDO pojo = new HasOneToManyWithNonDeletingCascadeJDO();
-    pojo.getFlights().add(f);
-
-    beginTxn();
-    pm.makePersistent(pojo);
-    commitTxn();
-
-    assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
-                 countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
-    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
-
-    beginTxn();
-    pojo.setFlights(null);
-    pm.makePersistent(pojo);
-    commitTxn();
-
-    Entity FlightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    assertNotNull(FlightEntity);
-
-    assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
-        countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
-    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
-  }
-
-  public void testUpdate_ClearOutChild_NoDelete() throws EntityNotFoundException {
-    Flight f = newFlight();
-    beginTxn();
-    pm.makePersistent(f);
-    commitTxn();
-    HasOneToManyWithNonDeletingCascadeJDO pojo = new HasOneToManyWithNonDeletingCascadeJDO();
-    pojo.getFlights().add(f);
-
-    beginTxn();
-    pm.makePersistent(pojo);
-    commitTxn();
-
-    assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
-        countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
-    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
-
-    beginTxn();
-    pojo.getFlights().clear();
-    pm.makePersistent(pojo);
-    commitTxn();
-
-    Entity FlightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    assertNotNull(FlightEntity);
-    assertEquals(HasOneToManyWithNonDeletingCascadeJDO.class.getName(), 1,
-        countForClass(HasOneToManyWithNonDeletingCascadeJDO.class));
-    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
-  }
-
   public void testFindWithOrderBy() throws EntityNotFoundException {
     testFindWithOrderBy(HasOneToManyWithOrderByJDO.class);
   }
@@ -127,6 +68,11 @@ public class JDOOneToManySetTest extends JDOOneToManyTest {
 
   public void testDeleteParentDeletesChild() throws Exception {
     testDeleteParentDeletesChild(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class);
+  }
+
+  public void testRemoveAll() throws EntityNotFoundException {
+    testRemoveAll(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(),
+                  new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
   }
 
   boolean isIndexed() {

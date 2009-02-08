@@ -6,6 +6,7 @@ import junit.framework.TestCase;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.persistence.Persistence;
 
 /**
  * Base testcase for tests that need a {@link PersistenceManagerFactory}.
@@ -92,4 +93,10 @@ public class JDOTestCase extends TestCase {
     }
   }
 
+  protected void switchDatasource(PersistenceManagerFactoryName name) {
+    pm.close();
+    pmf.close();
+    pmf = JDOHelper.getPersistenceManagerFactory(name.name());
+    pm = pmf.getPersistenceManager();
+  }
 }

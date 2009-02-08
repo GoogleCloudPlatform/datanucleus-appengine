@@ -5,8 +5,8 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeSetJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
+import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeSetJPA;
 
 /**
  * @author Max Ross <maxr@google.com>

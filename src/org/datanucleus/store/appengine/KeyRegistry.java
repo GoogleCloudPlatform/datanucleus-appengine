@@ -46,21 +46,21 @@ class KeyRegistry {
         fieldMgr.getClassMetaData().getFullClassName(), fieldMgr.getClassLoaderResolver());
     SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();
-    for (AbstractMemberMetaData dependent : dt.getDependentMemberMetaData()) {
+    for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
       stateMgr.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
-      Object dependentValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
-      if (dependentValue != null) {
-        if (dependentValue instanceof Object[]) {
-          dependentValue  = Arrays.asList((Object[]) dependentValue);
+      Object childValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
+      if (childValue != null) {
+        if (childValue instanceof Object[]) {
+          childValue  = Arrays.asList((Object[]) childValue);
         }
-        if (dependentValue instanceof Iterable) {
+        if (childValue instanceof Iterable) {
           // TODO(maxr): Make sure we're not pulling back unnecessary data
           // when we iterate over the values.
-          for (Object element : (Iterable) dependentValue) {
+          for (Object element : (Iterable) childValue) {
             parentKeyMap.put(element, key);
           }
         } else {
-          parentKeyMap.put(dependentValue, key);
+          parentKeyMap.put(childValue, key);
         }
       }
     }

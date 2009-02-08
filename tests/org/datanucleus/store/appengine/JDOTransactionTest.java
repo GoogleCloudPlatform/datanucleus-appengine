@@ -49,6 +49,7 @@ public class JDOTransactionTest extends TestCase {
     ldth.setUp();
     recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds, mockTxn);
     DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
+    handleCounter = 0;
   }
 
   @Override
@@ -78,7 +79,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++));
+    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -113,7 +114,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn("1");
+    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 

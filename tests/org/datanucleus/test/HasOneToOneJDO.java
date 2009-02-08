@@ -19,19 +19,15 @@ public class HasOneToOneJDO {
   private String id;
 
   @Persistent(dependent = "true")
-  @Column(name="flight_id")
   private Flight flight;
 
   @Persistent(dependent = "true")
-  @Column(name = "haskeypk_id")
   private HasKeyPkJDO hasKeyPK;
 
   @Persistent(dependent = "true")
-  @Column(name = "hasparent_id")
   private HasOneToOneParentJDO hasParent;
 
   @Persistent(dependent = "true")
-  @Column(name = "hasparentkeypk_id")
   private HasOneToOneParentKeyPkJDO hasParentKeyPK;
 
   public String getId() {

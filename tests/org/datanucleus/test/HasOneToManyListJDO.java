@@ -3,6 +3,7 @@ package org.datanucleus.test;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Collection;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -128,5 +129,13 @@ public class HasOneToManyListJDO implements HasOneToManyJDO {
 
   public void addAtPosition(int i, HasKeyPkJDO hasKeyPk) {
     hasKeyPks.add(i, hasKeyPk);
+  }
+
+  public void removeFlights(Collection<Flight> flights) {
+    this.flights.removeAll(flights);
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildJDO> bidirChildren) {
+    this.bidirChildren.removeAll(bidirChildren);
   }
 }

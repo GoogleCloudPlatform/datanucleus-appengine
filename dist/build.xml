@@ -3,7 +3,7 @@
 
   <property name="version.major" value="0"/>
   <property name="version.minor" value="8"/>
-  <property name="version.point" value="1"/>
+  <property name="version.point" value="2"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -12,6 +12,8 @@
   <property name="src.dir" value="../src"/>
   <property name="compile.dest.dir" value="classes"/>
   <property name="orm.lib.dir" value="../lib"/>
+  <property name="orm.tmp.dir" value="/tmp/testdist"/>
+  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/lib"/>
 
   <path id="appengine.plugin.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
@@ -48,6 +50,11 @@
         <attribute name="Import-Package" value="javax.jdo, javax.jdo.annotations, javax.jdo.datastore, javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.persistence.spi"/>
       </manifest>
     </jar>
+    <!-- Extract the manifest and copy it back into the source tree -->
+    <mkdir dir="exploded"/>
+    <unzip src="${orm.jar}" dest="exploded"/>
+    <copy file="exploded/META-INF/MANIFEST.MF" todir="${src.dir}/META-INF"/>
+    <delete dir="exploded"/>
   </target>
 
   <target name="dist" depends="compile, jar, split" description="Build the datanucleus appengine distribution">
@@ -55,27 +62,43 @@
       <fileset dir="${src.dir}" includes="**/*"/>
     </zip>
     <zip destfile="${dist.target}">
-      <zipfileset prefix="${zip.prefix}" dir="${orm.lib.dir}">
+      <zipfileset prefix="demos" dir="../demos">
+        <include name="**"/>
+        <exclude name="**/*.iml"/>
+      </zipfileset>
+      <zipfileset prefix="docs" dir="../doc">
+        <include name="**"/>
+      </zipfileset>
+      <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
         <include name="asm-3.1.jar"/>
         <include name="jdo2-api-2.2.jar"/>
         <!-- Don't ship txn and jpa jars-->
         <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
         <!--<include name="transaction-api-1.1.jar"/>-->
         <!--<include name="persistence-api-1.0.2.jar"/>-->
-        <include name="datanucleus-enhancer*"/>
-        <include name="datanucleus-jpa*"/>
-        <include name="datanucleus-core-*src*"/>
+        <include name="datanucleus-enhancer*.jar"/>
+        <include name="datanucleus-jpa*.jar"/>
       </zipfileset>
-      <zipfileset prefix="${zip.prefix}" dir="${orm.lib.dir}/split">
+      <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}/split">
         <include name="*.jar"/>
       </zipfileset>
-      <zipfileset prefix="${zip.prefix}" file="${orm.jar}"/>
-      <zipfileset prefix="${zip.prefix}" file="${orm.source.zip}"/>
-      <zipfileset prefix="${zip.prefix}" file="README"/>
-      <zipfileset prefix="${zip.prefix}" dir="..">
-        <include name="demos/**"/>
-        <include name="doc/**"/>
+      <zipfileset prefix="lib/user/orm" dir="${orm.lib.dir}">
+        <include name="jdo2-api-2.2.jar"/>
+        <!-- Don't ship txn and jpa jars-->
+        <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
+        <!--<include name="transaction-api-1.1.jar"/>-->
+        <!--<include name="persistence-api-1.0.2.jar"/>-->
+        <include name="datanucleus-jpa*.jar"/>
       </zipfileset>
+      <zipfileset prefix="lib/user/orm" dir="${orm.lib.dir}/split">
+        <include name="*.jar"/>
+      </zipfileset>
+      <zipfileset prefix="lib/user/orm" file="${orm.jar}"/>
+      <zipfileset prefix="src/orm" file="${orm.source.zip}"/>
+      <zipfileset prefix="src/orm" dir="${orm.lib.dir}">
+        <include name="datanucleus-*src*"/>
+      </zipfileset>
+      <zipfileset file="README.ORM"/>
     </zip>
     <delete dir="${orm.lib.dir}/split"/>
     <delete file="${orm.jar}"/>
@@ -94,9 +117,6 @@
       <arg value="--replicate_manifests=true"/>
     </java>
   </target>
-
-  <property name="orm.tmp.dir" value="/tmp/testdist"/>
-  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/lib"/>
 
   <target name="testdist" depends="dist"
           description="Unzip the dist, launch one of the sample apps, and hit it

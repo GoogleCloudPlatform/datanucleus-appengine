@@ -2,6 +2,7 @@
 package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
 
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -116,16 +117,29 @@ public class Flight {
     e.setProperty("flight_number", flightNumber);
   }
 
-  public static Entity newFlightEntity(
-      String keyName, String name, String origin, String dest, int you, int me, int flightNumber) {
+  public static Entity newFlightEntity(Key parent, String keyName, String name, String origin,
+                                       String dest, int you, int me, int flightNumber) {
     Entity e;
     if (keyName == null) {
-      e = new Entity(Flight.class.getSimpleName());
+      if (parent == null) {
+        e = new Entity(Flight.class.getSimpleName());
+      } else {
+        e = new Entity(Flight.class.getSimpleName(), parent);
+      }
     } else {
-      e = new Entity(Flight.class.getSimpleName(), keyName);
+      if (parent == null) {
+        e = new Entity(Flight.class.getSimpleName(), keyName);
+      } else {
+        e = new Entity(Flight.class.getSimpleName(), keyName, parent);
+      }
     }
     addData(e, name, origin, dest, you, me, flightNumber);
     return e;
+  }
+
+  public static Entity newFlightEntity(
+      String keyName, String name, String origin, String dest, int you, int me, int flightNumber) {
+    return newFlightEntity(null, keyName, name, origin, dest, you, me, flightNumber);
   }
 
   public static Entity newFlightEntity(

@@ -59,7 +59,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   protected List<?> performExecute(Map parameters) {
     @SuppressWarnings("unchecked")
     Map<String, ?> params = parameters;
-    if (range != null && !"".equals(range)) {
+    if (range != null && !range.equals("")) {
       // Range is of the format "from, to"
       String[] fromTo = range.split(",");
       if (fromTo.length != 2) {

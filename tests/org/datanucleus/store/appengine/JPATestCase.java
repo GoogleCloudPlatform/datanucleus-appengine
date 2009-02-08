@@ -79,4 +79,11 @@ public class JPATestCase extends TestCase {
   protected void commitTxn() {
     em.getTransaction().commit();
   }
+
+  protected void switchDatasource(EntityManagerFactoryName name) {
+    em.close();
+    emf.close();
+    emf = Persistence.createEntityManagerFactory(name.name());
+    em = emf.createEntityManager();
+  }
 }

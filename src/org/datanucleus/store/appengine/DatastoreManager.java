@@ -253,7 +253,9 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   protected FKArrayStoreSpecialization newFKArrayStoreSpecialization(ClassLoaderResolver clr) {
-    return new DatastoreFKArrayStoreSpecialization(LOCALISER, clr, this);
+    // Disabled for v1.0
+    throw new UnsupportedOperationException("FK Arrays not supported.");
+//    return new DatastoreFKArrayStoreSpecialization(LOCALISER, clr, this);
   }
 
   protected FKMapStore newFKMapStore(AbstractMemberMetaData clr, ClassLoaderResolver amd) {
@@ -402,4 +404,10 @@ public class DatastoreManager extends MappedStoreManager {
         (DatastoreConnectionFactoryImpl) registry.lookupConnectionFactory(txConnectionFactoryName);
     return connFactory.isTransactional();
   }
+
+  @Override
+  public DatastoreTable getDatastoreClass(String className, ClassLoaderResolver clr) {
+    return (DatastoreTable) super.getDatastoreClass(className, clr);
+  }
+
 }

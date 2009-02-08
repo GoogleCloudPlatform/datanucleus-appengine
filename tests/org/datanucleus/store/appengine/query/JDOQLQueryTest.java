@@ -18,6 +18,10 @@ import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasOneToOneJDO;
+import org.datanucleus.test.BidirectionalChildListJDO;
+import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.Stock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -103,6 +107,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
         + " where origin > 2 order by dest");
+    assertQueryUnsupportedByOrm("select from " + HasOneToOneJDO.class.getName()
+        +  " where flight == :flight", DatastoreQuery.JOIN_OP);
   }
 
   public void testSupportedFilters() {
@@ -156,6 +162,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupportedWithExplicitParams(queryStr + orderStr,
         Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
         Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2L, 4L);
+  }
+
+  public void testStock() {
+    Entity stockEntity = new Entity(Stock.class.getSimpleName());
+    stockEntity.setProperty("user", "max");
+    stockEntity.setProperty("symbol", "goog");
+    ldth.ds.put(stockEntity);
+    Query q = pm.newQuery(Stock.class, "user == u && symbol == s");
+    q.declareParameters("String u, String s");
+    List<Stock> stocks = (List<Stock>) q.execute("max", "goog");
+    assertEquals(1, stocks.size());
   }
 
   public void test2Equals2OrderBy() {
@@ -592,6 +609,25 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
     }
+  }
+
+  public void testFilterByParentObject() {
+    Entity parentEntity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyListJDO parent =
+        pm.getObjectById(HasOneToManyListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + BidirectionalChildListJDO.class.getName()
+        + " where parent == p parameters " + HasOneToManyListJDO.class.getName() + " p");
+    List<BidirectionalChildListJDO> result = (List<BidirectionalChildListJDO>) q.execute(parent);
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
   }
 
   private void assertQueryUnsupportedByOrm(

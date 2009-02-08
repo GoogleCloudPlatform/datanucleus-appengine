@@ -50,8 +50,9 @@ abstract class DatastoreAbstractCollectionStoreSpecialization
 
   public int[] internalRemove(StateManager ownerSM, ManagedConnection conn, boolean batched,
                               Object element, boolean executeNow, AbstractCollectionStore acs)
-      throws MappedDatastoreException {
-    // TODO(maxr)
+  throws MappedDatastoreException {
+    // TODO(maxr) Only used by Map key and value stores, which we do not yet
+    // support.
     throw new UnsupportedOperationException();
   }
 }

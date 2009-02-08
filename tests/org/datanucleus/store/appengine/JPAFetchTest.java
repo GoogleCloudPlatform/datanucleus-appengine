@@ -33,23 +33,16 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetchWithNonTransactionalDatasource() {
-    EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-        EntityManagerFactoryName.nontransactional_no_txn_not_allowed.name());
-    EntityManager em = emf.createEntityManager();
-    try {
-      Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
+    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
 
-      String keyStr = KeyFactory.keyToString(key);
-      Book book = em.find(Book.class, keyStr);
-      assertNotNull(book);
-      assertEquals(keyStr, book.getId());
-      assertEquals("max", book.getAuthor());
-      assertEquals("47", book.getIsbn());
-      assertEquals("yam", book.getTitle());
-    } finally {
-      em.close();
-      emf.close();
-    }
+    String keyStr = KeyFactory.keyToString(key);
+    Book book = em.find(Book.class, keyStr);
+    assertNotNull(book);
+    assertEquals(keyStr, book.getId());
+    assertEquals("max", book.getAuthor());
+    assertEquals("47", book.getIsbn());
+    assertEquals("yam", book.getTitle());
   }
 
   public void testSimpleFetchWithNamedKey() {

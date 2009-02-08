@@ -13,6 +13,8 @@ import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJPA;
 
+import javax.persistence.Persistence;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -32,7 +34,6 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
   }
 
   public void testOneToOnePersistChildWithAncestorCascadeAll() throws EntityNotFoundException {
@@ -50,7 +51,6 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeall"));
   }
 
 // Test commented out because JPA doesn't support non-pk fields of arbitrary types.
@@ -80,15 +80,16 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
     beginTxn();
     em.persist(parent);
-    try {
-      commitTxn();
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
+    assertEquals(parent.getId(), child.getAncestorId());
+    commitTxn();
+
+    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
+    assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
+    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+
     HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
     HasAncestorJPA child = new HasAncestorJPA();
     parent.setCascadeRemoveChild(child);
@@ -104,7 +105,6 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     assertKeyParentNull(childEntity, childEntity.getKey());
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentNull(childEntity, (Key) parentEntity.getProperty("cascaderemove"));
   }
 
   public void testOneToOnePersistCascadeAll_OverrideParentManually() {
@@ -250,7 +250,6 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("hasparent_id"));
 
   }
 }

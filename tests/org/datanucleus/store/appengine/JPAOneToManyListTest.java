@@ -11,8 +11,8 @@ import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
+import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeListJPA;
 
 /**
  * @author Max Ross <maxr@google.com>

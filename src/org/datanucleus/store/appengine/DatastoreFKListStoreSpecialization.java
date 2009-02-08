@@ -25,8 +25,6 @@ import org.datanucleus.util.Localiser;
 class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpecialization
     implements FKListStoreSpecialization {
 
-  private static final int[] NOT_USED = {0};
-
   DatastoreFKListStoreSpecialization(Localiser localiser, ClassLoaderResolver clr,
       DatastoreManager storeMgr) {
     super(localiser, clr, storeMgr);
@@ -46,15 +44,20 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
     if (orderMapping != null) {
       ObjectManager om = ownerSm.getObjectManager();
       StateManager childSm = om.findStateManager(element);
-      Entity childEntity = handler.getAssociatedEntityForCurrentTransaction(childSm);
-      orderMapping.setObject(om, childEntity, NOT_USED, index);
-      handler.put(om, childEntity);
+      // See DatastoreFieldManager.handleIndexFields for info on why this
+      // absurdity is necessary.
+      Entity childEntity =
+          (Entity) childSm.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+      if (childEntity != null) {
+        childSm.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
+        childSm.setAssociatedValue(ecs.getOrderMapping(), index);
+        handler.insertObject(childSm);
+      }
     }
 
-    if (ecs.getOwnerMemberMetaData().getCollection().isDependentElement() && allowDependentField) {
-      if (obj != null) {
-        ownerSm.getObjectManager().deleteObjectInternal(obj);
-      }
+    if (ecs.getOwnerMemberMetaData().getCollection().isDependentElement() &&
+        allowDependentField && obj != null) {
+      ownerSm.getObjectManager().deleteObjectInternal(obj);
     }
     return obj;
   }
@@ -67,13 +70,15 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
     StateManager elementSm = om.findStateManager(element);
     // The fk is already set but we still need to set the index
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    Entity entity = handler.getAssociatedEntityForCurrentTransaction(elementSm);
-    if (entity == null) {
-      elementSm.locate();
+    // See DatastoreFieldManager.handleIndexFields for info on why this
+    // absurdity is necessary.
+    Entity entity =
+        (Entity) elementSm.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+    if (entity != null) {
+      elementSm.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
+      elementSm.setAssociatedValue(ecs.getOrderMapping(), index);
+      handler.insertObject(elementSm);
     }
-    entity = handler.getAssociatedEntityForCurrentTransaction(elementSm);
-    ecs.getOrderMapping().setObject(om, entity, new int[1], index);
-    handler.put(om, entity);
     return true;
   }
 
@@ -92,9 +97,9 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
       // first we need to delete the element
       ObjectManager om = sm.getObjectManager();
       Object element = fkListStore.get(sm, index);
-      Key keyToRemove = this.extractElementKey(om, element);
+      StateManager elementStateManager = om.findStateManager(element);
       DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-      handler.delete(om, keyToRemove);
+      handler.deleteObject(elementStateManager);
       if (fkListStore.getOrderMapping() != null) {
         // now, if there is an order mapping, we need to shift
         // everyone down

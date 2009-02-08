@@ -3,6 +3,7 @@ package org.datanucleus.test;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.Collection;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -128,5 +129,13 @@ public class HasOneToManySetJDO implements HasOneToManyJDO {
 
   public void addAtPosition(int i, HasKeyPkJDO hasKeyPk) {
     throw new UnsupportedOperationException();
+  }
+
+  public void removeFlights(Collection<Flight> flights) {
+    this.flights.removeAll(flights);
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildJDO> bidirChildren) {
+    this.bidirChildren.removeAll(bidirChildren);
   }
 }

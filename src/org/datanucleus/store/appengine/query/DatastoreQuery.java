@@ -15,10 +15,12 @@ import org.datanucleus.FetchPlan;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
@@ -31,9 +33,14 @@ import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.DatastorePersistenceHandler;
+import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.DatastoreClass;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -68,6 +75,10 @@ public class DatastoreQuery implements Serializable {
   // Exposed for testing
   static final Expression.Operator HAVING_OP = new Expression.Operator(
       "HAVING", Integer.MAX_VALUE);
+
+  // Exposed for testing
+  static final Expression.Operator JOIN_OP = new Expression.Operator(
+      "JOIN", Integer.MAX_VALUE);
 
   static final Set<Expression.Operator> UNSUPPORTED_OPERATORS =
       Utils.newHashSet((Expression.Operator) Expression.OP_ADD,
@@ -162,7 +173,8 @@ public class DatastoreQuery implements Serializable {
       String kind =
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
-      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd);
+      DatastoreTable table = (DatastoreTable) sm.getDatastoreClass(acmd.getFullClassName(), clr);
+      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities;
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
@@ -264,10 +276,22 @@ public class DatastoreQuery implements Serializable {
         return null;
       }
     };
-    return om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
+    Object pojo = om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
+    StateManager stateMgr = om.findStateManager(pojo);
+    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
+    // TODO(maxr): Seems like we should be able to refactor the handler
+    // so that we can do a fetch without having to hide the entity in the
+    // state manager.
+    handler.setAssociatedEntity(stateMgr, handler.getCurrentTransaction(om), entity);
+    storeMgr.getPersistenceHandler().fetchObject(stateMgr, acmd.getAllMemberPositions());
+    return pojo;
   }
 
   private void validate(QueryCompilation compilation) {
+    if (query.getCandidateClass() == null) {
+      throw new NucleusUserException(
+          "Candidate class could not be found: " + query.getSingleStringQuery());
+    }
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
     if (query.getGrouping() != null) {
@@ -341,9 +365,9 @@ public class DatastoreQuery implements Serializable {
    * expression.
    */
   private void addFilters(QueryCompilation compilation, Query q, Map parameters,
-      AbstractClassMetaData acmd) {
+      AbstractClassMetaData acmd, DatastoreTable table) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(q, parameters, acmd);
+    QueryData qd = new QueryData(q, parameters, acmd, table);
     addExpression(filter, qd);
   }
 
@@ -354,11 +378,13 @@ public class DatastoreQuery implements Serializable {
     private final Query query;
     private final Map parameters;
     private final AbstractClassMetaData acmd;
+    private final DatastoreTable table;
 
-    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd) {
+    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
       this.query = query;
       this.parameters = parameters;
       this.acmd = acmd;
+      this.table = table;
     }
   }
 
@@ -431,7 +457,27 @@ public class DatastoreQuery implements Serializable {
           "No meta-data for member named " + propName + " on class " + qd.acmd.getFullClassName()
               + ".  Are you sure you provided the correct member name?");
     }
-    if (isAncestorPK(ammd)) {
+    JavaTypeMapping mapping = qd.table.getMemberMapping(propName);
+    if (mapping instanceof PersistenceCapableMapping) {
+      if (!qd.table.isParentKeyProvider(ammd)) {
+        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), JOIN_OP);
+      } else {
+        Object keyOrString;
+        if (value instanceof Key || value instanceof String) {
+          // This is a bit odd, but just to be nice we let users
+          // provide the id itself rather than the object containing the id.
+          keyOrString = value;
+        } else {
+          ApiAdapter apiAdapter = query.getObjectManager().getApiAdapter();
+          keyOrString =
+              apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
+          if (keyOrString == null) {
+            throw new NucleusException("Parameter value " + value + " does not have an id.");
+          }
+        }
+        addAncestorFilter(op, qd, keyOrString);
+      }
+    } else if (isAncestorPK(ammd)) {
       addAncestorFilter(op, qd, value);
     } else {
       if (ammd.isPrimaryKey()) {

@@ -11,9 +11,11 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasOneToManyListJPA;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -451,6 +453,70 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("12345", result.get(0).getIsbn());
     assertEquals("11111", result.get(1).getIsbn());
     assertEquals("67890", result.get(2).getIsbn());
+  }
+
+  public void testFilterByParentObject() {
+    Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyListJPA parent =
+        em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = em.createQuery("SELECT FROM " +
+        BidirectionalChildListJPA.class.getName() +
+        " WHERE parent = :p");
+
+    q.setParameter("p", parent);
+    @SuppressWarnings("unchecked")
+    List<BidirectionalChildListJPA> result = (List<BidirectionalChildListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentId() {
+    Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyListJPA parent =
+        em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = em.createQuery("SELECT FROM " +
+        BidirectionalChildListJPA.class.getName() +
+        " WHERE parent = :p");
+
+    q.setParameter("p", parent.getId());
+    @SuppressWarnings("unchecked")
+    List<BidirectionalChildListJPA> result = (List<BidirectionalChildListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentKey() {
+    Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    Query q = em.createQuery("SELECT FROM " +
+        BidirectionalChildListJPA.class.getName() +
+        " WHERE parent = :p");
+
+    q.setParameter("p", parentEntity.getKey());
+    @SuppressWarnings("unchecked")
+    List<BidirectionalChildListJPA> result = (List<BidirectionalChildListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
   }
 
   private static Entity newBook(String title, String author, String isbn) {
