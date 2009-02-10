@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.jdo.Query;
+import javax.jdo.JDOException;
 
 
 /**
@@ -107,8 +108,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
         + " where origin > 2 order by dest");
-    assertQueryUnsupportedByOrm("select from " + HasOneToOneJDO.class.getName()
-        +  " where flight == :flight", DatastoreQuery.JOIN_OP);
   }
 
   public void testSupportedFilters() {
@@ -607,6 +606,128 @@ public class JDOQLQueryTest extends JDOTestCase {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Flight flight =
+        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    List<HasOneToOneJDO> result = (List<HasOneToOneJDO>) q.execute(flight);
+    assertEquals(1, result.size());
+    assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+  }
+
+  public void testFilterByChildObject_AdditionalFilterOnParent() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Flight flight =
+        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where id == parentId && flight == f "
+        + "parameters String parentId, " + Flight.class.getName() + " f");
+    List<HasOneToOneJDO> result = (List<HasOneToOneJDO>) q.execute(KeyFactory.keyToString(flightEntity.getKey()), flight);
+    assertTrue(result.isEmpty());
+
+    result = (List<HasOneToOneJDO>) q.execute(KeyFactory.keyToString(parentEntity.getKey()), flight);
+    assertEquals(1, result.size());
+    assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+  }
+
+  public void testFilterByChildObject_UnsupportedOperator() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Flight flight =
+        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight > f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(flight);
+      fail("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_ValueWithoutAncestor() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity("f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Flight flight =
+        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(flight);
+      fail("expected JDOException");
+    } catch (JDOException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_KeyIsWrongType() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(parentEntity.getKey());
+      fail("expected JDOException");
+    } catch (JDOException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_KeyParentIsWrongType() {
+    Key parent = KeyFactory.createKey("yar", 44);
+    Entity flightEntity = new Entity(Flight.class.getSimpleName(), parent);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(flightEntity.getKey());
+      fail("expected JDOException");
+    } catch (JDOException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_ValueWithoutId() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity("f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Flight flight = new Flight();
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(flight);
+      fail("expected JDOException");
+    } catch (JDOException e) {
       // good
     }
   }

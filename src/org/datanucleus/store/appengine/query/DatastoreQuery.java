@@ -20,7 +20,6 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
@@ -32,13 +31,12 @@ import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
 import org.datanucleus.store.appengine.DatastoreTable;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -174,7 +172,7 @@ public class DatastoreQuery implements Serializable {
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
       DatastoreTable table = (DatastoreTable) sm.getDatastoreClass(acmd.getFullClassName(), clr);
-      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table);
+      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table, ds);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities;
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
@@ -215,7 +213,7 @@ public class DatastoreQuery implements Serializable {
   FetchOptions buildFetchOptions(long fromInclNo, long toExclNo) {
     FetchOptions opts = null;
     Integer offset = null;
-    if (rangeValueIsSet(fromInclNo)) {
+    if (fromInclNo != 0 && rangeValueIsSet(fromInclNo)) {
       // datastore api expects an int because we cap you at 1000 anyway.
       offset = (int) Math.min(Integer.MAX_VALUE, fromInclNo);
       opts = withOffset(offset);
@@ -365,9 +363,9 @@ public class DatastoreQuery implements Serializable {
    * expression.
    */
   private void addFilters(QueryCompilation compilation, Query q, Map parameters,
-      AbstractClassMetaData acmd, DatastoreTable table) {
+      AbstractClassMetaData acmd, DatastoreTable table, DatastoreService ds) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(q, parameters, acmd, table);
+    QueryData qd = new QueryData(q, parameters, acmd, table, ds);
     addExpression(filter, qd);
   }
 
@@ -379,12 +377,15 @@ public class DatastoreQuery implements Serializable {
     private final Map parameters;
     private final AbstractClassMetaData acmd;
     private final DatastoreTable table;
+    private final DatastoreService ds;
 
-    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
+    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
+                      DatastoreService ds) {
       this.query = query;
       this.parameters = parameters;
       this.acmd = acmd;
       this.table = table;
+      this.ds = ds;
     }
   }
 
@@ -459,36 +460,84 @@ public class DatastoreQuery implements Serializable {
     }
     JavaTypeMapping mapping = qd.table.getMemberMapping(propName);
     if (mapping instanceof PersistenceCapableMapping) {
-      if (!qd.table.isParentKeyProvider(ammd)) {
-        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), JOIN_OP);
-      } else {
-        Object keyOrString;
-        if (value instanceof Key || value instanceof String) {
-          // This is a bit odd, but just to be nice we let users
-          // provide the id itself rather than the object containing the id.
-          keyOrString = value;
-        } else {
-          ApiAdapter apiAdapter = query.getObjectManager().getApiAdapter();
-          keyOrString =
-              apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
-          if (keyOrString == null) {
-            throw new NucleusException("Parameter value " + value + " does not have an id.");
-          }
-        }
-        addAncestorFilter(op, qd, keyOrString);
-      }
+      processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isAncestorPK(ammd)) {
-      addAncestorFilter(op, qd, value);
+      addAncestorFilter(op, qd, keyOrStringToKey(value));
     } else {
       if (ammd.isPrimaryKey()) {
         propName = Entity.KEY_RESERVED_PROPERTY;
-        if (value instanceof String) {
-          value = KeyFactory.stringToKey((String) value);
-        }
+        value = keyOrStringToKey(value);
       } else {
         propName = determinePropertyName(ammd);
       }
       qd.query.addFilter(propName, op, value);
+    }
+  }
+
+  private void processPersistenceCapableMapping(QueryData qd, Query.FilterOperator op,
+                                                AbstractMemberMetaData ammd, Object value) {
+    Object keyOrString;
+    if (value instanceof Key || value instanceof String) {
+      // This is a bit odd, but just to be nice we let users
+      // provide the id itself rather than the object containing the id.
+      keyOrString = value;
+    } else {
+      ApiAdapter apiAdapter = query.getObjectManager().getApiAdapter();
+      keyOrString =
+          apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
+      if (keyOrString == null) {
+        throw new NucleusException(query.getSingleStringQuery()
+                                   + ": Parameter value " + value + " does not have an id.");
+      }
+    }
+    Key valueKey = keyOrStringToKey(keyOrString);
+    verifyRelatedKeyIsOfProperType(ammd, valueKey);
+    if (!qd.table.isParentKeyProvider(ammd)) {
+      // Looks like a join.  If it can be satisfied with just a
+      // get on the secondary table, fulfill it.
+      if (op != Query.FilterOperator.EQUAL) {
+        throw new UnsupportedDatastoreFeatureException(
+            "Only the equals operator is supported on conditions involving the owning side of a "
+            + "one-to-one.", query.getSingleStringQuery());        
+      }
+      if (valueKey.getParent() == null) {
+        throw new NucleusException(query.getSingleStringQuery() + ": Key of parameter value does "
+                                   + "not have a parent.");
+      }
+
+      // The field is the child side of an owned one to one.  We can just add
+      // the parent key to the query as an equality filter on id.
+      qd.query.addFilter(
+          Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
+    } else {
+      addAncestorFilter(op, qd, valueKey);
+    }
+  }
+
+  private void verifyRelatedKeyIsOfProperType(AbstractMemberMetaData ammd, Key key) {
+    String keyKind = key.getKind();
+    ClassLoaderResolver clr = query.getObjectManager().getClassLoaderResolver();
+    AbstractClassMetaData acmd = ammd.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+    String fieldKind =
+        getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+    if (!keyKind.equals(fieldKind)) {
+      throw new NucleusException(query.getSingleStringQuery() + ": Field "
+                                 + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
+                                 + " parameter value contains Key of kind " + keyKind );
+    }
+    // If the key has a parent, we also need to also verify that the parent of
+    // the key is the property kind
+    if (key.getParent() != null) {
+      String keyParentKind = key.getParent().getKind();
+      String fieldOwnerKind = getIdentifierFactory().newDatastoreContainerIdentifier(
+          ammd.getAbstractClassMetaData()).getIdentifierName();
+      if (!keyParentKind.equals(fieldOwnerKind)) {
+        throw new NucleusException(query.getSingleStringQuery() + ": Field "
+                                   + ammd.getFullFieldName() + " is owned by a class that maps to "
+                                   + "kind " + fieldOwnerKind + " but"
+                                   + " parameter value contains Key with parent of kind "
+                                   + keyParentKind );
+      }
     }
   }
 
@@ -502,7 +551,12 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private void addAncestorFilter(Query.FilterOperator op, QueryData qd, Object value) {
+  private Key keyOrStringToKey(Object keyOtString) {
+    return (keyOtString instanceof String) ?
+           KeyFactory.stringToKey((String) keyOtString) : (Key) keyOtString;
+  }
+
+  private void addAncestorFilter(Query.FilterOperator op, QueryData qd, Key key) {
     // We only support queries on ancestor if it is an equality filter.
     if (op != Query.FilterOperator.EQUAL) {
       throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
@@ -510,8 +564,7 @@ public class DatastoreQuery implements Serializable {
           query.getSingleStringQuery());
     }
     // value must be String or Key
-    Key ancestor = (value instanceof String) ? KeyFactory.stringToKey((String) value) : (Key) value;
-    qd.query.setAncestor(ancestor);
+    qd.query.setAncestor(key);
   }
 
   private void checkForUnsupportedOperator(Expression.Operator operator) {

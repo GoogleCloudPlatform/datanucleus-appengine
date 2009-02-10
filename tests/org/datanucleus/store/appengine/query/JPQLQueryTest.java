@@ -1,6 +1,7 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
@@ -16,6 +17,7 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
+import org.datanucleus.test.HasOneToOneJPA;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -26,6 +28,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
 public class JPQLQueryTest extends JPATestCase {
@@ -455,6 +458,126 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("67890", result.get(2).getIsbn());
   }
 
+  public void testFilterByChildObject() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    ldth.ds.put(bookEntity);
+
+    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+    q.setParameter("b", book);
+    List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+  }
+
+  public void testFilterByChildObject_AdditionalFilterOnParent() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    ldth.ds.put(bookEntity);
+
+    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where id = :parentId and book = :b");
+    q.setParameter("parentId", KeyFactory.keyToString(bookEntity.getKey()));
+    q.setParameter("b", book);
+    List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
+    assertTrue(result.isEmpty());
+
+    q.setParameter("parentId", KeyFactory.keyToString(parentEntity.getKey()));
+    q.setParameter("b", book);
+    result = (List<HasOneToOneJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+  }
+
+  public void testFilterByChildObject_UnsupportedOperator() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    ldth.ds.put(bookEntity);
+
+    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book > :b");
+        q.setParameter("b", book);
+    try {
+      q.getResultList();
+      fail("expected udfe");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_ValueWithoutAncestor() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "11111", 1929);
+    ldth.ds.put(bookEntity);
+
+    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+    q.setParameter("b", book);
+    try {
+      q.getResultList();
+      fail("expected JPAException");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_KeyIsWrongType() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+    q.setParameter("b", parentEntity.getKey());
+    try {
+      q.getResultList();
+      fail("expected JPAException");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_KeyParentIsWrongType() {
+    Key parent = KeyFactory.createKey("yar", 44);
+    Entity bookEntity = new Entity(Book.class.getSimpleName(), parent);
+
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+    q.setParameter("b", bookEntity.getKey());
+    try {
+      q.getResultList();
+      fail("expected JPAException");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testFilterByChildObject_ValueWithoutId() {
+    Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "11111", 1929);
+    ldth.ds.put(bookEntity);
+
+    Book book = new Book();
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+    q.setParameter("b", book);
+    try {
+      q.getResultList();
+      fail("expected JPAException");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
   public void testFilterByParentObject() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
@@ -524,7 +647,17 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private static Entity newBook(String title, String author, String isbn, int firstPublished) {
-    Entity e = new Entity(Book.class.getSimpleName());
+    return newBook(null, title, author, isbn, firstPublished);
+  }
+
+  private static Entity newBook(
+      Key parentKey, String title, String author, String isbn, int firstPublished) {
+    Entity e;
+    if (parentKey != null) {
+      e = new Entity(Book.class.getSimpleName(), parentKey);
+    } else {
+      e = new Entity(Book.class.getSimpleName());
+    }
     e.setProperty("title", title);
     e.setProperty("author", author);
     e.setProperty("isbn", isbn);
