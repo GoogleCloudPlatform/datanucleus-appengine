@@ -51,7 +51,7 @@
         <include name="transaction-api-1.1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
       </lib>
-      <lib dir="${sdk.lib.dir}">
+      <lib dir="${sdk.lib.dir}/impl">
         <include name="appengine-api.jar"/>
       </lib>
       <classes dir="classes"/>

@@ -125,9 +125,9 @@
       Setup a directory for the test distribution
       It should look like this:
       /tmp/testdist/lib
-      /tmp/testdist/lib/appengine-api.jar
       /tmp/testdist/lib/appengine-tools-api.jar
       /tmp/testdist/lib/impl/appengine-local-runtime.jar
+      /tmp/testdist/lib/impl/appengine-api.jar
       /tmp/testdist/lib/shared/servlet-api-2.5 .jar
       /tmp/testdist/lib/shared/jsp-api-2.1 .jar
       /tmp/testdist/lib/shared/appengine-local-runtime-shared.jar
@@ -141,7 +141,6 @@
     <mkdir dir="${orm.sdk.tmp.dir}"/>
     <copy todir="${orm.sdk.tmp.dir}">
       <fileset dir="${orm.lib.dir}">
-        <include name="appengine-api.jar"/>
         <include name="appengine-tools-api.jar"/>
       </fileset>
     </copy>
