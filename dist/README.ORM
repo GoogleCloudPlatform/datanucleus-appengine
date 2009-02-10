@@ -56,3 +56,16 @@ VERSION 0.8.2
 - Avoid multiple writes to the same entity in a single txn
 - Query by ancestor provider
 - One To Many bug fixes
+
+VERSION 0.8.3
+- There is no 0.8.3
+
+VERSION 0.8.4
+- There is no 0.8.4
+
+VERSION 0.8.5
+- Support java 5 enums
+- OSGI-compliant manifest
+- Fix single string JDOQL range queries
+- Support querying parent by 1 to 1 child
+- Support updates without explicit txn management (jdo)

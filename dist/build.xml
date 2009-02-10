@@ -3,7 +3,7 @@
 
   <property name="version.major" value="0"/>
   <property name="version.minor" value="8"/>
-  <property name="version.point" value="2"/>
+  <property name="version.point" value="5"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -169,7 +169,7 @@
 
     <!-- Copy over the jta and jpa jars which we don't ship with the distro -->
     <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
-    <copy todir="${orm.tmp.dir}/${zip.prefix}">
+    <copy todir="${orm.tmp.dir}/lib/user/orm">
       <fileset dir="${orm.lib.dir}">
         <include name="transaction-api-1.1.jar"/>
         <include name="persistence-api-1.0.2.jar"/>
@@ -178,7 +178,7 @@
     
     <parallel>
       <daemons>
-        <ant dir="${orm.tmp.dir}/${zip.prefix}/demos/helloorm"/>
+        <ant dir="${orm.tmp.dir}/demos/helloorm"/>
       </daemons>
       <sequential>
         <sleep seconds="8"/>
