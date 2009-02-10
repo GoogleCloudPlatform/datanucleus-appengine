@@ -6,10 +6,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Book;
 
-import javax.persistence.EntityManager;
-import javax.persistence.EntityManagerFactory;
-import javax.persistence.Persistence;
-
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -17,7 +13,7 @@ public class JPAFetchTest extends JPATestCase {
 
   @Override
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
-    return EntityManagerFactoryName.nontransactional_no_txn_allowed;
+    return EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
   }
 
   public void testSimpleFetch() {
@@ -33,7 +29,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetchWithNonTransactionalDatasource() {
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
 
     String keyStr = KeyFactory.keyToString(key);

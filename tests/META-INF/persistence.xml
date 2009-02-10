@@ -4,7 +4,7 @@
     xsi:schemaLocation="http://java.sun.com/xml/ns/persistence
         http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd" version="1.0">
 
-    <persistence-unit name="transactional_no_txn_not_allowed">
+    <persistence-unit name="transactional_ds_non_transactional_ops_not_allowed">
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.identifier.case" value="PreserveCase"/>
@@ -13,7 +13,7 @@
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="transactional_no_txn_allowed">
+    <persistence-unit name="transactional_ds_non_transactional_ops_allowed">
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>
@@ -24,7 +24,7 @@
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="nontransactional_no_txn_not_allowed">
+    <persistence-unit name="nontransactional_ds_non_transactional_ops_not_allowed">
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.identifier.case" value="PreserveCase"/>
@@ -34,7 +34,7 @@
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="nontransactional_no_txn_allowed">
+    <persistence-unit name="nontransactional_ds_non_transactional_ops_allowed">
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>

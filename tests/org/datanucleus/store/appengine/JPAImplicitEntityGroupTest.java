@@ -3,7 +3,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
@@ -12,8 +11,6 @@ import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJPA;
-
-import javax.persistence.Persistence;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -88,7 +85,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   }
 
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
     HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
     HasAncestorJPA child = new HasAncestorJPA();

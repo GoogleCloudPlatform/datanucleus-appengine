@@ -106,6 +106,43 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.reset(mockDatastoreService, mockTxn);
   }
 
+  private void testUpdatePermutationWithExpectedDatastoreTxn(
+      PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalWrite)
+      throws EntityNotFoundException {
+    Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
+    ldth.ds.put(flightEntity);
+    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.get(
+        EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
+        EasyMock.isA(Key.class))).andReturn(flightEntity);
+    EasyMock.expect(mockDatastoreService.get(
+        EasyMock.isA(Key.class))).andReturn(flightEntity);
+    EasyMock.expect(mockDatastoreService.put(
+        EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
+        EasyMock.isA(Entity.class))).andReturn(null);
+    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    mockTxn.commit();
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    Transaction txn = pm.currentTransaction();
+    txn.setNontransactionalWrite(nonTransactionalWrite);
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      Flight f1 = pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+      f1.setYou(88);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+      pm.close();
+    }
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
   private void testReadPermutationWithExpectedDatastoreTxn(
       PersistenceManager pm, boolean explicitDemarcation,
       boolean nonTransactionalRead) throws EntityNotFoundException {
@@ -139,8 +176,7 @@ public class JDOTransactionTest extends TestCase {
   }
 
   private void testWritePermutationWithoutExpectedDatastoreTxn(
-      PersistenceManager pm, boolean explicitDemarcation,
-      boolean nonTransactionalWrite) {
+      PersistenceManager pm, boolean explicitDemarcation, boolean nonTransactionalOpAllowed) {
     EasyMock.expect(mockDatastoreService.put(EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -152,7 +188,8 @@ public class JDOTransactionTest extends TestCase {
     f1.setMe(2);
 
     Transaction txn = pm.currentTransaction();
-    txn.setNontransactionalWrite(nonTransactionalWrite);
+    txn.setNontransactionalWrite(nonTransactionalOpAllowed);
+    txn.setNontransactionalRead(nonTransactionalOpAllowed);
     if (explicitDemarcation) {
       txn.begin();
     }
@@ -164,6 +201,40 @@ public class JDOTransactionTest extends TestCase {
       }
     }
 
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testUpdatePermutationWithoutExpectedDatastoreTxn(
+      PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalOp)
+      throws EntityNotFoundException {
+    Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
+    ldth.ds.put(flightEntity);
+    EasyMock.expect(mockDatastoreService.get(
+        EasyMock.isA(Key.class))).andReturn(flightEntity);
+    EasyMock.expect(mockDatastoreService.get(
+        EasyMock.isA(Key.class))).andReturn(flightEntity);
+    EasyMock.expect(mockDatastoreService.put(
+        EasyMock.isA(Entity.class))).andReturn(null);
+    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    Transaction txn = pm.currentTransaction();
+    txn.setNontransactionalWrite(nonTransactionalOp);
+    txn.setNontransactionalRead(nonTransactionalOp);
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      Flight f1 = pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+      f1.setYou(88);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+      pm.close();
+    }
     EasyMock.verify(mockDatastoreService, mockTxn);
     EasyMock.reset(mockDatastoreService, mockTxn);
   }
@@ -194,8 +265,7 @@ public class JDOTransactionTest extends TestCase {
   }
 
   private void testIllegalWritePermutation(
-      PersistenceManager pm, boolean explicitDemarcation,
-      boolean nonTransactionalWrite) {
+      PersistenceManager pm, boolean explicitDemarcation, boolean nonTransactionalWrite) {
 
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -219,6 +289,36 @@ public class JDOTransactionTest extends TestCase {
     }
     EasyMock.verify(mockDatastoreService, mockTxn);
     EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testIllegalUpdatePermutation(
+      PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalOp)
+      throws EntityNotFoundException {
+    Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
+    ldth.ds.put(flightEntity);
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    PersistenceManager pm = pmf.getPersistenceManager();
+    Transaction txn = pm.currentTransaction();
+    txn.setNontransactionalWrite(nonTransactionalOp);
+    txn.setNontransactionalRead(nonTransactionalOp);
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+      fail("expected exception");
+    } catch (TransactionNotReadableException tnre) {
+      // good
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+      pm.close();
+    }
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+
   }
 
   private void testIllegalReadPermutation(
@@ -260,6 +360,14 @@ public class JDOTransactionTest extends TestCase {
     pmf.close();
   }
 
+  public void testUpdatesWithDatastoreTxn() throws Exception {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    testUpdatePermutationWithExpectedDatastoreTxn(pmf, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED);
+    testUpdatePermutationWithExpectedDatastoreTxn(pmf, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED);
+    pmf.close();
+  }
+
   public void testReadsWithDatastoreTxn() throws Exception {
     PersistenceManagerFactory pmf = getPersistenceManagerFactory(
         JDOTestCase.PersistenceManagerFactoryName.transactional.name());
@@ -286,6 +394,21 @@ public class JDOTransactionTest extends TestCase {
     testWritePermutationWithoutExpectedDatastoreTxn(pm, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED);
 
     pm.close();
+    pmf.close();
+  }
+
+  public void testUpdatesWithoutDatastoreTxn() throws Exception {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    testUpdatePermutationWithoutExpectedDatastoreTxn(pmf, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED);
+    pmf.close();
+
+    pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.nontransactional.name());
+    testUpdatePermutationWithoutExpectedDatastoreTxn(pmf, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED);
+    testUpdatePermutationWithoutExpectedDatastoreTxn(pmf, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED);
+    testUpdatePermutationWithoutExpectedDatastoreTxn(pmf, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED);
+
     pmf.close();
   }
 
@@ -320,6 +443,17 @@ public class JDOTransactionTest extends TestCase {
     pm = pmf.getPersistenceManager();
     testIllegalWritePermutation(pm, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED);
     pm.close();
+    pmf.close();
+  }
+
+  public void testIllegalUpdates() throws Exception {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    testIllegalUpdatePermutation(pmf, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED);
+    pmf.close();
+    pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.nontransactional.name());
+    testIllegalUpdatePermutation(pmf, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED);
     pmf.close();
   }
 

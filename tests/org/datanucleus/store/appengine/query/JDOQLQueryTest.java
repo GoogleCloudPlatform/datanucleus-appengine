@@ -21,7 +21,6 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.Stock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -161,17 +160,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupportedWithExplicitParams(queryStr + orderStr,
         Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
         Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2L, 4L);
-  }
-
-  public void testStock() {
-    Entity stockEntity = new Entity(Stock.class.getSimpleName());
-    stockEntity.setProperty("user", "max");
-    stockEntity.setProperty("symbol", "goog");
-    ldth.ds.put(stockEntity);
-    Query q = pm.newQuery(Stock.class, "user == u && symbol == s");
-    q.declareParameters("String u, String s");
-    List<Stock> stocks = (List<Stock>) q.execute("max", "goog");
-    assertEquals(1, stocks.size());
   }
 
   public void test2Equals2OrderBy() {

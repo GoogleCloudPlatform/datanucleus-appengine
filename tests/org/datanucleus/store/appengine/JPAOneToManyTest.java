@@ -329,7 +329,7 @@ abstract class JPAOneToManyTest extends JPATestCase {
 
   void testUpdate_NullOutChild_NoDelete(HasOneToManyWithNonDeletingCascadeJPA pojo)
       throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
     Book b = newBook();
     beginTxn();
@@ -358,7 +358,7 @@ abstract class JPAOneToManyTest extends JPATestCase {
 
   void testUpdate_ClearOutChild_NoDelete(HasOneToManyWithNonDeletingCascadeJPA pojo)
       throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
     Book b = newBook();
     beginTxn();

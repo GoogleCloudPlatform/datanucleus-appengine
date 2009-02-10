@@ -20,8 +20,6 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
-import javax.persistence.Persistence;
-
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -88,7 +86,7 @@ public class JPAOneToOneTest extends JPATestCase {
 
   public void testInsert_NewParentExistingChild() throws EntityNotFoundException {
     // this can only work on a nontransactional datasource
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
@@ -369,7 +367,7 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_no_txn_not_allowed);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Book b = newBook();
     beginTxn();
     em.persist(b);

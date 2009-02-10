@@ -4,6 +4,7 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasVersionWithFieldJDO;
@@ -157,5 +158,21 @@ public class JDODeleteTest extends JDOTestCase {
     }
     // make sure the version didn't change on the model object
     assertEquals(1L, JDOHelper.getVersion(hvwf));
+  }
+
+  public void testNonTransactionalDelete() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+
+    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
+    pm.deletePersistent(f);
+    pm.close();
+    try {
+      ldth.ds.get(key);
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+    pm = pmf.getPersistenceManager();
   }
 }

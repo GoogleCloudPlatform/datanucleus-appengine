@@ -199,4 +199,16 @@ public class JDOUpdateTest extends JDOTestCase {
     // make sure the version didn't change on the model object
     assertEquals(1L, JDOHelper.getVersion(hvwf));
   }
+
+  public void testNonTransactionalUpdate() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+
+    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
+    f.setYou(77);
+    pm.close();
+    Entity flightEntity = ldth.ds.get(key);
+    assertEquals(77L, flightEntity.getProperty("you"));
+    pm = pmf.getPersistenceManager();
+  }
 }

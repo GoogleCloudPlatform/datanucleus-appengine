@@ -39,13 +39,13 @@ public class JPATestCase extends TestCase {
 
   protected enum EntityManagerFactoryName {
     // nonTransactionalRead and nonTransactionalWrite are true
-    transactional_no_txn_allowed,
+    transactional_ds_non_transactional_ops_allowed,
     // nonTransactionalRead and nonTransactionalWrite are false
-    transactional_no_txn_not_allowed,
+    transactional_ds_non_transactional_ops_not_allowed,
     // nonTransactionalRead and nonTransactionalWrite are true
-    nontransactional_no_txn_allowed,
+    nontransactional_ds_non_transactional_ops_allowed,
     // nonTransactionalRead and nonTransactionalWrite are false
-    nontransactional_no_txn_not_allowed
+    nontransactional_ds_non_transactional_ops_not_allowed
   }
 
   /**
@@ -53,7 +53,7 @@ public class JPATestCase extends TestCase {
    * Override this if your test needs to use a different instance.
    */
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
-    return EntityManagerFactoryName.transactional_no_txn_not_allowed;
+    return EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed;
   }
 
   @Override

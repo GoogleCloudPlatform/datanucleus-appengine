@@ -548,6 +548,40 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertCountsInDatastore(0, 0);
   }
 
+  public void testNonTransactionalUpdate() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+
+    Flight f = newFlight();
+    HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
+
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    pojo.setFlight(f);
+    pojo.setHasKeyPK(hasKeyPk);
+    pojo.setHasParent(hasParent);
+    hasParent.setParent(pojo);
+    pojo.setHasParentKeyPK(hasParentKeyPk);
+    hasParentKeyPk.setParent(pojo);
+
+    pm.makePersistent(pojo);
+
+    pm.close();
+
+    assertCountsInDatastore(1, 1);
+
+    pm = pmf.getPersistenceManager();
+    pojo = pm.getObjectById(HasOneToOneJDO.class, pojo.getId());
+    pojo.setFlight(null);
+    pojo.setHasKeyPK(null);
+    pojo.setHasParent(null);
+    pojo.setHasParentKeyPK(null);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    
+    assertCountsInDatastore(1, 0);
+  }
+
   private Flight newFlight() {
     Flight flight = new Flight();
     flight.setName("jimmy");
