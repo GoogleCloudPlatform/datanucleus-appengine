@@ -593,11 +593,6 @@ public class JDOOneToOneTest extends JDOTestCase {
     return flight;
   }
 
-  private int countForClass(Class<?> clazz) {
-    return ldth.ds.prepare(
-        new com.google.appengine.api.datastore.Query(clazz.getSimpleName())).countEntities();
-  }
-
   private void assertCountsInDatastore(int expectedParent, int expectedChildren) {
     assertEquals(expectedParent, countForClass(HasOneToOneJDO.class));
     assertEquals(expectedChildren, countForClass(Flight.class));

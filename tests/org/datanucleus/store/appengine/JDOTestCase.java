@@ -99,4 +99,10 @@ public class JDOTestCase extends TestCase {
     pmf = JDOHelper.getPersistenceManagerFactory(name.name());
     pm = pmf.getPersistenceManager();
   }
+
+  protected int countForClass(Class<?> clazz) {
+    return ldth.ds.prepare(
+        new com.google.appengine.api.datastore.Query(clazz.getSimpleName())).countEntities();
+  }
+
 }

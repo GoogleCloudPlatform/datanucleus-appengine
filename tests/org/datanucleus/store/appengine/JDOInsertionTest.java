@@ -68,6 +68,8 @@ public class JDOInsertionTest extends JDOTestCase {
     assertEquals(KitchenSink.class.getSimpleName(), entity.getKind());
 
     Entity sameEntity = KitchenSink.newKitchenSinkEntity(KeyFactory.stringToKey(ks.key));
+    assertFalse(entity.getProperties().keySet().contains("an extra property"));
+    entity.setProperty("an extra property", "yar!");
     assertEquals(sameEntity.getProperties(), entity.getProperties());
   }
 

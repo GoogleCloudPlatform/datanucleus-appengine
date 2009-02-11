@@ -173,10 +173,10 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   private void addStringPropIfNotNull(
-      PersistenceConfiguration conf, Map<String, String> map, String propName, String mapName) {
+      PersistenceConfiguration conf, Map<String, String> map, String propName, String mapKeyName) {
     String val = conf.getStringProperty(propName);
     if (val != null) {
-      map.put(mapName, val);
+      map.put(mapKeyName, val);
     }
   }
   @Override

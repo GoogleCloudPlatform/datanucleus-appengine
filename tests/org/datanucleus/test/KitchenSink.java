@@ -258,6 +258,8 @@ public class KitchenSink {
     entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));
     entity.setProperty("linkList", Utils.newArrayList(LINK1, LINK2));
+    // just to prove that this doesn't screw anything up
+    entity.setProperty("an extra property", "yar!");
     return entity;
   }
 

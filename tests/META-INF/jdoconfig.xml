@@ -4,15 +4,13 @@
     xsi:noNamespaceSchemaLocation="http://java.sun.com/xml/ns/jdo/jdoconfig">
 
     <persistence-manager-factory name="transactional">
-        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.store.appengine.DatastoreJDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
-        <property name="datanucleus.identifier.case" value="PreserveCase"/>
     </persistence-manager-factory>
 
     <persistence-manager-factory name="nontransactional">
-        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.store.appengine.DatastoreJDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
-        <property name="datanucleus.identifier.case" value="PreserveCase"/>
         <property name="datanucleus.NontransactionalRead" value="true"/>
         <property name="datanucleus.NontransactionalWrite" value="true"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>

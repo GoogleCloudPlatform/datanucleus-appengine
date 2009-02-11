@@ -1008,10 +1008,6 @@ abstract class JDOOneToManyTest extends JDOTestCase {
 //    commitTxn();
 //  }
 
-  int countForClass(Class<?> clazz) {
-    return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
-  }
-
   void assertCountsInDatastore(Class<? extends HasOneToManyJDO> parentClass,
       Class<? extends BidirectionalChildJDO> bidirClass,
       int expectedParent, int expectedChildren) {

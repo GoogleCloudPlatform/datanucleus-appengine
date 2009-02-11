@@ -21,6 +21,8 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasMultiValueProps;
+import org.datanucleus.test.QueryOnly;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -737,6 +739,32 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, result.size());
     assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByMultiValueProperty() {
+    Entity entity = new Entity(HasMultiValueProps.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+        Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    javax.jdo.Query q = pm.newQuery(
+        "select from " + HasMultiValueProps.class.getName()
+        + " where strList == p1 && strList == p2 parameters String p1, String p2");
+    List<HasMultiValueProps> result = (List<HasMultiValueProps>) q.execute("1", "3");
+    assertEquals(1, result.size());
+    result = (List<HasMultiValueProps>) q.execute("1", "4");
+    assertEquals(0, result.size());
+
+    q = pm.newQuery(
+        "select from " + HasMultiValueProps.class.getName()
+        + " where keyList == p1 && keyList == p2 parameters " + Key.class.getName() + " p1, "
+        + Key.class.getName() + " p2");
+    result = (List<HasMultiValueProps>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    result = (List<HasMultiValueProps>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be2"));
+    assertEquals(0, result.size());
+
   }
 
   private void assertQueryUnsupportedByOrm(

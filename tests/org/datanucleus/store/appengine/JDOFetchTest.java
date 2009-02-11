@@ -32,12 +32,49 @@ public class JDOFetchTest extends JDOTestCase {
     super.tearDown();
   }
 
-  public void testSimpleFetch() {
+  public void testSimpleFetch_Id() {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
 
     String keyStr = KeyFactory.keyToString(key);
     Flight flight = pm.getObjectById(Flight.class, keyStr);
     assertNotNull(flight);
+    assertEquals(keyStr, flight.getId());
+    assertEquals("yam", flight.getOrigin());
+    assertEquals("bam", flight.getDest());
+    assertEquals("1", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+  }
+
+  public void testSimpleFetch_Id_LongIdOnly() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+
+    Flight flight = pm.getObjectById(Flight.class, key.getId());
+    assertNotNull(flight);
+    String keyStr = KeyFactory.keyToString(key);
+    assertEquals(keyStr, flight.getId());
+    assertEquals("yam", flight.getOrigin());
+    assertEquals("bam", flight.getDest());
+    assertEquals("1", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+  }
+
+  public void testSimpleFetch_Id_LongIdOnly_NotFound() {
+    try {
+      pm.getObjectById(Flight.class, -1);
+      fail("expected onfe");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
+  }
+
+  public void testSimpleFetch_Id_IntIdOnly() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+
+    Flight flight = pm.getObjectById(Flight.class, Long.valueOf(key.getId()).intValue());
+    assertNotNull(flight);
+    String keyStr = KeyFactory.keyToString(key);
     assertEquals(keyStr, flight.getId());
     assertEquals("yam", flight.getOrigin());
     assertEquals("bam", flight.getDest());
@@ -54,6 +91,24 @@ public class JDOFetchTest extends JDOTestCase {
     assertNotNull(flight);
     assertEquals(keyStr, flight.getId());
     assertEquals("named key", KeyFactory.stringToKey(flight.getId()).getName());
+  }
+
+  public void testSimpleFetch_NamedKey_NameOnly() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+
+    Flight flight = pm.getObjectById(Flight.class, "named key");
+    assertNotNull(flight);
+    assertEquals(KeyFactory.keyToString(key), flight.getId());
+    assertEquals("named key", KeyFactory.stringToKey(flight.getId()).getName());
+  }
+
+  public void testSimpleFetch_NamedKey_NameOnly_NotFound() {
+    try {
+      pm.getObjectById(Flight.class, "does not exist");
+      fail("expected onfe");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
   }
 
   public void testFetchNonExistent() {
@@ -176,5 +231,9 @@ public class JDOFetchTest extends JDOTestCase {
     assertNotNull(p.getAnotherName());
     assertNull(p.getAnotherName().getFirst());
     assertNull(p.getAnotherName().getLast());
+  }
+
+  public void testFetchEntityWithMissingProps() {
+
   }
 }

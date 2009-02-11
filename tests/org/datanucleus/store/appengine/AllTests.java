@@ -50,6 +50,8 @@ public class AllTests {
     suite.addTestSuite(JPADataSourceConfigTest.class);
     suite.addTestSuite(JDOEnumTest.class);
     suite.addTestSuite(JPAEnumTest.class);
+    suite.addTestSuite(JDONullValueTest.class);
+    suite.addTestSuite(TypeConversionUtilsTest.class);
     return suite;
   }
 }

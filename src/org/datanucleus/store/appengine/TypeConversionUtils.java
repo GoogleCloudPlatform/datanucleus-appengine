@@ -18,6 +18,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Collection;
 
 /**
  * Utility methods for converting between datastore types and pojo types.
@@ -177,7 +178,11 @@ final class TypeConversionUtils {
   }
 
   /**
-   * Performs type conversions on a datastore property value.
+   * Performs type conversions on a datastore property value.  Note that
+   * if the property is an array and the value is {@code null}, this method
+   * will return a zero-length array of the appropriate type.  Similarly, if
+   * the property is a {@link Collection} and the value is {@code null}, this
+   * method will return an empty {@link Collection} of the appropriate type.
    *
    * @param clr class loader resolver to use for string to class
    * conversions
@@ -190,10 +195,6 @@ final class TypeConversionUtils {
    */
   public static Object datastoreValueToPojoValue(
       ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
-    if (value == null) {
-      // nothing to convert
-      return value;
-    }
     ContainerMetaData cmd = ammd.getContainer();
     if (pojoPropertyIsArray(ammd)) {
       String memberTypeStr = ((ArrayMetaData)cmd).getElementType();
@@ -214,7 +215,10 @@ final class TypeConversionUtils {
       Class<?> pojoType = classForName(clr, pojoTypeStr);
       value = convertDatastoreListToPojoCollection((List<?>) value, pojoType);
     } else {
-      value = getDatastoreTypeToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+      if (value != null) {
+        // nothing to convert
+        value = getDatastoreTypeToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+      }
     }
     return value;
   }
@@ -240,8 +244,11 @@ final class TypeConversionUtils {
     }
   }
 
-  private static List<?> convertDatastoreListToPojoCollection(
+  static List<?> convertDatastoreListToPojoCollection(
       List<?> datastoreList, Class<?> pojoType) {
+    if (datastoreList == null) {
+      return new ArrayList<Object>();
+    }
     Function<Object, Object> func = DATASTORE_TYPE_TO_POJO_TYPE_FUNC.get(pojoType);
     if (func != null) {
       datastoreList = Utils.transform(datastoreList, func);
@@ -258,7 +265,7 @@ final class TypeConversionUtils {
    * Returns Object instead of Object[] because primitive arrays don't extend
    * Object[].
    */
-  private static Object convertDatastoreListToPojoArray(List<?> datastoreList, Class<?> pojoType) {
+  static Object convertDatastoreListToPojoArray(List<?> datastoreList, Class<?> pojoType) {
     datastoreList = convertDatastoreListToPojoCollection(datastoreList, pojoType);
     // We need to see whether we're converting to a primitive array or an
     // array that extends Object[].
