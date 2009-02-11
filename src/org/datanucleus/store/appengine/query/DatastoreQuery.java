@@ -20,6 +20,8 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
@@ -37,6 +39,7 @@ import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -152,18 +155,18 @@ public class DatastoreQuery implements Serializable {
       // short-circuit - no point in executing the query
       return Collections.emptyList();
     }
-    final ObjectManager om = query.getObjectManager();
+    final ObjectManager om = getObjectManager();
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
-    MappedStoreManager sm = (MappedStoreManager) om.getStoreManager();
+    DatastoreManager sm = (DatastoreManager) om.getStoreManager();
     ManagedConnection mconn = sm.getConnection(om);
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
       final ClassLoaderResolver clr = om.getClassLoaderResolver();
       final AbstractClassMetaData acmd =
-          om.getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+          getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
       if (acmd == null) {
         throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
             + ".  Perhaps you need to run the enhancer on this class?");
@@ -171,8 +174,8 @@ public class DatastoreQuery implements Serializable {
       String kind =
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
-      DatastoreTable table = (DatastoreTable) sm.getDatastoreClass(acmd.getFullClassName(), clr);
-      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table, ds);
+      DatastoreTable table = sm.getDatastoreClass(acmd.getFullClassName(), clr);
+      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities;
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
@@ -243,7 +246,7 @@ public class DatastoreQuery implements Serializable {
 
   private Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
       final ClassLoaderResolver clr, final DatastoreManager storeMgr) {
-    return entityToPojo(entity, acmd, clr, storeMgr, query.getObjectManager(), query.getIgnoreCache());
+    return entityToPojo(entity, acmd, clr, storeMgr, getObjectManager(), query.getIgnoreCache());
   }
 
   /**
@@ -355,7 +358,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   IdentifierFactory getIdentifierFactory() {
-    return ((MappedStoreManager)query.getObjectManager().getStoreManager()).getIdentifierFactory();
+    return ((MappedStoreManager)getObjectManager().getStoreManager()).getIdentifierFactory();
   }
 
   /**
@@ -363,9 +366,9 @@ public class DatastoreQuery implements Serializable {
    * expression.
    */
   private void addFilters(QueryCompilation compilation, Query q, Map parameters,
-      AbstractClassMetaData acmd, DatastoreTable table, DatastoreService ds) {
+      AbstractClassMetaData acmd, DatastoreTable table) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(q, parameters, acmd, table, ds);
+    QueryData qd = new QueryData(q, parameters, acmd, table);
     addExpression(filter, qd);
   }
 
@@ -376,16 +379,13 @@ public class DatastoreQuery implements Serializable {
     private final Query query;
     private final Map parameters;
     private final AbstractClassMetaData acmd;
-    private final DatastoreTable table;
-    private final DatastoreService ds;
+    private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
 
-    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
-                      DatastoreService ds) {
+    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
       this.query = query;
       this.parameters = parameters;
       this.acmd = acmd;
-      this.table = table;
-      this.ds = ds;
+      this.tableMap.put(acmd.getFullClassName(), table);
     }
   }
 
@@ -431,7 +431,6 @@ public class DatastoreQuery implements Serializable {
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
       Expression.Operator operator, Expression right, QueryData qd) {
-    String propName = left.getId();
     Query.FilterOperator op = DATANUCLEUS_OP_TO_APPENGINE_OP.get(operator);
     if (op == null) {
       throw new UnsupportedDatastoreFeatureException("Operator " + operator + " does not have a "
@@ -452,26 +451,79 @@ public class DatastoreQuery implements Serializable {
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
     }
-    AbstractMemberMetaData ammd = qd.acmd.getMetaDataForMember(propName);
+    AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, left);
     if (ammd == null) {
-      throw new NucleusException(
-          "No meta-data for member named " + propName + " on class " + qd.acmd.getFullClassName()
+      throw new NucleusUserException(
+          "No meta-data for member named " + left.getId() + " on class " + qd.acmd.getFullClassName()
               + ".  Are you sure you provided the correct member name?");
     }
-    JavaTypeMapping mapping = qd.table.getMemberMapping(propName);
+    JavaTypeMapping mapping = getMappingForFieldWithName(left.getTuples(), qd);
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isAncestorPK(ammd)) {
       addAncestorFilter(op, qd, keyOrStringToKey(value));
     } else {
+      String datastorePropName;
       if (ammd.isPrimaryKey()) {
-        propName = Entity.KEY_RESERVED_PROPERTY;
+        datastorePropName = Entity.KEY_RESERVED_PROPERTY;
         value = keyOrStringToKey(value);
       } else {
-        propName = determinePropertyName(ammd);
+        datastorePropName = determinePropertyName(ammd);
       }
-      qd.query.addFilter(propName, op, value);
+      qd.query.addFilter(datastorePropName, op, value);
     }
+  }
+
+  private JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd) {
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
+    AbstractClassMetaData acmd = qd.acmd;
+    JavaTypeMapping mapping = null;
+    // We might be looking for the mapping for a.b.c
+    for (String tuple : tuples) {
+      DatastoreTable table = qd.tableMap.get(acmd.getFullClassName());
+      if (table == null) {
+        table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
+        qd.tableMap.put(acmd.getFullClassName(), table);
+      }
+      // deepest mapping we have so far
+      mapping = table.getMemberMapping(tuple);
+      // set the class meta data to the class of the type of the field of the
+      // mapping so that we go one deeper if there are any more tuples
+      acmd = getMetaDataManager().getMetaDataForClass(mapping.getMemberMetaData().getType(), clr);
+    }
+    return mapping;
+  }
+
+  private AbstractMemberMetaData getMemberMetaData(
+      AbstractClassMetaData acmd, PrimaryExpression left) {
+    List<String> tuples = left.getTuples();
+    AbstractMemberMetaData ammd = acmd.getMetaDataForMember(tuples.get(0));
+    if (tuples.size() == 1) {
+      return ammd;
+    }
+    EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
+    // more than one tuple, so it must be embedded data
+    for (String tuple : tuples.subList(1, tuples.size())) {
+      if (ammd.getEmbeddedMetaData() == null) {
+        throw new NucleusUserException(
+            query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "
+            + "the sub-object is embedded.");
+      }
+      ammd = findMemberMetaDataWithName(tuple, emd.getMemberMetaData());
+    }
+    return ammd;
+  }
+
+  private AbstractMemberMetaData findMemberMetaDataWithName(
+      String name, AbstractMemberMetaData[] ammdList) {
+    for (AbstractMemberMetaData embedded : ammdList) {
+      if (embedded.getName().equals(name)) {
+        return embedded;
+      }
+    }
+    // Not ok, but caller knows what to do
+    return null;
   }
 
   private void processPersistenceCapableMapping(QueryData qd, Query.FilterOperator op,
@@ -482,17 +534,17 @@ public class DatastoreQuery implements Serializable {
       // provide the id itself rather than the object containing the id.
       keyOrString = value;
     } else {
-      ApiAdapter apiAdapter = query.getObjectManager().getApiAdapter();
+      ApiAdapter apiAdapter = getObjectManager().getApiAdapter();
       keyOrString =
           apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
       if (keyOrString == null) {
-        throw new NucleusException(query.getSingleStringQuery()
+        throw new NucleusUserException(query.getSingleStringQuery()
                                    + ": Parameter value " + value + " does not have an id.");
       }
     }
     Key valueKey = keyOrStringToKey(keyOrString);
     verifyRelatedKeyIsOfProperType(ammd, valueKey);
-    if (!qd.table.isParentKeyProvider(ammd)) {
+    if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
       // Looks like a join.  If it can be satisfied with just a
       // get on the secondary table, fulfill it.
       if (op != Query.FilterOperator.EQUAL) {
@@ -501,7 +553,7 @@ public class DatastoreQuery implements Serializable {
             + "one-to-one.", query.getSingleStringQuery());        
       }
       if (valueKey.getParent() == null) {
-        throw new NucleusException(query.getSingleStringQuery() + ": Key of parameter value does "
+        throw new NucleusUserException(query.getSingleStringQuery() + ": Key of parameter value does "
                                    + "not have a parent.");
       }
 
@@ -516,12 +568,12 @@ public class DatastoreQuery implements Serializable {
 
   private void verifyRelatedKeyIsOfProperType(AbstractMemberMetaData ammd, Key key) {
     String keyKind = key.getKind();
-    ClassLoaderResolver clr = query.getObjectManager().getClassLoaderResolver();
-    AbstractClassMetaData acmd = ammd.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+    ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
+    AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     String fieldKind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     if (!keyKind.equals(fieldKind)) {
-      throw new NucleusException(query.getSingleStringQuery() + ": Field "
+      throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
                                  + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
                                  + " parameter value contains Key of kind " + keyKind );
     }
@@ -532,7 +584,7 @@ public class DatastoreQuery implements Serializable {
       String fieldOwnerKind = getIdentifierFactory().newDatastoreContainerIdentifier(
           ammd.getAbstractClassMetaData()).getIdentifierName();
       if (!keyParentKind.equals(fieldOwnerKind)) {
-        throw new NucleusException(query.getSingleStringQuery() + ": Field "
+        throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
                                    + ammd.getFullFieldName() + " is owned by a class that maps to "
                                    + "kind " + fieldOwnerKind + " but"
                                    + " parameter value contains Key with parent of kind "
@@ -581,6 +633,14 @@ public class DatastoreQuery implements Serializable {
   // Exposed for tests
   Query getMostRecentDatastoreQuery() {
     return mostRecentDatastoreQuery;
+  }
+
+  private ObjectManager getObjectManager() {
+    return query.getObjectManager();
+  }
+
+  private MetaDataManager getMetaDataManager() {
+    return getObjectManager().getMetaDataManager();
   }
 
   // Specialization just exists to support tests

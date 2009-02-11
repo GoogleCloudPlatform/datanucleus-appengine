@@ -14,10 +14,13 @@ import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasMultiValuePropsJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToOneJPA;
+import org.datanucleus.test.Person;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -640,6 +643,108 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(2, result.size());
     assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByMultiValueProperty() {
+    Entity entity = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+        Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where strList = :p1 AND strList = :p2");
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "3");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "4");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result2 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result2.size());
+
+    q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where keyList = :p1 AND keyList = :p2");
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be2"));
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result3 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result3.size());
+  }
+
+  public void testFilterByEmbeddedField() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName() + " where name.first = \"max\"");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEmbeddedField_OverriddenColumn() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName()
+        + " where anotherName.last = \"notross\"");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEmbeddedField_MultipleFields() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName()
+        + " where name.first = \"max\" && anotherName.last = \"notross\"");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterBySubObject_UnknownField() {
+    try {
+      em.createQuery(
+          "select from " + Flight.class.getName() + " where origin.first = \"max\"").getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testFilterBySubObject_NotEmbeddable() {
+    try {
+      em.createQuery(
+          "select from " + HasOneToOneJPA.class.getName() + " where flight.origin = \"max\"")
+          .getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
   }
 
   private static Entity newBook(String title, String author, String isbn) {

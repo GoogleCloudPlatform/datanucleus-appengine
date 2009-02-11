@@ -3,28 +3,22 @@ package org.datanucleus.test;
 
 import java.util.List;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Version;
-import javax.jdo.annotations.VersionStrategy;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-@Version(strategy = VersionStrategy.VERSION_NUMBER)
-public class HasMultiValueProps {
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+@Entity
+public class HasMultiValuePropsJPA {
+  @Id
+  @GeneratedValue(strategy= GenerationType.IDENTITY)
   private String id;
 
-  @Persistent
   List<String> strList;
 
-  @Persistent
   List<String> keyList;
 
   public String getId() {
