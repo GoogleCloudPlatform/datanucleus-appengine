@@ -10,6 +10,7 @@ import java.util.Map;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContextType;
 import javax.persistence.spi.PersistenceUnitInfo;
+import javax.jdo.PersistenceManagerFactory;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -34,9 +35,10 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
     }
     return propsToReturn;
   }
-  
+
   @Override
-  protected EntityManager newEntityManager(PersistenceContextType contextType) {
+  protected EntityManager newEntityManager(PersistenceContextType contextType,
+      PersistenceManagerFactory pmf) {
     return new DatastoreEntityManager(this, pmf, contextType);
   }
 }

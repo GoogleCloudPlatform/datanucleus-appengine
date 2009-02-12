@@ -25,7 +25,8 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
     super(props);
   }
 
-  protected JDOPersistenceManager newJDOPersistenceManager(
+  @Override  
+  protected JDOPersistenceManager newPM(
       JDOPersistenceManagerFactory jdoPersistenceManagerFactory, String userName, String password) {
     return new DatastoreJDOPersistenceManager(jdoPersistenceManagerFactory, userName, password);
   }

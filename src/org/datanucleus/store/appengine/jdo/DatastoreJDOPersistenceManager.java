@@ -30,6 +30,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
    * name, and if so it constructs an appropriate {@link Key} on the user's
    * behalf and then calls the parent's implementation of this method.
    */
+  @Override
   public Object getObjectById(Class cls, Object key) {
     key = EntityUtils.idOrNameToKey(getObjectManager(), cls, key);
     return super.getObjectById(cls, key);
