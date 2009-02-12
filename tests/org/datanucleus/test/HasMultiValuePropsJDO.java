@@ -2,6 +2,11 @@
 package org.datanucleus.test;
 
 import java.util.List;
+import java.util.Set;
+import java.util.HashSet;
+import java.util.TreeSet;
+import java.util.ArrayList;
+import java.util.LinkedList;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -26,6 +31,21 @@ public class HasMultiValuePropsJDO {
 
   @Persistent
   List<String> keyList;
+
+  @Persistent(defaultFetchGroup = "true")
+  HashSet<String> strSet;
+
+  @Persistent(defaultFetchGroup = "true")
+  TreeSet<String> strHashSet;
+
+  @Persistent(defaultFetchGroup = "true")
+  TreeSet<String> strTreeSet;
+
+  @Persistent(defaultFetchGroup = "true")
+  ArrayList<String> strArrayList;
+
+  @Persistent(defaultFetchGroup = "true")
+  LinkedList<String> strLinkedList;
 
   public String getId() {
     return id;
@@ -57,5 +77,45 @@ public class HasMultiValuePropsJDO {
 
   public void setStr(String s) {
     this.str = s;
+  }
+
+  public Set<String> getStrSet() {
+    return strSet;
+  }
+
+  public void setStrSet(HashSet<String> strSet) {
+    this.strSet = strSet;
+  }
+
+  public TreeSet<String> getStrTreeSet() {
+    return strTreeSet;
+  }
+
+  public void setStrTreeSet(TreeSet<String> strTreeSet) {
+    this.strTreeSet = strTreeSet;
+  }
+
+  public ArrayList<String> getStrArrayList() {
+    return strArrayList;
+  }
+
+  public void setStrArrayList(ArrayList<String> strArrayList) {
+    this.strArrayList = strArrayList;
+  }
+
+  public LinkedList<String> getStrLinkedList() {
+    return strLinkedList;
+  }
+
+  public void setStrLinkedList(LinkedList<String> strLinkedList) {
+    this.strLinkedList = strLinkedList;
+  }
+
+  public TreeSet<String> getStrHashSet() {
+    return strHashSet;
+  }
+
+  public void setStrHashSet(TreeSet<String> strHashSet) {
+    this.strHashSet = strHashSet;
   }
 }

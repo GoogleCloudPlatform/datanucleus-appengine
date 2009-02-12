@@ -7,6 +7,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.LinkedList;
+import java.util.TreeSet;
 
 /**
  * A handful of utilities based on the Google Collections Library.
@@ -23,12 +25,20 @@ public class Utils {
     return new ArrayList<T>(Arrays.asList(elements));
   }
 
+  public static <T> LinkedList<T> newLinkedList(T... elements) {
+    return new LinkedList<T>(Arrays.asList(elements));
+  }
+
   public static <T> HashSet<T> newHashSet(T... elements) {
     return new HashSet<T>(Arrays.asList(elements));
   }
 
   public static <T> HashSet<T> newHashSet(Collection<T> elements) {
     return new HashSet<T>(elements);
+  }
+
+  public static <T> TreeSet<T> newTreeSet(T... elements) {
+    return new TreeSet<T>(Arrays.asList(elements));
   }
 
   public static <F, T> List<T> transform(List<F> from, Function<? super F, ? extends T> func) {

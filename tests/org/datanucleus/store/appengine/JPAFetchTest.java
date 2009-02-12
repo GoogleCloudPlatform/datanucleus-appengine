@@ -1,12 +1,12 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Book;
-
-import javax.jdo.JDOObjectNotFoundException;
+import org.datanucleus.test.HasMultiValuePropsJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -106,5 +106,47 @@ public class JPAFetchTest extends JPATestCase {
     ldth.ds.delete(key);
     String keyStr = KeyFactory.keyToString(key);
     assertNull(em.find(Book.class, keyStr));
+  }
+  public void testFetchSet() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSet());
+  }
+
+  public void testFetchArrayList() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strArrayList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrArrayList());
+  }
+  public void testFetchLinkedList() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newLinkedList("a", "b", "c"), pojo.getStrLinkedList());
+  }
+
+  public void testFetchHashSet() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strHashSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrHashSet());
+  }
+  public void testFetchTreeSet() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strTreeSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
   }
 }

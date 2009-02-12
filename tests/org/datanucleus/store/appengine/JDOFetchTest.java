@@ -256,4 +256,47 @@ public class JDOFetchTest extends JDOTestCase {
     assertEquals(3, pojo.getStrList().size());
     pm = pmf.getPersistenceManager();
   }
+
+  public void testFetchSet() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSet());
+  }
+
+  public void testFetchArrayList() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strArrayList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrArrayList());
+  }
+  public void testFetchLinkedList() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newLinkedList("a", "b", "c"), pojo.getStrLinkedList());
+  }
+
+  public void testFetchHashSet() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strHashSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrHashSet());
+  }
+  public void testFetchTreeSet() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strTreeSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
+  }
 }
