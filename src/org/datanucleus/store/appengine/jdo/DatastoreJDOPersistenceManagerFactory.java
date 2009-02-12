@@ -1,16 +1,16 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
-package org.datanucleus.store.appengine;
+package org.datanucleus.store.appengine.jdo;
 
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 
+import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Properties;
-import java.util.HashMap;
-import java.util.Enumeration;
 
-import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.JDOHelper;
+import javax.jdo.PersistenceManagerFactory;
 
 /**
  * Extension to {@link JDOPersistenceManagerFactory} that allows us to

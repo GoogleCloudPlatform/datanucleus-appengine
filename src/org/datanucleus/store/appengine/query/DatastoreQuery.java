@@ -160,8 +160,8 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
-    DatastoreManager sm = (DatastoreManager) om.getStoreManager();
-    ManagedConnection mconn = sm.getConnection(om);
+    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
+    ManagedConnection mconn = storeMgr.getConnection(om);
     try {
       DatastoreService ds = (DatastoreService) mconn.getConnection();
       final ClassLoaderResolver clr = om.getClassLoaderResolver();
@@ -174,7 +174,7 @@ public class DatastoreQuery implements Serializable {
       String kind =
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
       mostRecentDatastoreQuery = new Query(kind);
-      DatastoreTable table = sm.getDatastoreClass(acmd.getFullClassName(), clr);
+      DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
       addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table);
       addSorts(compilation, mostRecentDatastoreQuery, acmd);
       Iterable<Entity> entities;

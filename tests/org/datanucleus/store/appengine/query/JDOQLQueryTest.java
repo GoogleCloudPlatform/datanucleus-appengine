@@ -8,6 +8,7 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.users.User;
 
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
@@ -23,6 +24,7 @@ import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.KitchenSink;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -833,6 +835,23 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (JDOUserException e) {
       // good
     }
+  }
+
+  public void testUserQuery() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery(
+        "select from " + KitchenSink.class.getName() + " where userVal == u parameters " + User.class.getName() + " u");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute(KitchenSink.USER1);
+    assertEquals(1, results.size());
+    
+    Query q2 = pm.newQuery(KitchenSink.class, "userVal == u");
+    q2.declareParameters(User.class.getName() + " u");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results2 = (List<KitchenSink>) q2.execute(KitchenSink.USER1);
+    assertEquals(1, results2.size());
   }
 
   private void assertQueryUnsupportedByOrm(

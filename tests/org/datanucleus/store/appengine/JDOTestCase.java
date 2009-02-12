@@ -59,9 +59,13 @@ public class JDOTestCase extends TestCase {
     if (pm.currentTransaction().isActive()) {
       pm.currentTransaction().rollback();
     }
-    pm.close();
+    if (!pm.isClosed()) {
+      pm.close();
+    }
     pm = null;
-    pmf.close();
+    if (!pmf.isClosed()) {
+      pmf.close();
+    }
     pmf = null;
     super.tearDown();
   }

@@ -52,6 +52,7 @@ public class AllTests {
     suite.addTestSuite(JPAEnumTest.class);
     suite.addTestSuite(JDONullValueTest.class);
     suite.addTestSuite(TypeConversionUtilsTest.class);
+    suite.addTestSuite(JDOMakeTransientTest.class);
     return suite;
   }
 }

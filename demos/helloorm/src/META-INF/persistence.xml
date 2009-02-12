@@ -5,7 +5,7 @@
         http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd" version="1.0">
 
     <persistence-unit name="helloorm">
-        <class>com.google.appengine.helloorm.Flight</class>
+        <provider>org.datanucleus.store.appengine.jpa.DatastorePersistenceProvider</provider>
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>

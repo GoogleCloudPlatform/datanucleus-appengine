@@ -11,6 +11,7 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.HasMultiValuePropsJDO;
 
 import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.JDOUserException;
@@ -28,7 +29,9 @@ public class JDOFetchTest extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    commitTxn();
+    if (pm.currentTransaction().isActive()) {
+      commitTxn();
+    }
     super.tearDown();
   }
 
@@ -233,7 +236,24 @@ public class JDOFetchTest extends JDOTestCase {
     assertNull(p.getAnotherName().getLast());
   }
 
-  public void testFetchEntityWithMissingProps() {
+  public void testCollectionsAutomaticallyInDefaultFetchGroup() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
+    e.setProperty("str", "yar");
+    ldth.ds.put(e);
 
+    commitTxn();
+
+    beginTxn();
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    pojo.setStr("yip");
+//    pojo.getStrList();
+    commitTxn();
+    pm.refresh(pojo);
+    pm.makeTransient(pojo);
+    pm.close();
+    assertEquals("yip", pojo.getStr());
+    assertEquals(3, pojo.getStrList().size());
+    pm = pmf.getPersistenceManager();
   }
 }

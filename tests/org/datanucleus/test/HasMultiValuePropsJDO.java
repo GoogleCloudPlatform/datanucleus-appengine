@@ -8,8 +8,6 @@ import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Version;
-import javax.jdo.annotations.VersionStrategy;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -21,6 +19,9 @@ public class HasMultiValuePropsJDO {
   private String id;
 
   @Persistent
+  String str;
+
+  @Persistent(defaultFetchGroup = "true")
   List<String> strList;
 
   @Persistent
@@ -48,5 +49,13 @@ public class HasMultiValuePropsJDO {
 
   public void setKeyList(List<String> keyList) {
     this.keyList = keyList;
+  }
+
+  public String getStr() {
+    return str;
+  }
+
+  public void setStr(String s) {
+    this.str = s;
   }
 }
