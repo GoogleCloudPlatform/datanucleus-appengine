@@ -11,7 +11,6 @@
             <property name="datanucleus.identifier.case" value="PreserveCase"/>
             <!-- TODO(maxr) Remove once Andy's change is in -->
             <property name="datanucleus.maxFetchDepth" value="-1"/>
-            <property name="javax.persistence.provider" value="yam"/>
         </properties>
     </persistence-unit>
 
