@@ -1,5 +1,5 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
-package com.google.appengine.helloorm;
+package com.google.appengine.demos.helloorm;
 
 import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;

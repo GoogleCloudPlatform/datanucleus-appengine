@@ -1,27 +1,27 @@
 <web-app xmlns="http://java.sun.com/xml/ns/javaee" version="2.5">
   <servlet>
     <servlet-name>addFlight</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.AddFlight</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.AddFlight</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>updateFlight</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.UpdateFlight</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.UpdateFlight</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>getFlight</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.GetFlight</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.GetFlight</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>getFlights</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.GetFlights</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.GetFlights</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>deleteFlight</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.DeleteFlight</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.DeleteFlight</servlet-class>
   </servlet>
   <servlet>
     <servlet-name>updatePersistenceStandard</servlet-name>
-    <servlet-class>com.google.appengine.helloorm.UpdatePersistenceStandard</servlet-class>
+    <servlet-class>com.google.appengine.demos.helloorm.UpdatePersistenceStandard</servlet-class>
   </servlet>
   <servlet-mapping>
     <servlet-name>addFlight</servlet-name>

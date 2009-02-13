@@ -1,5 +1,5 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
-package com.google.appengine.helloorm;
+package com.google.appengine.demos.helloorm;
 
 import javax.jdo.PersistenceManager;
 import javax.persistence.EntityManager;
@@ -22,6 +22,7 @@ public class GetFlight extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    resp.setContentType("text/html");
     String key = req.getParameter("key");
     if (key == null) {
       resp.getWriter().println("No key provided.");

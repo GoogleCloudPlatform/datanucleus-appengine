@@ -1,5 +1,5 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
-package com.google.appengine.helloorm;
+package com.google.appengine.demos.helloorm;
 
 import java.io.IOException;
 import java.util.List;
@@ -28,6 +28,7 @@ public class GetFlights extends HttpServlet {
 
   @Override
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
+    resp.setContentType("text/html");
     long start = System.currentTimeMillis();
     PersistenceManager pm = null;
     EntityManager em = null;
