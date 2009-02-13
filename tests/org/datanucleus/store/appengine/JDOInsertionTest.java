@@ -206,6 +206,10 @@ public class JDOInsertionTest extends JDOTestCase {
     PersistenceManagerFactory pmf = JDOHelper.getPersistenceManagerFactory(
         PersistenceManagerFactoryName.nontransactional.name());
     PersistenceManager pm = pmf.getPersistenceManager();
+    // TODO(maxr,bslatkin): Remove this next line once this test
+    // is actually working properly.
+    pm.currentTransaction().setRetainValues(false);
+    
     try {
       Flight f1 = new Flight();
       f1.setOrigin("BOS");
