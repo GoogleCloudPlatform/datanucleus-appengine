@@ -26,14 +26,29 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
   }
 
   private static Map<String, Object> manageOverridingProps(Map<String, Object> overridingProps) {
-    Map<String, Object> propsToReturn = Utils.newHashMap();
-    if (overridingProps == null || !overridingProps.containsKey("javax.persistence.provider")) {
-      propsToReturn.put("javax.persistence.provider", PersistenceProviderImpl.class.getName());
-      if (overridingProps != null) {
-        propsToReturn.putAll(overridingProps);
-      }
+    if (overridingProps == null) {
+      overridingProps = Utils.newHashMap();
     }
-    return propsToReturn;
+    // EntityManagerFactoryImpl, our parent class, will only accept
+    // responsibility for a persistence unit if the persistence provider for
+    // that unit is PersistenceProviderImpl (which it isn't - we've provided our
+    // own PersistenceProvider impl), or if the "javax.persistence.provider"
+    // option is set to the fqn of PersistenceProviderImpl.  We want our
+    // parent class to accept responsibility for this persistence unit, so
+    // we add this property with the expected value to the map if this
+    // property isn't already set.  If it is already set then we're
+    // not the right factory for this persistence unit anyway.
+    if (!overridingProps.containsKey("javax.persistence.provider")) {
+      overridingProps.put("javax.persistence.provider", PersistenceProviderImpl.class.getName());
+    }
+    // see DatastoreJDOPersistenceManagerFactory.getPersistenceManagerFactory
+    // for an explanation of why we can't just add this as a persistence property
+    // in plugin.xml
+    if (!overridingProps.containsKey("datanucleus.identifier.case")) {
+      overridingProps.put("datanucleus.identifier.case", "PreserveCase");
+    }
+
+    return overridingProps;
   }
 
   @Override

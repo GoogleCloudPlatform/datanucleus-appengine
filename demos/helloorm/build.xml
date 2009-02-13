@@ -84,6 +84,7 @@
     <pathelement location="${helloorm.orm.lib.tools.dir}/datanucleus-core-1.1.0.m1.jar"/>
     <pathelement location="${helloorm.orm.lib.tools.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
     <pathelement location="${helloorm.orm.lib.tools.dir}/asm-3.1.jar"/>
+    <pathelement location="${helloorm.orm.lib.tools.dir}/log4j.jar"/>
     <pathelement location="classes"/>
   </path>
 
@@ -92,6 +93,7 @@
              classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
 
     <datanucleusenhancer classpathref="enhancer.classpath" failonerror="true">
+      <jvmarg line="-Dlog4j.configuration=blafile:WEB-INF/log4j.properties -Dlog4j.debug"/>
       <fileset dir="classes">
         <include name="**/*.class"/>
       </fileset>

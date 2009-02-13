@@ -158,7 +158,12 @@
         <include name="persistence-api*.jar"/>
       </fileset>
     </copy>
-    
+    <copy todir="${orm.tmp.dir}/lib/tools/orm">
+      <fileset dir="${orm.lib.dir}">
+        <include name="persistence-api*.jar"/>
+      </fileset>
+    </copy>
+
     <parallel>
       <daemons>
         <ant dir="${orm.tmp.dir}/demos/helloorm"/>
