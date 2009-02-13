@@ -21,40 +21,46 @@ import java.io.File;
 public class LocalDatastoreTestHelper {
   
   public DatastoreService ds;
+
+  private static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
+    public String getAppId() {
+      return "test";
+    }
+
+    public String getVersionId() {
+      return "1.0";
+    }
+
+    public String getEmail() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isLoggedIn() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isAdmin() {
+      throw new UnsupportedOperationException();
+    }
+
+    public String getAuthDomain() {
+      throw new UnsupportedOperationException();
+    }
+  };
+
   public void setUp() {
-    File f = new File("local_db.bin");
-    f.delete();
+    ApiProxyLocalImpl delegate = new ApiProxyLocalImpl();
+    // run completely in-memory
+    delegate.setProperty(LocalDatastoreService.NO_STORAGE_PROPERTY, Boolean.TRUE.toString());
+    // don't expire queries - makes debugging easier
+    delegate.setProperty(LocalDatastoreService.MAX_QUERY_LIFETIME_PROPERTY,
+        Integer.toString(Integer.MAX_VALUE));
+    // don't expire txns - makes debugging easier
+    delegate.setProperty(LocalDatastoreService.MAX_TRANSACTION_LIFETIME_PROPERTY,
+        Integer.toString(Integer.MAX_VALUE));
     ds = DatastoreServiceFactory.getDatastoreService();
-    ApiProxy.setDelegate(new ApiProxyLocalImpl());
-    ApiProxy.setEnvironmentForCurrentThread(new ApiProxy.Environment() {
-      public String getAppId() {
-        return "test";
-      }
-
-      public String getVersionId() {
-        return "1.0";
-      }
-
-      public String getEmail() {
-        throw new UnsupportedOperationException();
-      }
-
-      public boolean isLoggedIn() {
-        throw new UnsupportedOperationException();
-      }
-
-      public boolean isAdmin() {
-        throw new UnsupportedOperationException();
-      }
-
-      public String getAuthDomain() {
-        throw new UnsupportedOperationException();
-      }
-    });
-//    LocalRpcService svc = ((ApiProxyLocalImpl)ApiProxy.getDelegate()).getService("datastore_v3");
-//    ((LocalDatastoreService) svc).setMaxTransactionLifetime(Integer.MAX_VALUE);
-//    svc.stop();
-//    svc.start();
+    ApiProxy.setDelegate(delegate);
+    ApiProxy.setEnvironmentForCurrentThread(ENV);
   }
 
   public void tearDown(boolean exceptionIfActiveTxn) {
