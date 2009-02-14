@@ -3,6 +3,7 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
@@ -99,7 +100,12 @@ public class JDOInsertionTest extends JDOTestCase {
     HasVersionWithFieldJDO hvwf = new HasVersionWithFieldJDO();
     beginTxn();
     pm.makePersistent(hvwf);
-    entity = ldth.ds.get(KeyFactory.stringToKey(hvwf.getId()));
+    String id = hvwf.getId();
+    assertNotNull(id);
+    commitTxn();
+    beginTxn();
+    hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, id);
+    entity = ldth.ds.get(KeyFactory.stringToKey(id));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
     assertEquals(1L, hvwf.getVersion());
@@ -124,10 +130,12 @@ public class JDOInsertionTest extends JDOTestCase {
     hk1.setAncestorKey(e.getKey());
     beginTxn();
     pm.makePersistent(hk1);
-
-    Entity reloaded = ldth.ds.get(hk1.getKey());
-    assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
+    Key key = hk1.getKey();
+    Key ancestorKey = hk1.getAncestorKey();
+    assertNotNull(key);
     commitTxn();
+    Entity reloaded = ldth.ds.get(hk1.getKey());
+    assertEquals(ancestorKey, reloaded.getKey().getParent());
   }
 
   public void testInsertWithKeyPkAndStringAncestor() throws EntityNotFoundException {
@@ -137,10 +145,11 @@ public class JDOInsertionTest extends JDOTestCase {
     hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
     beginTxn();
     pm.makePersistent(hk1);
-
-    Entity reloaded = ldth.ds.get(hk1.getKey());
-    assertEquals(hk1.getAncestorKey(), KeyFactory.keyToString(reloaded.getKey().getParent()));
+    Key key = hk1.getKey();
+    String ancestorKey = hk1.getAncestorKey();
     commitTxn();
+    Entity reloaded = ldth.ds.get(key);
+    assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
   public void testInsertWithStringPkAndKeyAncestor() throws EntityNotFoundException {
@@ -150,10 +159,11 @@ public class JDOInsertionTest extends JDOTestCase {
     hk1.setAncestorKey(e.getKey());
     beginTxn();
     pm.makePersistent(hk1);
-
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(hk1.getKey()));
-    assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
+    String key = hk1.getKey();
+    Key ancestorKey = hk1.getAncestorKey();
     commitTxn();
+    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    assertEquals(ancestorKey, reloaded.getKey().getParent());
   }
 
   public void testInsertWithNamedKeyPk() {

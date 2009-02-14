@@ -86,6 +86,9 @@ public class JPQLQueryTest extends JPATestCase {
     assertQueryUnsupportedByOrm(baseQuery + "title % author = 'foo'", Expression.OP_MOD, unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "title LIKE 'foo%'", Expression.OP_LIKE, unsupportedOps);
     // multiple inequality filters
+    // TODO(maxr) Make this pass against the real datastore.
+    // We need to have it return BadRequest instead of NeedIndex for that to
+    // happen.
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)");
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");

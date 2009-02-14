@@ -15,7 +15,7 @@ public class JPATestCase extends TestCase {
   protected EntityManagerFactory emf;
   protected EntityManager em;
 
-  protected LocalDatastoreTestHelper ldth;
+  protected DatastoreTestHelper ldth;
 
   private boolean failed = false;
   @Override
@@ -31,7 +31,7 @@ public class JPATestCase extends TestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new LocalDatastoreTestHelper();
+    ldth = new DatastoreTestHelper();
     ldth.setUp();
     emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
     em = emf.createEntityManager();

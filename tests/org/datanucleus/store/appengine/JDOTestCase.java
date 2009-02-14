@@ -6,7 +6,6 @@ import junit.framework.TestCase;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
-import javax.persistence.Persistence;
 
 /**
  * Base testcase for tests that need a {@link PersistenceManagerFactory}.
@@ -18,13 +17,13 @@ public class JDOTestCase extends TestCase {
   protected PersistenceManagerFactory pmf;
   protected PersistenceManager pm;
 
-  protected LocalDatastoreTestHelper ldth;
+  protected DatastoreTestHelper ldth;
   private boolean failed = false;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new LocalDatastoreTestHelper();
+    ldth = new DatastoreTestHelper();
     ldth.setUp();
     pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
     pm = pmf.getPersistenceManager();

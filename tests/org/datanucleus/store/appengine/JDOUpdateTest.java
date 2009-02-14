@@ -113,6 +113,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Update_NoField() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
@@ -133,6 +134,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Delete_NoField() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
     Key key = ldth.ds.put(flightEntity);
 
@@ -153,6 +155,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Update_HasVersionField() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
@@ -184,6 +187,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testOptimisticLocking_Delete_HasVersionField() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);

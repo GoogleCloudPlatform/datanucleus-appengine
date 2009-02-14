@@ -56,6 +56,7 @@ public class JPADeleteTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Update() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);
@@ -88,6 +89,7 @@ public class JPADeleteTest extends JPATestCase {
   }
 
   public void testOptimisticLocking_Delete() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
     Key key = ldth.ds.put(entity);

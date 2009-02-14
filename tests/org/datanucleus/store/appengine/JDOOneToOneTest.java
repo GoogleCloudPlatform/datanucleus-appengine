@@ -19,6 +19,7 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
+import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 
 /**
@@ -151,13 +152,14 @@ public class JDOOneToOneTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     try {
-      // this fails because the back ptrs on hasParent and  hasParentKeyPk
-      // are automatically set, which makes them dirty, and those objects
-      // belong to a different entity group
+      // this fails because we tried to establish a parent for hasParent
+      // after it had already been created.
       commitTxn();
-      fail("expected IllegalArgumentException");
-    } catch (IllegalArgumentException iae) {
+      fail("expected exception");
+    } catch (JDOUserException e) {
       // good
+    } finally {
+      rollbackTxn();
     }
   }
 

@@ -24,12 +24,14 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
   private final DatastoreService recorder;
   private final DatastoreService delegate;
   private final Transaction txnRecorder;
+  private final TxnIdAnswer txnIdAnswer;
 
-  public DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate,
-      Transaction txnRecorder) {
+  DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate, Transaction txnRecorder,
+      TxnIdAnswer txnIdAnswer) {
     this.recorder = recorder;
     this.delegate = delegate;
     this.txnRecorder = txnRecorder;
+    this.txnIdAnswer = txnIdAnswer;
   }
 
   public Entity get(Key key) throws EntityNotFoundException {
@@ -93,8 +95,9 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
   }
 
   public Transaction beginTransaction() {
-    recorder.beginTransaction();
     Transaction txn =  delegate.beginTransaction();
+    txnIdAnswer.setExpectedTxnId(txn.getId());
+    recorder.beginTransaction();
     return new TransactionRecordingImpl(txn, txnRecorder);
   }
 

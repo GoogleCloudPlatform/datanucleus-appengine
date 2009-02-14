@@ -34,22 +34,22 @@ import javax.jdo.Transaction;
  */
 public class JDOTransactionTest extends TestCase {
 
-  private static int handleCounter = 0;
-
-  private LocalDatastoreTestHelper ldth;
+  private DatastoreTestHelper ldth;
   private DatastoreService mockDatastoreService = EasyMock.createMock(DatastoreService.class);
   private com.google.appengine.api.datastore.Transaction mockTxn = EasyMock.createMock(
       com.google.appengine.api.datastore.Transaction.class);
   private DatastoreServiceRecordingImpl recordingImpl;
+  private TxnIdAnswer txnIdAnswer;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new LocalDatastoreTestHelper();
+    ldth = new DatastoreTestHelper();
     ldth.setUp();
-    recordingImpl = new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds, mockTxn);
+    txnIdAnswer = new TxnIdAnswer();
+    recordingImpl =
+        new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds, mockTxn, txnIdAnswer);
     DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
-    handleCounter = 0;
   }
 
   @Override
@@ -79,7 +79,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -120,7 +120,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -151,7 +151,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -216,7 +216,7 @@ public class JDOTransactionTest extends TestCase {
         EasyMock.isA(Key.class))).andReturn(flightEntity);
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(Entity.class))).andReturn(null);
-    EasyMock.expect(mockTxn.getId()).andReturn(Integer.toString(handleCounter++)).anyTimes();
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     PersistenceManager pm = pmf.getPersistenceManager();

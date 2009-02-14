@@ -14,14 +14,14 @@ import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
-import org.datanucleus.test.HasOneToOneJDO;
-import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.Person;
 import org.datanucleus.test.KitchenSink;
@@ -107,6 +107,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(Utils.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
         Expression.OP_BETWEEN, Expression.OP_ISNOT), unsupportedOps);
     // multiple inequality filters
+    // TODO(maxr) Make this pass against the real datastore.
+    // We need to have it return BadRequest instead of NeedIndex for that to
+    // happen.
     assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
         + " where (origin > 2 && dest < 4)");
     // inequality filter prop is not the same as the first order by prop
