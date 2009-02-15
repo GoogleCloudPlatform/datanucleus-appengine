@@ -11,14 +11,17 @@ import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.Person;
 import org.datanucleus.test.Name;
+import org.datanucleus.test.HasKeyPkJDO;
 
 import java.util.List;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.JDOOptimisticVerificationException;
+import javax.jdo.JDOUserException;
 
 /**
  * @author Erick Armbrust <earmbrust@google.com>
+ * @author Max Ross <maxr@google.com>
  */
 public class JDOUpdateTest extends JDOTestCase {
 
@@ -67,37 +70,6 @@ public class JDOUpdateTest extends JDOTestCase {
     assertEquals(2, flight.getMe());
 
     flight.setName("2");
-    commitTxn();
-
-    Entity flightCheck = ldth.ds.get(key);
-    assertEquals("yam", flightCheck.getProperty("origin"));
-    assertEquals("bam", flightCheck.getProperty("dest"));
-    assertEquals("2", flightCheck.getProperty("name"));
-    assertEquals(1L, flightCheck.getProperty("you"));
-    assertEquals(2L, flightCheck.getProperty("me"));
-    // verify that the version got bumped
-    assertEquals(2L,
-        flightCheck.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
-    assertEquals("named key", flightCheck.getKey().getName());
-  }
-
-  public void testUpdateId()
-      throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
-
-    String keyStr = KeyFactory.keyToString(key);
-    beginTxn();
-    Flight flight = pm.getObjectById(Flight.class, keyStr);
-
-    assertEquals(keyStr, flight.getId());
-    assertEquals("yam", flight.getOrigin());
-    assertEquals("bam", flight.getDest());
-    assertEquals("1", flight.getName());
-    assertEquals(1, flight.getYou());
-    assertEquals(2, flight.getMe());
-
-    flight.setName("2");
-    flight.setId("foo");
     commitTxn();
 
     Entity flightCheck = ldth.ds.get(key);
@@ -221,27 +193,108 @@ public class JDOUpdateTest extends JDOTestCase {
     pm = pmf.getPersistenceManager();
   }
 
-  public void testChangePk_NullPk() throws EntityNotFoundException {
+  public void testChangeStringPK_SetNonKeyString() throws EntityNotFoundException {
+    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+
+    String keyStr = KeyFactory.keyToString(key);
+    beginTxn();
+    Flight flight = pm.getObjectById(Flight.class, keyStr);
+
+    assertEquals(keyStr, flight.getId());
+    assertEquals("yam", flight.getOrigin());
+    assertEquals("bam", flight.getDest());
+    assertEquals("1", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+
+    flight.setName("2");
+    flight.setId("foo");
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+
+    Entity flightCheck = ldth.ds.get(key);
+    assertEquals("yam", flightCheck.getProperty("origin"));
+    assertEquals("bam", flightCheck.getProperty("dest"));
+    assertEquals("1", flightCheck.getProperty("name"));
+    assertEquals(1L, flightCheck.getProperty("you"));
+    assertEquals(2L, flightCheck.getProperty("me"));
+    // verify that the version got bumped
+    assertEquals(1L,
+        flightCheck.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
+    assertEquals("named key", flightCheck.getKey().getName());
+  }
+
+  public void testChangeStringPK_SetNull() throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     f.setId(null);
     pm.makePersistent(f);
-    commitTxn();
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
     assertEquals(1, countForClass(Flight.class));
   }
 
-  public void testChangePk_ChangePk_NewPk() throws EntityNotFoundException {
+  public void testChangePK_SetKeyString() throws EntityNotFoundException {
     Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     f.setId(KeyFactory.keyToString(KeyFactory.createKey(Flight.class.getSimpleName(), "yar")));
     f.setYou(77);
     pm.makePersistent(f);
-    commitTxn();
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
     assertEquals(1, countForClass(Flight.class));
     Entity e = ldth.ds.get(key);
-    assertEquals(77L, e.getProperty("you"));
+    assertEquals(1L, e.getProperty("you"));
+    assertEquals(1, countForClass(Flight.class));
+  }
+
+  public void testChangeKeyPK_SetDifferentKey() throws EntityNotFoundException {
+    Key key = ldth.ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
+
+    beginTxn();
+    HasKeyPkJDO pojo = pm.getObjectById(HasKeyPkJDO.class, key);
+
+    pojo.setKey(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), 33));
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+    assertEquals(1, countForClass(HasKeyPkJDO.class));
+  }
+
+  public void testChangeKeyPK_SetNull() throws EntityNotFoundException {
+    Key key = ldth.ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
+    beginTxn();
+    HasKeyPkJDO pojo = pm.getObjectById(HasKeyPkJDO.class, key);
+    pojo.setKey(null);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+    assertEquals(1, countForClass(HasKeyPkJDO.class));
   }
 
   public void testUpdateList_Add() throws EntityNotFoundException {
@@ -340,5 +393,51 @@ public class JDOUpdateTest extends JDOTestCase {
     assertEquals("anotherjam", entity.getProperty("anotherLast"));
   }
 
+  public void testUpdateStrPrimaryKey_SetNewName() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
 
+    beginTxn();
+    Flight f = pm.getObjectById(Flight.class, key.getId());
+    f.setId("other");
+    pm.makePersistent(f);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateStrPrimaryKey_SetNewKey() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
+
+    beginTxn();
+    Flight f = pm.getObjectById(Flight.class, key.getId());
+    f.setId(KeyFactory.keyToString(KeyFactory.createKey(key.getKind(), 33)));
+    pm.makePersistent(f);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateStrPrimaryKey_NullKey() {
+    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
+
+    beginTxn();
+    Flight f = pm.getObjectById(Flight.class, key.getId());
+    f.setId(null);
+    pm.makePersistent(f);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
 }

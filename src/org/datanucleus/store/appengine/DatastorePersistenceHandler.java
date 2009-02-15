@@ -429,7 +429,9 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // now delete ourselves
     DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
     AbstractClassMetaData acmd = sm.getClassMetaData();
-    sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
+    // stay away from the pk fields - this method sets fields to null and that's
+    // not allowed for pks
+    sm.provideFields(acmd.getNonPKMemberPositions(), fieldMgr);
 
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.NO_INCREMENT, "deleting");
     delete(sm.getObjectManager(), getPkAsKey(sm));

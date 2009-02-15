@@ -156,11 +156,11 @@ public class JDOOneToOneTest extends JDOTestCase {
       // after it had already been created.
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (IllegalArgumentException e) {
       // good
-    } finally {
-      rollbackTxn();
     }
+    // slightly different behavior with prod datastore due to inconsistency
+    // with multiple gets that span entity groups
   }
 
   public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {

@@ -12,6 +12,7 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
@@ -315,7 +316,15 @@ public class DatastoreFieldManager implements FieldManager {
 
   public void storeStringField(int fieldNumber, String value) {
     if (isPK(fieldNumber)) {
-      storeStringPK(fieldNumber, value);
+      Key key = null;
+      if (value != null) {
+        if (datastoreEntity.getParent() != null) {
+          key = new Entity(datastoreEntity.getKey().getKind(), value, datastoreEntity.getParent()).getKey();
+        } else {
+          key = new Entity(datastoreEntity.getKey().getKind(), value).getKey();
+        }
+      }
+      storeKeyPK(key);
     } else if (isAncestorPK(fieldNumber)) {
       if (datastoreEntity.getParent() == null) {
         storeStringAncestorPK(value);
@@ -459,30 +468,20 @@ public class DatastoreFieldManager implements FieldManager {
     copyProperties(old, datastoreEntity);
   }
 
-  private void storeStringPK(int fieldNumber, String value) {
-    if (value != null) {
-      // If the value of the PK has changed we assume that the user has
-      // provided a named key.  Since named keys need to be provided when the
-      // entity is created, we create a new entity and copy over any
-      // properties that have already been set.
-
-      // TODO(maxr): Find out if it is in violation of the spec
-      // to throw an exception when someone updates the PK of a POJO.
-      // We would prefer to throw an exception in this case.
-      Entity old = datastoreEntity;
-      if (old.getParent() != null) {
-        datastoreEntity = new Entity(old.getKind(), value, old.getParent());
-      } else {
-        datastoreEntity = new Entity(old.getKind(), value);
+  private void storeKeyPK(Key key) {
+    if (datastoreEntity.getKey().isComplete()) {
+      // this modification is only okay if it's actually a no-op
+      if (!datastoreEntity.getKey().equals(key)) {
+        // Different key provided so the update isn't allowed.
+        throw new NucleusUserException(
+            "Attempt was made to modify the primary key of an object of type "
+            + getStateManager().getClassMetaData().getFullClassName() + " identified by "
+            + "key " + datastoreEntity.getKey() + ".  Primary keys are immutable.");
       }
+    } else if (key != null) {
+      Entity old = datastoreEntity;
+      datastoreEntity = new Entity(old.getKind(), key.getName());
       copyProperties(old, datastoreEntity);
-    } else if (getMetaData(fieldNumber).getColumn() != null) {
-      // The pk doesn't get stored as a property so the fact that the user is
-      // trying to customize the name of the property is concerning.  We
-      // could log here, but that's going to annoy the heck out of people
-      // who are porting existing code.  Instead we should....
-      // TODO(maxr): Log a warning at startup or add a reasonably threadsafe way
-      // to just log the warning once.
     }
   }
 
@@ -508,7 +507,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   private void storePrimaryKey(int fieldNumber, Object value) {
     if (fieldIsOfTypeKey(fieldNumber)) {
-      storeKeyPK(fieldNumber, (Key) value);
+      storeKeyPK((Key) value);
     } else {
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
     }
@@ -615,14 +614,6 @@ public class DatastoreFieldManager implements FieldManager {
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
-  }
-
-  private void storeKeyPK(int fieldNumber, Key key) {
-    if (key != null) {
-      storeStringPK(fieldNumber, key.getName());
-    } else {
-      storeStringPK(fieldNumber, null);
-    }
   }
 
   private void storeAncestorKeyPK(Key key) {
