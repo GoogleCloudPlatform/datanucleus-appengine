@@ -188,7 +188,7 @@
          <!-- issue a jpql query -->
         <exec executable="curl" failifexecutionfails="true" failonerror="true" outputproperty="curl.query.result">
           <arg value="-d"/>
-          <arg value="q=select f from com.google.appengine.helloorm.Flight f where orig = 'BOS'"/>
+          <arg value="q=select f from com.google.appengine.demos.helloorm.Flight f where orig = 'BOS'"/>
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.query.response">

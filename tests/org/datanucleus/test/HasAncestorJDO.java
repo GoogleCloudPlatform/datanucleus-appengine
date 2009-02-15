@@ -40,4 +40,8 @@ public class HasAncestorJDO {
   public String getId() {
     return id;
   }
+
+  public void setAncestorId(String ancestorId) {
+    this.ancestorId = ancestorId;
+  }
 }

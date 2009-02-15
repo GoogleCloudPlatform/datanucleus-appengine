@@ -128,9 +128,8 @@ class DatastoreRelationFieldManager {
         Object ancestorKey = entity.getProperty(ANCESTOR_KEY_PROPERTY);
         if (ancestorKey != null) {
           entity.removeProperty(ANCESTOR_KEY_PROPERTY);
-          String ancestorKeyStr = ancestorKey instanceof Key ?
-                                  KeyFactory.keyToString((Key) ancestorKey) : (String) ancestorKey;
-          fieldManager.recreateEntityWithAncestor(ancestorKeyStr);
+          fieldManager.recreateEntityWithAncestor(ancestorKey instanceof Key ?
+                                  (Key) ancestorKey : KeyFactory.stringToKey((String) ancestorKey));
         }
       }
     };

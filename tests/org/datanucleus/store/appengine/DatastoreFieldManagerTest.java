@@ -12,6 +12,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.JDOClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -26,6 +27,8 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
+
+import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -379,9 +382,10 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     // non-null ancestor value is not fine because we created our own
     // entity.
     try {
-      fieldManager.storeStringField(ancestorPkFieldPos, "a val");
-      fail("Expected ise");
-    } catch (IllegalStateException ise) {
+      fieldManager.storeStringField(
+          ancestorPkFieldPos, KeyFactory.keyToString(KeyFactory.createKey("yar", 44)));
+      fail("Expected exception");
+    } catch (NucleusUserException e) {
       // good
     }
 

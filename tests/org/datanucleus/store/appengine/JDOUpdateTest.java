@@ -12,6 +12,8 @@ import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.Person;
 import org.datanucleus.test.Name;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasAncestorJDO;
+import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 
 import java.util.List;
 
@@ -432,6 +434,90 @@ public class JDOUpdateTest extends JDOTestCase {
     Flight f = pm.getObjectById(Flight.class, key.getId());
     f.setId(null);
     pm.makePersistent(f);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateStrAncestor_SetNewName() {
+    Key parentKey = ldth.ds.put(new Entity(String.class.getSimpleName()));
+    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+
+    beginTxn();
+    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    pojo.setAncestorId("other");
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateStrAncestor_SetNewKey() {
+    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+
+    beginTxn();
+    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    pojo.setAncestorId(KeyFactory.keyToString(KeyFactory.createKey(key.getKind(), 33)));
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateStrAncestor_NullKey() {
+    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+
+    beginTxn();
+    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    pojo.setAncestorId(null);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateKeyAncestor_SetNewKey() {
+    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ldth.ds.put(new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parentKey));
+
+    beginTxn();
+    HasKeyAncestorKeyStringPkJDO pojo = pm.getObjectById(
+        HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(key));
+    pojo.setAncestorKey(KeyFactory.createKey(key.getKind(), 33));
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testUpdateKeyAncestor_NullKey() {
+    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ldth.ds.put(new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parentKey));
+
+    beginTxn();
+    HasKeyAncestorKeyStringPkJDO pojo = pm.getObjectById(
+        HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(key));
+    pojo.setAncestorKey(null);
     try {
       commitTxn();
       fail("expected exception");

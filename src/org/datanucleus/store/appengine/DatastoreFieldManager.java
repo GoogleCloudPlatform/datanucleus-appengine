@@ -326,9 +326,17 @@ public class DatastoreFieldManager implements FieldManager {
       }
       storeKeyPK(key);
     } else if (isAncestorPK(fieldNumber)) {
-      if (datastoreEntity.getParent() == null) {
-        storeStringAncestorPK(value);
+      Key key = null;
+      if (value != null) {
+        try {
+          key = KeyFactory.stringToKey(value);
+        } catch (IllegalArgumentException iae) {
+          throw new NucleusUserException(
+              "Attempt was made to set ancestor to " + value
+              + " but this cannot be converted into a Key.");
+        }
       }
+      storeAncestorKeyPK(key);
     } else {
       storeObjectField(fieldNumber, value);
     }
@@ -373,7 +381,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
     if (parentKey != null) {
 
-      recreateEntityWithAncestor(KeyFactory.keyToString(parentKey));
+      recreateEntityWithAncestor(parentKey);
 
       if (getAncestorMemberMetaData() != null) {
         return getAncestorMemberMetaData().getType().equals(Key.class)
@@ -437,33 +445,13 @@ public class DatastoreFieldManager implements FieldManager {
     return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 
-  private void storeStringAncestorPK(String value) {
-    if (value != null) {
-      if (!createdWithoutEntity) {
-        // Shouldn't even happen.
-        throw new IllegalStateException("You can only rely on this class to properly handle "
-            + "ancestor pks if you instantiated the class without providing a datastore "
-            + "entity to the constructor.");
-      }
-
-      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
-      // the value of this field as an arg to the Entity constructor and then moving all
-      // properties on the old entity to the new entity.
-      recreateEntityWithAncestor(value);
-    } else {
-      // Null ancestor.  Ancestor is defined on a per-instance basis so
-      // annotating a field as an ancestor is not necessarily a commitment
-      // to always having an ancestor.  Null ancestor is fine.
-    }
-  }
-
-  void recreateEntityWithAncestor(String value) {
+  void recreateEntityWithAncestor(Key ancestorKey) {
     Entity old = datastoreEntity;
     if (old.getKey().getName() != null) {
       datastoreEntity =
-          new Entity(old.getKind(), old.getKey().getName(), KeyFactory.stringToKey(value));
+          new Entity(old.getKind(), old.getKey().getName(), ancestorKey);
     } else {
-      datastoreEntity = new Entity(old.getKind(), KeyFactory.stringToKey(value));
+      datastoreEntity = new Entity(old.getKind(), ancestorKey);
     }
     copyProperties(old, datastoreEntity);
   }
@@ -514,12 +502,10 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storeAncestorField(int fieldNumber, Object value) {
-    if (datastoreEntity.getParent() == null) {
-      if (fieldIsOfTypeKey(fieldNumber)) {
-        storeAncestorKeyPK((Key) value);
-      } else {
-        throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
-      }
+    if (fieldIsOfTypeKey(fieldNumber)) {
+      storeAncestorKeyPK((Key) value);
+    } else {
+      throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
     }
   }
 
@@ -617,10 +603,30 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storeAncestorKeyPK(Key key) {
-    if (key != null) {
-      storeStringAncestorPK(KeyFactory.keyToString(key));
+    if (datastoreEntity.getParent() != null) {
+      // update is ok if it's a no-op
+      if (!datastoreEntity.getParent().equals(key)) {
+        throw new NucleusUserException(
+            "Attempt was made to modify the ancestor of an object of type "
+            + getStateManager().getClassMetaData().getFullClassName() + " identified by "
+            + "key " + datastoreEntity.getKey() + ".  Ancestors are immutable.");
+      }
+    } else if (key != null) {
+      if (!createdWithoutEntity) {
+        // Shouldn't even happen.
+        throw new NucleusUserException("You can only rely on this class to properly handle "
+            + "ancestor pks if you instantiated the class without providing a datastore "
+            + "entity to the constructor.");
+      }
+
+      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
+      // the value of this field as an arg to the Entity constructor and then moving all
+      // properties on the old entity to the new entity.
+      recreateEntityWithAncestor(key);
     } else {
-      storeStringAncestorPK(null);
+      // Null ancestor.  Ancestor is defined on a per-instance basis so
+      // annotating a field as an ancestor is not necessarily a commitment
+      // to always having an ancestor.  Null ancestor is fine.
     }
   }
 

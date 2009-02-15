@@ -77,6 +77,11 @@
     <javac srcdir="src" destdir="classes" classpathref="helloorm.classpath" debug="on"/>
   </target>
 
+  <target name="compile-distro" description="compile the webapp for inclusion in the distro">
+    <mkdir dir="classes"/>
+    <javac srcdir="src" destdir="classes" classpathref="helloorm.classpath" debug="on"/>
+  </target>
+
   <path id="enhancer.classpath">
     <pathelement location="${helloorm.orm.lib.tools.dir}/jdo2-api-2.2.jar"/>
     <pathelement location="${helloorm.orm.lib.tools.dir}/persistence-api-1.0.2.jar"/>
