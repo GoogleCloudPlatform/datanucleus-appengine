@@ -12,7 +12,6 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeListJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -40,12 +39,6 @@ public class JPAOneToManyListTest extends JPAOneToManyTest {
   }
   public void testUpdate_ClearOutChildren() throws EntityNotFoundException {
     testUpdate_ClearOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
-  }
-  public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
-    testUpdate_NullOutChild_NoDelete(new HasOneToManyWithNonDeletingCascadeListJPA());
-  }
-  public void testUpdate_ClearOutChild_NoDelete() throws EntityNotFoundException {
-    testUpdate_ClearOutChild_NoDelete(new HasOneToManyWithNonDeletingCascadeListJPA());
   }
   public void testFindWithOrderBy() throws EntityNotFoundException {
     testFindWithOrderBy(HasOneToManyWithOrderByJPA.class);
@@ -348,5 +341,12 @@ public class JPAOneToManyListTest extends JPAOneToManyTest {
     assertEquals("yar", parentEntity.getProperty("val"));
 
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 2);
+  }
+
+  public void testChangeParent() {
+    testChangeParent(new HasOneToManyListJPA(), new HasOneToManyListJPA());
+  }
+  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJPA());
   }
 }

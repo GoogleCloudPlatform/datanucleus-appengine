@@ -62,10 +62,12 @@ public class JPATestCase extends TestCase {
     failed = false;
     ldth.tearDown(throwIfActiveTxn);
     ldth = null;
-    if (em.getTransaction().isActive()) {
-      em.getTransaction().rollback();
+    if (em.isOpen()) {
+      if (em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
+      em.close();
     }
-    em.close();
     em = null;
     emf.close();
     emf = null;
@@ -78,6 +80,10 @@ public class JPATestCase extends TestCase {
 
   protected void commitTxn() {
     em.getTransaction().commit();
+  }
+
+  protected void rollbackTxn() {
+    em.getTransaction().rollback();
   }
 
   protected void switchDatasource(EntityManagerFactoryName name) {

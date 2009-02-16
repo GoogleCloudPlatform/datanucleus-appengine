@@ -17,12 +17,18 @@ public class DatastoreFKSetStore extends FKSetStore {
     super(fmd, storeMgr, clr, new DatastoreAbstractSetStoreSpecialization(LOCALISER, clr, storeMgr));
   }
 
+  @Override
   protected void clearInternal(StateManager ownerSM, ObjectManager om) {
     throw new UnsupportedOperationException();
   }
 
+  @Override
   protected boolean updateElementFkInternal(StateManager sm, Object element, Object owner) {
-    // The fk is already set and sets are unindexed so there's nothing to do
+    // Keys (and therefore ancestors) are immutable so we don't need to ever
+    // actually update the parent FK, but we do need to check to make sure
+    // someone isn't trying to modify the parent FK
+    DatastoreRelationFieldManager.checkForAncestorSwitch(element, sm);
+    // fk is already set and sets are unindexed so there's nothing else to do
     return true;
   }
 }

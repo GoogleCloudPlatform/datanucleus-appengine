@@ -12,6 +12,8 @@ import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJPA;
 
+import javax.persistence.PersistenceException;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -87,21 +89,25 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
-    HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
     HasAncestorJPA child = new HasAncestorJPA();
-    parent.setCascadeRemoveChild(child);
 
     beginTxn();
     em.persist(child);
     commitTxn();
+    HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
+    parent.setCascadeRemoveChild(child);
     beginTxn();
     em.persist(parent);
-    commitTxn();
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+      rollbackTxn();
+    }
 
     Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentNull(childEntity, childEntity.getKey());
-
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
   }
 
   public void testOneToOnePersistCascadeAll_OverrideParentManually() {

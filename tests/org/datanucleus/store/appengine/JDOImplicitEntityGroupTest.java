@@ -3,16 +3,16 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
-import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasOneToOneParentJDO;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJDO;
+
+import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -108,11 +108,15 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     pm.makePersistent(child);
     commitTxn();
     beginTxn();
-    pm.makePersistent(parent);
-    commitTxn();
-
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
-    assertKeyParentNull(childEntity, childEntity.getKey());
+    try {
+      // this fails because it attempts to establish a parent
+      // for an entity that was originally persisted without a parent.
+      pm.makePersistent(parent);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
   }
 
   public void testOneToOnePersistCascadeAll_OverrideParentManually() {

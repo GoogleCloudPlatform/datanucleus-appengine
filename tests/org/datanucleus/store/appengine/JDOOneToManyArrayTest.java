@@ -6,6 +6,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import org.datanucleus.test.BidirectionalChildArrayJDO;
 import org.datanucleus.test.HasOneToManyArrayJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByArrayJDO;
+import org.datanucleus.test.HasOneToManyListJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -107,6 +108,15 @@ public class JDOOneToManyArrayTest extends JDOOneToManyTest {
     testDeleteParentDeletesChild(HasOneToManyArrayJDO.class, BidirectionalChildArrayJDO.class);
   }
 
+  public void testChangeParent() {
+    testChangeParent(new HasOneToManyArrayJDO(), new HasOneToManyArrayJDO());
+  }
+
+  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyArrayJDO());
+  }
+
+  @Override
   boolean isIndexed() {
     return true;
   }

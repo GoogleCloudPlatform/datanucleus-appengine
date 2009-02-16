@@ -15,10 +15,11 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeJPA;
 import org.easymock.EasyMock;
 
 import java.util.List;
+
+import javax.persistence.PersistenceException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -327,64 +328,6 @@ abstract class JPAOneToManyTest extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
 
-  void testUpdate_NullOutChild_NoDelete(HasOneToManyWithNonDeletingCascadeJPA pojo)
-      throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-
-    Book b = newBook();
-    beginTxn();
-    em.persist(b);
-    commitTxn();
-    pojo.getBooks().add(b);
-
-    beginTxn();
-    em.persist(pojo);
-    commitTxn();
-
-    assertEquals(pojo.getClass().getName(), 1, countForClass(pojo.getClass()));
-    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
-
-    beginTxn();
-    pojo.nullBooks();
-    em.merge(pojo);
-    commitTxn();
-
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
-    assertNotNull(bookEntity);
-
-    assertEquals(pojo.getClass().getName(), 1, countForClass(pojo.getClass()));
-    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
-  }
-
-  void testUpdate_ClearOutChild_NoDelete(HasOneToManyWithNonDeletingCascadeJPA pojo)
-      throws EntityNotFoundException {
-    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-
-    Book b = newBook();
-    beginTxn();
-    em.persist(b);
-    commitTxn();
-    pojo.getBooks().add(b);
-
-    beginTxn();
-    em.persist(pojo);
-    commitTxn();
-
-    assertEquals(pojo.getClass().getName(), 1,
-                 countForClass(pojo.getClass()));
-    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
-
-    beginTxn();
-    pojo.getBooks().clear();
-    em.merge(pojo);
-    commitTxn();
-
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
-    assertNotNull(bookEntity);
-    assertEquals(pojo.getClass().getName(), 1, countForClass(pojo.getClass()));
-    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
-  }
-
   void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJPA> pojoClass)
       throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
@@ -666,6 +609,39 @@ abstract class JPAOneToManyTest extends JPATestCase {
     assertEquals("yar", parentEntity.getProperty("val"));
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 1);
+  }
+
+  void testChangeParent(HasOneToManyJPA pojo, HasOneToManyJPA pojo2) {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
+    Book b1 = new Book();
+    pojo.getBooks().add(b1);
+
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo2.getBooks().add(b1);
+    em.persist(pojo2);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      rollbackTxn();
+    }
+  }
+
+  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJPA pojo) throws EntityNotFoundException {
+    Book b1 = new Book();
+    b1.setId("named key");
+    pojo.getBooks().add(b1);
+
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    assertEquals("named key", bookEntity.getKey().getName());
   }
 
   int countForClass(Class<?> clazz) {

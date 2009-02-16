@@ -21,6 +21,8 @@ import org.easymock.EasyMock;
 import java.util.List;
 import java.util.Collections;
 
+import javax.jdo.JDOUserException;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -969,6 +971,37 @@ abstract class JDOOneToManyTest extends JDOTestCase {
     } catch (EntityNotFoundException enfe) {
       // good
     }
+  }
+
+  void testChangeParent(HasOneToManyJDO pojo, HasOneToManyJDO pojo2) {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = new Flight();
+    pojo.addFlight(f1);
+
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo2.addFlight(f1);
+    try {
+      pm.makePersistent(pojo2);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      rollbackTxn();
+    }
+  }
+
+  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJDO pojo) throws EntityNotFoundException {
+    Flight f1 = new Flight();
+    pojo.addFlight(f1);
+    f1.setId("named key");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    assertEquals("named key", flightEntity.getKey().getName());
   }
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,

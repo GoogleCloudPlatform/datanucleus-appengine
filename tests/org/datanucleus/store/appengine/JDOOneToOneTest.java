@@ -101,31 +101,18 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasKeyPK(hasKeyPk);
 
     beginTxn();
-    pm.makePersistent(pojo);
-    commitTxn();
-
-    assertNotNull(pojo.getId());
-
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertNotNull(pojoEntity);
-
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    assertNotNull(flightEntity);
-    assertKeyParentNull(flightEntity, f.getId());
-
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
-    assertNotNull(hasKeyPkEntity);
-    assertKeyParentNull(hasKeyPkEntity, hasKeyPk.getKey());
-
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getKey()));
-    assertNotNull(hasParentEntity);
-    assertKeyParentNull(hasParentEntity, hasParent.getKey());
-
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
-    assertNotNull(hasParentKeyPkEntity);
-    assertKeyParentNull(hasParentKeyPkEntity, hasParentKeyPk.getKey());
-
-    assertCountsInDatastore(1, 1);
+    try {
+      // this fails because it attempts to establish a parent for an object
+      // that was originally saved without a parent
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+    // can't assert this because the local datastore doesn't really support
+    // txns so the parent ends up actually being persisted
+    // assertCountsInDatastore(0, 1);
   }
 
   public void testInsert_NewParentExistingChild_Bidirectional() throws EntityNotFoundException {
@@ -150,17 +137,15 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
 
     beginTxn();
-    pm.makePersistent(pojo);
     try {
-      // this fails because we tried to establish a parent for hasParent
-      // after it had already been created.
-      commitTxn();
+      // this fails because it tries to establish a parent for an object that
+      // was originally saved without a parent
+      pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (IllegalArgumentException e) {
+    } catch (JDOUserException e) {
       // good
+      rollbackTxn();
     }
-    // slightly different behavior with prod datastore due to inconsistency
-    // with multiple gets that span entity groups
   }
 
   public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
@@ -582,6 +567,41 @@ public class JDOOneToOneTest extends JDOTestCase {
     pm = pmf.getPersistenceManager();
     
     assertCountsInDatastore(1, 0);
+  }
+
+  public void testChangeParent() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = newFlight();
+
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    pojo.setFlight(f1);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    HasOneToOneJDO pojo2 = new HasOneToOneJDO();
+    beginTxn();
+    pojo2.setFlight(f1);
+    try {
+      pm.makePersistent(pojo2);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testNewParentNewChild_SetNamedKeyOnChild() throws EntityNotFoundException {
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    Flight f1 = newFlight();
+    pojo.setFlight(f1);
+    f1.setId("named key");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    assertEquals("named key", flightEntity.getKey().getName());
   }
 
   private Flight newFlight() {

@@ -75,6 +75,15 @@ public class JDOOneToManySetTest extends JDOOneToManyTest {
                   new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
   }
 
+  public void testChangeParent() {
+    testChangeParent(new HasOneToManySetJDO(), new HasOneToManySetJDO());
+  }
+
+  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJDO());
+  }
+
+  @Override
   boolean isIndexed() {
     return false;
   }

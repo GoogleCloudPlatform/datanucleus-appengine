@@ -11,6 +11,7 @@ import com.google.appengine.api.datastore.Query;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -110,12 +111,13 @@ class DatastoreRelationFieldManager {
       }
 
       private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
-                                       StateManager sm, int fieldNumber) {
+          StateManager sm, int fieldNumber) {
+        boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
         Entity entity = fieldManager.getEntity();
         mapping.setObject(
             fieldManager.getObjectManager(),
             entity,
-            table.isParentKeyProvider(ammd) ? IS_ANCESTOR_VALUE_ARR : IS_FK_VALUE_ARR,
+            fieldIsParentKeyProvider ? IS_ANCESTOR_VALUE_ARR : IS_FK_VALUE_ARR,
             value,
             sm,
             fieldNumber);
@@ -131,6 +133,9 @@ class DatastoreRelationFieldManager {
           fieldManager.recreateEntityWithAncestor(ancestorKey instanceof Key ?
                                   (Key) ancestorKey : KeyFactory.stringToKey((String) ancestorKey));
         }
+        if (!fieldIsParentKeyProvider) {
+          checkForAncestorSwitch(value, sm);
+        }
       }
     };
 
@@ -145,6 +150,47 @@ class DatastoreRelationFieldManager {
     // TODO(maxr) Support storing child keys in the parent table as a list
     // property.
     storeRelationEvents.add(event);
+  }
+
+  static void checkForAncestorSwitch(Object child, StateManager parentSM) {
+    if (child == null) {
+      return;
+    }
+    ObjectManager om = parentSM.getObjectManager();
+    ApiAdapter apiAdapter = om.getApiAdapter();
+    if (apiAdapter.isNew(child)) {
+      return;
+    }
+    // Since we only support owned relationships right now, we can assume
+    // that this is parent/child and verify that the parent of the childSM
+    // is the parent object in this cascade.
+    Object childKeyOrString =
+        apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(child));
+    if (childKeyOrString == null) {
+      // must be a new object
+      return;
+    }
+    Key childKey = childKeyOrString instanceof Key
+                   ? (Key) childKeyOrString : KeyFactory.stringToKey((String) childKeyOrString);
+    Object parentKeyOrString =
+        apiAdapter.getTargetKeyForSingleFieldIdentity(parentSM.getInternalObjectId());
+    Key parentKey = parentKeyOrString instanceof Key
+                   ? (Key) parentKeyOrString : KeyFactory.stringToKey((String) parentKeyOrString);
+
+
+    if (childKey.getParent() == null) {
+      throw new NucleusUserException(
+          "Detected attempt to establish " + parentKey + " as the "
+         + "parent of " + childKey + " but the entity identified by "
+         + childKey + " has already been persisted without a parent.  A parent cannot "
+         + "be established or changed once an object has been persisted.");
+    } else if (!parentKey.equals(childKey.getParent())) {
+      throw new NucleusUserException(
+          "Detected attempt to establish " + parentKey + " as the "
+         + "parent of " + childKey + " but the entity identified by "
+         + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
+         + "be established or changed once an object has been persisted.");
+    }
   }
 
   private void runPostInsertMappingCallbacks(InsertMappingConsumer consumer, Object value) {

@@ -6,7 +6,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
-import org.datanucleus.test.HasOneToManyWithNonDeletingCascadeSetJPA;
+import org.datanucleus.test.HasOneToManyListJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -35,12 +35,6 @@ public class JPAOneToManySetTest extends JPAOneToManyTest {
   public void testUpdate_ClearOutChildren() throws EntityNotFoundException {
     testUpdate_ClearOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
   }
-  public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
-    testUpdate_NullOutChild_NoDelete(new HasOneToManyWithNonDeletingCascadeSetJPA());
-  }
-  public void testUpdate_ClearOutChild_NoDelete() throws EntityNotFoundException {
-    testUpdate_ClearOutChild_NoDelete(new HasOneToManyWithNonDeletingCascadeSetJPA());
-  }
   public void testFindWithOrderBy() throws EntityNotFoundException {
     testFindWithOrderBy(HasOneToManyWithOrderByJPA.class);
   }
@@ -59,5 +53,11 @@ public class JPAOneToManySetTest extends JPAOneToManyTest {
   public void testRemoveObject() throws EntityNotFoundException {
     testRemoveObject(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(nextNamedKey()),
         new BidirectionalChildSetJPA(nextNamedKey()));
+  }
+  public void testChangeParent() {
+    testChangeParent(new HasOneToManySetJPA(), new HasOneToManySetJPA());
+  }
+  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJPA());
   }
 }
