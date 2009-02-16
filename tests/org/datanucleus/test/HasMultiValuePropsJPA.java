@@ -1,17 +1,19 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import java.util.List;
-import java.util.HashSet;
-import java.util.TreeSet;
 import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.LinkedList;
+import java.util.List;
+import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.jdo.annotations.Persistent;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -26,15 +28,19 @@ public class HasMultiValuePropsJPA {
 
   List<String> keyList;
 
-  HashSet<String> strSet;
+  Set<String> strSet;
 
-  TreeSet<String> strHashSet;
+  HashSet<String> strHashSet;
 
   TreeSet<String> strTreeSet;
 
   ArrayList<String> strArrayList;
 
   LinkedList<String> strLinkedList;
+
+  SortedSet<String> strSortedSet;
+
+  LinkedHashSet<String> strLinkedHashSet;
 
   public String getId() {
     return id;
@@ -60,20 +66,12 @@ public class HasMultiValuePropsJPA {
     this.keyList = keyList;
   }
 
-  public HashSet<String> getStrSet() {
+  public Set<String> getStrSet() {
     return strSet;
   }
 
-  public void setStrSet(HashSet<String> strSet) {
+  public void setStrSet(Set<String> strSet) {
     this.strSet = strSet;
-  }
-
-  public TreeSet<String> getStrHashSet() {
-    return strHashSet;
-  }
-
-  public void setStrHashSet(TreeSet<String> strHashSet) {
-    this.strHashSet = strHashSet;
   }
 
   public TreeSet<String> getStrTreeSet() {
@@ -98,5 +96,29 @@ public class HasMultiValuePropsJPA {
 
   public void setStrLinkedList(LinkedList<String> strLinkedList) {
     this.strLinkedList = strLinkedList;
+  }
+
+  public HashSet<String> getStrHashSet() {
+    return strHashSet;
+  }
+
+  public void setStrHashSet(HashSet<String> strHashSet) {
+    this.strHashSet = strHashSet;
+  }
+
+  public SortedSet<String> getStrSortedSet() {
+    return strSortedSet;
+  }
+
+  public void setStrSortedSet(SortedSet<String> strSortedSet) {
+    this.strSortedSet = strSortedSet;
+  }
+
+  public LinkedHashSet<String> getStrLinkedHashSet() {
+    return strLinkedHashSet;
+  }
+
+  public void setStrLinkedHashSet(LinkedHashSet<String> strLinkedHashSet) {
+    this.strLinkedHashSet = strLinkedHashSet;
   }
 }

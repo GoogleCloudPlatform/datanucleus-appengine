@@ -236,27 +236,6 @@ public class JDOFetchTest extends JDOTestCase {
     assertNull(p.getAnotherName().getLast());
   }
 
-  public void testCollectionsAutomaticallyInDefaultFetchGroup() {
-    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
-    e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
-    e.setProperty("str", "yar");
-    ldth.ds.put(e);
-
-    commitTxn();
-
-    beginTxn();
-    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
-    pojo.setStr("yip");
-//    pojo.getStrList();
-    commitTxn();
-    pm.refresh(pojo);
-    pm.makeTransient(pojo);
-    pm.close();
-    assertEquals("yip", pojo.getStr());
-    assertEquals(3, pojo.getStrList().size());
-    pm = pmf.getPersistenceManager();
-  }
-
   public void testFetchSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));

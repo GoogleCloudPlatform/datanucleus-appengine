@@ -60,8 +60,6 @@ public class JPATestCase extends TestCase {
   protected void tearDown() throws Exception {
     boolean throwIfActiveTxn = !failed;
     failed = false;
-    ldth.tearDown(throwIfActiveTxn);
-    ldth = null;
     if (em.isOpen()) {
       if (em.getTransaction().isActive()) {
         em.getTransaction().rollback();
@@ -71,6 +69,8 @@ public class JPATestCase extends TestCase {
     em = null;
     emf.close();
     emf = null;
+    ldth.tearDown(throwIfActiveTxn);
+    ldth = null;
     super.tearDown();
   }
 

@@ -2,37 +2,24 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.KeyFactory;
 
-import org.datanucleus.test.NullDataJDO;
-import org.datanucleus.test.NullDataWithDefaultValuesJDO;
+import org.datanucleus.test.NullDataJPA;
 
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDONullValueTest extends JDOTestCase {
+public class JPANullValueTest extends JPATestCase {
 
   public void testFetchNullData() {
-    Entity e = new Entity(NullDataJDO.class.getSimpleName());
+    Entity e = new Entity(NullDataJPA.class.getSimpleName());
     ldth.ds.put(e);
     beginTxn();
-    NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, KeyFactory.keyToString(e.getKey()));
-    assertNull(pojo.getArray());
-    assertNull(pojo.getList());
-    assertNull(pojo.getString());
-    commitTxn();
-  }
-
-  public void testFetchNullDataWithDefaultValues() {
-    Entity e = new Entity(NullDataWithDefaultValuesJDO.class.getSimpleName());
-    ldth.ds.put(e);
-    beginTxn();
-    NullDataWithDefaultValuesJDO pojo =
-        pm.getObjectById(NullDataWithDefaultValuesJDO.class, KeyFactory.keyToString(e.getKey()));
+    NullDataJPA pojo = em.find(NullDataJPA.class, KeyFactory.keyToString(e.getKey()));
     assertNull(pojo.getArray());
     assertNull(pojo.getList());
     assertNull(pojo.getString());
@@ -40,9 +27,9 @@ public class JDONullValueTest extends JDOTestCase {
   }
 
   public void testInsertNullData() throws EntityNotFoundException {
-    NullDataJDO pojo = new NullDataJDO();
+    NullDataJPA pojo = new NullDataJPA();
     beginTxn();
-    pm.makePersistent(pojo);
+    em.persist(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     Set<String> props = e.getProperties().keySet();
@@ -50,13 +37,13 @@ public class JDONullValueTest extends JDOTestCase {
   }
 
   public void testInsertContainersWithOneNullElement() throws EntityNotFoundException {
-    NullDataJDO pojo = new NullDataJDO();
+    NullDataJPA pojo = new NullDataJPA();
     List<String> list = Utils.newArrayList();
     list.add(null);
     pojo.setList(list);
     pojo.setArray(new String[] {null});
     beginTxn();
-    pm.makePersistent(pojo);
+    em.persist(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(1, ((List<?>)e.getProperty("array")).size());

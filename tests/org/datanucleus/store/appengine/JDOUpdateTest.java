@@ -14,8 +14,16 @@ import org.datanucleus.test.Name;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
+import org.datanucleus.test.HasMultiValuePropsJDO;
 
 import java.util.List;
+import java.util.Set;
+import java.util.ArrayList;
+import java.util.LinkedList;
+import java.util.HashSet;
+import java.util.TreeSet;
+import java.util.SortedSet;
+import java.util.LinkedHashSet;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.JDOOptimisticVerificationException;
@@ -300,38 +308,283 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateList_Add() throws EntityNotFoundException {
-    NullDataJDO pojo = new NullDataJDO();
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
     List<String> list = Utils.newArrayList("a", "b");
-    pojo.setList(list);
+    pojo.setStrList(list);
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
     pm.close();
     pm = pmf.getPersistenceManager();
     beginTxn();
-    pojo = pm.getObjectById(NullDataJDO.class, pojo.getId());
-    pojo.getList().add("zoom");
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrList().add("zoom");
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(3, ((List<?>)e.getProperty("list")).size());
+    assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
   public void testUpdateList_Reset() throws EntityNotFoundException {
-    NullDataJDO pojo = new NullDataJDO();
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
     List<String> list = Utils.newArrayList("a", "b");
-    pojo.setList(list);
+    pojo.setStrList(list);
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
     pm.close();
     pm = pmf.getPersistenceManager();
     beginTxn();
-    pojo = pm.getObjectById(NullDataJDO.class, pojo.getId());
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     list = Utils.newArrayList("a", "b", "zoom");
-    pojo.setList(list);
+    pojo.setStrList(list);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(3, ((List<?>)e.getProperty("list")).size());
+    assertEquals(3, ((List<?>)e.getProperty("strList")).size());
+  }
+
+  public void testUpdateArrayList_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    ArrayList<String> list = Utils.newArrayList("a", "b");
+    pojo.setStrArrayList(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrArrayList().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
+  }
+
+  public void testUpdateArrayList_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    ArrayList<String> list = Utils.newArrayList("a", "b");
+    pojo.setStrArrayList(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    list = Utils.newArrayList("a", "b", "zoom");
+    pojo.setStrArrayList(list);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
+  }
+
+  public void testUpdateLinkedList_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    LinkedList<String> list = Utils.newLinkedList("a", "b");
+    pojo.setStrLinkedList(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrLinkedList().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
+  }
+
+  public void testUpdateLinkedList_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    LinkedList<String> list = Utils.newLinkedList("a", "b");
+    pojo.setStrLinkedList(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    list = Utils.newLinkedList("a", "b", "zoom");
+    pojo.setStrLinkedList(list);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
+  }
+
+  public void testUpdateSet_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    Set<String> set = Utils.newHashSet("a", "b");
+    pojo.setStrSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrSet().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
+  }
+
+  public void testUpdateSet_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    Set<String> set = Utils.newHashSet("a", "b");
+    pojo.setStrSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    set = Utils.newHashSet("a", "b", "zoom");
+    pojo.setStrSet(set);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
+  }
+
+  public void testUpdateHashSet_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    HashSet<String> set = Utils.newHashSet("a", "b");
+    pojo.setStrHashSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrHashSet().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
+  }
+
+  public void testUpdateHashSet_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    HashSet<String> set = Utils.newHashSet("a", "b");
+    pojo.setStrHashSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    set = Utils.newHashSet("a", "b", "zoom");
+    pojo.setStrHashSet(set);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
+  }
+
+  public void testUpdateLinkedHashSet_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    LinkedHashSet<String> set = Utils.newLinkedHashSet("a", "b");
+    pojo.setStrLinkedHashSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrLinkedHashSet().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
+  }
+
+  public void testUpdateLinkedHashSet_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    LinkedHashSet<String> set = Utils.newLinkedHashSet("a", "b");
+    pojo.setStrLinkedHashSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    set = Utils.newLinkedHashSet("a", "b", "zoom");
+    pojo.setStrLinkedHashSet(set);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
+  }
+
+  public void testUpdateTreeSet_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    TreeSet<String> set = Utils.newTreeSet("a", "b");
+    pojo.setStrTreeSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrTreeSet().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
+  }
+
+  public void testUpdateTreeSet_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    TreeSet<String> set = Utils.newTreeSet("a", "b");
+    pojo.setStrTreeSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    set = Utils.newTreeSet("a", "b", "zoom");
+    pojo.setStrTreeSet(set);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
+  }
+
+  public void testUpdateSortedSet_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    SortedSet<String> set = Utils.newTreeSet("a", "b");
+    pojo.setStrSortedSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getStrSortedSet().add("zoom");
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
+  }
+
+  public void testUpdateSortedSet_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    SortedSet<String> set = Utils.newTreeSet("a", "b");
+    pojo.setStrSortedSet(set);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    set = Utils.newTreeSet("a", "b", "zoom");
+    pojo.setStrSortedSet(set);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
   public void testUpdateArray_Reset() throws EntityNotFoundException {
@@ -352,6 +605,8 @@ public class JDOUpdateTest extends JDOTestCase {
     assertEquals(3, ((List<?>)e.getProperty("array")).size());
   }
 
+  // There's really no way to make this pass since we can't intercept
+  // calls that modify array elements.
   public void testUpdateArray_ModifyExistingElement() throws EntityNotFoundException {
     NullDataJDO pojo = new NullDataJDO();
     String[] array = new String[] {"a", "b"};

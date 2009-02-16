@@ -7,6 +7,8 @@ import java.util.HashSet;
 import java.util.TreeSet;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.SortedSet;
+import java.util.LinkedHashSet;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -33,10 +35,10 @@ public class HasMultiValuePropsJDO {
   List<String> keyList;
 
   @Persistent(defaultFetchGroup = "true")
-  HashSet<String> strSet;
+  Set<String> strSet;
 
   @Persistent(defaultFetchGroup = "true")
-  TreeSet<String> strHashSet;
+  HashSet<String> strHashSet;
 
   @Persistent(defaultFetchGroup = "true")
   TreeSet<String> strTreeSet;
@@ -46,6 +48,12 @@ public class HasMultiValuePropsJDO {
 
   @Persistent(defaultFetchGroup = "true")
   LinkedList<String> strLinkedList;
+
+  @Persistent(defaultFetchGroup = "true")
+  SortedSet<String> strSortedSet;
+
+  @Persistent(defaultFetchGroup = "true")
+  LinkedHashSet<String> strLinkedHashSet;
 
   public String getId() {
     return id;
@@ -83,7 +91,7 @@ public class HasMultiValuePropsJDO {
     return strSet;
   }
 
-  public void setStrSet(HashSet<String> strSet) {
+  public void setStrSet(Set<String> strSet) {
     this.strSet = strSet;
   }
 
@@ -111,11 +119,27 @@ public class HasMultiValuePropsJDO {
     this.strLinkedList = strLinkedList;
   }
 
-  public TreeSet<String> getStrHashSet() {
+  public HashSet<String> getStrHashSet() {
     return strHashSet;
   }
 
-  public void setStrHashSet(TreeSet<String> strHashSet) {
+  public void setStrHashSet(HashSet<String> strHashSet) {
     this.strHashSet = strHashSet;
+  }
+
+  public SortedSet<String> getStrSortedSet() {
+    return strSortedSet;
+  }
+
+  public void setStrSortedSet(SortedSet<String> strSortedSet) {
+    this.strSortedSet = strSortedSet;
+  }
+
+  public LinkedHashSet<String> getStrLinkedHashSet() {
+    return strLinkedHashSet;
+  }
+
+  public void setStrLinkedHashSet(LinkedHashSet<String> strLinkedHashSet) {
+    this.strLinkedHashSet = strLinkedHashSet;
   }
 }

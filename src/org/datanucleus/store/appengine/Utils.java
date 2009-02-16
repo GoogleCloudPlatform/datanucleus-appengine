@@ -9,6 +9,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.LinkedList;
 import java.util.TreeSet;
+import java.util.LinkedHashSet;
 
 /**
  * A handful of utilities based on the Google Collections Library.
@@ -59,6 +60,10 @@ public class Utils {
 
   public static <K, V> HashMap<K, V> newHashMap() {
     return new HashMap<K, V>();
+  }
+
+  public static <T> LinkedHashSet<T> newLinkedHashSet(T... elements) {
+    return new LinkedHashSet<T>(Arrays.asList(elements));
   }
 
   public interface Function<F, T> {

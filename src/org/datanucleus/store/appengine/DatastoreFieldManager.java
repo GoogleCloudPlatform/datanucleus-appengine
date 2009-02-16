@@ -64,6 +64,8 @@ public class DatastoreFieldManager implements FieldManager {
 
   private static final int[] NOT_USED = {0};
 
+  private static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
+
   // Stack used to maintain the current field state manager to use.  We push on
   // to this stack as we encounter embedded classes and then pop when we're
   // done.
@@ -197,7 +199,8 @@ public class DatastoreFieldManager implements FieldManager {
         // Datanucleus invokes this method for the object versions
         // of primitive types.  We need to make sure we convert
         // appropriately.
-        value = TypeConversionUtils.datastoreValueToPojoValue(clr, value, getMetaData(fieldNumber));
+        value = getConversionUtils().datastoreValueToPojoValue(
+            clr, value, getStateManager(), getMetaData(fieldNumber));
         if (ammd.isSerialized()) {
           value = deserializeFieldValue(value, clr, ammd);
         } else if (Enum.class.isAssignableFrom(ammd.getType())) {
@@ -545,7 +548,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   private Object convertCollectionValue(AbstractMemberMetaData ammd, Object value) {
     Object result = value;
-    if (TypeConversionUtils.pojoPropertyIsCharacterCollection(ammd)) {
+    if (getConversionUtils().pojoPropertyIsCharacterCollection(ammd)) {
       // Datastore doesn't support Character so translate into
       // a list of Longs.  All other Collections can pass straight
       // through.
@@ -556,20 +559,20 @@ public class DatastoreFieldManager implements FieldManager {
         getClassLoaderResolver().classForName(ammd.getCollection().getElementType()))) {
       @SuppressWarnings("unchecked")
       Iterable<Enum> enums = (Iterable<Enum>) value; 
-      result = TypeConversionUtils.convertEnumsToStringList(enums);
+      result = getConversionUtils().convertEnumsToStringList(enums);
     }
     return result;
   }
 
   private Object convertArrayValue(AbstractMemberMetaData ammd, Object value) {
     Object result;
-    if (TypeConversionUtils.pojoPropertyIsByteArray(ammd)) {
-      result = TypeConversionUtils.convertByteArrayToBlob(value);
+    if (getConversionUtils().pojoPropertyIsByteArray(ammd)) {
+      result = getConversionUtils().convertByteArrayToBlob(value);
     } else if (Enum.class.isAssignableFrom(ammd.getType().getComponentType())) {
-      result = TypeConversionUtils.convertEnumsToStringList(Arrays.<Enum>asList((Enum[]) value));
+      result = getConversionUtils().convertEnumsToStringList(Arrays.<Enum>asList((Enum[]) value));
     } else {
       // Translate all arrays to lists before storing.
-      result = TypeConversionUtils.convertPojoArrayToDatastoreList(value);
+      result = getConversionUtils().convertPojoArrayToDatastoreList(value);
     }
     return result;
   }
@@ -756,6 +759,13 @@ public class DatastoreFieldManager implements FieldManager {
       dc.provideMappingsForMembers(consumer, fmds, false);
     }
     return consumer;
+  }
+
+  /**
+   * Just exists so we can override in tests. 
+   */
+  TypeConversionUtils getConversionUtils() {
+    return TYPE_CONVERSION_UTILS;
   }
 
   /**

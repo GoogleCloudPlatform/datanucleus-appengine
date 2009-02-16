@@ -10,14 +10,15 @@ import org.datanucleus.test.HasEnumJDO;
  */
 public class TypeConversionUtilsTest extends TestCase {
   public void testNullToArray() {
+    TypeConversionUtils tcu = new TypeConversionUtils();
     String[] stringArray =
-        (String[]) TypeConversionUtils.convertDatastoreListToPojoArray(null, String.class);
+        (String[]) tcu.convertDatastoreListToPojoArray(null, String.class);
 
     HasEnumJDO.MyEnum[] enumArray = (HasEnumJDO.MyEnum[])
-        TypeConversionUtils.convertDatastoreListToPojoArray(null, HasEnumJDO.MyEnum.class);
+        tcu.convertDatastoreListToPojoArray(null, HasEnumJDO.MyEnum.class);
 
     int[] intArray =
-        (int[]) TypeConversionUtils.convertDatastoreListToPojoArray(null, Integer.TYPE);
+        (int[]) tcu.convertDatastoreListToPojoArray(null, Integer.TYPE);
 
   }
 }

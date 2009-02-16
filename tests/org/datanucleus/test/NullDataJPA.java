@@ -4,20 +4,19 @@ package org.datanucleus.test;
 import java.util.List;
 import java.util.Set;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class NullDataJDO {
+@Entity
+public class NullDataJPA {
 
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  @Id
+  @GeneratedValue(strategy= GenerationType.IDENTITY)
   private String id;
 
   private String string;

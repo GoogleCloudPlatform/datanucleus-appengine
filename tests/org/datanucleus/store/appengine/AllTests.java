@@ -51,6 +51,7 @@ public class AllTests {
     suite.addTestSuite(JDOEnumTest.class);
     suite.addTestSuite(JPAEnumTest.class);
     suite.addTestSuite(JDONullValueTest.class);
+    suite.addTestSuite(JPANullValueTest.class);
     suite.addTestSuite(TypeConversionUtilsTest.class);
     suite.addTestSuite(JDOMakeTransientTest.class);
     return suite;

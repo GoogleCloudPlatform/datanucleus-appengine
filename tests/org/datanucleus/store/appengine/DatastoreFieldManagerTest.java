@@ -16,6 +16,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.KitchenSink;
 import org.easymock.EasyMock;
@@ -27,8 +28,6 @@ import java.lang.reflect.Proxy;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
-
-import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -52,6 +51,12 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+    final TypeConversionUtils tcu = new TypeConversionUtils() {
+      @Override
+      Object wrap(StateManager ownerSM, AbstractMemberMetaData ammd, Object value) {
+        return value;
+      }
+    };
     DatastoreFieldManager fieldManager =
         new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity, new int[0]) {
       @Override
@@ -62,6 +67,11 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       @Override
       ClassLoaderResolver getClassLoaderResolver() {
         return clr;
+      }
+
+      @Override
+      TypeConversionUtils getConversionUtils() {
+        return tcu;
       }
     };
 
