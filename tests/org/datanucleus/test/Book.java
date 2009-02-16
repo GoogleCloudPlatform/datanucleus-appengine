@@ -1,3 +1,4 @@
+// Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
@@ -8,6 +9,9 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+/**
+ * @author Max Ross <maxr@google.com>
+ */
 @Entity
 public class Book {
   @Id
@@ -68,8 +72,10 @@ public class Book {
     this.firstPublished = firstPublished;
   }
 
+  @Override
   public String toString() {
-    return "\n\nid: " + id + "\ntitle: " + title + "\nauthor: " + author + "\nisbn: " + isbn;
+    return "\n\nid: " + id + "\ntitle: " + title + "\nauthor: " + author + "\nisbn: " + isbn
+           + "\nfirstPublished: " + firstPublished;
   }
 
   public static com.google.appengine.api.datastore.Entity newBookEntity(String namedKey,
@@ -116,6 +122,7 @@ public class Book {
     return newBookEntity(parent, null, author, isbn, title, 2000);
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -133,6 +140,7 @@ public class Book {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return (id != null ? id.hashCode() : 0);
   }

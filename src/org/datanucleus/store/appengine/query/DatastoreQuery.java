@@ -50,6 +50,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.math.BigDecimal;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -441,10 +442,25 @@ public class DatastoreQuery implements Serializable {
       value = ((Literal) right).getLiteral();
     } else if (right instanceof ParameterExpression) {
       value = right.getSymbol().getValue();
+    } else if (right instanceof DyadicExpression) {
+      // In general we don't support nested dyadic expressions
+      // but we special case negation:
+      // select * from table where val = -33
+      DyadicExpression dyadic = (DyadicExpression) right;
+      if (dyadic.getLeft() instanceof Literal &&
+          ((Literal) dyadic.getLeft()).getLiteral() instanceof Number &&
+          dyadic.getRight() == null &&
+          Expression.OP_NEG.equals(dyadic.getOperator())) {
+        Number negateMe = (Number) ((Literal) dyadic.getLeft()).getLiteral();
+        value = negateNumber(negateMe);
+      } else {
+        throw new UnsupportedDatastoreFeatureException(
+            "Right side of expression is composed of unsupported components.  "
+            + "Left: " + dyadic.getLeft().getClass().getName()
+            + ", Op: " + dyadic.getOperator()
+            + ", Right: " + dyadic.getRight(), query.getSingleStringQuery());
+      }
     } else {
-      // We hit an operator that is not in the unsupported list and does
-      // not have an entry in DATANUCLEUS_OP_TO_APPENGINE_OP. Almost certainly
-      // a programming error.
       throw new UnsupportedDatastoreFeatureException(
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
@@ -470,6 +486,19 @@ public class DatastoreQuery implements Serializable {
       }
       qd.query.addFilter(datastorePropName, op, value);
     }
+  }
+
+  private Object negateNumber(Number negateMe) {
+    if (negateMe instanceof BigDecimal) {
+      // datastore doesn't support filtering by BigDecimal to convert to
+      // double.
+      return ((BigDecimal) negateMe).negate().doubleValue();
+    } else if (negateMe instanceof Float) {
+      return -((Float) negateMe);
+    } else if (negateMe instanceof Double) {
+      return -((Double) negateMe);
+    }
+    return -negateMe.longValue();
   }
 
   private JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd) {

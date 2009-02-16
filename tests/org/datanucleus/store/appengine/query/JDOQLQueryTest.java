@@ -849,12 +849,47 @@ public class JDOQLQueryTest extends JDOTestCase {
     @SuppressWarnings("unchecked")
     List<KitchenSink> results = (List<KitchenSink>) q.execute(KitchenSink.USER1);
     assertEquals(1, results.size());
-    
+
     Query q2 = pm.newQuery(KitchenSink.class, "userVal == u");
     q2.declareParameters(User.class.getName() + " u");
     @SuppressWarnings("unchecked")
     List<KitchenSink> results2 = (List<KitchenSink>) q2.execute(KitchenSink.USER1);
     assertEquals(1, results2.size());
+  }
+
+  public void testQueryWithNegativeLiteralLong() {
+    ldth.ds.put(newFlightEntity("1", "yam", "bam", -1, 2));
+
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you == -1");
+    @SuppressWarnings("unchecked")
+    List<Flight> results = (List<Flight>) q.execute();
+    assertEquals(1, results.size());
+    q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you > -2");
+    @SuppressWarnings("unchecked")
+    List<Flight> results2 = (List<Flight>) q.execute();
+    assertEquals(1, results2.size());
+  }
+
+  public void testQueryWithNegativeLiteralDouble() {
+    ldth.ds.put(KitchenSink.newKitchenSinkEntity("blarg", null));
+
+    Query q = pm.newQuery(
+        "select from " + KitchenSink.class.getName() + " where doubleVal > -2.25");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute();
+    assertEquals(1, results.size());
+  }
+
+  public void testQueryWithNegativeParam() {
+    ldth.ds.put(newFlightEntity("1", "yam", "bam", -1, 2));
+
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you == p parameters String p");
+    @SuppressWarnings("unchecked")
+    List<Flight> results = (List<Flight>) q.execute(-1);
+    assertEquals(1, results.size());
   }
 
   private void assertQueryUnsupportedByOrm(

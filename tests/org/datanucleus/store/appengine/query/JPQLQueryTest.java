@@ -21,6 +21,9 @@ import org.datanucleus.test.HasMultiValuePropsJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.HasDoubleJPA;
+import static org.datanucleus.test.Flight.newFlightEntity;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -467,7 +470,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByChildObject() {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
     Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
@@ -482,7 +485,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByChildObject_AdditionalFilterOnParent() {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
     Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
@@ -503,7 +506,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByChildObject_UnsupportedOperator() {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity bookEntity = newBook(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
+    Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
     Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
@@ -750,15 +753,54 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testQueryWithNegativeLiteralLong() {
+    ldth.ds.put(newBookEntity(null, "title", "auth", "123432", -40));
+
+    Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where firstPublished = -40");
+    @SuppressWarnings("unchecked")
+    List<Book> results = (List<Book>) q.getResultList();
+    assertEquals(1, results.size());
+    q = em.createQuery(
+        "select from " + Book.class.getName() + " where firstPublished > -41");
+    @SuppressWarnings("unchecked")
+    List<Book> results2 = (List<Book>) q.getResultList();
+    assertEquals(1, results2.size());
+  }
+
+  public void testQueryWithNegativeLiteralDouble() {
+    Entity e = new Entity(HasDoubleJPA.class.getSimpleName());
+    e.setProperty("aDouble", -2.23d);
+    ldth.ds.put(e);
+
+    Query q = em.createQuery(
+        "select from " + HasDoubleJPA.class.getName() + " where aDouble > -2.25");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+
+  public void testQueryWithNegativeParam() {
+    ldth.ds.put(newBookEntity(null, "title", "auth", "123432", -40));
+
+    Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where firstPublished = :p");
+    q.setParameter("p", -40);
+    @SuppressWarnings("unchecked")
+    List<Book> results = (List<Book>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }
 
   private static Entity newBook(String title, String author, String isbn, int firstPublished) {
-    return newBook(null, title, author, isbn, firstPublished);
+    return newBookEntity(null, title, author, isbn, firstPublished);
   }
 
-  private static Entity newBook(
+  private static Entity newBookEntity(
       Key parentKey, String title, String author, String isbn, int firstPublished) {
     Entity e;
     if (parentKey != null) {
