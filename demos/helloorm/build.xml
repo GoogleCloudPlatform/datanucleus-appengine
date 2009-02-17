@@ -50,12 +50,8 @@
         <include name="appengine-api.jar"/>
       </lib>
       <classes dir="classes"/>
-      <classes dir="src">
-        <include name="datanucleus.properties"/>
-      </classes>
       <webinf dir="src/WEB-INF">
         <include name="appengine-web.xml"/>
-        <include name="datanucleus.properties"/>
       </webinf>
     </war>
   </target>

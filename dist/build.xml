@@ -9,31 +9,96 @@
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
-  <property name="src.dir" value="../src"/>
-  <property name="compile.dest.dir" value="classes"/>
+  <property name="plugin.src.dir" value="../src"/>
+  <property name="helloorm.src.dir" value="../demos/helloorm/src"/>
+  <property name="orm.tmp.dir" value="/tmp/orm"/>
+  <property name="compile.dest.dir" value="${orm.tmp.dir}/classes"/>
   <property name="orm.lib.dir" value="../lib"/>
-  <property name="orm.tmp.dir" value="/tmp/testdist"/>
-  <property name="orm.sdk.tmp.dir" value="${orm.tmp.dir}/lib"/>
+  <property name="orm.tmpdist.dir" value="/tmp/testdist"/>
+  <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}/lib"/>
 
   <path id="appengine.plugin.classpath">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
+  </path>
+
+  <path id="appengine.helloorm.classpath">
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
+    <pathelement location="${orm.lib.dir}/servlet-api-2.5.jar"/>
   </path>
 
   <target name="compile" description="Compile the datanucleus appengine plugin">
     <delete dir="${compile.dest.dir}"/>
     <mkdir dir="${compile.dest.dir}"/>
     <javac classpathref="appengine.plugin.classpath" debug="on" source="1.5" target="1.5"
-        srcdir="${src.dir}" destdir="${compile.dest.dir}"/>
+        srcdir="${plugin.src.dir}" destdir="${compile.dest.dir}"/>
+  </target>
+
+  <target name="package-demos" depends="enhance-demos" description="Package the appengine orm demos">
+    <copy todir="${compile.dest.dir}">
+      <fileset dir="${helloorm.src.dir}">
+        <include name="META-INF/*"/>
+      </fileset>
+    </copy>
+    <war destfile="helloorm.war" webxml="${helloorm.src.dir}/WEB-INF/web.xml">
+      <lib dir="${orm.lib.dir}">
+        <include name="datanucleus-core*.jar"/>
+        <include name="datanucleus-jpa*.jar"/>
+        <include name="geronimo*.jar"/>
+        <include name="jdo2-api*.jar"/>
+        <include name="appengine-api.jar"/>
+      </lib>
+      <lib dir=".">
+        <include name="${orm.jar}"/>
+      </lib>
+      <classes dir="${compile.dest.dir}"/>
+      <webinf dir="${helloorm.src.dir}/WEB-INF">
+        <include name="appengine-web.xml"/>
+      </webinf>
+    </war>
+    <delete dir="${orm.tmp.dir}/exploded"/>
+    <mkdir dir="${orm.tmp.dir}/exploded"/>
+    <unwar src="helloorm.war" dest="${orm.tmp.dir}/exploded"/>
+  </target>
+
+  <path id="demos.enhancer.classpath">
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
+    <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
+    <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
+    <pathelement location="${compile.dest.dir}"/>
+  </path>
+
+  <target name="enhance-demos" description="enhance" depends="compile-demos">
+    <taskdef name="datanucleusenhancer" classpathref="demos.enhancer.classpath"
+             classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
+
+    <datanucleusenhancer classpathref="demos.enhancer.classpath" failonerror="true">
+      <fileset dir="${compile.dest.dir}">
+        <include name="**/*.class"/>
+      </fileset>
+    </datanucleusenhancer>
+  </target>
+
+  <target name="compile-demos" description="Compile the datanucleus appengine orm demos">
+    <!-- Right now we only have one demo -->
+    <delete dir="${compile.dest.dir}"/>
+    <mkdir dir="${compile.dest.dir}"/>
+    <javac classpathref="appengine.helloorm.classpath" debug="on" source="1.5" target="1.5"
+        srcdir="${helloorm.src.dir}" destdir="${compile.dest.dir}"/>
   </target>
 
   <target name="jar" depends="compile" description="Jar the compiled datanucleus appengine plugin">
     <!-- need to copy over all non-java resources -->
     <copy todir="${compile.dest.dir}">
-      <fileset dir="${src.dir}">
+      <fileset dir="${plugin.src.dir}">
         <include name="**/*.xml"/>
         <include name="**/*.properties"/>
         <include name="**/*.MF"/>
@@ -53,20 +118,24 @@
       </manifest>
     </jar>
     <!-- Extract the manifest and copy it back into the source tree -->
-    <mkdir dir="exploded"/>
-    <unzip src="${orm.jar}" dest="exploded"/>
-    <copy file="exploded/META-INF/MANIFEST.MF" todir="${src.dir}/META-INF"/>
-    <delete dir="exploded"/>
+    <mkdir dir="${orm.tmp.dir}/exploded"/>
+    <unzip src="${orm.jar}" dest="${orm.tmp.dir}/exploded"/>
+    <copy file="${orm.tmp.dir}/exploded/META-INF/MANIFEST.MF" todir="${plugin.src.dir}/META-INF"/>
+    <delete dir="${orm.tmp.dir}/exploded"/>
   </target>
 
-  <target name="dist" depends="compile, jar" description="Build the datanucleus appengine distribution">
+  <target name="dist" depends="compile, jar, package-demos" description="Build the datanucleus appengine distribution">
     <zip destfile="${orm.source.zip}">
-      <fileset dir="${src.dir}" includes="**/*"/>
+      <fileset dir="${plugin.src.dir}" includes="**/*"/>
     </zip>
     <zip destfile="${dist.target}">
-      <zipfileset prefix="demos" dir="../demos">
+      <zipfileset prefix="demos/helloorm/src" dir="../demos/helloorm/src">
         <include name="**"/>
         <exclude name="**/*.iml"/>
+      </zipfileset>
+      <zipfileset prefix="demos/helloorm/www" dir="${orm.tmp.dir}/exploded">
+        <include name="**"/>
+        <exclude name="META-INF/**"/>
       </zipfileset>
       <zipfileset prefix="docs" dir="../doc">
         <include name="**"/>
@@ -74,20 +143,14 @@
       <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
         <include name="asm*.jar"/>
         <include name="jdo2-api*.jar"/>
-        <!-- Don't ship txn and jpa jars-->
-        <!-- TODO(maxr): Uncomment once legal concerns are addressed -->
-        <!--<include name="transaction-api-1.1.jar"/>-->
-        <!--<include name="persistence-api-1.0.2.jar"/>-->
+        <include name="geronimo*.jar"/>
         <include name="datanucleus-enhancer*.jar"/>
         <include name="datanucleus-jpa*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
       <zipfileset prefix="lib/user/orm" dir="${orm.lib.dir}">
         <include name="jdo2-api*.jar"/>
-        <!-- Don't ship txn and jpa jars-->
-        <!-- TODO(maxr): Uncomment once legal concerns are addressed -->
-        <!--<include name="transaction-api-1.1.jar"/>-->
-        <!--<include name="persistence-api-1.0.2.jar"/>-->
+        <include name="geronimo*.jar"/>
         <include name="datanucleus-jpa*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
@@ -112,25 +175,25 @@
       /tmp/testdist/lib/appengine-tools-api.jar
       /tmp/testdist/lib/impl/appengine-local-runtime.jar
       /tmp/testdist/lib/impl/appengine-api.jar
+      /tmp/testdist/lib/impl/appengine-api-stubs.jar
       /tmp/testdist/lib/shared/servlet-api-2.5 .jar
       /tmp/testdist/lib/shared/jsp-api-2.1 .jar
+      /tmp/testdist/lib/shared/el-api-2.1 .jar
       /tmp/testdist/lib/shared/appengine-local-runtime-shared.jar
-      /tmp/testdist/appengine-orm
-      /tmp/testdist/appengine-orm/<orm distro>
      -->
-    <delete dir="${orm.tmp.dir}"/>
-    <mkdir dir="${orm.tmp.dir}"/>
+    <delete dir="${orm.tmpdist.dir}"/>
+    <mkdir dir="${orm.tmpdist.dir}"/>
 
     <!-- Now setup a directory that contains the sdk jars we need to run the demos -->
-    <mkdir dir="${orm.sdk.tmp.dir}"/>
-    <copy todir="${orm.sdk.tmp.dir}">
+    <mkdir dir="${orm.sdk.tmpdist.dir}"/>
+    <copy todir="${orm.sdk.tmpdist.dir}">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-tools-api.jar"/>
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmp.dir}/impl"/>
-    <copy todir="${orm.sdk.tmp.dir}/impl">
+    <mkdir dir="${orm.sdk.tmpdist.dir}/impl"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/impl">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime.jar"/>
         <include name="appengine-api-stubs.jar"/>
@@ -138,8 +201,8 @@
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmp.dir}/shared"/>
-    <copy todir="${orm.sdk.tmp.dir}/shared">
+    <mkdir dir="${orm.sdk.tmpdist.dir}/shared"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/shared">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime-shared.jar"/>
         <include name="servlet-api*.jar"/>
@@ -148,25 +211,16 @@
       </fileset>
     </copy>
 
-    <unzip src="${dist.target}" dest="${orm.tmp.dir}"/>
-
-    <!-- Copy over the jta and jpa jars which we don't ship with the distro -->
-    <!-- TODO(maxr): Get rid of this once legal concerns are addressed -->
-    <copy todir="${orm.tmp.dir}/lib/user/orm">
-      <fileset dir="${orm.lib.dir}">
-        <include name="transaction-api*.jar"/>
-        <include name="persistence-api*.jar"/>
-      </fileset>
-    </copy>
-    <copy todir="${orm.tmp.dir}/lib/tools/orm">
-      <fileset dir="${orm.lib.dir}">
-        <include name="persistence-api*.jar"/>
-      </fileset>
-    </copy>
+    <unzip src="${dist.target}" dest="${orm.tmpdist.dir}"/>
 
     <parallel>
       <daemons>
-        <ant dir="${orm.tmp.dir}/demos/helloorm"/>
+        <java fork="true" classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
+              classname="com.google.appengine.tools.development.DevAppServerMain">
+          <jvmarg value="-Xdebug"/>
+          <!--<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"/>-->
+          <arg value="${orm.tmpdist.dir}/demos/helloorm/www"/>
+        </java>
       </daemons>
       <sequential>
         <sleep seconds="8"/>
@@ -181,7 +235,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.add.response">
-          <contains string="${curl.add.result}" substring="aghoZWxsb29ybXIMCxIGRkxJR0hUGAEM"/>
+          <contains string="${curl.add.result}" substring="aghoZWxsb29ybXIMCxIGRmxpZ2h0GAEM"/>
         </condition>
         <fail unless="expected.add.response" message="Did not get the expected add response: ${curl.add.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 
@@ -192,7 +246,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.query.response">
-          <contains string="${curl.query.result}" substring="aghoZWxsb29ybXIMCxIGRkxJR0hUGAEM"/>
+          <contains string="${curl.query.result}" substring="aghoZWxsb29ybXIMCxIGRmxpZ2h0GAEM"/>
         </condition>
         <fail unless="expected.query.response" message="Did not get the expected query response: ${curl.query.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 

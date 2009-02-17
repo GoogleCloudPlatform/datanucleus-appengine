@@ -26,8 +26,9 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
   }
 
   private static Map<String, Object> manageOverridingProps(Map<String, Object> overridingProps) {
-    if (overridingProps == null) {
-      overridingProps = Utils.newHashMap();
+    Map<String, Object> propsToReturn = Utils.newHashMap();
+    if (overridingProps != null) {
+      propsToReturn.putAll(overridingProps);
     }
     // EntityManagerFactoryImpl, our parent class, will only accept
     // responsibility for a persistence unit if the persistence provider for
@@ -38,17 +39,17 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
     // we add this property with the expected value to the map if this
     // property isn't already set.  If it is already set then we're
     // not the right factory for this persistence unit anyway.
-    if (!overridingProps.containsKey("javax.persistence.provider")) {
-      overridingProps.put("javax.persistence.provider", PersistenceProviderImpl.class.getName());
+    if (!propsToReturn.containsKey("javax.persistence.provider")) {
+      propsToReturn.put("javax.persistence.provider", PersistenceProviderImpl.class.getName());
     }
     // see DatastoreJDOPersistenceManagerFactory.getPersistenceManagerFactory
     // for an explanation of why we can't just add this as a persistence property
     // in plugin.xml
-    if (!overridingProps.containsKey("datanucleus.identifier.case")) {
-      overridingProps.put("datanucleus.identifier.case", "PreserveCase");
+    if (!propsToReturn.containsKey("datanucleus.identifier.case")) {
+      propsToReturn.put("datanucleus.identifier.case", "PreserveCase");
     }
 
-    return overridingProps;
+    return propsToReturn;
   }
 
   @Override

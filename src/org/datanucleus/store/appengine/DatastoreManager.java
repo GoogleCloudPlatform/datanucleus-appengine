@@ -13,6 +13,7 @@ import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -23,6 +24,7 @@ import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.exceptions.NoExtentException;
+import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
@@ -231,12 +233,14 @@ public class DatastoreManager extends MappedStoreManager {
     return false;
   }
 
+  @Override
   public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
       StatementMappingForClass stmtMappings, boolean checkNonNullable) {
     // TODO(maxr)
     return null;
   }
 
+  @Override
   public ResultObjectFactory newResultObjectFactory(DatastoreClass table,
       AbstractClassMetaData acmd, StatementMappingForClass mappingDefinition, boolean ignoreCache,
       boolean discriminator, FetchPlan fetchPlan, Class persistentClass) {
@@ -244,43 +248,51 @@ public class DatastoreManager extends MappedStoreManager {
     return null;
   }
 
+  @Override
   protected FKListStoreSpecialization newFKListStoreSpecialization(ClassLoaderResolver clr) {
     return new DatastoreFKListStoreSpecialization(LOCALISER, clr, this);
   }
 
+  @Override
   protected FKSetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
     return new DatastoreFKSetStore(ammd, this, clr);
   }
 
+  @Override
   protected FKArrayStoreSpecialization newFKArrayStoreSpecialization(ClassLoaderResolver clr) {
     // Disabled for v1.0
     throw new UnsupportedOperationException("FK Arrays not supported.");
 //    return new DatastoreFKArrayStoreSpecialization(LOCALISER, clr, this);
   }
 
+  @Override
   protected FKMapStore newFKMapStore(AbstractMemberMetaData clr, ClassLoaderResolver amd) {
     // TODO(maxr)
     throw new UnsupportedOperationException("FK Maps not supported.");
   }
 
+  @Override
   protected JoinArrayStore newJoinArrayStore(DatastoreContainerObject arrayTable,
       ClassLoaderResolver clr) {
     // TODO(maxr)
     throw new UnsupportedOperationException("Join Arrays not supported.");
   }
 
+  @Override
   protected JoinMapStore newJoinMapStore(DatastoreContainerObject mapTable,
       ClassLoaderResolver clr) {
     // TODO(maxr)
     throw new UnsupportedOperationException("Join Maps not supported.");
   }
 
+  @Override
   protected JoinListStore newJoinListStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
       DatastoreContainerObject table) {
     // TODO(maxr)
     throw new UnsupportedOperationException("Join Lists not supported.");
   }
 
+  @Override
   protected JoinSetStore newJoinSetStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
       DatastoreContainerObject table) {
     // TODO(maxr)
@@ -407,7 +419,26 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public DatastoreTable getDatastoreClass(String className, ClassLoaderResolver clr) {
-    return (DatastoreTable) super.getDatastoreClass(className, clr);
+    try {
+      return (DatastoreTable) super.getDatastoreClass(className, clr);
+    } catch (NoTableManagedException e) {
+      // Our parent class throws this when the class isn't PersistenceCapable.
+      // The error message is mis-leading so we'll swallow the exception and
+      // throw something clearer.  We still need to throw
+      // NoTableManagedException because in some scenarios this isn't really
+      // an error and DataNucleus catches it.  If we throw something else we'll
+      // get exceptions about java.lang.String not being PersistenceCapable.
+      // Really.  I saw it with my own eyes.
+      Class cls = clr.classForName(className);
+      ApiAdapter api = getApiAdapter();
+      if (cls != null && !cls.isInterface() && !api.isPersistable(cls)) {
+        throw new NoTableManagedException(
+            "Class " + className + " does not seem to have been enhanced.  You may want to rerun "
+            + "the enhancer and check for errors in the output.");
+      }
+      // Some othe problem.  Parent class's inaccurate error message is no
+      // worse than our best guess.
+      throw e;
+    }
   }
-
 }
