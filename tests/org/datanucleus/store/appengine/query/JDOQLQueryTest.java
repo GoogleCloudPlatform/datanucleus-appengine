@@ -840,6 +840,104 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testSortByEmbeddedField() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max2");
+    entity.setProperty("last", "ross2");
+    entity.setProperty("anotherFirst", "notmax2");
+    entity.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + Person.class.getName() + " order by name.first desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.execute();
+    assertEquals(2, result.size());
+    assertEquals("max2", result.get(0).getName().getFirst());
+    assertEquals("max", result.get(1).getName().getFirst());
+  }
+
+  public void testSortByEmbeddedField_OverriddenColumn() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max2");
+    entity.setProperty("last", "ross2");
+    entity.setProperty("anotherFirst", "notmax2");
+    entity.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity);
+
+    Query q =
+        pm.newQuery("select from " + Person.class.getName() + " order by anotherName.last desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.execute();
+    assertEquals(2, result.size());
+    assertEquals("notross2", result.get(0).getAnotherName().getLast());
+    assertEquals("notross", result.get(1).getAnotherName().getLast());
+  }
+
+  public void testSortByEmbeddedField_MultipleFields() {
+    Entity entity0 = new Entity(Person.class.getSimpleName());
+    entity0.setProperty("first", "max");
+    entity0.setProperty("last", "ross");
+    entity0.setProperty("anotherFirst", "notmax");
+    entity0.setProperty("anotherLast", "z");
+    ldth.ds.put(entity0);
+
+    Entity entity1 = new Entity(Person.class.getSimpleName());
+    entity1.setProperty("first", "max");
+    entity1.setProperty("last", "ross2");
+    entity1.setProperty("anotherFirst", "notmax2");
+    entity1.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity1);
+
+    Entity entity2 = new Entity(Person.class.getSimpleName());
+    entity2.setProperty("first", "a");
+    entity2.setProperty("last", "b");
+    entity2.setProperty("anotherFirst", "c");
+    entity2.setProperty("anotherLast", "d");
+    ldth.ds.put(entity2);
+
+    Query q = pm.newQuery(
+        "select from " + Person.class.getName() + " order by name.first asc, anotherName.last desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.execute();
+    assertEquals(3, result.size());
+    assertEquals(entity2.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(entity0.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+    assertEquals(entity1.getKey(), KeyFactory.stringToKey(result.get(2).getId()));
+  }
+
+  public void testSortBySubObject_UnknownField() {
+    try {
+      pm.newQuery("select from " + Flight.class.getName() + " order by origin.first").execute();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+    }
+  }
+
+  public void testSortBySubObject_NotEmbeddable() {
+    try {
+      pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " order by flight.origin").execute();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+    }
+  }
+
   public void testUserQuery() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
     ldth.ds.put(e);

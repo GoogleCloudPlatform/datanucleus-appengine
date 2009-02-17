@@ -16,14 +16,13 @@ import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJPA;
+import org.datanucleus.test.HasDoubleJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToOneJPA;
-import org.datanucleus.test.Person;
 import org.datanucleus.test.KitchenSink;
-import org.datanucleus.test.HasDoubleJPA;
-import static org.datanucleus.test.Flight.newFlightEntity;
+import org.datanucleus.test.Person;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -747,6 +746,105 @@ public class JPQLQueryTest extends JPATestCase {
       em.createQuery(
           "select from " + HasOneToOneJPA.class.getName() + " where flight.origin = \"max\"")
           .getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testSortByEmbeddedField() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max2");
+    entity.setProperty("last", "ross2");
+    entity.setProperty("anotherFirst", "notmax2");
+    entity.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery("select from " + Person.class.getName() + " order by name.first desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals("max2", result.get(0).getName().getFirst());
+    assertEquals("max", result.get(1).getName().getFirst());
+  }
+
+  public void testSortByEmbeddedField_OverriddenColumn() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max2");
+    entity.setProperty("last", "ross2");
+    entity.setProperty("anotherFirst", "notmax2");
+    entity.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity);
+
+    Query q =
+        em.createQuery("select from " + Person.class.getName() + " order by anotherName.last desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals("notross2", result.get(0).getAnotherName().getLast());
+    assertEquals("notross", result.get(1).getAnotherName().getLast());
+  }
+
+  public void testSortByEmbeddedField_MultipleFields() {
+    Entity entity0 = new Entity(Person.class.getSimpleName());
+    entity0.setProperty("first", "max");
+    entity0.setProperty("last", "ross");
+    entity0.setProperty("anotherFirst", "notmax");
+    entity0.setProperty("anotherLast", "z");
+    ldth.ds.put(entity0);
+
+    Entity entity1 = new Entity(Person.class.getSimpleName());
+    entity1.setProperty("first", "max");
+    entity1.setProperty("last", "ross2");
+    entity1.setProperty("anotherFirst", "notmax2");
+    entity1.setProperty("anotherLast", "notross2");
+    ldth.ds.put(entity1);
+
+    Entity entity2 = new Entity(Person.class.getSimpleName());
+    entity2.setProperty("first", "a");
+    entity2.setProperty("last", "b");
+    entity2.setProperty("anotherFirst", "c");
+    entity2.setProperty("anotherLast", "d");
+    ldth.ds.put(entity2);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName() + " order by name.first asc, anotherName.last desc");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(3, result.size());
+    assertEquals(entity2.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(entity0.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+    assertEquals(entity1.getKey(), KeyFactory.stringToKey(result.get(2).getId()));
+  }
+
+  public void testSortBySubObject_UnknownField() {
+    try {
+      em.createQuery(
+          "select from " + Book.class.getName() + " order by author.first").getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testSortBySubObject_NotEmbeddable() {
+    try {
+      em.createQuery(
+          "select from " + HasOneToOneJPA.class.getName() + " order by book.author").getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good

@@ -337,15 +337,18 @@ public class DatastoreQuery implements Serializable {
     }
     for (Expression expr : orderBys) {
       OrderExpression oe = (OrderExpression) expr;
-      Query.SortDirection dir =
-          oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
+      Query.SortDirection dir = oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
               ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
-      String sortProp = ((PrimaryExpression) oe.getLeft()).getId();
-      AbstractMemberMetaData ammd = acmd.getMetaDataForMember(sortProp);
+      PrimaryExpression left = (PrimaryExpression) oe.getLeft();
+      AbstractMemberMetaData ammd = getMemberMetaData(acmd, left);
+      if (ammd == null) {
+        throw noMetaDataException(left.getId(), acmd.getFullClassName());
+      }
       if (isAncestorPK(ammd)) {
         throw new UnsupportedDatastoreFeatureException(
             "Cannot sort by ancestor.", query.getSingleStringQuery());
       } else {
+        String sortProp;
         if (ammd.isPrimaryKey()) {
           sortProp = Entity.KEY_RESERVED_PROPERTY;
         } else {
@@ -467,9 +470,7 @@ public class DatastoreQuery implements Serializable {
     }
     AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, left);
     if (ammd == null) {
-      throw new NucleusUserException(
-          "No meta-data for member named " + left.getId() + " on class " + qd.acmd.getFullClassName()
-              + ".  Are you sure you provided the correct member name?");
+      throw noMetaDataException(left.getId(), qd.acmd.getFullClassName());
     }
     JavaTypeMapping mapping = getMappingForFieldWithName(left.getTuples(), qd);
     if (mapping instanceof PersistenceCapableMapping) {
@@ -486,6 +487,12 @@ public class DatastoreQuery implements Serializable {
       }
       qd.query.addFilter(datastorePropName, op, value);
     }
+  }
+
+  private NucleusUserException noMetaDataException(String member, String fullClassName) {
+    return new NucleusUserException(
+        "No meta-data for member named " + member + " on class " + fullClassName
+            + ".  Are you sure you provided the correct member name?");
   }
 
   private Object negateNumber(Number negateMe) {
