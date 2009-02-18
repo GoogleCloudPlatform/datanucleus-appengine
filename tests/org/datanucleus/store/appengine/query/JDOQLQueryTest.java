@@ -202,20 +202,16 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, result.size());
   }
 
-  // TODO(maxr) The filter is invalid because it uses
-  // 'AND' instead of '&&'.  When we fix bug 1596691
-  // this test will start to fail (good!), and at that
-  // point we can modify this test to veirify the correct
-  // behavior instead of the incorrect behavior.
   public void testSetInvalidFilter() {
-    ldth.ds.put(newFlightEntity("1", "yam", "bam", 1, 1));
-    ldth.ds.put(newFlightEntity("2", "yam", "bam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName());
     q.setFilter("origin == \"yam\" AND you == 2");
-    @SuppressWarnings("unchecked")
-    List<Flight> result = (List<Flight>) q.execute();
-    assertEquals(2, result.size());
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+    }
   }
 
   public void testDefaultOrderingIsAsc() {
