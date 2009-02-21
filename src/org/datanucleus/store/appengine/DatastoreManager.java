@@ -48,6 +48,7 @@ import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -59,6 +60,36 @@ import java.util.Set;
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreManager extends MappedStoreManager {
+
+  /**
+   * Classes whose metadata we've validated.
+   */
+  private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
+
+  /**
+   * Used for meta data validation.
+   */
+  private final MetaDataValidator metaDataValidator = new MetaDataValidator();
+
+  /**
+   * The name of the annotation extension that marks a field as an ancestor.
+   */
+  static final String ANCESTOR_PK = "ancestor-pk";
+
+  /**
+   * The name of the annotation extension that marks a field as an encoded pk
+   */
+  static final String ENCODED_PK = "encoded-pk";
+
+  /**
+   * The name of the annotation extension that marks a field as a primary key name
+   */
+  static final String PK_NAME = "pk-name";
+
+  /**
+   * The name of the annotation extension that marks a field as a primary key id
+   */
+  static final String PK_ID = "pk-id";
 
   /**
    * Construct a DatsatoreManager
@@ -440,5 +471,48 @@ public class DatastoreManager extends MappedStoreManager {
       // worse than our best guess.
       throw e;
     }
+  }
+
+  private static boolean memberHasExtension(AbstractClassMetaData acmd, int pos, String extensionName) {
+    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtPosition(pos);
+    return ammd.hasExtension(extensionName);
+  }
+
+  static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
+    int pkPos = acmd.getPKMemberPositions()[0];
+    return isEncodedPKField(acmd, pkPos);
+  }
+
+  static boolean isEncodedPKField(AbstractClassMetaData acmd, int pos) {
+    return memberHasExtension(acmd, pos, ENCODED_PK);
+  }
+
+  static boolean isAncestorPKField(AbstractClassMetaData acmd, int pos) {
+    return memberHasExtension(acmd, pos, ANCESTOR_PK);
+  }
+
+  static boolean isPKNameField(AbstractClassMetaData acmd, int pos) {
+    return memberHasExtension(acmd, pos, PK_NAME);
+  }
+
+  static boolean isPKIdField(AbstractClassMetaData acmd, int pos) {
+    return memberHasExtension(acmd, pos, PK_ID);
+  }
+
+  /**
+   * Perform appengine-specific validation on the provided meta data.
+   * @param acmd The meta data to validate.
+   */
+  public void validateMetaDataForClass(AbstractClassMetaData acmd) {
+    // Only validate each meta data once
+    if (validatedClasses.add(acmd.getFullClassName())) {
+      metaDataValidator.validate(acmd);
+    }
+  }
+
+  @Override
+  public void close() {
+    validatedClasses.clear();
+    super.close();
   }
 }
