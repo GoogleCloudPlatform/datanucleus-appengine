@@ -2,6 +2,9 @@
 package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyFactory;
+
+import org.datanucleus.jpa.annotations.Extension;
 
 import javax.persistence.Column;
 import javax.persistence.Entity;
@@ -16,6 +19,7 @@ import javax.persistence.Id;
 public class Book {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
+  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
   private String id;
   private String title;
   private String author;
@@ -25,7 +29,8 @@ public class Book {
   private int firstPublished;
 
   public Book(String namedKey) {
-    this.id = namedKey;
+    this.id = namedKey == null ? null :
+              KeyFactory.keyToString(KeyFactory.createKey(Book.class.getSimpleName(), namedKey));
   }
 
   public void setId(String id) {

@@ -17,9 +17,9 @@ import javax.jdo.annotations.VersionStrategy;
 public class HasVersionNoFieldJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 }

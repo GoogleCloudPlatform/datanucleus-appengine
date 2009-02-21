@@ -632,8 +632,7 @@ abstract class JPAOneToManyTest extends JPATestCase {
   }
 
   void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJPA pojo) throws EntityNotFoundException {
-    Book b1 = new Book();
-    b1.setId("named key");
+    Book b1 = new Book("named key");
     pojo.getBooks().add(b1);
 
     beginTxn();

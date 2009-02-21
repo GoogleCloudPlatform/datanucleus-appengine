@@ -7,23 +7,23 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasVersionWithFieldJDO;
-import org.datanucleus.test.NullDataJDO;
-import org.datanucleus.test.Person;
-import org.datanucleus.test.Name;
-import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
+import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
+import org.datanucleus.test.HasVersionWithFieldJDO;
+import org.datanucleus.test.Name;
+import org.datanucleus.test.NullDataJDO;
+import org.datanucleus.test.Person;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.ArrayList;
-import java.util.LinkedList;
-import java.util.HashSet;
-import java.util.TreeSet;
 import java.util.SortedSet;
-import java.util.LinkedHashSet;
+import java.util.TreeSet;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.JDOOptimisticVerificationException;
@@ -320,7 +320,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -338,7 +338,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -355,7 +355,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrArrayList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -373,7 +373,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrArrayList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -390,7 +390,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrLinkedList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -408,7 +408,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newLinkedList("a", "b", "zoom");
     pojo.setStrLinkedList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -425,7 +425,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -443,7 +443,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -460,7 +460,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -478,7 +478,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -495,7 +495,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrLinkedHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -513,7 +513,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newLinkedHashSet("a", "b", "zoom");
     pojo.setStrLinkedHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -530,7 +530,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrTreeSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -548,7 +548,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrTreeSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -565,7 +565,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrSortedSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
@@ -583,7 +583,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrSortedSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
@@ -601,7 +601,7 @@ public class JDOUpdateTest extends JDOTestCase {
     array = new String[] {"a", "b", "c"};
     pojo.setArray(array);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("array")).size());
   }
 
@@ -621,7 +621,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo.getArray()[0] = "c";
     pojo.setArray(array);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals("c", ((List<?>)e.getProperty("array")).get(0));
   }
 
@@ -642,7 +642,7 @@ public class JDOUpdateTest extends JDOTestCase {
     p.getName().setLast("not jam");
     commitTxn();
 
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(p.getId()));
+    Entity entity = ldth.ds.get(TestUtils.createKey(p, p.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("first"));
     assertEquals("not jam", entity.getProperty("last"));

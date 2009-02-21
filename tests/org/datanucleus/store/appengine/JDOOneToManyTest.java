@@ -6,7 +6,6 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
@@ -15,11 +14,11 @@ import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.HasOneToManyWithOrderByJDOInterface;
+import org.datanucleus.test.HasOneToManyWithOrderByJDO;
 import org.easymock.EasyMock;
 
-import java.util.List;
 import java.util.Collections;
+import java.util.List;
 
 import javax.jdo.JDOUserException;
 
@@ -711,7 +710,7 @@ abstract class JDOOneToManyTest extends JDOTestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
 
-  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDOInterface> pojoClass)
+  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDO> pojoClass)
       throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
@@ -735,7 +734,7 @@ abstract class JDOOneToManyTest extends JDOTestCase {
     ldth.ds.put(flightEntity3);
 
     beginTxn();
-    HasOneToManyWithOrderByJDOInterface pojo = pm.getObjectById(
+    HasOneToManyWithOrderByJDO pojo = pm.getObjectById(
         pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
     assertNotNull(pojo.getFlightsByOrigAndDest());
@@ -995,7 +994,8 @@ abstract class JDOOneToManyTest extends JDOTestCase {
   void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJDO pojo) throws EntityNotFoundException {
     Flight f1 = new Flight();
     pojo.addFlight(f1);
-    f1.setId("named key");
+    f1.setId(KeyFactory.keyToString(
+        KeyFactory.createKey(Flight.class.getSimpleName(), "named key")));
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
@@ -1031,7 +1031,7 @@ abstract class JDOOneToManyTest extends JDOTestCase {
 //    commitTxn();
 //
 //    beginTxn();
-//    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+//    pojo = pm.getObjectById(pojo.getClass(), pojo.getKey());
 //    assertEquals(0, pojo.indexOf(f1));
 //    assertEquals(1, pojo.indexOf(f2));
 //    assertEquals(2, pojo.indexOf(f3));

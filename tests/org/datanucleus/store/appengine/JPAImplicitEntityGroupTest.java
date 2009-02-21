@@ -63,13 +63,13 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 //    em.persist(parent);
 //    commitTxn();
 //
-//    assertEquals(parent.getId(), child.getAncestorKey());
+//    assertEquals(parent.getKey(), child.getAncestorKey());
 //
 //    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
-//    assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
+//    assertKeyParentEquals(parent.getKey(), childEntity, childEntity.getKey());
 //
-//    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
-//    assertKeyParentEquals(parent.getId(), childEntity, (Key) parentEntity.getProperty("cascadeallwithkeyancestor"));
+//    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getKey()));
+//    assertKeyParentEquals(parent.getKey(), childEntity, (Key) parentEntity.getProperty("cascadeallwithkeyancestor"));
 //  }
 
   public void testOneToOnePersistCascadePersist() throws EntityNotFoundException {

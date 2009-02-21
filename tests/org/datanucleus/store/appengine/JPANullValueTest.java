@@ -31,7 +31,7 @@ public class JPANullValueTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
   }
@@ -45,7 +45,7 @@ public class JPANullValueTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
     assertEquals(1, ((List<?>)e.getProperty("array")).size());
     assertEquals(1, ((List<?>)e.getProperty("list")).size());
   }

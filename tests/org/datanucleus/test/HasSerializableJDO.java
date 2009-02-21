@@ -25,7 +25,7 @@ public class HasSerializableJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent(serialized = "true")
   private Yam yam;
@@ -51,7 +51,7 @@ public class HasSerializableJDO {
     this.query = query;
   }
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

@@ -25,7 +25,8 @@ public class JDOTableAndColumnTest extends JDOTestCase {
     htacim.setFoo("foo val");
     makePersistentInTxn(htacim);
     assertNotNull(htacim.getId());
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(htacim.getId()));
+    Entity entity = ldth.ds.get(KeyFactory.createKey(
+        HasTableAndColumnsInMappingJDO.TABLE_NAME, htacim.getId()));
     assertNotNull(entity);
     assertEquals(HasTableAndColumnsInMappingJDO.TABLE_NAME, entity.getKind());
     assertEquals("foo val", entity.getProperty(HasTableAndColumnsInMappingJDO.FOO_COLUMN_NAME));
@@ -78,7 +79,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
     HasTableAndColumnsInMappingJDO htacim =
         pm.getObjectById(HasTableAndColumnsInMappingJDO.class, keyStr);
     assertNotNull(htacim);
-    assertEquals(keyStr, htacim.getId());
+    assertEquals(Long.valueOf(key.getId()), htacim.getId());
     assertEquals("foo val", htacim.getFoo());
     commitTxn();
   }

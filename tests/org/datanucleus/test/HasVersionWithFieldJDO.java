@@ -20,14 +20,14 @@ import javax.jdo.annotations.VersionStrategy;
 public class HasVersionWithFieldJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent
   private String value;
 
   private long versionField;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

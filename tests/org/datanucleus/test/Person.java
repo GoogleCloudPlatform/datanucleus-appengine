@@ -17,7 +17,7 @@ public class Person {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent
   @Embedded
@@ -30,12 +30,8 @@ public class Person {
   )
   private Name anotherName;
 
-  public String getId() {
+  public Long getId() {
     return id;
-  }
-
-  public void setId(String id) {
-    this.id = id;
   }
 
   public Name getName() {

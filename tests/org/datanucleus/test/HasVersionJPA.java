@@ -14,7 +14,7 @@ import javax.persistence.Version;
 public class HasVersionJPA {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private String id;
+  private Long id;
 
   private String value;
 
@@ -29,7 +29,7 @@ public class HasVersionJPA {
     this.value = value;
   }
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

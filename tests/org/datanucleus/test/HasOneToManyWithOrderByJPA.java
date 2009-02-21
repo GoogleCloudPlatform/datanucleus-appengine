@@ -20,7 +20,7 @@ public class HasOneToManyWithOrderByJPA {
 
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private String id;
+  private Long id;
 
   private String val;
 
@@ -36,7 +36,7 @@ public class HasOneToManyWithOrderByJPA {
   @OrderBy("author DESC, id ASC")
   private List<Book> booksByAuthorAndId = new ArrayList<Book>();
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

@@ -4,10 +4,8 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildSetJDO;
+import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 import org.datanucleus.test.HasOneToManySetJDO;
-import org.datanucleus.test.HasOneToManyWithOrderByJDO;
-import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.BidirectionalChildListJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -51,7 +49,7 @@ public class JDOOneToManySetTest extends JDOOneToManyTest {
   }
 
   public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyWithOrderByJDO.class);
+    testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class);
   }
 
   public void testFind() throws EntityNotFoundException {

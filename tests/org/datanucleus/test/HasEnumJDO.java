@@ -3,11 +3,11 @@ package org.datanucleus.test;
 
 import java.util.List;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -16,7 +16,7 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 public class HasEnumJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String key;
+  private Long key;
 
   @Persistent
   private MyEnum myEnum;
@@ -26,11 +26,11 @@ public class HasEnumJDO {
   private List<MyEnum> myEnumList;
 
 
-  public String getKey() {
+  public Long getKey() {
     return key;
   }
 
-  public void setKey(String key) {
+  public void setKey(Long key) {
     this.key = key;
   }
 

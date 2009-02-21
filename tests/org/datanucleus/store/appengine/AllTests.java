@@ -54,6 +54,11 @@ public class AllTests {
     suite.addTestSuite(JPANullValueTest.class);
     suite.addTestSuite(TypeConversionUtilsTest.class);
     suite.addTestSuite(JDOMakeTransientTest.class);
+    suite.addTestSuite(JDOPrimaryKeyTest.class);
+    suite.addTestSuite(JDOMetaDataValidatorTest.class);
+    suite.addTestSuite(JPAPrimaryKeyTest.class);
+    suite.addTestSuite(JPAMetaDataValidatorTest.class);
+    suite.addTestSuite(EntityUtilsTest.class);
     return suite;
   }
 }

@@ -18,9 +18,11 @@ import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasDoubleJPA;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToOneJPA;
+import org.datanucleus.test.HasUnencodedStringPkJPA;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
 
@@ -826,9 +828,9 @@ public class JPQLQueryTest extends JPATestCase {
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(3, result.size());
-    assertEquals(entity2.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
-    assertEquals(entity0.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
-    assertEquals(entity1.getKey(), KeyFactory.stringToKey(result.get(2).getId()));
+    assertEquals(Long.valueOf(entity2.getKey().getId()), result.get(0).getId());
+    assertEquals(Long.valueOf(entity0.getKey().getId()), result.get(1).getId());
+    assertEquals(Long.valueOf(entity1.getKey().getId()), result.get(2).getId());
   }
 
   public void testSortBySubObject_UnknownField() {
@@ -887,6 +889,48 @@ public class JPQLQueryTest extends JPATestCase {
     @SuppressWarnings("unchecked")
     List<Book> results = (List<Book>) q.getResultList();
     assertEquals(1, results.size());
+  }
+
+  public void testKeyQueryWithUnencodedStringPk() {
+    Entity e = new Entity(HasUnencodedStringPkJPA.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey().getName());
+    @SuppressWarnings("unchecked")
+    List<HasUnencodedStringPkJPA> results =
+        (List<HasUnencodedStringPkJPA>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(e.getKey().getName(), results.get(0).getId());
+
+    q = em.createQuery(
+        "select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey());
+    @SuppressWarnings("unchecked")
+    List<HasUnencodedStringPkJPA> results2 =
+        (List<HasUnencodedStringPkJPA>) q.getResultList();
+    assertEquals(1, results2.size());
+    assertEquals(e.getKey().getName(), results2.get(0).getId());
+  }
+
+  public void testKeyQueryWithLongPk() {
+    Entity e = new Entity(HasLongPkJPA.class.getSimpleName());
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + HasLongPkJPA.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey().getId());
+    @SuppressWarnings("unchecked")
+    List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
+
+    q = em.createQuery(
+        "select from " + HasLongPkJPA.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey().getId());
+    @SuppressWarnings("unchecked")
+    List<HasLongPkJPA> results2 = (List<HasLongPkJPA>) q.getResultList();
+    assertEquals(1, results2.size());
+    assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
 
 

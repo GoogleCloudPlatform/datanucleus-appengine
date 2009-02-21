@@ -168,7 +168,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // set the token so if we recurse down to the same state manager we know
     // we're already inserting
     sm.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
-
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
     try {
       // Make sure writes are permitted
       storeMgr.assertReadOnlyForUpdateOfObject(sm);
@@ -208,18 +208,28 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         if (pkType.equals(Key.class)) {
           newObjectId = entity.getKey();
         } else if (pkType.equals(String.class)) {
-          newObjectId = KeyFactory.keyToString(entity.getKey());
+          if (storeMgr.hasEncodedPKField(acmd)) {
+            newObjectId = KeyFactory.keyToString(entity.getKey());
+          } else {
+            newObjectId = entity.getKey().getName();
+          }
+        } else if (pkType.equals(Long.class)) {
+          newObjectId = entity.getKey().getId();
         } else {
           throw new IllegalStateException(
               "Primary key for type " + sm.getClassMetaData().getName()
                   + " is of unexpected type " + pkType.getName()
-                  + " (must be String or " + Key.class.getName() + ")");
+                  + " (must be String, Long, or " + Key.class.getName() + ")");
         }
         sm.setPostStoreNewObjectId(newObjectId);
         if (assignedAncestorPk != null) {
           // we automatically assigned an ancestor to the entity so make sure
           // that makes it back on to the pojo
           setPostStoreNewAncestor(sm, fieldMgr.getAncestorMemberMetaData(), assignedAncestorPk);
+        }
+        Integer pkIdPos = fieldMgr.getPkIdPos(); 
+        if (pkIdPos != null) {
+          setPostStorePkId(sm, pkIdPos, entity);
         }
         fieldMgr.storeRelations();
 
@@ -230,6 +240,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     } finally {
       sm.setAssociatedValue(INSERTION_TOKEN, null);
     }
+  }
+
+  private void setPostStorePkId(StateManager sm, int fieldNumber, Entity entity) {
+    sm.replaceField(fieldNumber, entity.getKey().getId(), true);
   }
 
   private void setPostStoreNewAncestor(
@@ -306,12 +320,20 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     } else if (pk instanceof Key) {
       return (Key) pk;
     } else if (pk instanceof String) {
-      return KeyFactory.stringToKey((String) pk);
+      if (storeMgr.hasEncodedPKField(sm.getClassMetaData())) {
+        return KeyFactory.stringToKey((String) pk);
+      } else {
+        String kind = EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
+        return KeyFactory.createKey(kind, (String) pk);
+      }
+    } else if (pk instanceof Long) {
+      String kind = EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
+      return KeyFactory.createKey(kind, (Long) pk);
     } else {
       throw new IllegalStateException(
           "Primary key for object of type " + sm.getClassMetaData().getName()
               + " is of unexpected type " + pk.getClass().getName()
-              + " (must be String or " + Key.class.getName() + ")");
+              + " (must be String, Long, or " + Key.class.getName() + ")");
     }
   }
 
@@ -331,6 +353,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     if (fieldNumbers == null || fieldNumbers.length == 0) {
       return;
     }
+
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
 
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
@@ -377,6 +401,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+
     Entity entity = getAssociatedEntityForCurrentTransaction(sm);
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
@@ -398,6 +424,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   public void deleteObject(StateManager sm) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
+
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
 
     Entity entity = getAssociatedEntityForCurrentTransaction(sm);
     if (entity == null) {
@@ -438,6 +466,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void locateObject(StateManager sm) {
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
     // get throws NucleusObjectNotFoundException if the entity isn't found,
     // which is what we want.
     get(sm, getPkAsKey(sm));

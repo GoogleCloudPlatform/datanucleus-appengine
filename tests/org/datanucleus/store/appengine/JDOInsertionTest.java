@@ -50,7 +50,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testSimpleInsertWithNamedKey() throws EntityNotFoundException {
     Flight f = new Flight();
-    f.setId("foo");
+    f.setId(KeyFactory.keyToString(KeyFactory.createKey(Flight.class.getSimpleName(), "foo")));
     assertNotNull(f.getId());
     makePersistentInTxn(f);
     Entity entity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
@@ -93,19 +93,20 @@ public class JDOInsertionTest extends JDOTestCase {
     HasVersionNoFieldJDO hv = new HasVersionNoFieldJDO();
     makePersistentInTxn(hv);
 
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(hv.getId()));
+    Entity entity = ldth.ds.get(
+        KeyFactory.createKey(HasVersionNoFieldJDO.class.getSimpleName(), hv.getId()));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty("myversioncolumn"));
 
     HasVersionWithFieldJDO hvwf = new HasVersionWithFieldJDO();
     beginTxn();
     pm.makePersistent(hvwf);
-    String id = hvwf.getId();
+    Long id = hvwf.getId();
     assertNotNull(id);
     commitTxn();
     beginTxn();
     hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, id);
-    entity = ldth.ds.get(KeyFactory.stringToKey(id));
+    entity = ldth.ds.get(TestUtils.createKey(hvwf, id));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
     assertEquals(1L, hvwf.getVersion());
@@ -168,7 +169,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJDO hk = new HasKeyPkJDO();
-    hk.setKey(KeyFactory.createKey("something", "name"));
+    hk.setKey(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), "name"));
     makePersistentInTxn(hk);
 
     assertNotNull(hk.getKey());
@@ -187,7 +188,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
     assertNotNull(p.getId());
 
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(p.getId()));
+    Entity entity = ldth.ds.get(KeyFactory.createKey(Person.class.getSimpleName(), p.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("first"));
     assertEquals("jam", entity.getProperty("last"));
@@ -204,7 +205,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
     assertNotNull(p.getId());
 
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(p.getId()));
+    Entity entity = ldth.ds.get(KeyFactory.createKey(Person.class.getSimpleName(), p.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("first"));
     assertEquals("jam", entity.getProperty("last"));

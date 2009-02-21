@@ -22,7 +22,7 @@ import javax.persistence.Id;
 public class HasMultiValuePropsJPA {
   @Id
   @GeneratedValue(strategy= GenerationType.IDENTITY)
-  private String id;
+  private Long id;
 
   List<String> strList;
 
@@ -42,11 +42,11 @@ public class HasMultiValuePropsJPA {
 
   LinkedHashSet<String> strLinkedHashSet;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(Long id) {
     this.id = id;
   }
 

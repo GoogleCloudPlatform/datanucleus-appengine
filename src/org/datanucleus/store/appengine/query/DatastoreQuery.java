@@ -45,12 +45,12 @@ import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.math.BigDecimal;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -263,6 +263,7 @@ public class DatastoreQuery implements Serializable {
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
       final ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om,
       boolean ignoreCache) {
+    storeMgr.validateMetaDataForClass(acmd);
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
         sm.replaceFields(
@@ -476,12 +477,12 @@ public class DatastoreQuery implements Serializable {
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isAncestorPK(ammd)) {
-      addAncestorFilter(op, qd, keyOrStringToKey(value));
+      addAncestorFilter(op, qd, internalPkToKey(qd.acmd, value));
     } else {
       String datastorePropName;
       if (ammd.isPrimaryKey()) {
         datastorePropName = Entity.KEY_RESERVED_PROPERTY;
-        value = keyOrStringToKey(value);
+        value = internalPkToKey(qd.acmd, value);
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
@@ -576,7 +577,7 @@ public class DatastoreQuery implements Serializable {
                                    + ": Parameter value " + value + " does not have an id.");
       }
     }
-    Key valueKey = keyOrStringToKey(keyOrString);
+    Key valueKey = internalPkToKey(qd.acmd, keyOrString);
     verifyRelatedKeyIsOfProperType(ammd, valueKey);
     if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
       // Looks like a join.  If it can be satisfied with just a
@@ -637,9 +638,24 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private Key keyOrStringToKey(Object keyOtString) {
-    return (keyOtString instanceof String) ?
-           KeyFactory.stringToKey((String) keyOtString) : (Key) keyOtString;
+  private Key internalPkToKey(AbstractClassMetaData acmd, Object internalPk) {
+    Key key;
+    if (internalPk instanceof String) {
+      try {
+        key = KeyFactory.stringToKey((String) internalPk);
+      } catch (IllegalArgumentException iae) {
+        String kind =
+            getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+        key = KeyFactory.createKey(kind, (String) internalPk);
+      }
+    } else if (internalPk instanceof Long) {
+      String kind =
+          getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+      key = KeyFactory.createKey(kind, (Long) internalPk);
+    } else {
+      key = (Key) internalPk;
+    }
+    return key;
   }
 
   private void addAncestorFilter(Query.FilterOperator op, QueryData qd, Key key) {

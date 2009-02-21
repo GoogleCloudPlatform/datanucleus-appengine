@@ -19,6 +19,7 @@ public class HasAncestorJPA {
 
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
+  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
   private String id;
 
   public HasAncestorJPA() {

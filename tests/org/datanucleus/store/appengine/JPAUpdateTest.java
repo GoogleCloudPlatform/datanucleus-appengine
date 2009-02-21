@@ -144,7 +144,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -162,7 +162,7 @@ public class JPAUpdateTest extends JPATestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -179,7 +179,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrArrayList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -197,7 +197,7 @@ public class JPAUpdateTest extends JPATestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrArrayList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -214,7 +214,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrLinkedList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -232,7 +232,7 @@ public class JPAUpdateTest extends JPATestCase {
     list = Utils.newLinkedList("a", "b", "zoom");
     pojo.setStrLinkedList(list);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -249,7 +249,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -267,7 +267,7 @@ public class JPAUpdateTest extends JPATestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -284,7 +284,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -302,7 +302,7 @@ public class JPAUpdateTest extends JPATestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -319,7 +319,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrLinkedHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -337,7 +337,7 @@ public class JPAUpdateTest extends JPATestCase {
     set = Utils.newLinkedHashSet("a", "b", "zoom");
     pojo.setStrLinkedHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -354,7 +354,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrTreeSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -372,7 +372,7 @@ public class JPAUpdateTest extends JPATestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrTreeSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -389,7 +389,7 @@ public class JPAUpdateTest extends JPATestCase {
     pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
     pojo.getStrSortedSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
@@ -407,7 +407,7 @@ public class JPAUpdateTest extends JPATestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrSortedSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 

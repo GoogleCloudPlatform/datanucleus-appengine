@@ -1,13 +1,13 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
-import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 import javax.jdo.annotations.Version;
 import javax.jdo.annotations.VersionStrategy;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.IdGeneratorStrategy;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -22,12 +22,12 @@ public class HasTableAndColumnsInMappingJDO {
 
   @PrimaryKey(column = "pk")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent(column = FOO_COLUMN_NAME)
   private String foo;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

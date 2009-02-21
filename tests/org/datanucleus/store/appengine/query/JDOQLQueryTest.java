@@ -20,11 +20,13 @@ import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasLongPkJDO;
+import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToOneJDO;
-import org.datanucleus.test.HasMultiValuePropsJDO;
-import org.datanucleus.test.Person;
+import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.Person;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -33,9 +35,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import javax.jdo.Query;
 import javax.jdo.JDOException;
 import javax.jdo.JDOUserException;
+import javax.jdo.Query;
 
 
 /**
@@ -911,9 +913,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.execute();
     assertEquals(3, result.size());
-    assertEquals(entity2.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
-    assertEquals(entity0.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
-    assertEquals(entity1.getKey(), KeyFactory.stringToKey(result.get(2).getId()));
+    assertEquals(Long.valueOf(entity2.getKey().getId()), result.get(0).getId());
+    assertEquals(Long.valueOf(entity0.getKey().getId()), result.get(1).getId());
+    assertEquals(Long.valueOf(entity1.getKey().getId()), result.get(2).getId());
   }
 
   public void testSortBySubObject_UnknownField() {
@@ -984,6 +986,46 @@ public class JDOQLQueryTest extends JDOTestCase {
     @SuppressWarnings("unchecked")
     List<Flight> results = (List<Flight>) q.execute(-1);
     assertEquals(1, results.size());
+  }
+
+  public void testKeyQueryWithUnencodedStringPk() {
+    Entity e = new Entity(HasUnencodedStringPkJDO.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + HasUnencodedStringPkJDO.class.getName() + " where id == p parameters String p");
+    @SuppressWarnings("unchecked")
+    List<HasUnencodedStringPkJDO> results =
+        (List<HasUnencodedStringPkJDO>) q.execute(e.getKey().getName());
+    assertEquals(1, results.size());
+    assertEquals(e.getKey().getName(), results.get(0).getId());
+
+    q = pm.newQuery(
+        "select from " + HasUnencodedStringPkJDO.class.getName() + " where id == p parameters "
+        + Key.class.getName() + " p");
+    @SuppressWarnings("unchecked")
+    List<HasUnencodedStringPkJDO> results2 =
+        (List<HasUnencodedStringPkJDO>) q.execute(e.getKey());
+    assertEquals(1, results2.size());
+    assertEquals(e.getKey().getName(), results2.get(0).getId());
+  }
+
+  public void testKeyQueryWithLongPk() {
+    Entity e = new Entity(HasLongPkJDO.class.getSimpleName());
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + HasLongPkJDO.class.getName() + " where id == p parameters Long p");
+    @SuppressWarnings("unchecked")
+    List<HasLongPkJDO> results = (List<HasLongPkJDO>) q.execute(e.getKey().getId());
+    assertEquals(1, results.size());
+    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
+
+    q = pm.newQuery(
+        "select from " + HasLongPkJDO.class.getName() + " where id == p parameters "
+        + Key.class.getName() + " p");
+    @SuppressWarnings("unchecked")
+    List<HasLongPkJDO> results2 = (List<HasLongPkJDO>) q.execute(e.getKey().getId());
+    assertEquals(1, results2.size());
+    assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
 
   private void assertQueryUnsupportedByOrm(

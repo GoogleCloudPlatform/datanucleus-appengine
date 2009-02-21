@@ -25,6 +25,30 @@ public final class TestUtils {
     assertEquals(KeyFactory.stringToKey(parentKey), KeyFactory.stringToKey(childKey).getParent());
   }
 
+  public static void assertKeyParentEquals(Class<?> parentClass, long parentId, Entity childEntity, Key childKey) {
+    Key parentKey = TestUtils.createKey(parentClass, parentId);
+    assertEquals(parentKey, childEntity.getKey().getParent());
+    assertEquals(parentKey, childKey.getParent());
+  }
+
+  public static void assertKeyParentEquals(Class<?> parentClass, long parentId, Entity childEntity, String childKey) {
+    Key parentKey = TestUtils.createKey(parentClass, parentId);
+    assertEquals(parentKey, childEntity.getKey().getParent());
+    assertEquals(parentKey, KeyFactory.stringToKey(childKey).getParent());
+  }
+
+  public static void assertKeyParentEquals(Class<?> parentClass, String parentId, Entity childEntity, Key childKey) {
+    Key parentKey = TestUtils.createKey(parentClass, parentId);
+    assertEquals(parentKey, childEntity.getKey().getParent());
+    assertEquals(parentKey, childKey.getParent());
+  }
+
+  public static void assertKeyParentEquals(Class<?> parentClass, String parentId, Entity childEntity, String childKey) {
+    Key parentKey = TestUtils.createKey(parentClass, parentId);
+    assertEquals(parentKey, childEntity.getKey().getParent());
+    assertEquals(parentKey, KeyFactory.stringToKey(childKey).getParent());
+  }
+
   public static void assertKeyParentNull(Entity childEntity, String childKey) {
     assertNull(childEntity.getKey().getParent());
     assertNull(KeyFactory.stringToKey(childKey).getParent());
@@ -35,5 +59,27 @@ public final class TestUtils {
     assertNull(childKey.getParent());
   }
 
+  public static Key createKey(Object pojo, long id) {
+    return createKey(pojo.getClass(), id);
+  }
 
+  public static Key createKey(Class<?> clazz, long id) {
+    return KeyFactory.createKey(clazz.getSimpleName(), id);
+  }
+
+  public static Key createKey(Object pojo, String name) {
+    return KeyFactory.createKey(pojo.getClass().getSimpleName(), name);
+  }
+
+  public static String createKeyString(Object pojo, String name) {
+    return createKeyString(pojo.getClass(), name);
+  }
+
+  public static String createKeyString(Class<?> clazz, String name) {
+    return KeyFactory.keyToString(createKey(clazz, name));
+  }
+
+  public static Key createKey(Class<?> clazz, String name) {
+    return KeyFactory.createKey(clazz.getSimpleName(), name);
+  }
 }

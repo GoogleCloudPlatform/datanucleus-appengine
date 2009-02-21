@@ -1,6 +1,7 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -15,6 +16,7 @@ public class BidirectionalChildListJDO implements BidirectionalChildJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
   private String id;
 
   @Persistent

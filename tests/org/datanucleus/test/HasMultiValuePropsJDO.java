@@ -1,14 +1,14 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.HashSet;
-import java.util.TreeSet;
-import java.util.ArrayList;
-import java.util.LinkedList;
 import java.util.SortedSet;
-import java.util.LinkedHashSet;
+import java.util.TreeSet;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -23,7 +23,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasMultiValuePropsJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent
   String str;
@@ -55,11 +55,11 @@ public class HasMultiValuePropsJDO {
   @Persistent(defaultFetchGroup = "true")
   LinkedHashSet<String> strLinkedHashSet;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 
-  public void setId(String id) {
+  public void setId(Long id) {
     this.id = id;
   }
 

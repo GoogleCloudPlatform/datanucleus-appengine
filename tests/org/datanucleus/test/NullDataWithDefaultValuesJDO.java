@@ -5,11 +5,11 @@ import org.datanucleus.store.appengine.Utils;
 
 import java.util.List;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -19,7 +19,7 @@ public class NullDataWithDefaultValuesJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   private String string = "string";
 
@@ -27,7 +27,7 @@ public class NullDataWithDefaultValuesJDO {
 
   private List<String> list = Utils.newArrayList();
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

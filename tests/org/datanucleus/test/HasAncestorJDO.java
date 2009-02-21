@@ -19,6 +19,7 @@ public class HasAncestorJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
   private String id;
 
   public HasAncestorJDO() {

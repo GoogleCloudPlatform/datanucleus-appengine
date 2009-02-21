@@ -74,7 +74,7 @@ public class JPAInsertionTest extends JPATestCase {
 //    em.persist(hk1);
 //    txn.commit();
 //
-//    Entity reloaded = ldth.ds.get(hk1.getId());
+//    Entity reloaded = ldth.ds.get(hk1.getKey());
 //    assertEquals(hk1.getAncestorId(), reloaded.getKey().getParent());
 //  }
 //
@@ -108,7 +108,7 @@ public class JPAInsertionTest extends JPATestCase {
 
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJPA hk = new HasKeyPkJPA();
-    hk.setId(KeyFactory.createKey("something", "name"));
+    hk.setId(KeyFactory.createKey(HasKeyPkJPA.class.getSimpleName(), "name"));
     beginTxn();
     em.persist(hk);
     commitTxn();

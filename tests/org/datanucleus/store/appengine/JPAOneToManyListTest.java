@@ -8,9 +8,13 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJPA;
+import org.datanucleus.test.BidirectionalChildListLongPkJPA;
+import org.datanucleus.test.BidirectionalChildListStringPkJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
+import org.datanucleus.test.HasOneToManyListLongPkJPA;
+import org.datanucleus.test.HasOneToManyListStringPkJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 
 /**
@@ -348,5 +352,116 @@ public class JPAOneToManyListTest extends JPAOneToManyTest {
   }
   public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
     testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJPA());
+  }
+
+  public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
+    BidirectionalChildListLongPkJPA bidirChild = new BidirectionalChildListLongPkJPA();
+    bidirChild.setChildVal("yam");
+
+    Book b = newBook();
+
+    HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
+    hasKeyPk.setStr("yag");
+
+    HasOneToManyListLongPkJPA parent = new HasOneToManyListLongPkJPA();
+    parent.getBidirChildren().add(bidirChild);
+    bidirChild.setParent(parent);
+    parent.getBooks().add(b);
+    parent.getHasKeyPks().add(hasKeyPk);
+    parent.setVal("yar");
+
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+
+    assertNotNull(bidirChild.getId());
+    assertNotNull(b.getId());
+    assertNotNull(hasKeyPk.getId());
+
+    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    assertNotNull(bidirChildEntity);
+    assertEquals("yam", bidirChildEntity.getProperty("childVal"));
+    assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
+
+    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    assertNotNull(bookEntity);
+    assertEquals("max", bookEntity.getProperty("author"));
+    assertEquals("22333", bookEntity.getProperty("isbn"));
+    assertEquals("yam", bookEntity.getProperty("title"));
+    assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bookEntity, b.getId());
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    assertNotNull(hasKeyPkEntity);
+    assertEquals("yag", hasKeyPkEntity.getProperty("str"));
+    assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getId());
+
+    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    assertNotNull(parentEntity);
+    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals("yar", parentEntity.getProperty("val"));
+
+    assertEquals(HasOneToManyListLongPkJPA.class.getName(), 1, countForClass(HasOneToManyListLongPkJPA.class));
+    assertEquals(BidirectionalChildListLongPkJPA.class.getName(), 1, countForClass(BidirectionalChildListLongPkJPA.class));
+    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
+    assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
+  }
+
+  public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
+    BidirectionalChildListStringPkJPA bidirChild = new BidirectionalChildListStringPkJPA();
+    bidirChild.setChildVal("yam");
+
+    Book b = newBook();
+
+    HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
+    hasKeyPk.setStr("yag");
+
+    HasOneToManyListStringPkJPA parent = new HasOneToManyListStringPkJPA();
+    parent.setId("yar");
+    parent.getBidirChildren().add(bidirChild);
+    bidirChild.setParent(parent);
+    parent.getBooks().add(b);
+    parent.getHasKeyPks().add(hasKeyPk);
+    parent.setVal("yar");
+
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+
+    assertNotNull(bidirChild.getId());
+    assertNotNull(b.getId());
+    assertNotNull(hasKeyPk.getId());
+
+    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    assertNotNull(bidirChildEntity);
+    assertEquals("yam", bidirChildEntity.getProperty("childVal"));
+    assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
+
+    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    assertNotNull(bookEntity);
+    assertEquals("max", bookEntity.getProperty("author"));
+    assertEquals("22333", bookEntity.getProperty("isbn"));
+    assertEquals("yam", bookEntity.getProperty("title"));
+    assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bookEntity, b.getId());
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    assertNotNull(hasKeyPkEntity);
+    assertEquals("yag", hasKeyPkEntity.getProperty("str"));
+    assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getId());
+
+    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    assertNotNull(parentEntity);
+    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals("yar", parentEntity.getProperty("val"));
+
+    assertEquals(HasOneToManyListStringPkJPA.class.getName(), 1, countForClass(HasOneToManyListStringPkJPA.class));
+    assertEquals(BidirectionalChildListStringPkJPA.class.getName(), 1, countForClass(BidirectionalChildListStringPkJPA.class));
+    assertEquals(Book.class.getName(), 1, countForClass(Book.class));
+    assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
   }
 }

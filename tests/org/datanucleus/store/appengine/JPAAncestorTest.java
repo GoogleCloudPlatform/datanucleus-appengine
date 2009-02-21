@@ -6,7 +6,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
-import org.datanucleus.test.Flight;
+import org.datanucleus.test.Book;
 import org.datanucleus.test.HasAncestorJPA;
 
 /**
@@ -15,67 +15,68 @@ import org.datanucleus.test.HasAncestorJPA;
 public class JPAAncestorTest extends JPATestCase {
 
   public void testInsert() {
-    Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
-    Key flightKey = flightEntity.getKey();
-    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(flightKey));
+    Entity bookEntity = Book.newBookEntity("max", "123456", "manifesto");
+    ldth.ds.put(bookEntity);
+    Key bookKey = bookEntity.getKey();
+    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(bookKey));
     beginTxn();
     em.persist(ha);
     commitTxn();
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
-    assertEquals(flightKey, keyWithParent.getParent());
+    assertEquals(bookKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
-    q.setAncestor(flightKey);
+    q.setAncestor(bookKey);
     Entity result = ldth.ds.prepare(q).asSingleEntity();
-    assertEquals(flightKey, result.getKey().getParent());
+    assertEquals(bookKey, result.getKey().getParent());
   }
 
   public void testInsertWithNamedKey() {
-    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
-    Key flightKey = flightEntity.getKey();
-    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(flightKey), "named key");
+    Entity bookEntity = Book.newBookEntity("parent named key", "max", "123456", "manifesto");
+    ldth.ds.put(bookEntity);
+    Key bookKey = bookEntity.getKey();
+    HasAncestorJPA ha = new HasAncestorJPA(KeyFactory.keyToString(bookKey),
+        TestUtils.createKeyString(HasAncestorJPA.class, "named key"));
     beginTxn();
     em.persist(ha);
     commitTxn();
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
-    assertEquals(flightKey, keyWithParent.getParent());
+    assertEquals(bookKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
-    q.setAncestor(flightKey);
+    q.setAncestor(bookKey);
     Entity result = ldth.ds.prepare(q).asSingleEntity();
-    assertEquals(flightKey, result.getKey().getParent());
+    assertEquals(bookKey, result.getKey().getParent());
     assertEquals("named key", result.getKey().getName());
     assertEquals("parent named key", result.getKey().getParent().getName());
   }
 
   public void testFetch() {
-    Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getSimpleName(), flightEntity.getKey());
+    Entity bookEntity = Book.newBookEntity("max", "123456", "manifesto");
+    ldth.ds.put(bookEntity);
+    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getSimpleName(), bookEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
     HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
+    assertEquals(KeyFactory.keyToString(bookEntity.getKey()), ha.getAncestorId());
     commitTxn();
   }
 
   public void testFetchWithNamedKey() {
-    Entity flightEntity = Flight.newFlightEntity("named parent key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    Entity bookEntity = Book.newBookEntity("parent named key", "max", "123456", "manifesto");
+    ldth.ds.put(bookEntity);
     Entity hasAncestorEntity =
-        new Entity(HasAncestorJPA.class.getSimpleName(), "named key", flightEntity.getKey());
+        new Entity(HasAncestorJPA.class.getSimpleName(), "named key", bookEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
     HasAncestorJPA ha = em.find(HasAncestorJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
-    assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
+    assertEquals(KeyFactory.keyToString(bookEntity.getKey()), ha.getAncestorId());
     assertEquals("named key", KeyFactory.stringToKey(ha.getId()).getName());
-    assertEquals("named parent key", KeyFactory.stringToKey(ha.getId()).getParent().getName());
+    assertEquals("parent named key", KeyFactory.stringToKey(ha.getId()).getParent().getName());
     commitTxn();
   }
 

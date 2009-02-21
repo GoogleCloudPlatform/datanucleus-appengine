@@ -1,6 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import org.datanucleus.jpa.annotations.Extension;
+
 import java.util.HashSet;
 import java.util.Set;
 
@@ -19,6 +21,7 @@ public class HasOneToManySetJPA implements HasOneToManyJPA {
 
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
+  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
   private String id;
 
   private String val;

@@ -5,8 +5,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildArrayJDO;
 import org.datanucleus.test.HasOneToManyArrayJDO;
-import org.datanucleus.test.HasOneToManyWithOrderByArrayJDO;
-import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasOneToManyArrayWithOrderByJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -89,7 +88,7 @@ public class JDOOneToManyArrayTest extends JDOOneToManyTest {
   // Not currently supported by DataNucleus (OrderMetaData only looks
   // for Collection, not array)
   public void xxxtestFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyWithOrderByArrayJDO.class);
+    testFindWithOrderBy(HasOneToManyArrayWithOrderByJDO.class);
   }
 
   public void testFind() throws EntityNotFoundException {

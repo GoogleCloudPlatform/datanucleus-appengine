@@ -5,6 +5,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 
 import javax.jdo.annotations.Column;
+import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -75,6 +76,7 @@ public class Flight {
   }
 
   @PrimaryKey
+  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   public String getId() {
     return id;

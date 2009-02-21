@@ -6,15 +6,14 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ObjectManager;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.VersionMetaData;
+import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
-
-import javax.jdo.identity.StringIdentity;
 
 /**
  * Utility methods for determining entity property names and kinds.
@@ -88,41 +87,179 @@ public final class EntityUtils {
 
   /**
    * @see DatastoreJDOPersistenceManager#getObjectById(Class, Object) for
-   * an expalnation of how this is useful
+   * an expalnation of how this is useful.
+   *
+   * Supported translations:
+   * When the pk field is a Long you can give us a Long or an encoded key
+   * string.
+   *
+   * When the pk field is an unencoded String you can give us an unencoded
+   * or an encoded String.
+   *
+   * When the pk field is an encoded String you can give us an unencoded
+   * or an encoded String.
    */
-  public static Object idOrNameToKey(ObjectManager om, Class<?> cls, Object key) {
-    if (key instanceof Integer || key instanceof Long) {
-      // We only support pks of type Key and String so we know the user is
-      // giving us the id component of a Key.
-      AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
-          cls, om.getClassLoaderResolver());
-      DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-      String kind = EntityUtils.determineKind(cmd, storeMgr.getIdentifierFactory());
-      Key idKey = KeyFactory.createKey(kind, ((Number) key).longValue());
-      key = overriddenKeyToKeyOrString(cmd, idKey);
-    } else if (key instanceof String) {
-      // We support pks of type String so it's not immediately clear whether
-      // the user is giving us a serialized Key or just the name component of
-      // the Key.  Try converting the provided value into a Key.  If we're
-      // successful, we know the user gave us a serialized Key.  If we're not,
-      // treat the value as the name component of a Key.
-      try {
-        KeyFactory.stringToKey((String) key);
-      } catch (IllegalArgumentException iae) {
-        // convert it to a named key
-        AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
-            cls, om.getClassLoaderResolver());
-        DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-        String kind = EntityUtils.determineKind(cmd, storeMgr.getIdentifierFactory());
-        Key namedKey = KeyFactory.createKey(kind, (String) key);
-        key = overriddenKeyToKeyOrString(cmd, namedKey);
-      }
+  public static Object idOrNameToInternalKey(ObjectManager om, Class<?> cls, final Object val) {
+    Object result = null;
+    AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
+        cls, om.getClassLoaderResolver());
+    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
+    String kind = determineKind(cmd, storeMgr.getIdentifierFactory());
+    AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(om, cls);
+    Class<?> pkType = pkMemberMetaData.getType();
+    if (val instanceof String) {
+      result = stringToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
+    } else if (val instanceof Long || val instanceof Integer) {
+      result = intOrLongToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
+    } else if (val instanceof Key) {
+      result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
     }
-    return key;
+    if (result == null && val != null) {
+      // missed a case somewhere
+      throw new NucleusUserException(
+          "Received a request to find an object of type " + cls.getName() + " identified by "
+          + val + ".  This is not a valid representation of a primary key for an instance of "
+          + cls.getName() + ".");
+    }
+    return result;
   }
 
-  private static Object overriddenKeyToKeyOrString(AbstractClassMetaData cmd, Key overriddenKey) {
-    return cmd.getObjectidClass().equals(StringIdentity.class.getName()) ?
-           KeyFactory.keyToString(overriddenKey) : overriddenKey;
+  private static Object keyToInternalKey(String kind, Class<?> pkType,
+                                         AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
+                                         Object val) {
+    Object result = null;
+    Key key = (Key) val;
+    if (!key.getKind().equals(kind)) {
+      throw new NucleusUserException(
+          "Received a request to find an object of kind " + kind + " but the provided "
+          + "identifier is a Key for kind " + key.getKind());
+    }
+    if (!key.isComplete()) {
+      throw new NucleusUserException(
+          "Received a request to find an object of kind " + kind + " but the provided "
+          + "identifier is is an incomplete Key");
+    }
+    if (pkType.equals(String.class)) {
+      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+        result = KeyFactory.keyToString(key);
+      } else {
+        if (key.getParent() != null) {
+          // By definition, classes with unencoded string pks
+          // do not have parents.  Since this key has a parent
+          // this isn't valid input.
+          throw new NucleusUserException(
+              "Received a request to find an object of type " + cls.getName() + ".  The primary "
+              + "key for this type is an unencoded String, which means instances of this type "
+              + "never have parents.  However, the Key that was provided as an argument has a "
+              + "parent.");
+        }
+        result = key.getName();
+      }
+    } else if (pkType.equals(Long.class)) {
+      if (key.getParent() != null) {
+        // By definition, classes with unencoded string pks
+        // do not have parents.  Since this key has a parent
+        // this isn't valid input.
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + ".  The primary "
+            + "key for this type is a Long, which means instances of this type "
+            + "never have parents.  However, the Key that was provided as an argument has a "
+            + "parent.");
+      }
+      result = key.getId();
+    } else if (pkType.equals(Key.class)) {
+      result = val;
+    }
+    return result;
+  }
+
+  private static Object intOrLongToInternalKey(String kind, Class<?> pkType,
+                                       AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
+                                       Object val) {
+    Object result = null;
+    Key keyWithId = KeyFactory.createKey(kind, ((Number) val).longValue());
+    if (pkType.equals(String.class)) {
+      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+        result = KeyFactory.keyToString(keyWithId);
+      } else {
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + ".  The primary "
+            + "key for this type is an unencoded String.  However, the provided value is of type "
+            + val.getClass().getName() + ".");
+      }
+    } else if (pkType.equals(Long.class)) {
+      result = keyWithId.getId();
+    } else if (pkType.equals(Key.class)) {
+      result = keyWithId;
+    }
+    return result;
+  }
+
+  private static Object stringToInternalKey(
+      String kind, Class<?> pkType, AbstractMemberMetaData pkMemberMetaData, Class<?> cls, Object val) {
+    Key decodedKey;
+    Object result = null;
+    try {
+      decodedKey = KeyFactory.stringToKey((String) val);
+      if (!decodedKey.isComplete()) {
+        throw new NucleusUserException(
+            "Received a request to find an object of kind " + kind + " but the provided "
+            + "identifier is the String representation of an incomplete Key for kind "
+            + decodedKey.getKind());
+      }
+    } catch (IllegalArgumentException iae) {
+      // this is ok, it just means we were only given the name
+      decodedKey = KeyFactory.createKey(kind, (String) val);
+    }
+    if (!decodedKey.getKind().equals(kind)) {
+      throw new NucleusUserException(
+          "Received a request to find an object of kind " + kind + " but the provided "
+          + "identifier is the String representation of a Key for kind "
+          + decodedKey.getKind());
+    }
+    if (pkType.equals(String.class)) {
+      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+        // Need to make sure we pass on an encoded pk
+        result = KeyFactory.keyToString(decodedKey);
+      } else {
+        if (decodedKey.getParent() != null) {
+          throw new NucleusUserException(
+              "Received a request to find an object of type " + cls.getName() + ".  The primary "
+              + "key for this type is an unencoded String, which means instances of this type "
+              + "never have parents.  However, the encoded string representation of the Key that "
+              + "was provided as an argument has a parent.");
+        }
+        // Pk is an unencoded string so need to pass on just the name
+        // component.  However, we need to make sure the provided key actually
+        // contains a name component.
+        if (decodedKey.getName() == null) {
+          throw new NucleusUserException(
+              "Received a request to find an object of type " + cls.getName() + ".  The primary "
+              + "key for this type is an unencoded String.  However, the encoded string "
+              + "representation of the Key that was provided as an argument has its id field "
+              + "set, not its name.  This makes it an invalid key for this class.");
+        }
+        result = decodedKey.getName();
+      }
+    } else if (pkType.equals(Long.class)) {
+      if (decodedKey.getParent() != null) {
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + ".  The primary "
+            + "key for this type is a Long, which means instances of this type "
+            + "never have parents.  However, the encoded string representation of the Key that "
+            + "was provided as an argument has a parent.");
+      }
+      // pk is a long so just pass on the id component
+      result = decodedKey.getId();
+    } else if (pkType.equals(Key.class)) {
+      result = decodedKey;
+    }
+    return result;
+  }
+
+  private static AbstractMemberMetaData getPKMemberMetaData(ObjectManager om, Class<?> cls) {
+    AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
+            cls, om.getClassLoaderResolver());
+    return cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]);
   }
 }

@@ -17,7 +17,7 @@ public class NullDataJPA {
 
   @Id
   @GeneratedValue(strategy= GenerationType.IDENTITY)
-  private String id;
+  private Long id;
 
   private String string;
 
@@ -27,7 +27,7 @@ public class NullDataJPA {
 
   private Set<String> set;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

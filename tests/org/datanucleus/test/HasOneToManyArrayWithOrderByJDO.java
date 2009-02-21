@@ -18,11 +18,11 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasOneToManyWithOrderByArrayJDO implements HasOneToManyWithOrderByJDOInterface {
+public class HasOneToManyArrayWithOrderByJDO implements HasOneToManyWithOrderByJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent(dependentElement = "true")
   @Element(dependent = "true")
@@ -39,7 +39,7 @@ public class HasOneToManyWithOrderByArrayJDO implements HasOneToManyWithOrderByJ
   @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="origin DESC, id ASC"))
   private Flight[] flightsByOrigAndId;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

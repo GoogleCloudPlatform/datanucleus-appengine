@@ -23,12 +23,12 @@ import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Arrays;
-import java.util.Collection;
 
 import javax.jdo.spi.JDOImplHelper;
 
@@ -92,6 +92,17 @@ public class DatastoreFieldManager implements FieldManager {
   // into it.
   private AbstractMemberMetaData ancestorMemberMetaData;
 
+  private boolean ancestorAlreadySet = false;
+  private boolean keyAlreadySet = false;
+  private Integer pkIdPos = null;
+
+  private static final String ANCESTOR_ALREADY_SET =
+      "Cannot set both the primary key and an ancestor field.  If you want the datastore to "
+            + "generate an id for you, set the ancestor field to be the value of the ancestor "
+            + "field to your ancestor key and leave the primary key field blank.  If you wish to "
+            + "provide a named key, leave the ancestor field blank and set the primary key to be a "
+            + "Key object made up of both the ancestor and then named child.";
+
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
       DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
@@ -144,16 +155,64 @@ public class DatastoreFieldManager implements FieldManager {
     // TODO(maxr): validate that pks are a valid type at time of enhancement.
     // TODO(maxr): validate that a class only has a single ancestor key.
     if (isPK(fieldNumber)) {
-      // If this is pk field, transform the Key into its String representation.
-      return KeyFactory.keyToString(datastoreEntity.getKey());
+      return fetchStringPKField(fieldNumber);
     } else if (isAncestorPK(fieldNumber)) {
-      Key parentKey = datastoreEntity.getKey().getParent();
-      if (parentKey == null) {
-        return null;
+      return fetchAncestorStringPKField(fieldNumber);
+    } else if (isPKNameField(fieldNumber)) {
+      if (!fieldIsOfTypeString(fieldNumber)) {
+        throw new NucleusUserException(
+            "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
       }
-      return KeyFactory.keyToString(parentKey);
+      return fetchPKNameField();
     }
     return (String) fetchObjectField(fieldNumber);
+  }
+
+  private String fetchPKNameField() {
+    Key key = datastoreEntity.getKey();
+    if (key.getName() == null) {
+      throw new NucleusUserException(
+          "Attempting to fetch field with \"" + DatastoreManager.PK_NAME + "\" extension but the "
+          + "entity is identified by an id, not a name.");
+    }
+    return datastoreEntity.getKey().getName();
+  }
+
+  private long fetchPKIdField() {
+    Key key = datastoreEntity.getKey();
+    if (key.getName() != null) {
+      throw new NucleusUserException(
+          "Attempting to fetch field with \"" + DatastoreManager.PK_ID + "\" extension but the "
+          + "entity is identified by a name, not an id.");
+    }
+    return datastoreEntity.getKey().getId();
+  }
+
+  private String fetchAncestorStringPKField(int fieldNumber) {
+    Key parentKey = datastoreEntity.getKey().getParent();
+    if (parentKey == null) {
+      return null;
+    }
+    return KeyFactory.keyToString(parentKey);
+  }
+
+  private String fetchStringPKField(int fieldNumber) {
+    if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
+      // If this is an encoded pk field, transform the Key into its String
+      // representation.
+      return KeyFactory.keyToString(datastoreEntity.getKey());
+    } else {
+      if (datastoreEntity.getKey().isComplete() && datastoreEntity.getKey().getName() == null) {
+        // This is trouble, probably an incorrect mapping.
+        throw new NucleusUserException(
+            "The primary key for " + getClassMetaData().getFullClassName() + " is an unencoded "
+            + "string but the key of the coresponding entity in the datastore does not have a "
+            + "name.  You may want to either change the primary key to be an encoded string "
+            + "(add the \"" + DatastoreManager.ENCODED_PK + "\" extension), or change the "
+            + "primary key to be of type " + Key.class.getName() + ".");
+      }
+      return datastoreEntity.getKey().getName();
+    }
   }
 
   public short fetchShortField(int fieldNumber) {
@@ -165,11 +224,21 @@ public class DatastoreFieldManager implements FieldManager {
     return getMetaData(fieldNumber).getType().equals(Key.class);
   }
 
+  private boolean fieldIsOfTypeString(int fieldNumber) {
+    // String is final so we don't need to worry about checking for subclasses.
+    return getMetaData(fieldNumber).getType().equals(String.class);
+  }
+
+  private boolean fieldIsOfTypeLong(int fieldNumber) {
+    // Integer is final so we don't need to worry about checking for subclasses.
+    return getMetaData(fieldNumber).getType().equals(Long.class);
+  }
+
   private RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
     return new IllegalStateException(
         fieldType + " for type " + getClassMetaData().getName()
             + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
-            + " (must be String or " + Key.class.getName() + ")");
+            + " (must be String, Long, or " + Key.class.getName() + ")");
   }
 
   public Object fetchObjectField(int fieldNumber) {
@@ -180,12 +249,13 @@ public class DatastoreFieldManager implements FieldManager {
       return relationFieldManager.fetchRelationField(getClassLoaderResolver(), ammd);
     }
 
-    Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
     if (isPK(fieldNumber)) {
       if (fieldIsOfTypeKey(fieldNumber)) {
         // If this is a pk field, transform the Key into its String
         // representation.
         return datastoreEntity.getKey();
+      } else if(fieldIsOfTypeLong(fieldNumber)) {
+        return datastoreEntity.getKey().getId();
       }
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
     } else if (isAncestorPK(fieldNumber)) {
@@ -193,7 +263,10 @@ public class DatastoreFieldManager implements FieldManager {
         return datastoreEntity.getKey().getParent();
       }
       throw exceptionForUnexpectedKeyType("Ancestor key", fieldNumber);
+    } else if (isPKIdField(fieldNumber)) {
+      return fetchPKIdField();
     } else {
+      Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
       if (value != null) {
         ClassLoaderResolver clr = getClassLoaderResolver();
         // Datanucleus invokes this method for the object versions
@@ -319,7 +392,83 @@ public class DatastoreFieldManager implements FieldManager {
 
   public void storeStringField(int fieldNumber, String value) {
     if (isPK(fieldNumber)) {
-      Key key = null;
+      storeStringPKField(fieldNumber, value);
+    } else if (isAncestorPK(fieldNumber)) {
+      storeAncestorStringField(value);
+    } else if (isPKNameField(fieldNumber)) {
+      storePKNameField(fieldNumber, value);
+    } else {
+      storeObjectField(fieldNumber, value);
+    }
+  }
+
+  private void storePKIdField(int fieldNumber, Object value) {
+    if (!fieldIsOfTypeLong(fieldNumber)) {
+      throw new NucleusUserException(
+          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long");
+    }
+    Key key = null;
+    if (value != null) {
+      key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
+    }
+    storeKeyPK(key);
+    pkIdPos = fieldNumber;
+  }
+
+  private void storePKNameField(int fieldNumber, String value) {
+    // TODO(maxr) make sure the pk is an encoded string
+    if (!fieldIsOfTypeString(fieldNumber)) {
+      throw new NucleusUserException(
+          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String");
+    }
+    Key key = null;
+    if (value != null) {
+      key = KeyFactory.createKey(datastoreEntity.getKind(), value);
+      keyAlreadySet = true;
+    }
+    storeKeyPK(key);
+  }
+  
+  private void storeAncestorStringField(String value) {
+    Key key = null;
+    if (value != null) {
+      try {
+        key = KeyFactory.stringToKey(value);
+      } catch (IllegalArgumentException iae) {
+        throw new NucleusUserException(
+            "Attempt was made to set ancestor to " + value
+            + " but this cannot be converted into a Key.");
+      }
+    }
+    storeAncestorKeyPK(key);
+  }
+
+  private void storeStringPKField(int fieldNumber, String value) {
+    Key key = null;
+    if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
+      if (value != null) {
+        try {
+          key = KeyFactory.stringToKey(value);
+        } catch (IllegalArgumentException iae) {
+          throw new NucleusUserException(
+              "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  The "
+              + "primary key field is an encoded String but an unencoded value has been provided. "
+              + "If you want to set an unencoded value on this field you can either change its "
+              + "type to be an unencoded String (remove the \"" + DatastoreManager.ENCODED_PK
+              + "\" extension), change its type to be a " + Key.class.getName() + " and then set "
+              + "the Key's name field, or create a separate String field for the name component "
+              + "of your primary key and add the \"" + DatastoreManager.PK_NAME
+              + "\" extension.");
+        }
+      }
+    } else {
+      if (value == null) {
+        throw new NucleusUserException(
+            "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  Cannot have "
+            + "a null primary key field if the field is unencoded and of type String.  "
+            + "Please provide a value or, if you want the datastore to generate an id on your "
+            + "behalf, change the type of the field to Long.");
+      }
       if (value != null) {
         if (datastoreEntity.getParent() != null) {
           key = new Entity(datastoreEntity.getKey().getKind(), value, datastoreEntity.getParent()).getKey();
@@ -327,22 +476,8 @@ public class DatastoreFieldManager implements FieldManager {
           key = new Entity(datastoreEntity.getKey().getKind(), value).getKey();
         }
       }
-      storeKeyPK(key);
-    } else if (isAncestorPK(fieldNumber)) {
-      Key key = null;
-      if (value != null) {
-        try {
-          key = KeyFactory.stringToKey(value);
-        } catch (IllegalArgumentException iae) {
-          throw new NucleusUserException(
-              "Attempt was made to set ancestor to " + value
-              + " but this cannot be converted into a Key.");
-        }
-      }
-      storeAncestorKeyPK(key);
-    } else {
-      storeObjectField(fieldNumber, value);
     }
+    storeKeyPK(key);
   }
 
   /**
@@ -460,18 +595,38 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storeKeyPK(Key key) {
+    if (key != null && !datastoreEntity.getKind().equals(key.getKind())) {
+      throw new NucleusUserException(
+          "Attempt was made to set the primray key of an entity with kind "
+          + datastoreEntity.getKind() + " to a key with kind " + key.getKind());  
+    }
     if (datastoreEntity.getKey().isComplete()) {
       // this modification is only okay if it's actually a no-op
       if (!datastoreEntity.getKey().equals(key)) {
-        // Different key provided so the update isn't allowed.
-        throw new NucleusUserException(
-            "Attempt was made to modify the primary key of an object of type "
-            + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-            + "key " + datastoreEntity.getKey() + ".  Primary keys are immutable.");
+        if (!keyAlreadySet) {
+          // Different key provided so the update isn't allowed.
+          throw new NucleusUserException(
+              "Attempt was made to modify the primary key of an object of type "
+              + getStateManager().getClassMetaData().getFullClassName() + " identified by "
+              + "key " + datastoreEntity.getKey() + ".  Primary keys are immutable.");
+        }
       }
     } else if (key != null) {
+      if (key.getName() == null) {
+        // This means an id was provided to an incomplete Key,
+        // and that means the user is trying to set the id manually, which
+        // we don't support.
+        throw new NucleusUserException(
+            "Attempt was made to manually set the id component of a Key primary key.  If you want "
+            + "to control the value of the of the primary key, set the name component instead.");
+      }
       Entity old = datastoreEntity;
-      datastoreEntity = new Entity(old.getKind(), key.getName());
+      if (key.getParent() == null) {
+        datastoreEntity = new Entity(old.getKind(), key.getName());
+      } else {
+        ancestorAlreadySet = true;
+        datastoreEntity = new Entity(old.getKind(), key.getName(), key.getParent());
+      }
       copyProperties(old, datastoreEntity);
     }
   }
@@ -482,12 +637,19 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
+  private boolean isPKNameField(int fieldNumber) {
+    return DatastoreManager.isPKNameField(getClassMetaData(), fieldNumber);
+  }
+
+  private boolean isPKIdField(int fieldNumber) {
+    return DatastoreManager.isPKIdField(getClassMetaData(), fieldNumber);
+  }
+
   private boolean isAncestorPK(int fieldNumber) {
-    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    boolean result = ammd.hasExtension("ancestor-pk");
+    boolean result = DatastoreManager.isAncestorPKField(getClassMetaData(), fieldNumber);
     if (result) {
       // ew, side effect
-      ancestorMemberMetaData = ammd;
+      ancestorMemberMetaData = getMetaData(fieldNumber);
     }
     return result;
   }
@@ -497,7 +659,17 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storePrimaryKey(int fieldNumber, Object value) {
-    if (fieldIsOfTypeKey(fieldNumber)) {
+    if (fieldIsOfTypeLong(fieldNumber)) {
+      Key key = null;
+      if (value != null) {
+        key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
+      }
+      storeKeyPK(key);
+    } else if (fieldIsOfTypeKey(fieldNumber)) {
+      Key key = (Key) value;
+      if (key != null && key.getParent() != null && ancestorAlreadySet) {
+        throw new NucleusUserException(ANCESTOR_ALREADY_SET);
+      }
       storeKeyPK((Key) value);
     } else {
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
@@ -517,6 +689,8 @@ public class DatastoreFieldManager implements FieldManager {
       storePrimaryKey(fieldNumber, value);
     } else if (isAncestorPK(fieldNumber)) {
       storeAncestorField(fieldNumber, value);
+    } else if (isPKIdField(fieldNumber)) {
+      storePKIdField(fieldNumber, value);
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
@@ -606,13 +780,18 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private void storeAncestorKeyPK(Key key) {
+    if (key != null && ancestorAlreadySet) {
+      throw new NucleusUserException(ANCESTOR_ALREADY_SET);      
+    }
     if (datastoreEntity.getParent() != null) {
       // update is ok if it's a no-op
       if (!datastoreEntity.getParent().equals(key)) {
-        throw new NucleusUserException(
-            "Attempt was made to modify the ancestor of an object of type "
-            + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-            + "key " + datastoreEntity.getKey() + ".  Ancestors are immutable.");
+        if (!ancestorAlreadySet) {
+          throw new NucleusUserException(
+              "Attempt was made to modify the ancestor of an object of type "
+              + getStateManager().getClassMetaData().getFullClassName() + " identified by "
+              + "key " + datastoreEntity.getKey() + ".  Ancestors are immutable.");
+        }
       }
     } else if (key != null) {
       if (!createdWithoutEntity) {
@@ -766,6 +945,10 @@ public class DatastoreFieldManager implements FieldManager {
    */
   TypeConversionUtils getConversionUtils() {
     return TYPE_CONVERSION_UTILS;
+  }
+
+  Integer getPkIdPos() {
+    return pkIdPos;
   }
 
   /**

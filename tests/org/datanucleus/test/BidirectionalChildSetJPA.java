@@ -1,6 +1,9 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.test;
 
+import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.store.appengine.TestUtils;
+
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -14,6 +17,7 @@ import javax.persistence.ManyToOne;
 public class BidirectionalChildSetJPA implements BidirectionalChildJPA {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
+  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
   private String id;
 
   @ManyToOne
@@ -25,7 +29,7 @@ public class BidirectionalChildSetJPA implements BidirectionalChildJPA {
   }
 
   public BidirectionalChildSetJPA(String id) {
-    this.id = id;
+    this.id = TestUtils.createKeyString(this, id);
   }
 
   public HasOneToManySetJPA getParent() {

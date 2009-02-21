@@ -8,13 +8,12 @@ import com.google.appengine.api.datastore.KeyFactory;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
-import org.datanucleus.test.HasMultiValuePropsJDO;
 
 import javax.jdo.JDOObjectNotFoundException;
-import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -182,12 +181,7 @@ public class JDOFetchTest extends JDOTestCase {
 
     // The model object's id is of type Key but we're going to look it up using
     // a string-encoded Key
-    try {
-      pm.getObjectById(HasStringAncestorKeyPkJDO.class, KeyFactory.keyToString(entity.getKey()));
-      fail("Expected JDOUserException");
-    } catch (JDOUserException e) {
-      // good
-    }
+    pm.getObjectById(HasStringAncestorKeyPkJDO.class, KeyFactory.keyToString(entity.getKey()));
   }
 
   public void testFetchWithWrongIdType_String() {
@@ -196,12 +190,7 @@ public class JDOFetchTest extends JDOTestCase {
 
     // The model object's id is of type String but we're going to look it up using
     // a Key
-    try {
-      pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, entity.getKey());
-      fail("Expected JDOObjectNotFoundException");
-    } catch (JDOObjectNotFoundException e) {
-      // good
-    }
+    pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, entity.getKey());
   }
 
   public void testEmbeddable() {

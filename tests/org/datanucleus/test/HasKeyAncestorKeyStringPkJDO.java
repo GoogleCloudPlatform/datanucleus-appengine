@@ -17,6 +17,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasKeyAncestorKeyStringPkJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
   private String key;
 
   @Persistent

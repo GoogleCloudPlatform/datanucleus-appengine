@@ -4,11 +4,11 @@ package org.datanucleus.test;
 import java.util.List;
 import java.util.Set;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -18,7 +18,7 @@ public class NullDataJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   private String string;
 
@@ -28,7 +28,7 @@ public class NullDataJDO {
 
   private Set<String> set;
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

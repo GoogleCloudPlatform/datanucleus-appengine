@@ -2,12 +2,16 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasAncestorJDO;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
+
+import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -34,7 +38,9 @@ public class JDOAncestorTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.keyToString(flightKey), "named key");
+    HasAncestorJDO ha = new HasAncestorJDO(
+        KeyFactory.keyToString(flightKey),
+        KeyFactory.keyToString(KeyFactory.createKey(HasAncestorJDO.class.getSimpleName(), "named key")));
     makePersistentInTxn(ha);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
@@ -80,5 +86,73 @@ public class JDOAncestorTest extends JDOTestCase {
     makePersistentInTxn(ha);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertNull(keyWithParent.getParent());
+  }
+
+  public void testKeyPKKeyAncestor_NamedKey() throws EntityNotFoundException {
+    HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
+    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
+    ldth.ds.put(flightEntity);
+    Key flightKey = flightEntity.getKey();
+    Key pojoKey = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), "child named key", flightKey).getKey();
+    pojo.setKey(pojoKey);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    ldth.ds.get(pojoKey);
+    beginTxn();
+    pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, pojoKey);
+    assertEquals(pojo.getAncestorKey(), pojoKey.getParent());
+    commitTxn();
+  }
+
+  public void testKeyPKKeyAncestor_NamedKeyWrongKind() throws EntityNotFoundException {
+    HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
+    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
+    ldth.ds.put(flightEntity);
+    Key flightKey = flightEntity.getKey();
+    Key pojoKey = new Entity("blarg", "child named key", flightKey).getKey();
+    pojo.setKey(pojoKey);
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testKeyPKKeyAncestor_IdGen() throws EntityNotFoundException {
+    HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
+    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
+    ldth.ds.put(flightEntity);
+    Key flightKey = flightEntity.getKey();
+    pojo.setAncestorKey(flightKey);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    ldth.ds.get(pojo.getKey());
+    beginTxn();
+    pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, pojo.getKey());
+    assertEquals(pojo.getAncestorKey(), pojo.getKey().getParent());
+    commitTxn();
+  }
+
+  public void testKeyPKKeyAncestor_SetAncestorAndKey() throws EntityNotFoundException {
+    HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
+    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
+    ldth.ds.put(flightEntity);
+    Key flightKey = flightEntity.getKey();
+    pojo.setAncestorKey(flightKey);
+    Key pojoKey = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), "child named key", flightKey).getKey();
+    pojo.setKey(pojoKey);
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
   }
 }

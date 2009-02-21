@@ -2,14 +2,14 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.NullDataWithDefaultValuesJDO;
 
-import java.util.Set;
 import java.util.List;
+import java.util.Set;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -44,7 +44,7 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
   }
@@ -58,7 +58,7 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     assertEquals(1, ((List<?>)e.getProperty("array")).size());
     assertEquals(1, ((List<?>)e.getProperty("list")).size());
   }

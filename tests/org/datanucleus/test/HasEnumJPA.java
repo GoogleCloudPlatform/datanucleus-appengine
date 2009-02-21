@@ -15,18 +15,18 @@ import javax.persistence.Id;
 public class HasEnumJPA {
   @Id
   @GeneratedValue(strategy= GenerationType.IDENTITY)
-  private String key;
+  private Long key;
 
   private MyEnum myEnum;
   private MyEnum[] myEnumArray;
   private List<MyEnum> myEnumList;
 
 
-  public String getKey() {
+  public Long getKey() {
     return key;
   }
 
-  public void setKey(String key) {
+  public void setKey(Long key) {
     this.key = key;
   }
 

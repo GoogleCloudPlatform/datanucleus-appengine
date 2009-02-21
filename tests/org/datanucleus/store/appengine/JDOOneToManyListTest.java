@@ -1,13 +1,20 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.KeyFactory;
 
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJDO;
+import org.datanucleus.test.BidirectionalChildListLongPkJDO;
+import org.datanucleus.test.BidirectionalChildListStringPkJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.HasOneToManyWithOrderByJDO;
+import org.datanucleus.test.HasOneToManyListLongPkJDO;
+import org.datanucleus.test.HasOneToManyListStringPkJDO;
+import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -73,7 +80,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
   }
 
   public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyWithOrderByJDO.class);
+    testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class);
   }
 
   public void testFind() throws EntityNotFoundException {
@@ -136,6 +143,135 @@ public class JDOOneToManyListTest extends JDOOneToManyTest {
 
   public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
     testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJDO());
+  }
+
+  public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
+    BidirectionalChildListLongPkJDO bidirChild = new BidirectionalChildListLongPkJDO();
+    bidirChild.setChildVal("yam");
+
+    Flight f = newFlight();
+
+    HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+    hasKeyPk.setStr("yag");
+
+    HasOneToManyListLongPkJDO parent = new HasOneToManyListLongPkJDO();
+    parent.addBidirChild(bidirChild);
+    bidirChild.setParent(parent);
+    parent.addFlight(f);
+    parent.addHasKeyPk(hasKeyPk);
+    parent.setVal("yar");
+
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+
+    assertNotNull(bidirChild.getId());
+    assertNotNull(f.getId());
+    assertNotNull(hasKeyPk.getKey());
+
+    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    assertNotNull(bidirChildEntity);
+    assertEquals("yam", bidirChildEntity.getProperty("childVal"));
+    assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
+    if (isIndexed()) {
+      assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
+    }
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    assertNotNull(flightEntity);
+    assertEquals("bos", flightEntity.getProperty("origin"));
+    assertEquals("mia", flightEntity.getProperty("dest"));
+    assertEquals("jimmy", flightEntity.getProperty("name"));
+    assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), flightEntity, f.getId());
+    if (isIndexed()) {
+      assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
+    }
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    assertNotNull(hasKeyPkEntity);
+    assertEquals("yag", hasKeyPkEntity.getProperty("str"));
+    assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getKey());
+    if (isIndexed()) {
+      assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
+    }
+
+    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    assertNotNull(parentEntity);
+    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals("yar", parentEntity.getProperty("val"));
+
+    assertEquals(HasOneToManyListLongPkJDO.class.getName(), 1, countForClass(HasOneToManyListLongPkJDO.class));
+    assertEquals(BidirectionalChildListLongPkJDO.class.getName(), 1, countForClass(BidirectionalChildListLongPkJDO.class));
+    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
+    assertEquals(HasKeyPkJDO.class.getName(), 1, countForClass(HasKeyPkJDO.class));
+  }
+
+  public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
+    BidirectionalChildListStringPkJDO bidirChild = new BidirectionalChildListStringPkJDO();
+    bidirChild.setChildVal("yam");
+
+    Flight f = newFlight();
+
+    HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+    hasKeyPk.setStr("yag");
+
+    HasOneToManyListStringPkJDO parent = new HasOneToManyListStringPkJDO();
+    parent.setId("yar");
+    parent.addBidirChild(bidirChild);
+    bidirChild.setParent(parent);
+    parent.addFlight(f);
+    parent.addHasKeyPk(hasKeyPk);
+    parent.setVal("yar");
+
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+
+    assertNotNull(bidirChild.getId());
+    assertNotNull(f.getId());
+    assertNotNull(hasKeyPk.getKey());
+
+    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    assertNotNull(bidirChildEntity);
+    assertEquals("yam", bidirChildEntity.getProperty("childVal"));
+    assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
+    if (isIndexed()) {
+      assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
+    }
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    assertNotNull(flightEntity);
+    assertEquals("bos", flightEntity.getProperty("origin"));
+    assertEquals("mia", flightEntity.getProperty("dest"));
+    assertEquals("jimmy", flightEntity.getProperty("name"));
+    assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), flightEntity, f.getId());
+    if (isIndexed()) {
+      assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
+    }
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    assertNotNull(hasKeyPkEntity);
+    assertEquals("yag", hasKeyPkEntity.getProperty("str"));
+    assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
+    assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getKey());
+    if (isIndexed()) {
+      assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
+    }
+
+    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    assertNotNull(parentEntity);
+    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals("yar", parentEntity.getProperty("val"));
+
+    assertEquals(HasOneToManyListStringPkJDO.class.getName(), 1, countForClass(HasOneToManyListStringPkJDO.class));
+    assertEquals(BidirectionalChildListStringPkJDO.class.getName(), 1, countForClass(BidirectionalChildListStringPkJDO.class));
+    assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
+    assertEquals(HasKeyPkJDO.class.getName(), 1, countForClass(HasKeyPkJDO.class));
   }
 
   @Override
