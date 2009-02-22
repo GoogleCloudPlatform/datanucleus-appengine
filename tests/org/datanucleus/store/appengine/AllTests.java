@@ -44,7 +44,8 @@ public class AllTests {
     suite.addTestSuite(JPAOneToManySetTest.class);
     suite.addTestSuite(JDOOneToManyListTest.class);
     suite.addTestSuite(JDOOneToManySetTest.class);
-    suite.addTestSuite(JDOOneToManyArrayTest.class);
+    // TODO(maxr) Reenable once we reenable support for arrays.
+//    suite.addTestSuite(JDOOneToManyArrayTest.class);
     suite.addTestSuite(DatastoreQueryExpressionTest.class);
     suite.addTestSuite(JDODataSourceConfigTest.class);
     suite.addTestSuite(JPADataSourceConfigTest.class);

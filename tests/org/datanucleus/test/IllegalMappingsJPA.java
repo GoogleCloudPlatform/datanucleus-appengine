@@ -28,7 +28,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String illegal;
   }
 
@@ -39,7 +39,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String illegal;
   }
 
@@ -48,13 +48,13 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String secondIsIllegal;
   }
 
@@ -63,13 +63,13 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long secondIsIllegal;
   }
 
@@ -78,13 +78,13 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String secondIsIllegal;
   }
 
@@ -95,7 +95,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String illegal;
   }
 
@@ -104,7 +104,7 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private Long id;
   }
 
@@ -113,10 +113,10 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private Long illegal;
   }
 
@@ -125,10 +125,10 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private String illegal;
   }
 
@@ -138,8 +138,8 @@ public class IllegalMappingsJPA {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extensions({
-      @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true"),
-      @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")}
+      @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true"),
+      @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")}
     )
     private String illegal;
   }
@@ -149,7 +149,7 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
   }
 
@@ -158,7 +158,7 @@ public class IllegalMappingsJPA {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
   }
 
@@ -169,7 +169,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
   }
 
@@ -180,7 +180,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
   }
 

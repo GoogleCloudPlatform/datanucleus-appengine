@@ -76,7 +76,7 @@ public class Flight {
   }
 
   @PrimaryKey
-  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   public String getId() {
     return id;

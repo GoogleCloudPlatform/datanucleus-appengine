@@ -14,12 +14,12 @@ import javax.jdo.annotations.PrimaryKey;
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class HasAncestorJDO {
   @Persistent
-  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
+  @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
   private String ancestorId;
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
   private String id;
 
   public HasAncestorJDO() {

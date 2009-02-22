@@ -68,25 +68,27 @@ public class DatastoreManager extends MappedStoreManager {
    */
   private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
 
+  private static final String EXTENSION_PREFIX = "gae.";
+
   /**
    * The name of the annotation extension that marks a field as an parent.
    */
-  public static final String PARENT_PK = "parent-pk";
+  public static final String PARENT_PK = EXTENSION_PREFIX + "parent-pk";
 
   /**
    * The name of the annotation extension that marks a field as an encoded pk
    */
-  public static final String ENCODED_PK = "encoded-pk";
+  public static final String ENCODED_PK = EXTENSION_PREFIX + "encoded-pk";
 
   /**
    * The name of the annotation extension that marks a field as a primary key name
    */
-  public static final String PK_NAME = "pk-name";
+  public static final String PK_NAME = EXTENSION_PREFIX + "pk-name";
 
   /**
    * The name of the annotation extension that marks a field as a primary key id
    */
-  public static final String PK_ID = "pk-id";
+  public static final String PK_ID = EXTENSION_PREFIX + "pk-id";
 
   /**
    * Construct a DatsatoreManager

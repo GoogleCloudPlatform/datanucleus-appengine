@@ -21,7 +21,7 @@ public class HasKeyPkJDO {
   private Key key;
 
   @Persistent
-  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
+  @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
   private Key ancestorKey;
 
   @Persistent

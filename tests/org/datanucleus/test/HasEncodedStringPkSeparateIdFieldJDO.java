@@ -15,11 +15,11 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasEncodedStringPkSeparateIdFieldJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  @Extension(vendorName = "datanucleus", key="encoded-pk", value="true")
+  @Extension(vendorName = "datanucleus", key="gae.encoded-pk", value="true")
   private String key;
 
   @Persistent
-  @Extension(vendorName = "datanucleus", key="pk-id", value="true")
+  @Extension(vendorName = "datanucleus", key="gae.pk-id", value="true")
   private Long id;
 
   public String getKey() {

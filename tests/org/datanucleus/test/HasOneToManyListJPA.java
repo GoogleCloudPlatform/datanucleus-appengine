@@ -21,7 +21,7 @@ public class HasOneToManyListJPA implements HasOneToManyJPA {
 
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
-  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
+  @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
   private String val;

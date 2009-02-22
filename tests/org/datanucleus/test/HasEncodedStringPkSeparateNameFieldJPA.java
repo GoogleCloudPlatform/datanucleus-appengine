@@ -16,10 +16,10 @@ public class HasEncodedStringPkSeparateNameFieldJPA {
 
   @Id
   @GeneratedValue(strategy= GenerationType.IDENTITY)
-  @Extension(vendorName="datanucleus", key="encoded-pk", value="true")
+  @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  @Extension(vendorName="datanucleus", key="pk-name", value="true")
+  @Extension(vendorName="datanucleus", key="gae.pk-name", value="true")
   private String name;
 
   public String getId() {

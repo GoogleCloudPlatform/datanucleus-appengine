@@ -26,7 +26,7 @@ public class IllegalMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private Key illegal;
   }
@@ -38,7 +38,7 @@ public class IllegalMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String illegal;
   }
@@ -50,7 +50,7 @@ public class IllegalMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private Key illegal;
 
@@ -66,7 +66,7 @@ public class IllegalMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String illegal;
   }
@@ -76,14 +76,14 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     @Persistent
     private String firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     @Persistent
     private String secondIsIllegal;
   }
@@ -93,14 +93,14 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     @Persistent
     private Long firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     @Persistent
     private Long secondIsIllegal;
   }
@@ -110,14 +110,14 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String secondIsIllegal;
   }
@@ -129,7 +129,7 @@ public class IllegalMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     @Persistent
     private String illegal;
   }
@@ -139,7 +139,7 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private Long id;
   }
 
@@ -148,11 +148,11 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
     @Persistent
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private Long illegal;
   }
 
@@ -161,11 +161,11 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
     @Persistent
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private String illegal;
   }
 
@@ -175,8 +175,8 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extensions({
-      @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true"),
-      @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")}
+      @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true"),
+      @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")}
     )
     private String illegal;
   }
@@ -186,7 +186,7 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
   }
 
@@ -195,7 +195,7 @@ public class IllegalMappingsJDO {
 
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
   }
 
@@ -207,7 +207,7 @@ public class IllegalMappingsJDO {
     private String id;
 
     @Persistent
-    @Extension(vendorName = "datanucleus", key = "pk-id", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
   }
 
@@ -219,7 +219,7 @@ public class IllegalMappingsJDO {
     private String id;
 
     @Persistent
-    @Extension(vendorName = "datanucleus", key = "pk-name", value = "true")
+    @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
   }
 

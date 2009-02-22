@@ -15,7 +15,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasOneToOneStringPkParentJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  @Extension(vendorName = "datanucleus", key = "encoded-pk", value="true")
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
   private String key;
 
   @Persistent(mappedBy = "hasParent")
