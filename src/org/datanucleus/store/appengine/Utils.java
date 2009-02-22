@@ -6,10 +6,10 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
-import java.util.LinkedList;
-import java.util.TreeSet;
 import java.util.LinkedHashSet;
+import java.util.LinkedList;
+import java.util.List;
+import java.util.TreeSet;
 
 /**
  * A handful of utilities based on the Google Collections Library.
@@ -42,7 +42,7 @@ public class Utils {
     return new TreeSet<T>(Arrays.asList(elements));
   }
 
-  public static <F, T> List<T> transform(List<F> from, Function<? super F, ? extends T> func) {
+  public static <F, T> List<T> transform(Collection<F> from, Function<? super F, ? extends T> func) {
     List<T> to = new ArrayList<T>();
     for (F fromElement : from) {
       to.add(func.apply(fromElement));

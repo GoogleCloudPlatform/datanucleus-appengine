@@ -2,6 +2,7 @@
 package org.datanucleus.store.appengine;
 
 import com.google.common.collect.PrimitiveArrays;
+
 import org.datanucleus.store.appengine.Utils.Function;
 
 import java.util.HashMap;
@@ -40,7 +41,6 @@ final class PrimitiveUtils {
   /**
    * Gives us a fast way to get from a primitive type to a function that
    * transforms a primitive array of that type to a List of that type.
-   * We intentionally omit Character since the datastore does not support it.
    */
   public static final
   Map<Class<?>, Function<Object, List<?>>> PRIMITIVE_ARRAY_TO_LIST_FUNC_MAP =
@@ -96,6 +96,13 @@ final class PrimitiveUtils {
         new Function<Object, List<?>>() {
           public List<?> apply(Object o) {
             return PrimitiveArrays.asList((boolean[]) o);
+          }
+        });
+    map.put(
+        Character.TYPE,
+        new Function<Object, List<?>>() {
+          public List<?> apply(Object o) {
+            return PrimitiveArrays.asList((char[]) o);
           }
         });
     return map;

@@ -23,8 +23,6 @@ import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -46,13 +44,14 @@ import javax.jdo.spi.JDOImplHelper;
  * Also, the datastore does not support char/Character.  We've made the decision
  * to promote this to long as well.
  *
- * We let the datastore handle the conversion when mapping pojos to datastore
- * {@link Entity Entities} but we handle the conversion ourselves when mapping
- * datastore {@link Entity Entities} to pojos.  For symmetry's sake we could
- * do all the pojo to datastore conversions in our code, but then the
- * conversions would be in two places (our code and the datastore service).
- * We'd rather have a bit of asymmetry and only have the logic exist in one
- * place.
+ * We handle the conversion in both directions.  At one point we let the
+ * datastore api do the conversion from pojos to {@link Entity Entities} but we
+ * this proved problematic in the case where we return entities that were
+ * cached during insertion to avoid
+ * issuing a get().  In this case we then end up trying to construct a pojo from
+ * an {@link Entity} whose contents violate the datastore api invariants, and we
+ * end up with cast exceptions.  So, we do the conversion ourselves, even though
+ * this duplicates logic in the ORM and the datastore api.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -698,14 +697,7 @@ public class DatastoreFieldManager implements FieldManager {
         } else if (Enum.class.isAssignableFrom(ammd.getType())) {
           value = ((Enum) value).name();
         }
-        if (value.getClass().isArray()) {
-          value = convertArrayValue(ammd, value);
-        } else if (Collection.class.isAssignableFrom(value.getClass())) {
-          value = convertCollectionValue(ammd, value);
-        } else if (value instanceof Character) {
-          // Datastore doesn't support Character so translate into a Long.
-          value = TypeConversionUtils.CHARACTER_TO_LONG.apply((Character) value);
-        }
+        value = getConversionUtils().pojoValueToDatastoreValue(clr, value, getMetaData(fieldNumber));
       }
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
@@ -716,37 +708,6 @@ public class DatastoreFieldManager implements FieldManager {
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
     }
-  }
-
-  private Object convertCollectionValue(AbstractMemberMetaData ammd, Object value) {
-    Object result = value;
-    if (getConversionUtils().pojoPropertyIsCharacterCollection(ammd)) {
-      // Datastore doesn't support Character so translate into
-      // a list of Longs.  All other Collections can pass straight
-      // through.
-      @SuppressWarnings("unchecked")
-      List<Character> chars = (List<Character>) value;
-      result = Utils.transform(chars, TypeConversionUtils.CHARACTER_TO_LONG);
-    } else if (Enum.class.isAssignableFrom(
-        getClassLoaderResolver().classForName(ammd.getCollection().getElementType()))) {
-      @SuppressWarnings("unchecked")
-      Iterable<Enum> enums = (Iterable<Enum>) value; 
-      result = getConversionUtils().convertEnumsToStringList(enums);
-    }
-    return result;
-  }
-
-  private Object convertArrayValue(AbstractMemberMetaData ammd, Object value) {
-    Object result;
-    if (getConversionUtils().pojoPropertyIsByteArray(ammd)) {
-      result = getConversionUtils().convertByteArrayToBlob(value);
-    } else if (Enum.class.isAssignableFrom(ammd.getType().getComponentType())) {
-      result = getConversionUtils().convertEnumsToStringList(Arrays.<Enum>asList((Enum[]) value));
-    } else {
-      // Translate all arrays to lists before storing.
-      result = getConversionUtils().convertPojoArrayToDatastoreList(value);
-    }
-    return result;
   }
 
   /**
@@ -827,7 +788,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public void storeCharField(int fieldNumber, char value) {
-    storeLongField(fieldNumber, (long) value);
+    storeObjectField(fieldNumber, value);
   }
 
   public void storeByteField(int fieldNumber, byte value) {

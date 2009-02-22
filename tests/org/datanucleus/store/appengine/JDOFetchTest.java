@@ -267,4 +267,15 @@ public class JDOFetchTest extends JDOTestCase {
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
     assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
   }
+
+  public void testNumberTooLarge() {
+    Entity e = Flight.newFlightEntity("yar", "yar", "bos", "mia", 0, 44);
+    // set the value of one of the int properties to be too big for an int field
+    e.setProperty("you", Integer.MAX_VALUE + 1L);
+    ldth.ds.put(e);
+
+    Flight f = pm.getObjectById(Flight.class, "yar");
+    // no exception, just overflow
+    assertEquals(-2147483648, f.getYou());
+  }
 }
