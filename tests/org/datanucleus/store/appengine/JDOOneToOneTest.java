@@ -416,7 +416,9 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(pojo.getHasParent());
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
+    assertEquals(pojo, pojo.getHasParent().getParent());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
+    assertEquals(pojo, pojo.getHasParentKeyPK().getParent());
     commitTxn();
   }
 

@@ -168,7 +168,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // set the token so if we recurse down to the same state manager we know
     // we're already inserting
     sm.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+    storeMgr.validateMetaDataForClass(sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
     try {
       // Make sure writes are permitted
       storeMgr.assertReadOnlyForUpdateOfObject(sm);
@@ -354,7 +354,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       return;
     }
 
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+    storeMgr.validateMetaDataForClass(
+        sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
 
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
@@ -401,7 +402,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+    storeMgr.validateMetaDataForClass(
+        sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
 
     Entity entity = getAssociatedEntityForCurrentTransaction(sm);
     if (entity == null) {
@@ -425,7 +427,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+    storeMgr.validateMetaDataForClass(
+        sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
 
     Entity entity = getAssociatedEntityForCurrentTransaction(sm);
     if (entity == null) {
@@ -466,7 +469,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void locateObject(StateManager sm) {
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData());
+    storeMgr.validateMetaDataForClass(
+        sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
     // get throws NucleusObjectNotFoundException if the entity isn't found,
     // which is what we want.
     get(sm, getPkAsKey(sm));

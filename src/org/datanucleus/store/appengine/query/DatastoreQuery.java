@@ -263,7 +263,7 @@ public class DatastoreQuery implements Serializable {
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
       final ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om,
       boolean ignoreCache) {
-    storeMgr.validateMetaDataForClass(acmd);
+    storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
         sm.replaceFields(

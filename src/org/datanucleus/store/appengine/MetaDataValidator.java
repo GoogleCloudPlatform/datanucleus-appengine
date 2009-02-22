@@ -3,9 +3,12 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Key;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.metadata.Relation;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.Set;
@@ -35,10 +38,22 @@ public class MetaDataValidator {
           DatastoreManager.PK_ID,
           DatastoreManager.PK_NAME);
 
-  public void validate(AbstractClassMetaData acmd) {
+  private final AbstractClassMetaData acmd;
+  private final MetaDataManager metaDataManager;
+  private final ClassLoaderResolver clr;
+
+  private boolean noParentAllowed = false;
+  public MetaDataValidator(
+      AbstractClassMetaData acmd, MetaDataManager metaDataManager, ClassLoaderResolver clr) {
+    this.acmd = acmd;
+    this.metaDataManager = metaDataManager;
+    this.clr = clr;
+  }
+
+  public void validate() {
     NucleusLogger.METADATA.info(
         "Performing appengine-specific metadata validation for " + acmd.getFullClassName());
-    AbstractMemberMetaData pkMemberMetaData = validatePrimaryKey(acmd);
+    AbstractMemberMetaData pkMemberMetaData = validatePrimaryKey();
     validateExtensions(acmd, pkMemberMetaData);
     NucleusLogger.METADATA.info(
         "Finished performing appengine-specific metadata validation for " + acmd.getFullClassName());
@@ -46,12 +61,14 @@ public class MetaDataValidator {
 
   private void validateExtensions(
       AbstractClassMetaData acmd, AbstractMemberMetaData pkMemberMetaData) {
-    Set<String> found = Utils.newHashSet();
-    // can only have one field with this extension
+    Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
+    Class<?> pkClass = pkMemberMetaData.getType();
+
     for (AbstractMemberMetaData ammd : acmd.getManagedMembers()) {
+      // can only have one field with this extension
       for (String extension : ONE_OR_ZERO_EXTENSIONS) {
         if (ammd.hasExtension(extension)) {
-          if (!found.add(extension)) {
+          if (!foundOneOrZeroExtensions.add(extension)) {
             throw new DatastoreMetaDataException(acmd, ammd,
                 "Cannot have more than one field with the \"" + extension
                 + "\" extension.");
@@ -83,6 +100,14 @@ public class MetaDataValidator {
               "\"" + DatastoreManager.PK_ID + "\" can only be applied to a Long field.");
         }
       }
+
+      if (ammd.hasExtension(DatastoreManager.PARENT_PK)) {
+        if (noParentAllowed) {
+          throw new DatastoreMetaDataException(
+              acmd, ammd, "Cannot have a " + pkClass.getName() + " primary key and a parent pk field.");
+        }
+      }
+
       for (String extension : NOT_PRIMARY_KEY_EXTENSIONS) {
         if (ammd.hasExtension(extension) && ammd.isPrimaryKey()) {
           throw new DatastoreMetaDataException(
@@ -104,10 +129,58 @@ public class MetaDataValidator {
           }
         }
       }
+
+      if (noParentAllowed) {
+        checkForIllegalChildField(ammd);
+      }
     }
   }
 
-  private AbstractMemberMetaData validatePrimaryKey(AbstractClassMetaData acmd) {
+  private void checkForIllegalChildField(AbstractMemberMetaData ammd) {
+    // Figure out if this field is the owning side of a one to one or a one to
+    // many.  If it is, look at the mapping of the child class and make sure their
+    // pk isn't Long or unencoded String.
+    int relationType = ammd.getRelationType(clr);
+    if (relationType == Relation.NONE || ammd.isEmbedded()) {
+      return;
+    }
+    AbstractClassMetaData childAcmd = null;
+    if (relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) {
+      if (ammd.getCollection() != null) {
+        childAcmd = ammd.getCollection().getElementClassMetaData();
+      } else if (ammd.getArray() != null) {
+        childAcmd = ammd.getArray().getElementClassMetaData();
+      } else {
+        // don't know how to verify
+        NucleusLogger.METADATA.warn("Unable to validate one-to-many relation " + ammd.getFullFieldName());
+      }
+    } else if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
+      childAcmd = metaDataManager.getMetaDataForClass(ammd.getType(), clr);
+    }
+    if (childAcmd == null) {
+      return;
+    }
+
+    // Get the type of the primary key of the child
+    int[] pkPositions = childAcmd.getPKMemberPositions();
+    if (pkPositions == null) {
+      // don't know how to verify
+      NucleusLogger.METADATA.warn("Unable to validate relation " + ammd.getFullFieldName());
+      return;
+    }
+    int pkPos = pkPositions[0];
+    AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtPosition(pkPos);
+    Class<?> pkType = pkMemberMetaData.getType();
+    if (pkType.equals(Long.class) ||
+        (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK))) {
+      throw new DatastoreMetaDataException(
+          childAcmd, pkMemberMetaData,
+          "Cannot have a " + pkType.getName() + " primary key and be a child object "
+          + "(owning field is " + ammd.getFullFieldName() + ").");
+    }
+  }
+
+  private AbstractMemberMetaData validatePrimaryKey() {
     int[] pkPositions = acmd.getPKMemberPositions();
     if (pkPositions == null) {
       throw new DatastoreMetaDataException(acmd, "No primary key defined.");
@@ -120,20 +193,10 @@ public class MetaDataValidator {
 
     Class<?> pkType = pkMemberMetaData.getType();
     if (pkType.equals(Long.class)) {
-      AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.PARENT_PK);
-      if (ammd != null) {
-        throw new DatastoreMetaDataException(
-            acmd, ammd, "Cannot have a Long primary key and a parent field.");
-      }
-      // TODO(maxr) make sure there is no parent key provider
+      noParentAllowed = true;
     } else if (pkType.equals(String.class)) {
       if (!DatastoreManager.isEncodedPKField(acmd, pkPos)) {
-        AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.PARENT_PK);
-        if (ammd != null) {
-          throw new DatastoreMetaDataException(acmd, ammd,
-              "Cannot have an unencoded String primary key and a parent field.");
-        }
-        // TODO(maxr) make sure there is no parent key provider
+        noParentAllowed = true;
       }
     } else if (pkType.equals(Key.class)) {
 

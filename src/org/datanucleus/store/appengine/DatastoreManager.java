@@ -62,14 +62,11 @@ import java.util.Set;
 public class DatastoreManager extends MappedStoreManager {
 
   /**
-   * Classes whose metadata we've validated.
+   * Classes whose metadata we've validated.  This set gets hit on every
+   * insert, update, and fetch.  I don't expect it to be a bottleneck but
+   * if we're seeing contention we should look here.
    */
   private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
-
-  /**
-   * Used for meta data validation.
-   */
-  private final MetaDataValidator metaDataValidator = new MetaDataValidator();
 
   /**
    * The name of the annotation extension that marks a field as an parent.
@@ -502,11 +499,12 @@ public class DatastoreManager extends MappedStoreManager {
   /**
    * Perform appengine-specific validation on the provided meta data.
    * @param acmd The meta data to validate.
+   * @param clr The classloader resolver to use.
    */
-  public void validateMetaDataForClass(AbstractClassMetaData acmd) {
+  public void validateMetaDataForClass(AbstractClassMetaData acmd, ClassLoaderResolver clr) {
     // Only validate each meta data once
     if (validatedClasses.add(acmd.getFullClassName())) {
-      metaDataValidator.validate(acmd);
+      new MetaDataValidator(acmd, getMetaDataManager(), clr).validate();
     }
   }
 
