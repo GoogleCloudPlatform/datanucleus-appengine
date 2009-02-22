@@ -32,7 +32,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
    */
   @Override
   public Object getObjectById(Class cls, Object key) {
-    key = EntityUtils.idOrNameToInternalKey(getObjectManager(), cls, key);
+    key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
     return super.getObjectById(cls, key);
   }
 }

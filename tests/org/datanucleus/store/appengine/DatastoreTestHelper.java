@@ -15,7 +15,7 @@ public class DatastoreTestHelper {
 
   public DatastoreService ds;
 
-  private static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
+  public static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
     public String getAppId() {
       return "test";
     }

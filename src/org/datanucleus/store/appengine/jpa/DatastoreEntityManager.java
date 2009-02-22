@@ -24,7 +24,7 @@ public class DatastoreEntityManager extends EntityManagerImpl {
    */
   @Override
   public Object find(Class cls, Object key) {
-    key = EntityUtils.idOrNameToInternalKey(getObjectManager(), cls, key);
+    key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
     return super.find(cls, key);
   }
 

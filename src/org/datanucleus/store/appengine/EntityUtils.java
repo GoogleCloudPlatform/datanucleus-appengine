@@ -90,22 +90,29 @@ public final class EntityUtils {
    * an expalnation of how this is useful.
    *
    * Supported translations:
-   * When the pk field is a Long you can give us a Long or an encoded key
-   * string.
+   * When the pk field is a Long you can give us a Long, an encoded key
+   * string, or a Key.
    *
    * When the pk field is an unencoded String you can give us an unencoded
-   * or an encoded String.
+   * String, an encoded String, or a Key.
    *
    * When the pk field is an encoded String you can give us an unencoded
-   * or an encoded String.
+   * String, an encoded String, or a Key.
    */
-  public static Object idOrNameToInternalKey(ObjectManager om, Class<?> cls, final Object val) {
-    Object result = null;
+  public static Object idToInternalKey(ObjectManager om, Class<?> cls, final Object val) {
     AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
         cls, om.getClassLoaderResolver());
     DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
     String kind = determineKind(cmd, storeMgr.getIdentifierFactory());
     AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(om, cls);
+    return idToInternalKey(kind, pkMemberMetaData, cls, val);
+  }
+
+  // broken out for testing
+  static Object idToInternalKey(String kind, AbstractMemberMetaData pkMemberMetaData,
+                                      Class<?> cls, Object val) {
+
+    Object result = null;
     Class<?> pkType = pkMemberMetaData.getType();
     if (val instanceof String) {
       result = stringToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
@@ -140,7 +147,7 @@ public final class EntityUtils {
           + "identifier is is an incomplete Key");
     }
     if (pkType.equals(String.class)) {
-      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+      if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
         result = KeyFactory.keyToString(key);
       } else {
         if (key.getParent() != null) {
@@ -166,6 +173,13 @@ public final class EntityUtils {
             + "never have parents.  However, the Key that was provided as an argument has a "
             + "parent.");
       }
+      if (key.getName() != null) {
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + ".  The primary "
+            + "key for this type is a Long.  However, the encoded string "
+            + "representation of the Key that was provided as an argument has its name field "
+            + "set, not its id.  This makes it an invalid key for this class.");
+      }
       result = key.getId();
     } else if (pkType.equals(Key.class)) {
       result = val;
@@ -173,13 +187,12 @@ public final class EntityUtils {
     return result;
   }
 
-  private static Object intOrLongToInternalKey(String kind, Class<?> pkType,
-                                       AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
-                                       Object val) {
+  private static Object intOrLongToInternalKey(
+      String kind, Class<?> pkType, AbstractMemberMetaData pkMemberMetaData, Class<?> cls, Object val) {
     Object result = null;
     Key keyWithId = KeyFactory.createKey(kind, ((Number) val).longValue());
     if (pkType.equals(String.class)) {
-      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+      if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
         result = KeyFactory.keyToString(keyWithId);
       } else {
         throw new NucleusUserException(
@@ -208,6 +221,13 @@ public final class EntityUtils {
             + decodedKey.getKind());
       }
     } catch (IllegalArgumentException iae) {
+      if (pkType.equals(Long.class)) {
+        // We were given an unencoded String and the pk type is Long.
+        // There's no way that can be valid
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + " identified by the String "
+            + val + ", but the primary key of " + cls.getName() + " is of type Long.");        
+      }
       // this is ok, it just means we were only given the name
       decodedKey = KeyFactory.createKey(kind, (String) val);
     }
@@ -218,7 +238,7 @@ public final class EntityUtils {
           + decodedKey.getKind());
     }
     if (pkType.equals(String.class)) {
-      if (pkMemberMetaData.hasExtension("encoded-pk")) {
+      if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
         // Need to make sure we pass on an encoded pk
         result = KeyFactory.keyToString(decodedKey);
       } else {
@@ -248,6 +268,15 @@ public final class EntityUtils {
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the encoded string representation of the Key that "
             + "was provided as an argument has a parent.");
+      }
+
+      if (decodedKey.getName() != null) {
+        throw new NucleusUserException(
+            "Received a request to find an object of type " + cls.getName() + " identified by the "
+            + "encoded String representation of "
+            + decodedKey + ", but the primary key of " + cls.getName() + " is of type Long and the "
+            + "encoded String has its name component set.  It must have its id component set "
+            + "instead in order to be legal.");
       }
       // pk is a long so just pass on the id component
       result = decodedKey.getId();
