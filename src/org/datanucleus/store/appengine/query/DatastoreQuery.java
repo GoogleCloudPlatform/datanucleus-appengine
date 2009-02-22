@@ -345,9 +345,9 @@ public class DatastoreQuery implements Serializable {
       if (ammd == null) {
         throw noMetaDataException(left.getId(), acmd.getFullClassName());
       }
-      if (isAncestorPK(ammd)) {
+      if (isParentPK(ammd)) {
         throw new UnsupportedDatastoreFeatureException(
-            "Cannot sort by ancestor.", query.getSingleStringQuery());
+            "Cannot sort by parent.", query.getSingleStringQuery());
       } else {
         String sortProp;
         if (ammd.isPrimaryKey()) {
@@ -476,8 +476,8 @@ public class DatastoreQuery implements Serializable {
     JavaTypeMapping mapping = getMappingForFieldWithName(left.getTuples(), qd);
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
-    } else if (isAncestorPK(ammd)) {
-      addAncestorFilter(op, qd, internalPkToKey(qd.acmd, value));
+    } else if (isParentPK(ammd)) {
+      addParentFilter(op, qd, internalPkToKey(qd.acmd, value));
     } else {
       String datastorePropName;
       if (ammd.isPrimaryKey()) {
@@ -597,7 +597,7 @@ public class DatastoreQuery implements Serializable {
       qd.query.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else {
-      addAncestorFilter(op, qd, valueKey);
+      addParentFilter(op, qd, valueKey);
     }
   }
 
@@ -658,11 +658,11 @@ public class DatastoreQuery implements Serializable {
     return key;
   }
 
-  private void addAncestorFilter(Query.FilterOperator op, QueryData qd, Key key) {
-    // We only support queries on ancestor if it is an equality filter.
+  private void addParentFilter(Query.FilterOperator op, QueryData qd, Key key) {
+    // We only support queries on parent if it is an equality filter.
     if (op != Query.FilterOperator.EQUAL) {
       throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
-          + "datastore only supports ancestor queries using the equality operator.",
+          + "datastore only supports parent queries using the equality operator.",
           query.getSingleStringQuery());
     }
     // value must be String or Key
@@ -676,8 +676,8 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private boolean isAncestorPK(AbstractMemberMetaData ammd) {
-    return ammd.hasExtension("ancestor-pk");
+  private boolean isParentPK(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.PARENT_PK);
   }
 
   // Exposed for tests

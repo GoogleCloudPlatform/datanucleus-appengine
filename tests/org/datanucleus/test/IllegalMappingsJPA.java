@@ -21,7 +21,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Extension(vendorName = "datanucleus", key = "ancestor-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
     private String illegal;
   }
 
@@ -32,7 +32,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "ancestor-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
     private String illegal;
   }
 
@@ -74,10 +74,10 @@ public class IllegalMappingsJPA {
     @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true")
     private String id;
 
-    @Extension(vendorName = "datanucleus", key = "ancestor-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
     private String firstIsOk;
 
-    @Extension(vendorName = "datanucleus", key = "ancestor-pk", value = "true")
+    @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")
     private String secondIsIllegal;
   }
 
@@ -132,7 +132,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extensions({
       @Extension(vendorName = "datanucleus", key = "encoded-pk", value = "true"),
-      @Extension(vendorName = "datanucleus", key = "ancestor-pk", value = "true")}
+      @Extension(vendorName = "datanucleus", key = "parent-pk", value = "true")}
     )
     private String illegal;
   }

@@ -126,7 +126,7 @@ public class DatastoreTable implements DatastoreClass {
   private final List<AbstractMemberMetaData> sameEntityGroupMemberMetaData = Utils.newArrayList();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
-  private AbstractMemberMetaData ancestorMappingField;
+  private AbstractMemberMetaData parentMappingField;
 
   DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
@@ -388,11 +388,11 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   private void markFieldAsParentKeyProvider(String mappedBy) {
-    if (ancestorMappingField != null) {
+    if (parentMappingField != null) {
       throw new NucleusException(
           "App Engine ORM does not support multiple parent key provider fields.");
     }
-    ancestorMappingField = getFieldMetaData(mappedBy);
+    parentMappingField = getFieldMetaData(mappedBy);
   }
 
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
@@ -1120,12 +1120,12 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
-    return ammd.equals(ancestorMappingField);
+    return ammd.equals(parentMappingField);
   }
 
-  void provideAncestorMappingField(InsertMappingConsumer consumer) {
-    if (ancestorMappingField != null) {
-      consumer.setAncestorMappingField(ancestorMappingField);
+  void provideParentMappingField(InsertMappingConsumer consumer) {
+    if (parentMappingField != null) {
+      consumer.setParentMappingField(parentMappingField);
     }
   }
 

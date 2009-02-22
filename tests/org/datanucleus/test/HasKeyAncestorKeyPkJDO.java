@@ -20,7 +20,7 @@ public class HasKeyAncestorKeyPkJDO {
   private Key key;
 
   @Persistent
-  @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
+  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
   private Key ancestorKey;
 
   public Key getKey() {

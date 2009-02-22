@@ -20,7 +20,7 @@ public class HasKeyPkJPA {
 
   // This doesn't actually work - JPA doesn't support non-pk fields
   // of arbitrary types.
-  @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
+  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
   private Key ancestorId;
 
   @Id

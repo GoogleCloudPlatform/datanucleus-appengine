@@ -22,13 +22,13 @@ public class MetaDataValidator {
           DatastoreManager.PK_ID,
           DatastoreManager.ENCODED_PK,
           DatastoreManager.PK_NAME,
-          DatastoreManager.ANCESTOR_PK);
+          DatastoreManager.PARENT_PK);
 
   private static final Set<String> NOT_PRIMARY_KEY_EXTENSIONS =
       Utils.newHashSet(
           DatastoreManager.PK_ID,
           DatastoreManager.PK_NAME,
-          DatastoreManager.ANCESTOR_PK);
+          DatastoreManager.PARENT_PK);
 
   private static final Set<String> REQUIRES_ENCODED_STRING_PK_EXTENSIONS =
       Utils.newHashSet(
@@ -120,18 +120,18 @@ public class MetaDataValidator {
 
     Class<?> pkType = pkMemberMetaData.getType();
     if (pkType.equals(Long.class)) {
-      AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.ANCESTOR_PK);
+      AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.PARENT_PK);
       if (ammd != null) {
         throw new DatastoreMetaDataException(
-            acmd, ammd, "Cannot have a Long primary key and an ancestor field.");
+            acmd, ammd, "Cannot have a Long primary key and a parent field.");
       }
       // TODO(maxr) make sure there is no parent key provider
     } else if (pkType.equals(String.class)) {
       if (!DatastoreManager.isEncodedPKField(acmd, pkPos)) {
-        AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.ANCESTOR_PK);
+        AbstractMemberMetaData ammd = hasFieldWithExtension(acmd, DatastoreManager.PARENT_PK);
         if (ammd != null) {
           throw new DatastoreMetaDataException(acmd, ammd,
-              "Cannot have an unencoded String primary key and an ancestor field.");
+              "Cannot have an unencoded String primary key and a parent field.");
         }
         // TODO(maxr) make sure there is no parent key provider
       }

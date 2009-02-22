@@ -182,7 +182,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       AbstractClassMetaData acmd = sm.getClassMetaData();
       sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
 
-      Object assignedAncestorPk = fieldMgr.establishEntityGroup();
+      Object assignedParentPk = fieldMgr.establishEntityGroup();
       Entity entity = fieldMgr.getEntity();
       if (fieldMgr.handleIndexFields()) {
         // signal to downstream writers that they should
@@ -222,10 +222,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
                   + " (must be String, Long, or " + Key.class.getName() + ")");
         }
         sm.setPostStoreNewObjectId(newObjectId);
-        if (assignedAncestorPk != null) {
-          // we automatically assigned an ancestor to the entity so make sure
+        if (assignedParentPk != null) {
+          // we automatically assigned a parent to the entity so make sure
           // that makes it back on to the pojo
-          setPostStoreNewAncestor(sm, fieldMgr.getAncestorMemberMetaData(), assignedAncestorPk);
+          setPostStoreNewParent(sm, fieldMgr.getParentMemberMetaData(), assignedParentPk);
         }
         Integer pkIdPos = fieldMgr.getPkIdPos(); 
         if (pkIdPos != null) {
@@ -246,9 +246,9 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     sm.replaceField(fieldNumber, entity.getKey().getId(), true);
   }
 
-  private void setPostStoreNewAncestor(
-      StateManager sm, AbstractMemberMetaData ancestorMemberMetaData, Object assignedAncestorPk) {
-    sm.replaceField(ancestorMemberMetaData.getAbsoluteFieldNumber(), assignedAncestorPk, true);
+  private void setPostStoreNewParent(
+      StateManager sm, AbstractMemberMetaData parentMemberMetaData, Object assignedParentPk) {
+    sm.replaceField(parentMemberMetaData.getAbsoluteFieldNumber(), assignedParentPk, true);
   }
 
   IdentifierFactory getIdentifierFactory(StateManager sm) {

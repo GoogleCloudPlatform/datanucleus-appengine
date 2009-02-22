@@ -83,25 +83,25 @@ public class DatastoreFieldManager implements FieldManager {
 
   private final InsertMappingConsumer insertMappingConsumer;
 
-  // Not final because we will reallocate if we hit an ancestor pk field
+  // Not final because we will reallocate if we hit a parent pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
   private Entity datastoreEntity;
 
-  // We'll assign this if we have an ancestor member and we store a value
+  // We'll assign this if we have a parent member and we store a value
   // into it.
-  private AbstractMemberMetaData ancestorMemberMetaData;
+  private AbstractMemberMetaData parentMemberMetaData;
 
-  private boolean ancestorAlreadySet = false;
+  private boolean parentAlreadySet = false;
   private boolean keyAlreadySet = false;
   private Integer pkIdPos = null;
 
-  private static final String ANCESTOR_ALREADY_SET =
-      "Cannot set both the primary key and an ancestor field.  If you want the datastore to "
-            + "generate an id for you, set the ancestor field to be the value of the ancestor "
-            + "field to your ancestor key and leave the primary key field blank.  If you wish to "
-            + "provide a named key, leave the ancestor field blank and set the primary key to be a "
-            + "Key object made up of both the ancestor and then named child.";
+  private static final String PARENT_ALREADY_SET =
+      "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
+            + "generate an id for you, set the parent pk field to be the value of your parent key "
+            + "and leave the primary key field blank.  If you wish to "
+            + "provide a named key, leave the parent pk field blank and set the primary key to be a "
+            + "Key object made up of both the parent key and the named child.";
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
       DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
@@ -152,12 +152,10 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   public String fetchStringField(int fieldNumber) {
-    // TODO(maxr): validate that pks are a valid type at time of enhancement.
-    // TODO(maxr): validate that a class only has a single ancestor key.
     if (isPK(fieldNumber)) {
       return fetchStringPKField(fieldNumber);
-    } else if (isAncestorPK(fieldNumber)) {
-      return fetchAncestorStringPKField(fieldNumber);
+    } else if (isParentPK(fieldNumber)) {
+      return fetchParentStringPKField(fieldNumber);
     } else if (isPKNameField(fieldNumber)) {
       if (!fieldIsOfTypeString(fieldNumber)) {
         throw new NucleusUserException(
@@ -188,7 +186,7 @@ public class DatastoreFieldManager implements FieldManager {
     return datastoreEntity.getKey().getId();
   }
 
-  private String fetchAncestorStringPKField(int fieldNumber) {
+  private String fetchParentStringPKField(int fieldNumber) {
     Key parentKey = datastoreEntity.getKey().getParent();
     if (parentKey == null) {
       return null;
@@ -258,11 +256,11 @@ public class DatastoreFieldManager implements FieldManager {
         return datastoreEntity.getKey().getId();
       }
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
-    } else if (isAncestorPK(fieldNumber)) {
+    } else if (isParentPK(fieldNumber)) {
       if (fieldIsOfTypeKey(fieldNumber)) {
         return datastoreEntity.getKey().getParent();
       }
-      throw exceptionForUnexpectedKeyType("Ancestor key", fieldNumber);
+      throw exceptionForUnexpectedKeyType("Parent key", fieldNumber);
     } else if (isPKIdField(fieldNumber)) {
       return fetchPKIdField();
     } else {
@@ -393,8 +391,8 @@ public class DatastoreFieldManager implements FieldManager {
   public void storeStringField(int fieldNumber, String value) {
     if (isPK(fieldNumber)) {
       storeStringPKField(fieldNumber, value);
-    } else if (isAncestorPK(fieldNumber)) {
-      storeAncestorStringField(value);
+    } else if (isParentPK(fieldNumber)) {
+      storeParentStringField(value);
     } else if (isPKNameField(fieldNumber)) {
       storePKNameField(fieldNumber, value);
     } else {
@@ -429,18 +427,18 @@ public class DatastoreFieldManager implements FieldManager {
     storeKeyPK(key);
   }
   
-  private void storeAncestorStringField(String value) {
+  private void storeParentStringField(String value) {
     Key key = null;
     if (value != null) {
       try {
         key = KeyFactory.stringToKey(value);
       } catch (IllegalArgumentException iae) {
         throw new NucleusUserException(
-            "Attempt was made to set ancestor to " + value
+            "Attempt was made to set parent to " + value
             + " but this cannot be converted into a Key.");
       }
     }
-    storeAncestorKeyPK(key);
+    storeParentKeyPK(key);
   }
 
   private void storeStringPKField(int fieldNumber, String value) {
@@ -489,17 +487,17 @@ public class DatastoreFieldManager implements FieldManager {
    * to the object that owns it, in which case we can use the key of that field
    * as the parent.
    * 3)  It's possible that the pojo has a field containing the parent that is
-   * not an external foreign key mapping but is labeled as an "ancestor
+   * not an external foreign key mapping but is labeled as a "parent
    * provider" (this is an app engine orm term).  In this case, as with
    * #2, we can use the key of that field as the parent.
    *
    * It _should_ be possible to get rid of at least one of these
    * mechanisms, most likely the first.
    *
-   * @return The parent key if the pojo class has an ancestor property.
+   * @return The parent key if the pojo class has a parent property.
    * Note that a return value of {@code null} does not mean that an entity
    * group was not established, it just means the pojo doesn't have a distinct
-   * field for the ancestor.
+   * field for the parent.
    */
   Object establishEntityGroup() {
     if (getEntity().getParent() != null) {
@@ -515,14 +513,14 @@ public class DatastoreFieldManager implements FieldManager {
     }
     if (parentKey == null) {
       // Mechanism 3
-      parentKey = getParentKeyFromAncestorField(sm);
+      parentKey = getParentKeyFromParentField(sm);
     }
     if (parentKey != null) {
 
-      recreateEntityWithAncestor(parentKey);
+      recreateEntityWithParent(parentKey);
 
-      if (getAncestorMemberMetaData() != null) {
-        return getAncestorMemberMetaData().getType().equals(Key.class)
+      if (getParentMemberMetaData() != null) {
+        return getParentMemberMetaData().getType().equals(Key.class)
             ? parentKey : KeyFactory.keyToString(parentKey);
       }
     }
@@ -536,12 +534,12 @@ public class DatastoreFieldManager implements FieldManager {
            (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
   }
 
-  private Key getParentKeyFromAncestorField(StateManager sm) {
-    AbstractMemberMetaData ancestorField = insertMappingConsumer.getAncestorMappingField();
-    if (ancestorField == null) {
+  private Key getParentKeyFromParentField(StateManager sm) {
+    AbstractMemberMetaData parentField = insertMappingConsumer.getParentMappingField();
+    if (parentField == null) {
       return null;
     }
-    Object parent = sm.provideField(ancestorField.getAbsoluteFieldNumber());
+    Object parent = sm.provideField(parentField.getAbsoluteFieldNumber());
     return parent == null ? null : getIdForObject(parent);
   }
 
@@ -583,13 +581,13 @@ public class DatastoreFieldManager implements FieldManager {
     return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 
-  void recreateEntityWithAncestor(Key ancestorKey) {
+  void recreateEntityWithParent(Key parentKey) {
     Entity old = datastoreEntity;
     if (old.getKey().getName() != null) {
       datastoreEntity =
-          new Entity(old.getKind(), old.getKey().getName(), ancestorKey);
+          new Entity(old.getKind(), old.getKey().getName(), parentKey);
     } else {
-      datastoreEntity = new Entity(old.getKind(), ancestorKey);
+      datastoreEntity = new Entity(old.getKind(), parentKey);
     }
     copyProperties(old, datastoreEntity);
   }
@@ -624,7 +622,7 @@ public class DatastoreFieldManager implements FieldManager {
       if (key.getParent() == null) {
         datastoreEntity = new Entity(old.getKind(), key.getName());
       } else {
-        ancestorAlreadySet = true;
+        parentAlreadySet = true;
         datastoreEntity = new Entity(old.getKind(), key.getName(), key.getParent());
       }
       copyProperties(old, datastoreEntity);
@@ -645,11 +643,11 @@ public class DatastoreFieldManager implements FieldManager {
     return DatastoreManager.isPKIdField(getClassMetaData(), fieldNumber);
   }
 
-  private boolean isAncestorPK(int fieldNumber) {
-    boolean result = DatastoreManager.isAncestorPKField(getClassMetaData(), fieldNumber);
+  private boolean isParentPK(int fieldNumber) {
+    boolean result = DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
     if (result) {
       // ew, side effect
-      ancestorMemberMetaData = getMetaData(fieldNumber);
+      parentMemberMetaData = getMetaData(fieldNumber);
     }
     return result;
   }
@@ -667,8 +665,8 @@ public class DatastoreFieldManager implements FieldManager {
       storeKeyPK(key);
     } else if (fieldIsOfTypeKey(fieldNumber)) {
       Key key = (Key) value;
-      if (key != null && key.getParent() != null && ancestorAlreadySet) {
-        throw new NucleusUserException(ANCESTOR_ALREADY_SET);
+      if (key != null && key.getParent() != null && parentAlreadySet) {
+        throw new NucleusUserException(PARENT_ALREADY_SET);
       }
       storeKeyPK((Key) value);
     } else {
@@ -676,19 +674,19 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private void storeAncestorField(int fieldNumber, Object value) {
+  private void storeParentField(int fieldNumber, Object value) {
     if (fieldIsOfTypeKey(fieldNumber)) {
-      storeAncestorKeyPK((Key) value);
+      storeParentKeyPK((Key) value);
     } else {
-      throw exceptionForUnexpectedKeyType("Ancestor primary key", fieldNumber);
+      throw exceptionForUnexpectedKeyType("Parent primary key", fieldNumber);
     }
   }
 
   public void storeObjectField(int fieldNumber, Object value) {
     if (isPK(fieldNumber)) {
       storePrimaryKey(fieldNumber, value);
-    } else if (isAncestorPK(fieldNumber)) {
-      storeAncestorField(fieldNumber, value);
+    } else if (isParentPK(fieldNumber)) {
+      storeParentField(fieldNumber, value);
     } else if (isPKIdField(fieldNumber)) {
       storePKIdField(fieldNumber, value);
     } else {
@@ -779,36 +777,36 @@ public class DatastoreFieldManager implements FieldManager {
     fieldManagerStateStack.removeFirst();
   }
 
-  private void storeAncestorKeyPK(Key key) {
-    if (key != null && ancestorAlreadySet) {
-      throw new NucleusUserException(ANCESTOR_ALREADY_SET);      
+  private void storeParentKeyPK(Key key) {
+    if (key != null && parentAlreadySet) {
+      throw new NucleusUserException(PARENT_ALREADY_SET);
     }
     if (datastoreEntity.getParent() != null) {
       // update is ok if it's a no-op
       if (!datastoreEntity.getParent().equals(key)) {
-        if (!ancestorAlreadySet) {
+        if (!parentAlreadySet) {
           throw new NucleusUserException(
-              "Attempt was made to modify the ancestor of an object of type "
+              "Attempt was made to modify the parent of an object of type "
               + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + ".  Ancestors are immutable.");
+              + "key " + datastoreEntity.getKey() + ".  Parents are immutable.");
         }
       }
     } else if (key != null) {
       if (!createdWithoutEntity) {
         // Shouldn't even happen.
         throw new NucleusUserException("You can only rely on this class to properly handle "
-            + "ancestor pks if you instantiated the class without providing a datastore "
+            + "parent pks if you instantiated the class without providing a datastore "
             + "entity to the constructor.");
       }
 
-      // If this field is labeled as an ancestor PK we need to recreate the Entity, passing
+      // If this field is labeled as a parent PK we need to recreate the Entity, passing
       // the value of this field as an arg to the Entity constructor and then moving all
       // properties on the old entity to the new entity.
-      recreateEntityWithAncestor(key);
+      recreateEntityWithParent(key);
     } else {
-      // Null ancestor.  Ancestor is defined on a per-instance basis so
-      // annotating a field as an ancestor is not necessarily a commitment
-      // to always having an ancestor.  Null ancestor is fine.
+      // Null parent.  Parent is defined on a per-instance basis so
+      // annotating a field as a parent is not necessarily a commitment
+      // to always having a parent.  Null parent is fine.
     }
   }
 
@@ -867,8 +865,8 @@ public class DatastoreFieldManager implements FieldManager {
     return storeManager.getIdentifierFactory();
   }
 
-  AbstractMemberMetaData getAncestorMemberMetaData() {
-    return ancestorMemberMetaData;
+  AbstractMemberMetaData getParentMemberMetaData() {
+    return parentMemberMetaData;
   }
 
   DatastoreManager getStoreManager() {
@@ -919,7 +917,7 @@ public class DatastoreFieldManager implements FieldManager {
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     dc.provideDatastoreIdMappings(consumer);
     dc.providePrimaryKeyMappings(consumer);
-    dc.provideAncestorMappingField(consumer);
+    dc.provideParentMappingField(consumer);
     if (createdWithoutEntity) {
       // This is the insert case.  We want to fill the consumer with mappings
       // for everything.

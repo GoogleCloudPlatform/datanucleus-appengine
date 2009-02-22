@@ -112,24 +112,24 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
 
   public void setObject(Object datastoreEntity, int paramIndex, Object value) {
     // This is awful.  In the case of a bidirectional one-to-many, the pk of the
-    // child object needs to have the pk of the parent object as its ancestor.
+    // child object needs to have the pk of the parent object as its parent.
     // We can get the pk of the parent object from the parent instance that
-    // is set on the child, but since you can only specify an ancestor key
+    // is set on the child, but since you can only specify a parent key
     // when you create an Entity, we need to rebuild the Entity with this
     // new key.  There's no easy way to rebuild the Entity down in this function,
-    // so we instead set a magic property on the entity whose value is the ancestor
+    // so we instead set a magic property on the entity whose value is the parent
     // key with the expectation that someone upstream will see it, remove it,
     // and then recreate the entity on our behalf.  Like I said, this is awful.
-    if (paramIndex == DatastoreRelationFieldManager.IS_ANCESTOR_VALUE) {
+    if (paramIndex == DatastoreRelationFieldManager.IS_PARENT_VALUE) {
       if (value != null) {
         ((Entity) datastoreEntity).setProperty(
-            DatastoreRelationFieldManager.ANCESTOR_KEY_PROPERTY, value);
+            DatastoreRelationFieldManager.PARENT_KEY_PROPERTY, value);
       }
     } else if (paramIndex != DatastoreRelationFieldManager.IS_FK_VALUE) {
       // Similar madness here.  Most of the time we want to just set the
       // given value on the entity, but if this is a foreign key value we
       // want to just swallow the update.  The reason is that we only
-      // maintain fks as ancestors in the key itself.  The updates we'll
+      // maintain fks as parents in the key itself.  The updates we'll
       // swallow are DataNucleus adding "hidden" back pointers to parent
       // objects.  We don't want these.  The back pointer is the parent
       // of the key itself.

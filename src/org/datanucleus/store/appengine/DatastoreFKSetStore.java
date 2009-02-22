@@ -24,10 +24,10 @@ public class DatastoreFKSetStore extends FKSetStore {
 
   @Override
   protected boolean updateElementFkInternal(StateManager sm, Object element, Object owner) {
-    // Keys (and therefore ancestors) are immutable so we don't need to ever
+    // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    DatastoreRelationFieldManager.checkForAncestorSwitch(element, sm);
+    DatastoreRelationFieldManager.checkForParentSwitch(element, sm);
     // fk is already set and sets are unindexed so there's nothing else to do
     return true;
   }

@@ -134,7 +134,7 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
 
   ListIterator listIterator(
       QueryExpression stmt, ObjectManager om,StateManager ownerSM, ElementContainerStore ecs) {
-    // for now we're just going to perform an ancestor query using the owning
+    // for now we're just going to perform a kind + ancestor query using the owning
     // object
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     Entity parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);

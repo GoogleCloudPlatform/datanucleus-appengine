@@ -22,7 +22,7 @@ public class HasStringAncestorKeyPkJPA {
   @GeneratedValue(strategy= GenerationType.IDENTITY)
   private Key key;
 
-  @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
+  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
   private String ancestorKey;
 
   public Key getKey() {

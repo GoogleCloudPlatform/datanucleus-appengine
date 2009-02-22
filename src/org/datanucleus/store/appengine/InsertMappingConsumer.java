@@ -27,7 +27,7 @@ public class InsertMappingConsumer implements MappingConsumer {
   private final Set<JavaTypeMapping> externalFKMappings = new HashSet<JavaTypeMapping>();
   private final Set<JavaTypeMapping> externalOrderMappings = new HashSet<JavaTypeMapping>();
   private final List<MappingCallbacks> mc = new ArrayList<MappingCallbacks>();
-  private AbstractMemberMetaData ancestorMapping = null;
+  private AbstractMemberMetaData parentMapping = null;
 
   private final AbstractClassMetaData cmd;
 
@@ -93,11 +93,11 @@ public class InsertMappingConsumer implements MappingConsumer {
     return externalOrderMappings;
   }
 
-  AbstractMemberMetaData getAncestorMappingField() {
-    return ancestorMapping;
+  AbstractMemberMetaData getParentMappingField() {
+    return parentMapping;
   }
 
-  void setAncestorMappingField(AbstractMemberMetaData ancestorMapping) {
-    this.ancestorMapping = ancestorMapping;
+  void setParentMappingField(AbstractMemberMetaData parentMapping) {
+    this.parentMapping = parentMapping;
   }
 }

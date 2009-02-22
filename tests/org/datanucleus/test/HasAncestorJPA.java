@@ -14,7 +14,7 @@ import javax.persistence.Id;
 @Entity
 public class HasAncestorJPA {
 
-  @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
+  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
   private String ancestorId;
 
   @Id

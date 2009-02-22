@@ -14,7 +14,7 @@ import javax.jdo.annotations.PrimaryKey;
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class HasAncestorJDO {
   @Persistent
-  @Extension(vendorName="datanucleus", key="ancestor-pk", value="true")
+  @Extension(vendorName="datanucleus", key="parent-pk", value="true")
   private String ancestorId;
 
   @PrimaryKey

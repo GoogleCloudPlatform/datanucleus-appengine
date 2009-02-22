@@ -72,24 +72,24 @@ public class DatastoreManager extends MappedStoreManager {
   private final MetaDataValidator metaDataValidator = new MetaDataValidator();
 
   /**
-   * The name of the annotation extension that marks a field as an ancestor.
+   * The name of the annotation extension that marks a field as an parent.
    */
-  static final String ANCESTOR_PK = "ancestor-pk";
+  public static final String PARENT_PK = "parent-pk";
 
   /**
    * The name of the annotation extension that marks a field as an encoded pk
    */
-  static final String ENCODED_PK = "encoded-pk";
+  public static final String ENCODED_PK = "encoded-pk";
 
   /**
    * The name of the annotation extension that marks a field as a primary key name
    */
-  static final String PK_NAME = "pk-name";
+  public static final String PK_NAME = "pk-name";
 
   /**
    * The name of the annotation extension that marks a field as a primary key id
    */
-  static final String PK_ID = "pk-id";
+  public static final String PK_ID = "pk-id";
 
   /**
    * Construct a DatsatoreManager
@@ -487,8 +487,8 @@ public class DatastoreManager extends MappedStoreManager {
     return memberHasExtension(acmd, pos, ENCODED_PK);
   }
 
-  static boolean isAncestorPKField(AbstractClassMetaData acmd, int pos) {
-    return memberHasExtension(acmd, pos, ANCESTOR_PK);
+  static boolean isParentPKField(AbstractClassMetaData acmd, int pos) {
+    return memberHasExtension(acmd, pos, PARENT_PK);
   }
 
   static boolean isPKNameField(AbstractClassMetaData acmd, int pos) {

@@ -38,9 +38,9 @@ class DatastoreRelationFieldManager {
 
   // Needed for relation management in datanucleus.
   private static final int[] NOT_USED = {0};
-  static final int IS_ANCESTOR_VALUE = -1;
-  private static final int[] IS_ANCESTOR_VALUE_ARR = {IS_ANCESTOR_VALUE};
-  static final String ANCESTOR_KEY_PROPERTY = "____ANCESTOR_KEY____";
+  static final int IS_PARENT_VALUE = -1;
+  private static final int[] IS_PARENT_VALUE_ARR = {IS_PARENT_VALUE};
+  static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
 
   public static final int IS_FK_VALUE = -2;
   private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
@@ -117,24 +117,24 @@ class DatastoreRelationFieldManager {
         mapping.setObject(
             fieldManager.getObjectManager(),
             entity,
-            fieldIsParentKeyProvider ? IS_ANCESTOR_VALUE_ARR : IS_FK_VALUE_ARR,
+            fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
             value,
             sm,
             fieldNumber);
 
         // If the field we're setting is the one side of an owned many-to-one,
-        // its pk needs to be the ancestor of the key of the entity we're
+        // its pk needs to be the parent of the key of the entity we're
         // currently populating.  We look for a magic property that tells
         // us if this change needs to be made.  See
         // DatastoreFKMapping.setObject for all the gory details.
-        Object ancestorKey = entity.getProperty(ANCESTOR_KEY_PROPERTY);
-        if (ancestorKey != null) {
-          entity.removeProperty(ANCESTOR_KEY_PROPERTY);
-          fieldManager.recreateEntityWithAncestor(ancestorKey instanceof Key ?
-                                  (Key) ancestorKey : KeyFactory.stringToKey((String) ancestorKey));
+        Object parentKey = entity.getProperty(PARENT_KEY_PROPERTY);
+        if (parentKey != null) {
+          entity.removeProperty(PARENT_KEY_PROPERTY);
+          fieldManager.recreateEntityWithParent(parentKey instanceof Key ?
+                                  (Key) parentKey : KeyFactory.stringToKey((String) parentKey));
         }
         if (!fieldIsParentKeyProvider) {
-          checkForAncestorSwitch(value, sm);
+          checkForParentSwitch(value, sm);
         }
       }
     };
@@ -152,7 +152,7 @@ class DatastoreRelationFieldManager {
     storeRelationEvents.add(event);
   }
 
-  static void checkForAncestorSwitch(Object child, StateManager parentSM) {
+  static void checkForParentSwitch(Object child, StateManager parentSM) {
     if (child == null) {
       return;
     }
@@ -232,7 +232,7 @@ class DatastoreRelationFieldManager {
         // a parent and child at the same time involves 3 distinct writes:
         // 1) We put the parent object in order to get a Key.
         // 2) We put the child object, which needs the Key of the parent as
-        // the ancestor of its own Key so that parent and child reside in the
+        // the parent of its own Key so that parent and child reside in the
         // same entity group.
         // 3) We re-put the parent object, adding the Key of the child object
         // as a property on the parent.
@@ -242,7 +242,7 @@ class DatastoreRelationFieldManager {
 
         // We have 2 scenarios here.  The first is that we're loading the parent
         // side of a 1 to 1 and we want the child.  In that scenario we're going
-        // to issue an ancestor query against the child table with the expectation
+        // to issue a parent query against the child table with the expectation
         // that there is either 1 result or 0.
 
         // The second scearnio is that we're loading the child side of a
@@ -274,7 +274,7 @@ class DatastoreRelationFieldManager {
     if (parentKey == null) {
       String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
       throw new NucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
-          + "provide a reference to its ancestor but the entity does not have an ancestor.  "
+          + "provide a reference to its parent but the entity does not have an parent.  "
           + "Did you perhaps try to establish an instance of " + childClass  +  " as "
           + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
           + "persisted?");
@@ -291,7 +291,7 @@ class DatastoreRelationFieldManager {
         childClassMetaData).getIdentifierName();
     Entity parentEntity = fieldManager.getEntity();
     // We're going to issue a query for all entities of the given kind with
-    // the parent entity's key as their ancestor.  There should be only 1.
+    // the parent entity's key as their parent.  There should be only 1.
     Query q = new Query(kind, parentEntity.getKey());
     DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService();
     List<Entity> results = datastoreService.prepare(q).asList(withLimit(2));

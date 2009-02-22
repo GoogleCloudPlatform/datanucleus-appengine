@@ -1,9 +1,20 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.test.IllegalMappingsJPA;
+import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
+import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJPA.HasLongPkWithStringAncestor;
+import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkIdFields;
+import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasUnencodedStringPkWithStringAncestor;
+import org.datanucleus.test.IllegalMappingsJPA.MultipleAncestors;
+import org.datanucleus.test.IllegalMappingsJPA.PkIdOnNonLongField;
+import org.datanucleus.test.IllegalMappingsJPA.PkIdWithUnencodedStringPrimaryKey;
+import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsAncestor;
+import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsPkId;
+import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsPkName;
+import org.datanucleus.test.IllegalMappingsJPA.PkNameOnNonStringField;
+import org.datanucleus.test.IllegalMappingsJPA.PkNameWithUnencodedStringPrimaryKey;
 
 import javax.persistence.PersistenceException;
 
@@ -40,7 +51,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testMultiplePKNameFields() {
-    IllegalMappingsJPA.HasMultiplePkNameFields pojo = new IllegalMappingsJPA.HasMultiplePkNameFields();
+    HasMultiplePkNameFields pojo = new HasMultiplePkNameFields();
     beginTxn();
     em.persist(pojo);
     try {
@@ -54,7 +65,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testMultiplePKIdFields() {
-    IllegalMappingsJPA.HasMultiplePkIdFields pojo = new IllegalMappingsJPA.HasMultiplePkIdFields();
+    HasMultiplePkIdFields pojo = new HasMultiplePkIdFields();
     beginTxn();
     em.persist(pojo);
     try {
@@ -68,7 +79,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testMultipleAncestors() {
-    IllegalMappingsJPA.MultipleAncestors pojo = new IllegalMappingsJPA.MultipleAncestors();
+    MultipleAncestors pojo = new MultipleAncestors();
     beginTxn();
     em.persist(pojo);
     try {
@@ -82,7 +93,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testEncodedPkOnNonPrimaryKeyField() {
-    IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField pojo = new IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField();
+    EncodedPkOnNonPrimaryKeyField pojo = new EncodedPkOnNonPrimaryKeyField();
     beginTxn();
     em.persist(pojo);
     try {
@@ -96,7 +107,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testEncodedPkOnNonStringPrimaryKeyField() {
-    IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField pojo = new IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField();
+    EncodedPkOnNonStringPrimaryKeyField pojo = new EncodedPkOnNonStringPrimaryKeyField();
     beginTxn();
     em.persist(pojo);
     try {
@@ -110,7 +121,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkNameOnNonStringField() {
-    IllegalMappingsJPA.PkNameOnNonStringField pojo = new IllegalMappingsJPA.PkNameOnNonStringField();
+    PkNameOnNonStringField pojo = new PkNameOnNonStringField();
     beginTxn();
     em.persist(pojo);
     try {
@@ -124,7 +135,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkIdOnNonLongField() {
-    IllegalMappingsJPA.PkIdOnNonLongField pojo = new IllegalMappingsJPA.PkIdOnNonLongField();
+    PkIdOnNonLongField pojo = new PkIdOnNonLongField();
     beginTxn();
     em.persist(pojo);
     try {
@@ -139,7 +150,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   // Fails due to a datanuc bug.
   public void testPkMarkedAsAncestor() {
-    IllegalMappingsJPA.PkMarkedAsAncestor pojo = new IllegalMappingsJPA.PkMarkedAsAncestor();
+    PkMarkedAsAncestor pojo = new PkMarkedAsAncestor();
     beginTxn();
     em.persist(pojo);
     try {
@@ -153,7 +164,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkMarkedAsPkId() {
-    IllegalMappingsJPA.PkMarkedAsPkId pojo = new IllegalMappingsJPA.PkMarkedAsPkId();
+    PkMarkedAsPkId pojo = new PkMarkedAsPkId();
     beginTxn();
     em.persist(pojo);
     try {
@@ -167,7 +178,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkMarkedAsPkName() {
-    IllegalMappingsJPA.PkMarkedAsPkName pojo = new IllegalMappingsJPA.PkMarkedAsPkName();
+    PkMarkedAsPkName pojo = new PkMarkedAsPkName();
     beginTxn();
     em.persist(pojo);
     try {
@@ -181,7 +192,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkIdWithUnencodedStringPrimaryKey() {
-    IllegalMappingsJPA.PkIdWithUnencodedStringPrimaryKey pojo = new IllegalMappingsJPA.PkIdWithUnencodedStringPrimaryKey();
+    PkIdWithUnencodedStringPrimaryKey pojo = new PkIdWithUnencodedStringPrimaryKey();
     beginTxn();
     em.persist(pojo);
     try {
@@ -195,7 +206,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testPkNameWithUnencodedStringPrimaryKey() {
-    IllegalMappingsJPA.PkNameWithUnencodedStringPrimaryKey pojo = new IllegalMappingsJPA.PkNameWithUnencodedStringPrimaryKey();
+    PkNameWithUnencodedStringPrimaryKey pojo = new PkNameWithUnencodedStringPrimaryKey();
     beginTxn();
     em.persist(pojo);
     try {
