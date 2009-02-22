@@ -15,13 +15,13 @@ import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasDoubleJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToOneJPA;
+import org.datanucleus.test.HasStringAncestorStringPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
@@ -414,15 +414,15 @@ public class JPQLQueryTest extends JPATestCase {
   public void testAncestorQuery() {
     Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
     ldth.ds.put(bookEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getSimpleName(), bookEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), bookEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + HasAncestorJPA.class.getName() + " where ancestorId = :ancId");
+        "select from " + HasStringAncestorStringPkJPA.class.getName() + " where ancestorId = :ancId");
     q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
 
     @SuppressWarnings("unchecked")
-    List<HasAncestorJPA> haList = (List<HasAncestorJPA>) q.getResultList();
+    List<HasStringAncestorStringPkJPA> haList = (List<HasStringAncestorStringPkJPA>) q.getResultList();
     assertEquals(1, haList.size());
     assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
@@ -435,11 +435,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testIllegalAncestorQuery() {
     Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
     ldth.ds.put(bookEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJPA.class.getName(), bookEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJPA.class.getName(), bookEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + HasAncestorJPA.class.getName() + " where ancestorId > :ancId");
+        "select from " + HasStringAncestorStringPkJPA.class.getName() + " where ancestorId > :ancId");
     q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
     try {
       q.getResultList();

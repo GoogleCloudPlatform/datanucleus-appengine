@@ -106,6 +106,13 @@ public class MetaDataValidator {
           throw new DatastoreMetaDataException(
               acmd, ammd, "Cannot have a " + pkClass.getName() + " primary key and a parent pk field.");
         }
+        if (!ammd.getType().equals(String.class) && !ammd.getType().equals(Key.class)) {
+          throw new DatastoreMetaDataException(
+              acmd, ammd, "Parent pk must be of type String or " + Key.class.getName() + ".");
+        }
+        // JPA doesn't actually support Key members that aren't primary keys,
+        // but we can't check for that here because it just gets dropped from
+        // the metadata altogether.
       }
 
       for (String extension : NOT_PRIMARY_KEY_EXTENSIONS) {

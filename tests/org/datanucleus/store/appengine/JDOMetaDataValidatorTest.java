@@ -9,6 +9,7 @@ import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithStringAncestor;
+import org.datanucleus.test.IllegalMappingsJDO.LongParent;
 import org.datanucleus.test.IllegalMappingsJDO.MultipleAncestors;
 import org.datanucleus.test.IllegalMappingsJDO.OneToManyParentWithRootOnlyLongBiChild;
 import org.datanucleus.test.IllegalMappingsJDO.OneToManyParentWithRootOnlyLongUniChild;
@@ -334,6 +335,19 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
 
   public void testStringPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringBiChild pojo = new OneToOneParentWithRootOnlyStringBiChild();
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testAncestorOfIllegalType() {
+    LongParent pojo = new LongParent();
     beginTxn();
     try {
       pm.makePersistent(pojo);

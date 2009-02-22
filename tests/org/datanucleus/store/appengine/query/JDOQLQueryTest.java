@@ -17,13 +17,13 @@ import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
-import org.datanucleus.test.HasAncestorJDO;
-import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
+import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToOneJDO;
+import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
@@ -519,15 +519,15 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAncestorQueryWithStringAncestor() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getSimpleName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     Query q = pm.newQuery(
-        "select from " + HasAncestorJDO.class.getName()
+        "select from " + HasStringAncestorStringPkJDO.class.getName()
             + " where ancestorId == ancId parameters String ancId");
     @SuppressWarnings("unchecked")
-    List<HasAncestorJDO> haList =
-        (List<HasAncestorJDO>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
+    List<HasStringAncestorStringPkJDO> haList =
+        (List<HasStringAncestorStringPkJDO>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
     assertEquals(1, haList.size());
     assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
@@ -540,15 +540,15 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAncestorQueryWithKeyAncestor() {
     Entity e = new Entity("parent");
     ldth.ds.put(e);
-    Entity childEntity = new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), e.getKey());
+    Entity childEntity = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), e.getKey());
     ldth.ds.put(childEntity);
 
     Query q = pm.newQuery(
-        "select from " + HasKeyAncestorKeyStringPkJDO.class.getName()
+        "select from " + HasKeyAncestorStringPkJDO.class.getName()
             + " where ancestorKey == ancId parameters " + Key.class.getName() + " ancId");
     @SuppressWarnings("unchecked")
-    List<HasKeyAncestorKeyStringPkJDO> result =
-        (List<HasKeyAncestorKeyStringPkJDO>) q.execute(e.getKey());
+    List<HasKeyAncestorStringPkJDO> result =
+        (List<HasKeyAncestorStringPkJDO>) q.execute(e.getKey());
     assertEquals(1, result.size());
     assertEquals(e.getKey(), result.get(0).getAncestorKey());
   }
@@ -556,11 +556,11 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testIllegalAncestorQuery_BadOperator() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     Query q = pm.newQuery(
-        "select from " + HasAncestorJDO.class.getName()
+        "select from " + HasStringAncestorStringPkJDO.class.getName()
             + " where ancestorId > ancId parameters String ancId");
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
@@ -590,11 +590,11 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testIllegalAncestorQuery_SortByAncestor() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     Query q = pm.newQuery(
-        "select from " + HasAncestorJDO.class.getName()
+        "select from " + HasStringAncestorStringPkJDO.class.getName()
             + " where ancestorId == ancId parameters String ancId order by ancestorId ASC");
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));

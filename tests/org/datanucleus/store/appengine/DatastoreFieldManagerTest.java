@@ -17,7 +17,7 @@ import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.test.HasAncestorJDO;
+import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.easymock.EasyMock;
 
@@ -364,11 +364,11 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
   }
 
   public void testAncestorValues() {
-    Entity entity = new Entity(HasAncestorJDO.class.getSimpleName());
+    Entity entity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName());
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
-        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(HasAncestorJDO.class, clr);
+        jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(HasStringAncestorStringPkJDO.class, clr);
     StateManager sm = EasyMock.createMock(StateManager.class);
     ObjectManager om = EasyMock.createMock(ObjectManager.class);
     EasyMock.expect(sm.getObjectManager()).andReturn(om).anyTimes();
@@ -402,7 +402,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     // now we create a field manager where we don't provide the entity
     // in the constructor
     fieldManager = new DatastoreFieldManager(
-        sm, HasAncestorJDO.class.getSimpleName(), getStoreManager()) {
+        sm, HasStringAncestorStringPkJDO.class.getSimpleName(), getStoreManager()) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;

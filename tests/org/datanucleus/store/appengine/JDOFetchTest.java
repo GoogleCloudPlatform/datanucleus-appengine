@@ -6,7 +6,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
+import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
 import org.datanucleus.test.HasStringAncestorKeyPkJDO;
@@ -167,10 +167,10 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchWithStringPkAndKeyAncestor() {
     Entity parent = new Entity("yam");
     ldth.ds.put(parent);
-    Entity child = new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parent.getKey());
+    Entity child = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parent.getKey());
     ldth.ds.put(child);
-    HasKeyAncestorKeyStringPkJDO hk =
-        pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(child.getKey()));
+    HasKeyAncestorStringPkJDO hk =
+        pm.getObjectById(HasKeyAncestorStringPkJDO.class, KeyFactory.keyToString(child.getKey()));
     assertNotNull(hk.getKey());
     assertEquals(parent.getKey(), hk.getAncestorKey());
   }
@@ -185,12 +185,12 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testFetchWithWrongIdType_String() {
-    Entity entity = new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName());
+    Entity entity = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName());
     ldth.ds.put(entity);
 
     // The model object's id is of type String but we're going to look it up using
     // a Key
-    pm.getObjectById(HasKeyAncestorKeyStringPkJDO.class, entity.getKey());
+    pm.getObjectById(HasKeyAncestorStringPkJDO.class, entity.getKey());
   }
 
   public void testEmbeddable() {

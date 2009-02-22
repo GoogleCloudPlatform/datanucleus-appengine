@@ -24,54 +24,54 @@ public class HasOneToOnesWithDifferentCascadesJPA {
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "cascadeall")
-  private HasAncestorJPA cascadeAllChild;
+  private HasStringAncestorStringPkJPA cascadeAllChild;
 
   @OneToOne(cascade = CascadeType.ALL)
   @JoinColumn(name = "cascadeallwithkeyancestor")
-  private HasKeyAncestorKeyStringPkJPA cascadeAllChildWithKeyAncestor;
+  private HasKeyAncestorStringPkJPA cascadeAllChildWithKeyAncestor;
 
   @OneToOne(cascade = CascadeType.PERSIST)
   @JoinColumn(name = "cascadepersist")
-  private HasAncestorJPA cascadePersistChild;
+  private HasStringAncestorStringPkJPA cascadePersistChild;
 
   @OneToOne(cascade = CascadeType.REMOVE)
   @JoinColumn(name = "cascaderemove")
-  private HasAncestorJPA cascadeRemoveChild;
+  private HasStringAncestorStringPkJPA cascadeRemoveChild;
 
   public String getId() {
     return id;
   }
 
-  public HasAncestorJPA getCascadeAllChild() {
+  public HasStringAncestorStringPkJPA getCascadeAllChild() {
     return cascadeAllChild;
   }
 
-  public void setCascadeAllChild(HasAncestorJPA cascadeAllChild) {
+  public void setCascadeAllChild(HasStringAncestorStringPkJPA cascadeAllChild) {
     this.cascadeAllChild = cascadeAllChild;
   }
 
-  public HasAncestorJPA getCascadePersistChild() {
+  public HasStringAncestorStringPkJPA getCascadePersistChild() {
     return cascadePersistChild;
   }
 
-  public void setCascadePersistChild(HasAncestorJPA cascadePersistChild) {
+  public void setCascadePersistChild(HasStringAncestorStringPkJPA cascadePersistChild) {
     this.cascadePersistChild = cascadePersistChild;
   }
 
-  public HasAncestorJPA getCascadeRemoveChild() {
+  public HasStringAncestorStringPkJPA getCascadeRemoveChild() {
     return cascadeRemoveChild;
   }
 
-  public void setCascadeRemoveChild(HasAncestorJPA cascadeRemoveChild) {
+  public void setCascadeRemoveChild(HasStringAncestorStringPkJPA cascadeRemoveChild) {
     this.cascadeRemoveChild = cascadeRemoveChild;
   }
 
-  public HasKeyAncestorKeyStringPkJPA getCascadeAllChildWithKeyAncestor() {
+  public HasKeyAncestorStringPkJPA getCascadeAllChildWithKeyAncestor() {
     return cascadeAllChildWithKeyAncestor;
   }
 
   public void setCascadeAllChildWithKeyAncestor(
-      HasKeyAncestorKeyStringPkJPA cascadeAllChildWithKeyAncestor) {
+      HasKeyAncestorStringPkJPA cascadeAllChildWithKeyAncestor) {
     this.cascadeAllChildWithKeyAncestor = cascadeAllChildWithKeyAncestor;
   }
 }

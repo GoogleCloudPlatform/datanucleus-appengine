@@ -7,10 +7,10 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
-import org.datanucleus.test.HasAncestorJPA;
 import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJPA;
+import org.datanucleus.test.HasStringAncestorStringPkJPA;
 
 import javax.persistence.PersistenceException;
 
@@ -37,7 +37,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
   public void testOneToOnePersistChildWithAncestorCascadeAll() throws EntityNotFoundException {
     HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
-    HasAncestorJPA child = new HasAncestorJPA();
+    HasStringAncestorStringPkJPA child = new HasStringAncestorStringPkJPA();
     parent.setCascadeAllChild(child);
 
     beginTxn();
@@ -74,7 +74,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
 
   public void testOneToOnePersistCascadePersist() throws EntityNotFoundException {
     HasOneToOnesWithDifferentCascadesJPA parent = new HasOneToOnesWithDifferentCascadesJPA();
-    HasAncestorJPA child = new HasAncestorJPA();
+    HasStringAncestorStringPkJPA child = new HasStringAncestorStringPkJPA();
     parent.setCascadePersistChild(child);
 
     beginTxn();
@@ -89,7 +89,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
-    HasAncestorJPA child = new HasAncestorJPA();
+    HasStringAncestorStringPkJPA child = new HasStringAncestorStringPkJPA();
 
     beginTxn();
     em.persist(child);
@@ -118,7 +118,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(anotherParent);
     commitTxn();
 
-    HasAncestorJPA child = new HasAncestorJPA(anotherParent.getId());
+    HasStringAncestorStringPkJPA child = new HasStringAncestorStringPkJPA(anotherParent.getId());
     parent.setCascadeAllChild(child);
 
     beginTxn();
@@ -139,7 +139,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(anotherParent);
     commitTxn();
 
-    HasAncestorJPA child = new HasAncestorJPA(anotherParent.getId());
+    HasStringAncestorStringPkJPA child = new HasStringAncestorStringPkJPA(anotherParent.getId());
     parent.setCascadePersistChild(child);
 
     beginTxn();
@@ -155,7 +155,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   public void testOneToOneRemoveParentCascadeAll() {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity childEntity = new Entity(HasAncestorJPA.class.getSimpleName(), parentEntity.getKey());
+    Entity childEntity = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(childEntity);
     parentEntity.setProperty("cascadeall", childEntity.getKey());
     ldth.ds.put(parentEntity);
@@ -185,7 +185,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   public void testOneToOneRemoveChildCascadeAll() throws EntityNotFoundException {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity childEntity = new Entity(HasAncestorJPA.class.getSimpleName(), parentEntity.getKey());
+    Entity childEntity = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(childEntity);
     parentEntity.setProperty("cascadeall", childEntity.getKey());
     ldth.ds.put(parentEntity);
@@ -211,7 +211,7 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
   public void testOneToOneRemoveChildCascadeRemove() throws EntityNotFoundException {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity childEntity = new Entity(HasAncestorJPA.class.getSimpleName(), parentEntity.getKey());
+    Entity childEntity = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(childEntity);
     parentEntity.setProperty("cascaderemove", childEntity.getKey());
     ldth.ds.put(parentEntity);

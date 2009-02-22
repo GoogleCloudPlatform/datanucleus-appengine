@@ -8,8 +8,11 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasAncestorJDO;
 import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
+import org.datanucleus.test.HasKeyAncestorStringPkJDO;
+import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasStringAncestorKeyPkJDO;
+import org.datanucleus.test.HasStringAncestorStringPkJDO;
 
 import javax.jdo.JDOUserException;
 
@@ -18,11 +21,11 @@ import javax.jdo.JDOUserException;
  */
 public class JDOAncestorTest extends JDOTestCase {
 
-  public void testInsert() {
+  public void testInsert_IdGen() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJDO ha = new HasAncestorJDO(KeyFactory.keyToString(flightKey));
+    HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(KeyFactory.keyToString(flightKey));
     makePersistentInTxn(ha);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
@@ -34,13 +37,12 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals(flightKey, result.getKey().getParent());
   }
 
-  public void testInsertWithNamedKey() {
+  public void testInsert_NamedKey() {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
-    HasAncestorJDO ha = new HasAncestorJDO(
-        KeyFactory.keyToString(flightKey),
-        KeyFactory.keyToString(KeyFactory.createKey(HasAncestorJDO.class.getSimpleName(), "named key")));
+    Key key = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key", flightKey).getKey();
+    HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(null, KeyFactory.keyToString(key));
     makePersistentInTxn(ha);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
@@ -54,14 +56,31 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals("parent named key", result.getKey().getParent().getName());
   }
 
+  public void testInsert_SetAncestorAndPk() {
+    Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
+    ldth.ds.put(flightEntity);
+    Key flightKey = flightEntity.getKey();
+    HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(
+        KeyFactory.keyToString(flightKey),
+        KeyFactory.keyToString(KeyFactory.createKey(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key")));
+    beginTxn();
+    try {
+      pm.makePersistent(ha);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
   public void testFetch() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
-    Entity hasAncestorEntity = new Entity(HasAncestorJDO.class.getSimpleName(), flightEntity.getKey());
+    Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    HasStringAncestorStringPkJDO ha = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
     assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
     commitTxn();
   }
@@ -70,11 +89,11 @@ public class JDOAncestorTest extends JDOTestCase {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
     ldth.ds.put(flightEntity);
     Entity hasAncestorEntity =
-        new Entity(HasAncestorJDO.class.getSimpleName(), "named key", flightEntity.getKey());
+        new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key", flightEntity.getKey());
     ldth.ds.put(hasAncestorEntity);
 
     beginTxn();
-    HasAncestorJDO ha = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
+    HasStringAncestorStringPkJDO ha = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
     assertEquals(KeyFactory.keyToString(flightEntity.getKey()), ha.getAncestorId());
     assertEquals("named key", KeyFactory.stringToKey(ha.getId()).getName());
     assertEquals("parent named key", KeyFactory.stringToKey(ha.getId()).getParent().getName());
@@ -82,7 +101,7 @@ public class JDOAncestorTest extends JDOTestCase {
   }
 
   public void testInsertWithNullAncestor() {
-    HasAncestorJDO ha = new HasAncestorJDO(null);
+    HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(null);
     makePersistentInTxn(ha);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertNull(keyWithParent.getParent());
@@ -155,4 +174,114 @@ public class JDOAncestorTest extends JDOTestCase {
       rollbackTxn();
     }
   }
+
+  public void testInsertWithKeyPkAndAncestor() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasKeyPkJDO hk1 = new HasKeyPkJDO();
+    hk1.setAncestorKey(e.getKey());
+    beginTxn();
+    pm.makePersistent(hk1);
+    Key key = hk1.getKey();
+    Key ancestorKey = hk1.getAncestorKey();
+    assertNotNull(key);
+    commitTxn();
+    Entity reloaded = ldth.ds.get(hk1.getKey());
+    assertEquals(ancestorKey, reloaded.getKey().getParent());
+  }
+
+  public void testInsertWithKeyPkAndStringAncestor_IdGen() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
+    hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
+    beginTxn();
+    pm.makePersistent(hk1);
+    Key key = hk1.getKey();
+    String ancestorKey = hk1.getAncestorKey();
+    commitTxn();
+    Entity reloaded = ldth.ds.get(key);
+    assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
+  }
+
+  public void testInsertWithKeyPkAndStringAncestor_NamedKey() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
+    Key key = new Entity(HasStringAncestorKeyPkJDO.class.getSimpleName(), "named key", e.getKey()).getKey();
+    hk1.setKey(key);
+    beginTxn();
+    pm.makePersistent(hk1);
+    assertEquals(e.getKey(), KeyFactory.stringToKey(hk1.getAncestorKey()));
+    String ancestorKey = hk1.getAncestorKey();
+    commitTxn();
+    Entity reloaded = ldth.ds.get(key);
+    assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
+  }
+
+  public void testInsertWithKeyPkAndStringAncestor_SetKeyAndAncestor() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
+    Key key = KeyFactory.createKey(HasStringAncestorKeyPkJDO.class.getSimpleName(), "named key");
+    hk1.setKey(key);
+    hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
+    beginTxn();
+    try {
+      pm.makePersistent(hk1);
+      fail("expected exception");
+    } catch (JDOUserException ex) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testInsertWithStringPkAndKeyAncestor_IdGen() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
+    hk1.setAncestorKey(e.getKey());
+    beginTxn();
+    pm.makePersistent(hk1);
+    String key = hk1.getKey();
+    Key ancestorKey = hk1.getAncestorKey();
+    commitTxn();
+    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    assertEquals(ancestorKey, reloaded.getKey().getParent());
+  }
+
+  public void testInsertWithStringPkAndKeyAncestor_NamedKey() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
+    Key keyToSet =
+        new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), "yar", e.getKey()).getKey();
+    hk1.setKey(KeyFactory.keyToString(keyToSet));
+    beginTxn();
+    pm.makePersistent(hk1);
+    String key = hk1.getKey();
+    assertEquals(e.getKey(), hk1.getAncestorKey());
+    commitTxn();
+    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    assertEquals(e.getKey(), reloaded.getKey().getParent());
+  }
+
+  public void testInsertWithStringPkAndKeyAncestor_SetAncestorAndPk() throws EntityNotFoundException {
+    Entity parentEntity = new Entity("yam");
+    ldth.ds.put(parentEntity);
+    HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
+    Key keyToSet =
+        new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();
+    hk1.setKey(KeyFactory.keyToString(keyToSet));
+    hk1.setAncestorKey(keyToSet);
+    beginTxn();
+    try {
+      pm.makePersistent(hk1);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
 }

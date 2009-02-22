@@ -342,4 +342,14 @@ public class IllegalMappingsJDO {
     private OneToOneParentWithRootOnlyStringBiChild parent;
   }
 
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class LongParent {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Long id;
+
+    @Persistent
+    @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
+    private Long illegal;
+  }
 }

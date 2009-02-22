@@ -12,7 +12,7 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasAncestorJDO {
+public class HasStringAncestorStringPkJDO {
   @Persistent
   @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
   private String ancestorId;
@@ -22,14 +22,14 @@ public class HasAncestorJDO {
   @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
   private String id;
 
-  public HasAncestorJDO() {
+  public HasStringAncestorStringPkJDO() {
   }
 
-  public HasAncestorJDO(String ancestorId) {
+  public HasStringAncestorStringPkJDO(String ancestorId) {
     this(ancestorId, null);
   }
 
-  public HasAncestorJDO(String ancestorId, String id) {
+  public HasStringAncestorStringPkJDO(String ancestorId, String id) {
     this.ancestorId = ancestorId;
     this.id = id;
   }

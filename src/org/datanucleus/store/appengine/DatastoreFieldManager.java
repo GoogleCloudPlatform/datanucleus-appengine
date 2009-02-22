@@ -421,7 +421,6 @@ public class DatastoreFieldManager implements FieldManager {
     Key key = null;
     if (value != null) {
       key = KeyFactory.createKey(datastoreEntity.getKind(), value);
-      keyAlreadySet = true;
     }
     storeKeyPK(key);
   }
@@ -499,29 +498,26 @@ public class DatastoreFieldManager implements FieldManager {
    * field for the parent.
    */
   Object establishEntityGroup() {
-    if (getEntity().getParent() != null) {
-      // Entity already has a parent so nothing to do.
-      return null;
-    }
-    StateManager sm = getStateManager();
-    // Mechanism 1
-    Key parentKey = getKeyRegistry().getRegisteredKey(sm.getObject());
+    Key parentKey = getEntity().getParent();
     if (parentKey == null) {
-      // Mechanism 2
-      parentKey = getParentKeyFromExternalFKMappings(sm);
-    }
-    if (parentKey == null) {
-      // Mechanism 3
-      parentKey = getParentKeyFromParentField(sm);
-    }
-    if (parentKey != null) {
-
-      recreateEntityWithParent(parentKey);
-
-      if (getParentMemberMetaData() != null) {
-        return getParentMemberMetaData().getType().equals(Key.class)
-            ? parentKey : KeyFactory.keyToString(parentKey);
+      StateManager sm = getStateManager();
+      // Mechanism 1
+      parentKey = getKeyRegistry().getRegisteredKey(sm.getObject());
+      if (parentKey == null) {
+        // Mechanism 2
+        parentKey = getParentKeyFromExternalFKMappings(sm);
       }
+      if (parentKey == null) {
+        // Mechanism 3
+        parentKey = getParentKeyFromParentField(sm);
+      }
+      if (parentKey != null) {
+        recreateEntityWithParent(parentKey);
+      }
+    }
+    if (parentKey != null && getParentMemberMetaData() != null) {
+      return getParentMemberMetaData().getType().equals(Key.class)
+          ? parentKey : KeyFactory.keyToString(parentKey);
     }
     return null;
   }
@@ -621,10 +617,15 @@ public class DatastoreFieldManager implements FieldManager {
       if (key.getParent() == null) {
         datastoreEntity = new Entity(old.getKind(), key.getName());
       } else {
+        if (keyAlreadySet) {
+          // can't provide a key and a parent - one or the other
+          throw new NucleusUserException(PARENT_ALREADY_SET);
+        }
         parentAlreadySet = true;
         datastoreEntity = new Entity(old.getKind(), key.getName(), key.getParent());
       }
       copyProperties(old, datastoreEntity);
+      keyAlreadySet = true;
     }
   }
 
@@ -760,10 +761,15 @@ public class DatastoreFieldManager implements FieldManager {
             + "entity to the constructor.");
       }
 
+      if (keyAlreadySet) {
+        throw new NucleusUserException(PARENT_ALREADY_SET);
+      }
+
       // If this field is labeled as a parent PK we need to recreate the Entity, passing
       // the value of this field as an arg to the Entity constructor and then moving all
       // properties on the old entity to the new entity.
       recreateEntityWithParent(key);
+      parentAlreadySet = true;
     } else {
       // Null parent.  Parent is defined on a per-instance basis so
       // annotating a field as a parent is not necessarily a commitment

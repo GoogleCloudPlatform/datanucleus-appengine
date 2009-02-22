@@ -7,10 +7,10 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasAncestorJDO;
-import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
+import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
+import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.Name;
 import org.datanucleus.test.NullDataJDO;
@@ -700,10 +700,10 @@ public class JDOUpdateTest extends JDOTestCase {
 
   public void testUpdateStrAncestor_SetNewName() {
     Key parentKey = ldth.ds.put(new Entity(String.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
-    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
     pojo.setAncestorId("other");
     try {
       commitTxn();
@@ -716,10 +716,10 @@ public class JDOUpdateTest extends JDOTestCase {
 
   public void testUpdateStrAncestor_SetNewKey() {
     Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
-    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
     pojo.setAncestorId(KeyFactory.keyToString(KeyFactory.createKey(key.getKind(), 33)));
 
     try {
@@ -733,10 +733,10 @@ public class JDOUpdateTest extends JDOTestCase {
 
   public void testUpdateStrAncestor_NullKey() {
     Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasAncestorJDO.class.getSimpleName(), parentKey));
+    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
-    HasAncestorJDO pojo = pm.getObjectById(HasAncestorJDO.class, KeyFactory.keyToString(key));
+    HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
     pojo.setAncestorId(null);
     try {
       commitTxn();
@@ -749,11 +749,11 @@ public class JDOUpdateTest extends JDOTestCase {
 
   public void testUpdateKeyAncestor_SetNewKey() {
     Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parentKey));
+    Key key = ldth.ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
-    HasKeyAncestorKeyStringPkJDO pojo = pm.getObjectById(
-        HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(key));
+    HasKeyAncestorStringPkJDO pojo = pm.getObjectById(
+        HasKeyAncestorStringPkJDO.class, KeyFactory.keyToString(key));
     pojo.setAncestorKey(KeyFactory.createKey(key.getKind(), 33));
 
     try {
@@ -767,11 +767,11 @@ public class JDOUpdateTest extends JDOTestCase {
 
   public void testUpdateKeyAncestor_NullKey() {
     Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasKeyAncestorKeyStringPkJDO.class.getSimpleName(), parentKey));
+    Key key = ldth.ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
-    HasKeyAncestorKeyStringPkJDO pojo = pm.getObjectById(
-        HasKeyAncestorKeyStringPkJDO.class, KeyFactory.keyToString(key));
+    HasKeyAncestorStringPkJDO pojo = pm.getObjectById(
+        HasKeyAncestorStringPkJDO.class, KeyFactory.keyToString(key));
     pojo.setAncestorKey(null);
     try {
       commitTxn();

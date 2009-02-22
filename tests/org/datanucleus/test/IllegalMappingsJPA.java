@@ -304,4 +304,13 @@ public class IllegalMappingsJPA {
     private OneToOneParentWithRootOnlyStringBiChild parent;
   }
 
+  @Entity
+  public static class LongParent {
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Long id;
+
+    @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
+    private Long illegal;
+  }
 }

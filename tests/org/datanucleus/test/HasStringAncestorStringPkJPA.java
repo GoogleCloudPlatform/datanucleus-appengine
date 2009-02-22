@@ -12,7 +12,7 @@ import javax.persistence.Id;
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class HasAncestorJPA {
+public class HasStringAncestorStringPkJPA {
 
   @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
   private String ancestorId;
@@ -22,14 +22,14 @@ public class HasAncestorJPA {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  public HasAncestorJPA() {
+  public HasStringAncestorStringPkJPA() {
   }
 
-  public HasAncestorJPA(String ancestorId) {
+  public HasStringAncestorStringPkJPA(String ancestorId) {
     this(ancestorId, null);
   }
 
-  public HasAncestorJPA(String ancestorId, String id) {
+  public HasStringAncestorStringPkJPA(String ancestorId, String id) {
     this.ancestorId = ancestorId;
     this.id = id;
   }

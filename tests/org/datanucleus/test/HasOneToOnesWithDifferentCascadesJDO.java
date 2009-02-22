@@ -20,52 +20,52 @@ public class HasOneToOnesWithDifferentCascadesJDO {
   private String id;
 
   @Persistent(dependent = "true")
-  private HasAncestorJDO cascadeAllChild;
+  private HasStringAncestorStringPkJDO cascadeAllChild;
 
   @Persistent(dependent = "true")
-  private HasKeyAncestorKeyStringPkJDO cascadeAllChildWithKeyAncestor;
+  private HasKeyAncestorStringPkJDO cascadeAllChildWithKeyAncestor;
 
   @Persistent(dependent = "false")
-  private HasAncestorJDO cascadePersistChild;
+  private HasStringAncestorStringPkJDO cascadePersistChild;
 
   @Persistent(dependent = "false")
   @Extension(vendorName="datanucleus", key="cascade-persist", value="false")
-  private HasAncestorJDO cascadeRemoveChild;
+  private HasStringAncestorStringPkJDO cascadeRemoveChild;
 
   public String getId() {
     return id;
   }
 
-  public HasAncestorJDO getCascadeAllChild() {
+  public HasStringAncestorStringPkJDO getCascadeAllChild() {
     return cascadeAllChild;
   }
 
-  public void setCascadeAllChild(HasAncestorJDO cascadeAllChild) {
+  public void setCascadeAllChild(HasStringAncestorStringPkJDO cascadeAllChild) {
     this.cascadeAllChild = cascadeAllChild;
   }
 
-  public HasAncestorJDO getCascadePersistChild() {
+  public HasStringAncestorStringPkJDO getCascadePersistChild() {
     return cascadePersistChild;
   }
 
-  public void setCascadePersistChild(HasAncestorJDO cascadePersistChild) {
+  public void setCascadePersistChild(HasStringAncestorStringPkJDO cascadePersistChild) {
     this.cascadePersistChild = cascadePersistChild;
   }
 
-  public HasAncestorJDO getCascadeRemoveChild() {
+  public HasStringAncestorStringPkJDO getCascadeRemoveChild() {
     return cascadeRemoveChild;
   }
 
-  public void setCascadeRemoveChild(HasAncestorJDO cascadeRemoveChild) {
+  public void setCascadeRemoveChild(HasStringAncestorStringPkJDO cascadeRemoveChild) {
     this.cascadeRemoveChild = cascadeRemoveChild;
   }
 
-  public HasKeyAncestorKeyStringPkJDO getCascadeAllChildWithKeyAncestor() {
+  public HasKeyAncestorStringPkJDO getCascadeAllChildWithKeyAncestor() {
     return cascadeAllChildWithKeyAncestor;
   }
 
   public void setCascadeAllChildWithKeyAncestor(
-      HasKeyAncestorKeyStringPkJDO cascadeAllChildWithKeyAncestor) {
+      HasKeyAncestorStringPkJDO cascadeAllChildWithKeyAncestor) {
     this.cascadeAllChildWithKeyAncestor = cascadeAllChildWithKeyAncestor;
   }
 }

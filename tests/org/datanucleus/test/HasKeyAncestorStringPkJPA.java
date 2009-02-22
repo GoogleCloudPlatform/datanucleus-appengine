@@ -3,24 +3,24 @@ package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
 
-import javax.jdo.annotations.Extension;
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
+import org.datanucleus.jpa.annotations.Extension;
+
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasKeyAncestorKeyStringPkJDO {
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
+@Entity
+public class HasKeyAncestorStringPkJPA {
+  @Id
+  @GeneratedValue(strategy=GenerationType.IDENTITY)
   private String key;
 
-  @Persistent
+  // This doesn't actually work - JPA doesn't support non-pk fields
+  // of arbitrary types.
   @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
   private Key ancestorKey;
 

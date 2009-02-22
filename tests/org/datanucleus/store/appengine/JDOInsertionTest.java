@@ -3,14 +3,11 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
-import org.datanucleus.test.HasKeyAncestorKeyStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasPromotedTypesJDO;
-import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.HasVersionNoFieldJDO;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.KitchenSink;
@@ -125,49 +122,6 @@ public class JDOInsertionTest extends JDOTestCase {
     assertNotNull(hk.getKey());
     assertNull(hk.getAncestorKey());
     commitTxn();
-  }
-
-  public void testInsertWithKeyPkAndAncestor() throws EntityNotFoundException {
-    Entity e = new Entity("yam");
-    ldth.ds.put(e);
-    HasKeyPkJDO hk1 = new HasKeyPkJDO();
-    hk1.setAncestorKey(e.getKey());
-    beginTxn();
-    pm.makePersistent(hk1);
-    Key key = hk1.getKey();
-    Key ancestorKey = hk1.getAncestorKey();
-    assertNotNull(key);
-    commitTxn();
-    Entity reloaded = ldth.ds.get(hk1.getKey());
-    assertEquals(ancestorKey, reloaded.getKey().getParent());
-  }
-
-  public void testInsertWithKeyPkAndStringAncestor() throws EntityNotFoundException {
-    Entity e = new Entity("yam");
-    ldth.ds.put(e);
-    HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
-    hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
-    beginTxn();
-    pm.makePersistent(hk1);
-    Key key = hk1.getKey();
-    String ancestorKey = hk1.getAncestorKey();
-    commitTxn();
-    Entity reloaded = ldth.ds.get(key);
-    assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
-  }
-
-  public void testInsertWithStringPkAndKeyAncestor() throws EntityNotFoundException {
-    Entity e = new Entity("yam");
-    ldth.ds.put(e);
-    HasKeyAncestorKeyStringPkJDO hk1 = new HasKeyAncestorKeyStringPkJDO();
-    hk1.setAncestorKey(e.getKey());
-    beginTxn();
-    pm.makePersistent(hk1);
-    String key = hk1.getKey();
-    Key ancestorKey = hk1.getAncestorKey();
-    commitTxn();
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
-    assertEquals(ancestorKey, reloaded.getKey().getParent());
   }
 
   public void testInsertWithNamedKeyPk() {
