@@ -196,4 +196,58 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
       rollbackTxn();
     }
   }
+
+  public void testEntityWithLongPkMappedToPojoWithUnencodedStringPk() {
+    Entity entity = new Entity(HasUnencodedStringPkJDO.class.getSimpleName());
+    Key key = ldth.ds.put(entity);
+    beginTxn();
+    try {
+      pm.getObjectById(HasUnencodedStringPkJDO.class, key);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testEntityWithStringPkMappedToPojoWithLongPk() {
+    Entity entity = new Entity(HasLongPkJDO.class.getSimpleName(), "yar");
+    Key key = ldth.ds.put(entity);
+    beginTxn();
+    try {
+      pm.getObjectById(HasLongPkJDO.class, key);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testEntityWithParentMappedToPojoWithUnencodedStringPk() {
+    Key parent = KeyFactory.createKey("parent kind", 88);
+    Entity entity = new Entity(HasUnencodedStringPkJDO.class.getSimpleName(), "yar", parent);
+    Key key = ldth.ds.put(entity);
+    beginTxn();
+    try {
+      pm.getObjectById(HasUnencodedStringPkJDO.class, key);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
+
+  public void testEntityWithParentMappedToPojoWithLongPk() {
+    Key parent = KeyFactory.createKey("parent kind", 88);
+    Entity entity = new Entity(HasLongPkJDO.class.getSimpleName(), parent);
+    Key key = ldth.ds.put(entity);
+    beginTxn();
+    try {
+      pm.getObjectById(HasLongPkJDO.class, key);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      rollbackTxn();
+    }
+  }
 }

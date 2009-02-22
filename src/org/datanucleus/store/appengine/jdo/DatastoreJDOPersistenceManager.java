@@ -3,9 +3,12 @@ package org.datanucleus.store.appengine.jdo;
 
 import com.google.appengine.api.datastore.Key;
 
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.store.appengine.EntityUtils;
+
+import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -32,7 +35,12 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
    */
   @Override
   public Object getObjectById(Class cls, Object key) {
-    key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
+    try {
+      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
+    } catch (NucleusUserException e) {
+      String keyStr = key == null ? "" : key.toString();
+      throw new JDOUserException("Exception converting " + keyStr + " to an internal key.", e);
+    }
     return super.getObjectById(cls, key);
   }
 }
