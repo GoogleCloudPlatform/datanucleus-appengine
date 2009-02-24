@@ -1,4 +1,18 @@
-// Copyright 2008 Google Inc. All Rights Reserved.
+/**********************************************************************
+Copyright (c) 2009 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**********************************************************************/
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -11,11 +25,10 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
-import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.metadata.ElementMetaData;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.expression.QueryExpression;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -26,11 +39,10 @@ import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.Localiser;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.ListIterator;
-import java.util.Collections;
 import java.util.Set;
-import java.util.Arrays;
 
 /**
  * Datastore-specific implementation of {@link AbstractListStoreSpecialization}.
