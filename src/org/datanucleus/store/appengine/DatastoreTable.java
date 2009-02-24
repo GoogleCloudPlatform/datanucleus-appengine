@@ -55,7 +55,6 @@ import org.datanucleus.store.mapped.mapping.LongMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.OIDMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
-import org.datanucleus.util.Localiser;
 import org.datanucleus.util.MultiMap;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -79,11 +78,6 @@ import java.util.Set;
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreTable implements DatastoreClass {
-
-  /** Localiser for messages. */
-  protected static final Localiser LOCALISER =
-      Localiser.getInstance("org.datanucleus.store.appengine.Localisation",
-      DatastoreManager.class.getClassLoader());
 
   /** All callbacks for class tables waiting to be performed. */
   private static final MultiMap callbacks = new MultiMap();
@@ -308,7 +302,7 @@ public class DatastoreTable implements DatastoreClass {
               throw new UnsupportedOperationException("No support for secondary tables.");
             }
           } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-//            throw new NucleusException(LOCALISER.msg("057006", fmd.getName())).setFatal();
+            throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
           }
 
           // Calculate if we need a FK adding due to a 1-N (FK) relationship
@@ -529,13 +523,6 @@ public class DatastoreTable implements DatastoreClass {
       // Only the base class can be autoincremented
 //      idColumn.setAutoIncrement(true);
     }
-
-    // Check if auto-increment and that it is supported by this RDBMS
-//    if (idColumn.isAutoIncrement() && !dba
-//        .supportsOption(org.datanucleus.store.mapped.DatastoreAdapter.IDENTITY_COLUMNS)) {
-//      throw new NucleusException(LOCALISER.msg("057020",
-//          cmd.getFullClassName(), "datastore-identity")).setFatal();
-//    }
   }
 
   private void initializePK() {
@@ -560,14 +547,7 @@ public class DatastoreTable implements DatastoreClass {
               fieldsToAdd[pkFieldNum++] = mmd;
               hasPrimaryKeyInThisClass = true;
             } else if (mmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-              throw new NucleusException(LOCALISER.msg("057006", mmd.getName())).setFatal();
-            }
-
-            // Check if auto-increment and that it is supported by this datastore
-            if ((mmd.getValueStrategy() == IdentityStrategy.IDENTITY) &&
-                !dba.supportsOption(DatastoreAdapter.IDENTITY_COLUMNS)) {
-              throw new NucleusException(LOCALISER.msg("057020",
-                  cmd.getFullClassName(), mmd.getName())).setFatal();
+              throw new NucleusException("Invalid persistence-modifier for field " + mmd.getName()).setFatal();
             }
           }
         }
@@ -579,14 +559,7 @@ public class DatastoreTable implements DatastoreClass {
               fieldsToAdd[pkFieldNum++] = fmd;
               hasPrimaryKeyInThisClass = true;
             } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-              throw new NucleusException(LOCALISER.msg("057006", fmd.getName())).setFatal();
-            }
-
-            // Check if auto-increment and that it is supported by this datastore
-            if ((fmd.getValueStrategy() == IdentityStrategy.IDENTITY) &&
-                !dba.supportsOption(DatastoreAdapter.IDENTITY_COLUMNS)) {
-              throw new NucleusException(LOCALISER.msg("057020",
-                  cmd.getFullClassName(), fmd.getName())).setFatal();
+              throw new NucleusException("Invalid persistence-modifier for field" + fmd.getName()).setFatal();
             }
           }
         }
@@ -633,7 +606,7 @@ public class DatastoreTable implements DatastoreClass {
                 if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
                   fieldsToAdd[pkFieldNum++] = fmd;
                 } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-                  throw new NucleusException(LOCALISER.msg("057006", fmd.getName())).setFatal();
+                  throw new NucleusException("Invalid persistence-modifier for field " + fmd.getName()).setFatal();
                 }
               }
             }
@@ -951,10 +924,12 @@ public class DatastoreTable implements DatastoreClass {
           // Check that the "mapped-by" field in the other class actually exists
           AbstractMemberMetaData fmd = cmd.getMetaDataForMember(ownerFmd.getMappedBy());
           if (fmd == null) {
-            throw new NucleusUserException(LOCALISER.msg("057036",
-                                                         ownerFmd.getMappedBy(),
-                                                         cmd.getFullClassName(),
-                                                         ownerFmd.getFullFieldName()));
+            throw new NucleusUserException(
+                String.format(
+                    "Unable to find the field \"{0}\" in the class \"{1}\" with a relationship to the field \"{2}\"",
+                    ownerFmd.getMappedBy(),
+                    cmd.getFullClassName(),
+                    ownerFmd.getFullFieldName()));
           }
           // Add the order mapping as necessary
           addOrderMapping(ownerFmd, null);
@@ -991,8 +966,8 @@ public class DatastoreTable implements DatastoreClass {
             ColumnMetaData colmd = correspondentColumnsMapping.getColumnMetaDataByIdentifier(
                     refDatastoreMapping.getDatastoreField().getIdentifier());
             if (colmd == null) {
-              throw new NucleusUserException(LOCALISER.msg(
-                  "057035",
+              throw new NucleusUserException(
+                  String.format("Primary Key column \"%s\" for table \"%s\" is not mapped.",
                   refDatastoreMapping.getDatastoreField().getIdentifier(),
                   toString())).setFatal();
             }
@@ -1088,12 +1063,15 @@ public class DatastoreTable implements DatastoreClass {
         // User has defined ordering using the column(s) of an existing field.
         JavaTypeMapping orderMapping = getMemberMapping(omd.getMappedBy());
         if (orderMapping == null) {
-          throw new NucleusUserException(LOCALISER.msg("057021",
-                                                       fmd.getFullFieldName(), omd.getMappedBy()));
+          throw new NucleusUserException(String.format(
+              "Field \"{0}\" has an <order> defined to be persisted into the columns in the element table for element field \"{1}\". This field is not found in the element class.",
+              fmd.getFullFieldName(), omd.getMappedBy()));
         }
         if (!(orderMapping instanceof IntegerMapping) && !(orderMapping instanceof LongMapping)) {
-          throw new NucleusUserException(LOCALISER.msg("057022",
-                                                       fmd.getFullFieldName(), omd.getMappedBy()));
+          throw new NucleusUserException(
+              String.format(
+                  "Field \"{0}\" has an <order> defined to be persisted into the column of field \"{1}\". This field is of an invalid type. Must be an int/Integer.",
+                  fmd.getFullFieldName(), omd.getMappedBy()));
         }
         return orderMapping;
       }

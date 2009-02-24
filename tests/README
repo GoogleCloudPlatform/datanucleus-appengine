@@ -2,7 +2,7 @@ A note about running tests:
 
 You must pass the following flag to the jvm in order for the tests to pass:
 
--javaagent:lib/datanucleus-enhancer-1.0.1.jar=org.datanucleus.test
+-javaagent:lib/datanucleus-enhancer-1.1.0.jar=org.datanucleus.test
 
 This tells Datanucleus to automatically enhance any classes it encounters that live in the
 org.datanucleus.test package.  The enhancer ignores classes in org.datanucleus unless
