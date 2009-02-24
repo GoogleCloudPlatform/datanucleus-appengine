@@ -1,10 +1,11 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="gae" default="testdist">
 
-  <property name="version.major" value="0"/>
-  <property name="version.minor" value="8"/>
-  <property name="version.point" value="6"/>
-  <property name="version" value="${version.major}.${version.minor}.${version.point}"/>
+  <property name="version.major" value="1"/>
+  <property name="version.minor" value="0"/>
+  <property name="version.point" value="0"/>
+  <property name="version.rc" value=".RC1"/>
+  <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>

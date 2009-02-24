@@ -6,6 +6,19 @@ access to the Google App Engine Datastore via JDO and JPA.
 UNRELEASED VERSIONS
 -------------------------------------------------------------------------------
 
+VERSION 1.0.0 RC1
+- Support unencoded String primary keys
+- Support long primary keys
+- Let developers specify pk in different ways for getObjectById (JDO) and find (JPA)
+- Support for Set, SortedSet, TreeSet, LinkedHashSet, LinkedList
+- preserveCase is the default for the identifier factory
+- Detect changes to primary key and ancestor
+- Support negative literals in queries
+- Querying and sorting by embedded fields
+- App Engine specific meta data validation
+- Detect invalid jdoql and jpql
+
+
 VERSION 0.8.5
 - Support java 5 enums
 - OSGI-compliant manifest
