@@ -205,9 +205,6 @@
         <include name="**"/>
         <exclude name="META-INF/**"/>
       </zipfileset>
-      <zipfileset prefix="docs" dir="../doc">
-        <include name="**"/>
-      </zipfileset>
       <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
         <include name="asm*.jar"/>
         <include name="jdo2-api*.jar"/>
@@ -226,6 +223,7 @@
       <zipfileset prefix="src/orm" file="${orm.source.zip}"/>
       <zipfileset prefix="src/orm" dir="${orm.lib.dir}">
         <include name="datanucleus-*src*"/>
+        <include name="jdo2-api-*src*"/>
       </zipfileset>
       <zipfileset dir=".">
         <include name="README.ORM"/>
