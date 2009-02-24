@@ -33,7 +33,7 @@ import java.util.RandomAccess;
  * @author Michael Parker
  * @author Jared Levy
  */
-public final class PrimitiveArrays {
+final class PrimitiveArrays {
   private PrimitiveArrays() {}
 
   /*
