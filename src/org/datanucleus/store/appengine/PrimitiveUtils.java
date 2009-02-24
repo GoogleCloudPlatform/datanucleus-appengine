@@ -1,8 +1,6 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.common.collect.PrimitiveArrays;
-
 import org.datanucleus.store.appengine.Utils.Function;
 
 import java.util.HashMap;
@@ -53,14 +51,14 @@ final class PrimitiveUtils {
         Integer.TYPE,
         new Function<Object, List<?>>() {
           public List<?> apply(Object o) {
-            return PrimitiveArrays.asList((int[]) o);
+            return Ints.asList((int[]) o);
           }
         });
     map.put(
         Long.TYPE,
         new Function<Object, List<?>>() {
           public List<?> apply(Object o) {
-            return PrimitiveArrays.asList((long[]) o);
+            return Longs.asList((long[]) o);
           }
         });
     map.put(
@@ -124,7 +122,7 @@ final class PrimitiveUtils {
         new Function<List<?>, Object>() {
           @SuppressWarnings("unchecked")
           public Object apply(List<?> list) {
-            return PrimitiveArrays.toIntArray((List<Integer>) list);
+            return Ints.toArray((List<Integer>) list);
           }
         });
     map.put(
@@ -140,7 +138,7 @@ final class PrimitiveUtils {
         new Function<List<?>, Object>() {
           @SuppressWarnings("unchecked")
           public Object apply(List<?> list) {
-            return PrimitiveArrays.toLongArray((List<Long>) list);
+            return Longs.toArray((List<Long>) list);
           }
         });
     map.put(

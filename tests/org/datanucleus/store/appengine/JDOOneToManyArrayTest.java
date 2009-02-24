@@ -10,7 +10,7 @@ import org.datanucleus.test.HasOneToManyArrayWithOrderByJDO;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOOneToManyArrayTest extends JDOOneToManyTest {
+public class JDOOneToManyArrayTest extends JDOOneToManyTestCase {
 
   public void testInsertNewParentAndChild() throws EntityNotFoundException {
     HasOneToManyArrayJDO parent = new HasOneToManyArrayJDO();

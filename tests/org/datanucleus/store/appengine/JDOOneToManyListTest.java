@@ -19,7 +19,7 @@ import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOOneToManyListTest extends JDOOneToManyTest {
+public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testInsertNewParentAndChild() throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();

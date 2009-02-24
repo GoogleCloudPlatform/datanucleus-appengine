@@ -20,7 +20,7 @@ import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JPAOneToManyListTest extends JPAOneToManyTest {
+public class JPAOneToManyListTest extends JPAOneToManyTestCase {
 
   public void testInsert_NewParentAndChild() throws EntityNotFoundException {
     testInsert_NewParentAndChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA());

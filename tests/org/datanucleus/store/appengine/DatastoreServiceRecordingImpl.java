@@ -10,6 +10,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -64,14 +65,14 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
     return delegate.put(txn, entity);
   }
 
-  public void put(Iterable<Entity> entities) {
+  public List<Key> put(Iterable<Entity> entities) {
     recorder.put(entities);
-    delegate.put(entities);
+    return delegate.put(entities);
   }
 
-  public void put(Transaction txn, Iterable<Entity> entities) {
+  public List<Key> put(Transaction txn, Iterable<Entity> entities) {
     recorder.put(txn, entities);
-    delegate.put(txn, entities);
+    return delegate.put(txn, entities);
   }
 
   public void delete(Key... keys) {

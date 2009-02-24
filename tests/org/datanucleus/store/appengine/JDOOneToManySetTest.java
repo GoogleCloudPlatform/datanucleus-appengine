@@ -10,7 +10,7 @@ import org.datanucleus.test.HasOneToManySetJDO;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOOneToManySetTest extends JDOOneToManyTest {
+public class JDOOneToManySetTest extends JDOOneToManyTestCase {
 
   public void testInsertNewParentAndChild() throws EntityNotFoundException {
     HasOneToManySetJDO parent = new HasOneToManySetJDO();

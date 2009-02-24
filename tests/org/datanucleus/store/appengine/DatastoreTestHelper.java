@@ -39,6 +39,18 @@ public class DatastoreTestHelper {
     public String getAuthDomain() {
       throw new UnsupportedOperationException();
     }
+
+    public String getRequestNamespace() {
+      throw new UnsupportedOperationException();
+    }
+
+    public String getDefaultNamespace() {
+      throw new UnsupportedOperationException();
+    }
+
+    public void setDefaultNamespace(String s) {
+      throw new UnsupportedOperationException();
+    }
   };
 
   private final DatastoreDelegate delegate = getDatastoreDelegate();

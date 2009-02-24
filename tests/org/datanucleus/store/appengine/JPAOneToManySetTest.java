@@ -6,12 +6,11 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
-import org.datanucleus.test.HasOneToManyListJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JPAOneToManySetTest extends JPAOneToManyTest {
+public class JPAOneToManySetTest extends JPAOneToManyTestCase {
 
   public void testInsert_NewParentAndChild() throws EntityNotFoundException {
     testInsert_NewParentAndChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());

@@ -6,7 +6,7 @@ Bundle-Name: DataNucleus AppEngine
 Bundle-SymbolicName: org.datanucleus.store.appengine;singleton:=true
 Bundle-Version: 0.8.6
 Bundle-Vendor: Google
-Require-Bundle: org.datanucleus;bundle-version="[1.1.0.m4)"
+Require-Bundle: org.datanucleus;bundle-version="[1.1.0.final)"
 Import-Package: javax.jdo, javax.jdo.annotations, javax.jdo.datastore,
   javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.per
  sistence.spi

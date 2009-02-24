@@ -2,8 +2,8 @@
 package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Blob;
+import com.google.appengine.repackaged.com.google.io.protocol.ProtocolMessage;
 import com.google.apphosting.api.DatastorePb;
-import com.google.io.protocol.ProtocolMessage;
 
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.appengine.SerializationStrategy;

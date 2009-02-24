@@ -161,7 +161,8 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testPkMarkedAsAncestor() {
     PkMarkedAsAncestor pojo = new PkMarkedAsAncestor();
-    // There is a datanuc bug with the jpa Extensions annotation and the enhancer.
+    // There is a datanuc bug with the jpa Extensions annotation and the runtime
+    // enhancer.
     // When the bug is fixed this test will fail.  We should remove
     // the next line and uncomment the rest of the test.
     assertFalse(pojo instanceof PersistenceCapable);

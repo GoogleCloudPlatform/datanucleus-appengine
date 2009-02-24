@@ -23,7 +23,7 @@
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.jar"/>
     <pathelement location="${orm.lib.dir}/jdo2-api-2.3-SNAPSHOT.jar"/>
-    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.1.1.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
   </path>
 
@@ -38,8 +38,8 @@
 
   <path id="helloorm.compile.deps">
     <pathelement location="${orm.lib.dir}/jdo2-api-2.3-SNAPSHOT.jar"/>
-    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
-    <pathelement location="${orm.lib.dir}/servlet-api-2.5.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.1.1.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-servlet_2.5_spec-1.2.jar"/>
   </path>
 
   <path id="enhancer.deps">
@@ -55,6 +55,8 @@
   <path id="tests.enhancer.classpath">
     <path refid="enhancer.deps"/>
     <pathelement location="${compile.tests.dest.dir}"/>
+    <!-- Needed for our dependence on ApiProxyLocalImpl -->
+    <pathelement location="${orm.lib.dir}/appengine-local-runtime.jar"/>
   </path>
 
   <path id="demos.enhancer.classpath">
@@ -96,18 +98,19 @@
   </target>
 
   <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">
-    <delete dir="results"/>
-    <mkdir dir="results"/>
+    <delete dir="testresults"/>
+    <mkdir dir="testresults"/>
     <junit printsummary="yes" fork="yes">
       <classpath>
         <path refid="appengine.plugin.test.compile.deps"/>
         <pathelement location="${compile.tests.dest.dir}"/>
       </classpath>
       <formatter type="plain"/>
-      <batchtest fork="yes">
+      <batchtest fork="yes" todir="testresults">
         <fileset dir="${plugin.test.dir}">
           <include name="**/*Test.java"/>
           <exclude name="**/AllTests.java"/>
+          <exclude name="**/JDOOneToManyArrayTest.java"/>
         </fileset>
       </batchtest>
     </junit>
@@ -243,9 +246,9 @@
       /tmp/testdist/lib/impl/appengine-local-runtime.jar
       /tmp/testdist/lib/impl/appengine-api.jar
       /tmp/testdist/lib/impl/appengine-api-stubs.jar
-      /tmp/testdist/lib/shared/servlet-api-2.5 .jar
-      /tmp/testdist/lib/shared/jsp-api-2.1 .jar
-      /tmp/testdist/lib/shared/el-api-2.1 .jar
+      /tmp/testdist/lib/shared/geronimo-servlet_2.5_spec-1.2.jar
+      /tmp/testdist/lib/shared/geronimo-jsp_2.1_spec-1.0.1.jar
+      /tmp/testdist/lib/shared/geronimo-el_1.0_spec-1.0.1.jar
       /tmp/testdist/lib/shared/appengine-local-runtime-shared.jar
      -->
     <delete dir="${orm.tmpdist.dir}"/>
@@ -272,9 +275,9 @@
     <copy todir="${orm.sdk.tmpdist.dir}/shared">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime-shared.jar"/>
-        <include name="servlet-api*.jar"/>
-        <include name="jsp-api*.jar"/>
-        <include name="el-api*.jar"/>
+        <include name="geronimo-servlet*.jar"/>
+        <include name="geronimo-jsp*.jar"/>
+        <include name="geronimo-el*.jar"/>
       </fileset>
     </copy>
 

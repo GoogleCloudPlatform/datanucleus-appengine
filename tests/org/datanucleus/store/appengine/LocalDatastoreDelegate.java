@@ -1,9 +1,11 @@
 // Copyright 2009 Google Inc. All Rights Reserved.
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
+import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
+
+import java.io.File;
 
 /**
  * {@link DatastoreDelegate} implementation that integrates with the stub
@@ -16,7 +18,7 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
   private ApiProxyLocalImpl localProxy;
 
   public void setUp() throws Exception {
-    localProxy = new ApiProxyLocalImpl();
+    localProxy = new ApiProxyLocalImpl(new File(".")) {};
     // run completely in-memory
     localProxy.setProperty(LocalDatastoreService.NO_STORAGE_PROPERTY, Boolean.TRUE.toString());
     // don't expire queries - makes debugging easier
