@@ -15,7 +15,7 @@ public class Flight {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent
   private String orig;
@@ -28,7 +28,7 @@ public class Flight {
     this.dest = dest;
   }
 
-  public String getId() {
+  public Long getId() {
     return id;
   }
 

@@ -154,9 +154,9 @@ public class MetaDataValidator {
     AbstractClassMetaData childAcmd = null;
     if (relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) {
       if (ammd.getCollection() != null) {
-        childAcmd = ammd.getCollection().getElementClassMetaData();
+        childAcmd = ammd.getCollection().getElementClassMetaData(clr);
       } else if (ammd.getArray() != null) {
-        childAcmd = ammd.getArray().getElementClassMetaData();
+        childAcmd = ammd.getArray().getElementClassMetaData(clr);
       } else {
         // don't know how to verify
         NucleusLogger.METADATA.warn("Unable to validate one-to-many relation " + ammd.getFullFieldName());

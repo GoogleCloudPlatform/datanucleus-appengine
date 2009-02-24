@@ -721,13 +721,13 @@ public class JPQLQueryTest extends JPATestCase {
     Entity entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max");
     entity.setProperty("last", "ross");
-    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherFirst", "max");
     entity.setProperty("anotherLast", "notross");
     ldth.ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
-        + " where name.first = \"max\" && anotherName.last = \"notross\"");
+        + " where name.first = \"max\" AND anotherName.last = \"notross\"");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(1, result.size());

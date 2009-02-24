@@ -806,7 +806,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max");
     entity.setProperty("last", "ross");
-    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherFirst", "max");
     entity.setProperty("anotherLast", "notross");
     ldth.ds.put(entity);
 

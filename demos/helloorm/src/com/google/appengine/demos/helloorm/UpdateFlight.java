@@ -1,6 +1,8 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package com.google.appengine.demos.helloorm;
 
+import java.io.IOException;
+
 import javax.jdo.PersistenceManager;
 import javax.persistence.EntityManager;
 import javax.persistence.EntityTransaction;
@@ -8,7 +10,6 @@ import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -42,14 +43,17 @@ public class UpdateFlight extends HttpServlet {
     }
     if (PersistenceStandard.get() == PersistenceStandard.JPA) {
       EntityManager em = EMF.emf.createEntityManager();
+      EntityTransaction txn = em.getTransaction();
       try {
-        EntityTransaction txn = em.getTransaction();
         txn.begin();
         Flight f = em.find(Flight.class, key);
         f.setOrig(orig);
         f.setDest(dest);
         txn.commit();
       } finally {
+        if (txn.isActive()) {
+          txn.rollback();
+        }
         em.close();
       }
     } else {
@@ -61,6 +65,9 @@ public class UpdateFlight extends HttpServlet {
         f.setDest(dest);
         pm.currentTransaction().commit();
       } finally {
+        if (pm.currentTransaction().isActive()) {
+          pm.currentTransaction().rollback();
+        }
         pm.close();
       }
     }

@@ -10,32 +10,107 @@
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
   <property name="plugin.src.dir" value="../src"/>
+  <property name="plugin.test.dir" value="../tests"/>
   <property name="helloorm.src.dir" value="../demos/helloorm/src"/>
   <property name="orm.tmp.dir" value="/tmp/orm"/>
   <property name="compile.dest.dir" value="${orm.tmp.dir}/classes"/>
+  <property name="compile.tests.dest.dir" value="${orm.tmp.dir}/testclasses"/>
   <property name="orm.lib.dir" value="../lib"/>
   <property name="orm.tmpdist.dir" value="/tmp/testdist"/>
   <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}/lib"/>
 
-  <path id="appengine.plugin.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+  <path id="appengine.plugin.compile.deps">
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.3-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
   </path>
 
-  <path id="appengine.helloorm.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
+  <path id="appengine.plugin.test.compile.deps">
+    <pathelement location="${orm.jar}"/>
+    <path refid="appengine.plugin.compile.deps"/>
+    <pathelement location="${orm.lib.dir}/appengine-local-runtime.jar"/>
+    <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
+    <pathelement location="${orm.lib.dir}/junit.jar"/>
+    <pathelement location="${orm.lib.dir}/easymock.jar"/>
+  </path>
+
+  <path id="helloorm.compile.deps">
+    <pathelement location="${orm.lib.dir}/jdo2-api-2.3-SNAPSHOT.jar"/>
     <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
     <pathelement location="${orm.lib.dir}/servlet-api-2.5.jar"/>
+  </path>
+
+  <path id="enhancer.deps">
+    <path refid="appengine.plugin.compile.deps"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.1.0.jar"/>
+    <pathelement location="${orm.jar}"/>
+    <pathelement location="${orm.lib.dir}/log4j-1.2.9.jar"/>
+    <pathelement location="${orm.lib.dir}/junit.jar"/>
+    <pathelement location="${orm.lib.dir}/easymock.jar"/>
+    <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
+  </path>
+
+  <path id="tests.enhancer.classpath">
+    <path refid="enhancer.deps"/>
+    <pathelement location="${compile.tests.dest.dir}"/>
+  </path>
+
+  <path id="demos.enhancer.classpath">
+    <path refid="enhancer.deps"/>
+    <pathelement location="${compile.dest.dir}"/>
   </path>
 
   <target name="compile" description="Compile the datanucleus appengine plugin">
     <delete dir="${compile.dest.dir}"/>
     <mkdir dir="${compile.dest.dir}"/>
-    <javac classpathref="appengine.plugin.classpath" debug="on" source="1.5" target="1.5"
+    <javac classpathref="appengine.plugin.compile.deps" debug="on" source="1.5" target="1.5"
         srcdir="${plugin.src.dir}" destdir="${compile.dest.dir}"/>
+  </target>
+
+  <target name="compile-tests" depends="jar" description="compile the tests for the datanucleus appengine plugin">
+    <delete dir="${compile.tests.dest.dir}"/>
+    <mkdir dir="${compile.tests.dest.dir}"/>
+    <!--need to copy over all non-java resources-->
+   <copy todir="${compile.tests.dest.dir}">
+     <fileset dir="${plugin.test.dir}">
+       <include name="**/*.xml"/>
+       <include name="**/*.properties"/>
+     </fileset>
+   </copy>
+   <javac classpathref="appengine.plugin.test.compile.deps" debug="on" source="1.5" target="1.5"
+       srcdir="${plugin.test.dir}" destdir="${compile.tests.dest.dir}"/>
+  </target>
+
+  <target name="enhance-tests" depends="compile-tests" description="enhance the datanucleus tests">
+    <taskdef name="datanucleusenhancer" classpathref="tests.enhancer.classpath"
+             classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
+
+    <datanucleusenhancer classpathref="tests.enhancer.classpath" failonerror="true">
+      <jvmarg line="-Dlog4j.configuration=file:../log4j.properties"/>
+      <fileset dir="${compile.tests.dest.dir}">
+        <include name="**/*.class"/>
+      </fileset>
+    </datanucleusenhancer>
+  </target>
+
+  <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">
+    <delete dir="results"/>
+    <mkdir dir="results"/>
+    <junit printsummary="yes" fork="yes">
+      <classpath>
+        <path refid="appengine.plugin.test.compile.deps"/>
+        <pathelement location="${compile.tests.dest.dir}"/>
+      </classpath>
+      <formatter type="plain"/>
+      <batchtest fork="yes">
+        <fileset dir="${plugin.test.dir}">
+          <include name="**/*Test.java"/>
+          <exclude name="**/AllTests.java"/>
+        </fileset>
+      </batchtest>
+    </junit>
   </target>
 
   <target name="package-demos" depends="enhance-demos" description="Package the appengine orm demos">
@@ -65,17 +140,6 @@
     <unwar src="helloorm.war" dest="${orm.tmp.dir}/exploded"/>
   </target>
 
-  <path id="demos.enhancer.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.0.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
-    <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
-    <pathelement location="${compile.dest.dir}"/>
-  </path>
-
   <target name="enhance-demos" description="enhance" depends="compile-demos">
     <taskdef name="datanucleusenhancer" classpathref="demos.enhancer.classpath"
              classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
@@ -91,7 +155,7 @@
     <!-- Right now we only have one demo -->
     <delete dir="${compile.dest.dir}"/>
     <mkdir dir="${compile.dest.dir}"/>
-    <javac classpathref="appengine.helloorm.classpath" debug="on" source="1.5" target="1.5"
+    <javac classpathref="helloorm.compile.deps" debug="on" source="1.5" target="1.5"
         srcdir="${helloorm.src.dir}" destdir="${compile.dest.dir}"/>
   </target>
 
@@ -113,7 +177,7 @@
         <attribute name="Bundle-SymbolicName" value="org.datanucleus.store.appengine;singleton:=true"/>
         <attribute name="Bundle-Version" value="${version}"/>
         <attribute name="Bundle-Vendor" value="Google"/>
-        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.1.0.m4)&quot;"/>
+        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.1.0.final)&quot;"/>
         <attribute name="Import-Package" value="javax.jdo, javax.jdo.annotations, javax.jdo.datastore, javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.persistence.spi"/>
       </manifest>
     </jar>
@@ -159,7 +223,10 @@
       <zipfileset prefix="src/orm" dir="${orm.lib.dir}">
         <include name="datanucleus-*src*"/>
       </zipfileset>
-      <zipfileset file="README.ORM"/>
+      <zipfileset dir=".">
+        <include name="README.ORM"/>
+        <include name="RELEASE_NOTES.ORM"/>
+      </zipfileset>      
     </zip>
     <delete file="${orm.jar}"/>
     <delete file="${orm.source.zip}"/>
@@ -217,8 +284,6 @@
       <daemons>
         <java fork="true" classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
               classname="com.google.appengine.tools.development.DevAppServerMain">
-          <jvmarg value="-Xdebug"/>
-          <!--<jvmarg value="-Xrunjdwp:transport=dt_socket,server=y,suspend=y,address=5005"/>-->
           <arg value="${orm.tmpdist.dir}/demos/helloorm/www"/>
         </java>
       </daemons>
@@ -235,7 +300,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.add.response">
-          <contains string="${curl.add.result}" substring="aghoZWxsb29ybXIMCxIGRmxpZ2h0GAEM"/>
+          <contains string="${curl.add.result}" substring="getFlight?key=1"/>
         </condition>
         <fail unless="expected.add.response" message="Did not get the expected add response: ${curl.add.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 
@@ -246,7 +311,7 @@
           <arg value="http://localhost:8080"/>
         </exec>
         <condition property="expected.query.response">
-          <contains string="${curl.query.result}" substring="aghoZWxsb29ybXIMCxIGRmxpZ2h0GAEM"/>
+          <contains string="${curl.query.result}" substring="getFlight?key=1"/>
         </condition>
         <fail unless="expected.query.response" message="Did not get the expected query response: ${curl.query.result}${line.separator}${line.separator}    BUILD FAILED!!!!"/>
 
