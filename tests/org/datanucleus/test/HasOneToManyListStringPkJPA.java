@@ -32,7 +32,6 @@ import javax.persistence.OneToMany;
 public class HasOneToManyListStringPkJPA {
 
   @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
   private String id;
 
   private String val;

@@ -33,7 +33,6 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasOneToManyListStringPkJDO {
 
   @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
 
   @Persistent

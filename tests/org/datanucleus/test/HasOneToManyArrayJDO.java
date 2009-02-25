@@ -35,7 +35,6 @@ import javax.jdo.annotations.PrimaryKey;
 public class HasOneToManyArrayJDO implements HasOneToManyJDO {
 
   @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
 
   @Persistent

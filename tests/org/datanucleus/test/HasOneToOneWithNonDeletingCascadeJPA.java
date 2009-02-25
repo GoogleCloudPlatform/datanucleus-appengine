@@ -29,7 +29,6 @@ import javax.persistence.OneToOne;
 @Entity
 public class HasOneToOneWithNonDeletingCascadeJPA {
   @Id
-  @GeneratedValue(strategy= GenerationType.IDENTITY)
   private String id;
 
   @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})

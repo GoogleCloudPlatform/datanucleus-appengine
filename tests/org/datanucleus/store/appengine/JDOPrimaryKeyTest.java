@@ -28,6 +28,7 @@ import org.datanucleus.test.HasLongPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 
 import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -85,7 +86,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }

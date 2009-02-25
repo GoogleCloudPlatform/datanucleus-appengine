@@ -30,7 +30,6 @@ import javax.persistence.OneToOne;
 public class HasOneToOnesWithDifferentCascades {
 
   @Id
-  @GeneratedValue(strategy = GenerationType.IDENTITY)
   private String id;
 
   @OneToOne(cascade = CascadeType.ALL)

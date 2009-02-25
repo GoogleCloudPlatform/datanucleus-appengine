@@ -30,7 +30,6 @@ import javax.persistence.OneToOne;
 public class HasOneToOneStringPkJPA {
 
   @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
   private String id;
 
   @OneToOne(cascade = CascadeType.ALL)

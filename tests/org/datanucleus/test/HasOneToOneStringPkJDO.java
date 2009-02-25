@@ -27,7 +27,6 @@ import javax.jdo.annotations.PrimaryKey;
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class HasOneToOneStringPkJDO {
   @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private String id;
 
   public String getId() {

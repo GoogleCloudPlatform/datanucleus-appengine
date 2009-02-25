@@ -50,8 +50,7 @@ public class IllegalMappingsJPA {
   public static class HasUnencodedStringPkWithStringAncestor {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String illegal;
@@ -106,8 +105,7 @@ public class IllegalMappingsJPA {
   public static class EncodedPkOnNonPrimaryKeyField {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String illegal;
@@ -180,8 +178,7 @@ public class IllegalMappingsJPA {
   public static class PkIdWithUnencodedStringPrimaryKey {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
@@ -191,8 +188,7 @@ public class IllegalMappingsJPA {
   public static class PkNameWithUnencodedStringPrimaryKey {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
@@ -201,8 +197,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToManyParentWithRootOnlyLongUniChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<HasLongPkJDO> uniChildren = new ArrayList<HasLongPkJDO>();
@@ -211,8 +206,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToManyParentWithRootOnlyLongBiChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<RootOnlyLongBiOneToManyChild> biChildren = new ArrayList<RootOnlyLongBiOneToManyChild>();
@@ -231,8 +225,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToManyParentWithRootOnlyStringUniChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToMany(cascade = CascadeType.ALL)
     private List<HasUnencodedStringPkJDO> uniChildren = new ArrayList<HasUnencodedStringPkJDO>();
@@ -241,8 +234,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToManyParentWithRootOnlyStringBiChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<RootOnlyStringBiOneToManyChild> biChildren = new ArrayList<RootOnlyStringBiOneToManyChild>();
@@ -251,7 +243,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class RootOnlyStringBiOneToManyChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private String id;
 
     @ManyToOne
@@ -261,8 +252,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToOneParentWithRootOnlyLongUniChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToOne(cascade = CascadeType.ALL)
     private HasLongPkJDO uniChild;
@@ -271,8 +261,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToOneParentWithRootOnlyLongBiChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToOne
     private RootOnlyLongBiOneToOneChild biChild;
@@ -291,8 +280,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToOneParentWithRootOnlyStringUniChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToOne(cascade = CascadeType.ALL)
     private HasUnencodedStringPkJDO uniChild;
@@ -301,8 +289,7 @@ public class IllegalMappingsJPA {
   @Entity
   public static class OneToOneParentWithRootOnlyStringBiChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
-    private String id;
+    public String id;
 
     @OneToOne
     private RootOnlyStringBiOneToOneChild biChild;
@@ -311,7 +298,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class RootOnlyStringBiOneToOneChild {
     @Id
-    @GeneratedValue(strategy=GenerationType.IDENTITY)
     private String id;
 
     @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL)

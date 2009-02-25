@@ -49,6 +49,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testStringAncestorPlusNameOnlyPK() {
     HasUnencodedStringPkWithStringAncestor pojo = new HasUnencodedStringPkWithStringAncestor();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -119,6 +120,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testEncodedPkOnNonPrimaryKeyField() {
     EncodedPkOnNonPrimaryKeyField pojo = new EncodedPkOnNonPrimaryKeyField();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -222,6 +224,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testPkIdWithUnencodedStringPrimaryKey() {
     PkIdWithUnencodedStringPrimaryKey pojo = new PkIdWithUnencodedStringPrimaryKey();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -236,6 +239,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testPkNameWithUnencodedStringPrimaryKey() {
     PkNameWithUnencodedStringPrimaryKey pojo = new PkNameWithUnencodedStringPrimaryKey();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -250,6 +254,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testLongPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongUniChild pojo = new OneToManyParentWithRootOnlyLongUniChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -264,6 +269,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testLongPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongBiChild pojo = new OneToManyParentWithRootOnlyLongBiChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -278,6 +284,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testStringPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringUniChild pojo = new OneToManyParentWithRootOnlyStringUniChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -292,6 +299,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testStringPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringBiChild pojo = new OneToManyParentWithRootOnlyStringBiChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -306,6 +314,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testLongPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongUniChild pojo = new OneToOneParentWithRootOnlyLongUniChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -320,6 +329,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testLongPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongBiChild pojo = new OneToOneParentWithRootOnlyLongBiChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -334,6 +344,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testStringPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringUniChild pojo = new OneToOneParentWithRootOnlyStringUniChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {
@@ -348,6 +359,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testStringPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringBiChild pojo = new OneToOneParentWithRootOnlyStringBiChild();
+    pojo.id = "yar";
     beginTxn();
     em.persist(pojo);
     try {

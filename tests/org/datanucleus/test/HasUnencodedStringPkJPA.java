@@ -27,7 +27,6 @@ import javax.persistence.Id;
 public class HasUnencodedStringPkJPA {
 
   @Id
-  @GeneratedValue(strategy= GenerationType.IDENTITY)
   private String id;
 
   public String getId() {

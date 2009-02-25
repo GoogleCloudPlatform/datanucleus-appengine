@@ -61,24 +61,18 @@ public class IllegalMappingsJDO {
   public static class HasUnencodedStringPkWithKeyAncestor {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private Key illegal;
-
-    public void setId(String id) {
-      this.id = id;
-    }
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasUnencodedStringPkWithStringAncestor {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
@@ -140,8 +134,7 @@ public class IllegalMappingsJDO {
   public static class EncodedPkOnNonPrimaryKeyField {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     @Persistent
@@ -217,8 +210,7 @@ public class IllegalMappingsJDO {
   public static class PkIdWithUnencodedStringPrimaryKey {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
@@ -229,8 +221,7 @@ public class IllegalMappingsJDO {
   public static class PkNameWithUnencodedStringPrimaryKey {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
@@ -240,8 +231,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToManyParentWithRootOnlyLongUniChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private List<HasLongPkJDO> uniChildren = new ArrayList<HasLongPkJDO>();
@@ -250,8 +240,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToManyParentWithRootOnlyLongBiChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent(mappedBy = "parent")
     private List<RootOnlyLongBiOneToManyChild> biChildren = new ArrayList<RootOnlyLongBiOneToManyChild>();
@@ -270,8 +259,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToManyParentWithRootOnlyStringUniChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private List<HasUnencodedStringPkJDO> uniChildren = new ArrayList<HasUnencodedStringPkJDO>();
@@ -280,8 +268,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToManyParentWithRootOnlyStringBiChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent(mappedBy = "parent")
     private List<RootOnlyStringBiOneToManyChild> biChildren = new ArrayList<RootOnlyStringBiOneToManyChild>();
@@ -290,8 +277,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class RootOnlyStringBiOneToManyChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private OneToManyParentWithRootOnlyStringBiChild parent;
@@ -300,8 +286,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToOneParentWithRootOnlyLongUniChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private HasLongPkJDO uniChild;
@@ -310,8 +295,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToOneParentWithRootOnlyLongBiChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     private RootOnlyLongBiOneToManyChild biChild;
   }
@@ -329,8 +313,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToOneParentWithRootOnlyStringUniChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private HasUnencodedStringPkJDO uniChild;
@@ -339,8 +322,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class OneToOneParentWithRootOnlyStringBiChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent
     private RootOnlyStringBiOneToManyChild biChild;
@@ -349,8 +331,7 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class RootOnlyStringBiOneToOneChild {
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-    private String id;
+    public String id;
 
     @Persistent(mappedBy = "biChild")
     private OneToOneParentWithRootOnlyStringBiChild parent;

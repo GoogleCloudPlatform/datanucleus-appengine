@@ -30,7 +30,6 @@ import javax.persistence.Id;
 @Entity
 public class HasKeyAncestorStringPkJPA {
   @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
   private String key;
 
   // This doesn't actually work - JPA doesn't support non-pk fields
