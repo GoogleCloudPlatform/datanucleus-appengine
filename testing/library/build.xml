@@ -1,127 +1,100 @@
 <!-- ant build for the library orm demo app -->
 <project name="library" default="launch" basedir=".">
 
-  <property name="orm.lib.dir" value="../../lib"/>
-  <property name="demos.lib.dir" value="../../demos/lib"/>
+  <property name="sdk.lib.dir" value="/tmp/appengine-java-sdk/lib"/>
   <property name="testing.dir" value=".."/>
+  <property name="war.dir" value="war"/>
 
   <target name="clean" description="clean up">
     <delete dir="classes"/>
-    <delete dir="exploded"/>
-    <delete file="library.war"/>
-    <delete file="local_bin.bin"/>
+    <delete dir="${war.dir}"/>
   </target>
 
-  <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" jar="${orm.lib.dir}/external-dev-appserver.jar">
-      <jvmarg line="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5007 -Ddevappserver.port=8085"/>
-      <arg value="exploded"/>
+  <target name="launch" description="launch the app" depends="package">
+    <java fork="true" classpath="${sdk.lib.dir}/appengine-tools-api.jar"
+          classname="com.google.appengine.tools.development.DevAppServerMain" failonerror="true">
+      <jvmarg
+          line="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5007"/>
+      <arg value="--port=8085"/>
+      <arg value="${war.dir}"/>
     </java>
   </target>
 
   <target name="relaunch" description="relaunch the app">
-    <java fork="true" jar="${orm.lib.dir}/external-dev-appserver.jar">
-      <jvmarg line="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5007 -Ddevappserver.port=8085"/>
-      <arg value="exploded"/>
+    <java fork="true" classpath="${sdk.lib.dir}/appengine-tools-api.jar"
+          classname="com.google.appengine.tools.development.DevAppServerMain" failonerror="true">
+      <jvmarg
+          line="-Xdebug -Xnoagent -Djava.compiler=NONE -Xrunjdwp:transport=dt_socket,server=y,suspend=n,address=5007"/>
+      <arg value="--port=8085"/>
+      <arg value="${war.dir}"/>
     </java>
   </target>
 
-  <target name="explode" description="explode the war" depends="war">
-    <delete dir="exploded"/>
-    <mkdir dir="exploded"/>
-    <unwar src="library.war" dest="exploded"/>
-    <copy todir="exploded/core">
+  <target name="package" depends="enhance">
+    <delete dir="${war.dir}"/>
+    <mkdir dir="${war.dir}"/>
+    <copy todir="${war.dir}/WEB-INF/lib" flatten="true" failonerror="true">
+      <fileset dir="${sdk.lib.dir}/user/orm">
+        <include name="datanucleus-jpa-1.1.0.jar"/>
+        <include name="datanucleus-core-1.1.0.jar"/>
+        <include name="jdo2-api-2.3-SNAPSHOT.jar"/>
+        <include name="transaction-api-1.1.jar"/>
+        <include name="geronimo-jpa_3.0_spec-1.1.1.jar"/>
+        <include name="geronimo-jta_1.1_spec-1.1.1.jar"/>
+        <include name="datanucleus-appengine-*.jar"/>
+      </fileset>
+      <fileset dir="${sdk.lib.dir}">
+        <include name="user/appengine-api.jar"/>
+      </fileset>
+     </copy>
+    <copy todir="${war.dir}/WEB-INF" failonerror="true">
+      <fileset dir="src/WEB-INF">
+        <include name="appengine-web.xml"/>
+        <include name="web.xml"/>
+        <include name="datastore-indexes.xml"/>
+      </fileset>
+    </copy>
+    <copy todir="${war.dir}/WEB-INF/classes/META-INF" failonerror="true">
+      <fileset dir="src/META-INF"/>
+    </copy>
+    <copy todir="${war.dir}/WEB-INF/classes" failonerror="true">
+      <fileset dir="classes"/>
+    </copy>
+    <copy todir="${war.dir}/core" failonerror="true">
       <fileset dir="${testing.dir}/selenium-core">
         <include name="**/*"/>
       </fileset>
     </copy>
-    <copy todir="exploded/tests">
+    <copy todir="${war.dir}/tests" failonerror="true">
       <fileset dir="tests">
         <include name="**/*"/>
       </fileset>
     </copy>
   </target>
 
-  <target name="split" description="Split the datanucleus jars into chunks smaller than 1MB.
-                                    Typically we would let the appcfg script do this for us,
-                                    but because of some special requirements that datanucleus
-                                    has we need to do this ourselves.">
-    <mkdir dir="../lib"/>
-    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
-      <arg value="--input_jar=${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
-      <arg value="--output_directory=."/>
-      <arg value="--max_file_size=1000000"/>
-      <arg value="--replicate_manifests=true"/>
-    </java>
-    <java dir="../lib" fork="true" classname="com.google.apphosting.tools.JarSplitter" classpath="${orm.lib.dir}/JarSplitter_deploy.jar">
-      <arg value="--input_jar=${orm.lib.dir}/external-api.jar"/>
-      <arg value="--output_directory=."/>
-      <arg value="--max_file_size=1000000"/>
-      <arg value="--replicate_manifests=true"/>
-    </java>
-  </target>
-
-  <target name="war" description="build the war" depends="enhance, split">
-    <!--
-    The contents of src/META-INF need to go in the classes
-    directory of the war, not the top-level META-INF
-    directory of the war.
-    -->
-    <copy todir="classes">
-      <fileset dir="src">
-        <include name="META-INF/*"/>
-      </fileset>
-    </copy>
-    <war destfile="library.war" webxml="src/WEB-INF/web.xml">
-      <lib dir="${orm.lib.dir}">
-        <include name="datanucleus-jpa-1.1.0.m1.jar"/>
-        <include name="asm-3.1.jar"/>
-        <include name="jdo2-api-2.2.jar"/>
-        <include name="jta.jar"/>
-        <include name="persistence-api-1.0.2.jar"/>
-      </lib>
-      <lib dir="../lib">
-        <include name="datanucleus-core-1.1.0.m1-*.jar"/>
-        <include name="external-api-*.jar"/>
-      </lib>
-      <lib dir="../..">
-        <include name="datanucleus-appengine-SNAPSHOT.jar"/>
-      </lib>
-      <lib dir="${demos.lib.dir}">
-        <include name="servlet-api-2.4.jar"/>
-      </lib>
-      <classes dir="classes"/>
-      <classes dir="src">
-        <include name="datanucleus.properties"/>
-      </classes>
-      <webinf dir="src/WEB-INF">
-        <include name="appengine-web.xml"/>
-      </webinf>
-    </war>
-  </target>
-
   <path id="library.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${orm.lib.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="${demos.lib.dir}/servlet-api-2.4.jar"/>
-    <pathelement location="${orm.lib.dir}/external-api.jar"/>
+    <pathelement location="${sdk.lib.dir}/user/orm/jdo2-api-2.3-SNAPSHOT.jar"/>
+    <pathelement location="${sdk.lib.dir}/user/orm/geronimo-jpa_3.0_spec-1.1.1.jar"/>
+    <pathelement location="${sdk.lib.dir}/user/orm/geronimo-servlet_2.5_spec-1.2.jar"/>
+    <pathelement location="${sdk.lib.dir}/user/appengine-api.jar"/>
   </path>
 
-  <target name="compile" description="compile the webapp">
+  <target name="compile">
     <mkdir dir="classes"/>
-    <javac srcdir="src" destdir="classes" classpathref="library.classpath" debug="on"/>
+    <javac srcdir="src" destdir="classes" classpathref="library.classpath" debug="on" source="1.5"
+           target="1.5"/>
   </target>
 
   <path id="enhancer.classpath">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.0.1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
-    <pathelement location="${orm.lib.dir}/asm-3.1.jar"/>
+    <pathelement location="${sdk.lib.dir}/tools/orm/jdo2-api-2.3-SNAPSHOT.jar"/>
+    <pathelement location="${sdk.lib.dir}/tools/orm/datanucleus-enhancer-1.1.0.jar"/>
+    <pathelement location="${sdk.lib.dir}/tools/orm/datanucleus-core-1.1.0.jar"/>
+    <pathelement location="${sdk.lib.dir}/tools/orm/datanucleus-jpa-1.1.0.jar"/>
+    <pathelement location="${sdk.lib.dir}/tools/orm/asm-3.1.jar"/>
     <pathelement location="classes"/>
   </path>
 
-  <target name="enhance" description="enhance" depends="compile">
+  <target name="enhance" depends="compile">
     <taskdef name="datanucleusenhancer" classpathref="enhancer.classpath"
              classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
 

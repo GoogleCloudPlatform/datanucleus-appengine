@@ -3,13 +3,9 @@ The application can be tested with Selenium core by loading
 http://localhost:8085/core/TestRunner.html?test=..%2Ftests%2FTestSuite.html in a
 browser.
 
+Load this url in browser to change Data Service API:
+http://localhost:8085/setDataServiceName?DataServiceName
+
 Initial set-up is required for Selenium tests:
 cd testing/library/tools
 ./initPromLibrary.py -u http://localhost:8085/library
-
-Because JDO uses all capital letters for kind and property names while the BookDataService using native datastore keeps the original cases, we need to load this url in browser:
-http://kjin-library.prom.corp.google.com/setDataServiceName?DataServiceName=Native
-(This changes the BookDataService implementation to native mode.)
-Then run the command again:
-./initPromLibrary.py -u http://localhost:8085/library
-Now tests data for all 3 implementations are initialized.

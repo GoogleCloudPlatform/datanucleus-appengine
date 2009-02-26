@@ -18,7 +18,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class Book {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private String id;
+  private Long id;
 
   @Persistent
   private String category;
@@ -36,10 +36,10 @@ public class Book {
   private Date created;
   
   @Persistent
-  private long year;
+  private int year;
 
   public Book(String category, Date created, String firstname, String lastname, String title,
-      long year) {
+      int year) {
     super();
     this.category = category;
     this.created = created;
@@ -48,7 +48,7 @@ public class Book {
     this.title = title;
     this.year = year;
   }
-  public String getId() {
+  public Long getId() {
     return id;
   }
   public void setCategory(String category) {
@@ -81,10 +81,10 @@ public class Book {
   public Date getCreated() {
     return created;
   }
-  public void setYear(long year) {
+  public void setYear(int year) {
     this.year = year;
   }
-  public long getYear() {
+  public int getYear() {
     return year;
   }
 

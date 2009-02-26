@@ -112,8 +112,10 @@ public class Library extends HttpServlet {
       if (category.equals("")) {
         category = "test";
       }
-      addBook(category, formFields.get("lastname"), formFields.get("firstname"), formFields
-          .get("title"), Long.parseLong(formFields.get("year")), true);
+      String title = formFields.get("title");
+      addBook(category, formFields.get("lastname"), formFields.get("firstname"), title,
+          Integer.parseInt(formFields.get("year")),
+          !title.contains("'"));        //hack for ' not supported in JPQL
       doGet(req, resp);
     } else if (action_type.equals("Query")) {
       handleQuery(req, resp, false);
@@ -272,7 +274,7 @@ public class Library extends HttpServlet {
    * Puts the Book entity into datastore and does a check for duplicates if
    * {@code check == true}.
    */
-  private void addBook(String category, String lastname, String firstname, String title, long year,
+  private void addBook(String category, String lastname, String firstname, String title, int year,
       boolean check) {
     if (title == null || title.length() == 0) {
       return;

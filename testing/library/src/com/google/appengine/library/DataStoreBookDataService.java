@@ -2,15 +2,15 @@
 
 package com.google.appengine.library;
 
-import static com.google.apphosting.api.datastore.FetchOptions.Builder.withLimit;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.FetchOptions;
-import com.google.apphosting.api.datastore.Query;
-import com.google.apphosting.api.datastore.Query.FilterOperator;
-import com.google.apphosting.api.datastore.Query.SortDirection;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterOperator;
+import com.google.appengine.api.datastore.Query.SortDirection;
 
 import java.util.Date;
 import java.util.HashMap;
@@ -20,35 +20,30 @@ import java.util.StringTokenizer;
 
 /**
  * @author kjin@google.com (Kevin Jin)
- * 
  */
 final class DataStoreBookDataService implements BookDataService {
+
   private final DatastoreService datastoreService = DatastoreServiceFactory.getDatastoreService();
 
-  @Override
   public Iterable<Book> asIterable(String jpqlQuery) {
     return new BookIterable(datastoreService.prepare(new QueryConverter().convertQuery(jpqlQuery))
         .asIterable());
   }
 
-  @Override
   public Iterable<Book> asIterable(String jpqlQuery, int limit, int offset) {
     FetchOptions fo = withLimit(limit).offset(offset);
     return new BookIterable(datastoreService.prepare(new QueryConverter().convertQuery(jpqlQuery))
         .asIterable(fo));
   }
 
-  @Override
   public int countEntities(String jpqlQuery) {
     return datastoreService.prepare(new QueryConverter().convertQuery(jpqlQuery)).countEntities();
   }
 
-  @Override
   public void delete(Book book) {
     datastoreService.delete(((BookWithEntity) book).e.getKey());
   }
 
-  @Override
   public void put(Book book) {
     final Entity e;
     if (book instanceof BookWithEntity) {
@@ -68,16 +63,16 @@ final class DataStoreBookDataService implements BookDataService {
   private static final class BookWithEntity extends Book {
     private final Entity e;
 
-    private BookWithEntity(String category, Date created, String firstname, String lastname,
-        String title, long year, Entity e) {
-      super(category, created, firstname, lastname, title, year);
+    private BookWithEntity(Entity e) {
+      super((String) e.getProperty("category"), (Date) e.getProperty("created"),
+            (String) e.getProperty("firstname"), (String) e.getProperty("lastname"),
+            (String) e.getProperty("title"), ((Long) e.getProperty("year")).intValue());
       this.e = e;
     }
   }
 
   private static final class BookIterable implements Iterable<Book> {
 
-    @Override
     public Iterator<Book> iterator() {
       return new BookIterator(it.iterator());
     }
@@ -92,25 +87,20 @@ final class DataStoreBookDataService implements BookDataService {
 
   private static final class BookIterator implements Iterator<Book> {
 
-    @Override
     public boolean hasNext() {
       return it.hasNext();
     }
 
-    @Override
     public Book next() {
       Book book = null;
       final Entity e = it.next();
       if (e != null) {
         book =
-            new BookWithEntity((String) e.getProperty("category"), (Date) e.getProperty("created"),
-                (String) e.getProperty("firstname"), (String) e.getProperty("lastname"), (String) e
-                    .getProperty("title"), ((Long) e.getProperty("year")).longValue(), e);
+            new BookWithEntity(e);
       }
       return book;
     }
 
-    @Override
     public void remove() {
       it.remove();
     }
@@ -186,9 +176,9 @@ final class DataStoreBookDataService implements BookDataService {
           String propValue = filter.substring(opIndex + op.length());
           propValue = parseValue(propValue);
 
-          // special case: year has Long value
+          // special case: year has int value
           if (propName.equals("year")) {
-            query.addFilter(propName, operator, Long.parseLong(propValue));
+            query.addFilter(propName, operator, Integer.parseInt(propValue));
           } else {
             query.addFilter(propName, operator, propValue);
           }
@@ -199,13 +189,13 @@ final class DataStoreBookDataService implements BookDataService {
     }
 
     private String parseValue(String propValue) {
-      // not a literal
+      // not quoted
       if (!propValue.startsWith("'")) {
         return propValue;
       }
 
       while (!propValue.endsWith("'")) {
-        // an incomplete literal
+        // an incomplete quoted literal
         propValue += " " + tokenizer.nextToken();
       }
       propValue = propValue.substring(1, propValue.length() - 1);
@@ -218,7 +208,7 @@ final class DataStoreBookDataService implements BookDataService {
     private static final String[] OPERATORS = {">=", ">", "<=", "<", "="};
     private static final FilterOperator[] OPERATOR_ENUMS =
         {FilterOperator.GREATER_THAN_OR_EQUAL, FilterOperator.GREATER_THAN,
-            FilterOperator.LESS_THAN_OR_EQUAL, FilterOperator.LESS_THAN, FilterOperator.EQUAL};
+         FilterOperator.LESS_THAN_OR_EQUAL, FilterOperator.LESS_THAN, FilterOperator.EQUAL};
 
     private static final Map<String, FilterOperator> OPERATOR_MAP =
         new HashMap<String, FilterOperator>();
@@ -229,7 +219,6 @@ final class DataStoreBookDataService implements BookDataService {
     }
   }
 
-  @Override
   public void close() {
     // no clean-up needed for DataStore.
   }

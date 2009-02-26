@@ -2,10 +2,10 @@
 
 package com.google.appengine.library;
 
-import com.google.apphosting.api.datastore.DatastoreService;
-import com.google.apphosting.api.datastore.DatastoreServiceFactory;
-import com.google.apphosting.api.datastore.Entity;
-import com.google.apphosting.api.datastore.Query;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Query;
 
 import java.util.HashMap;
 import java.util.Map;

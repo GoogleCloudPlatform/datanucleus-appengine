@@ -12,23 +12,21 @@ import javax.persistence.Query;
 
 /**
  * TODO: figure out why EntityTransaction is needed for JPA.
- * 
+ *
  * @author kjin@google.com (Kevin Jin)
- * 
  */
 final class JPABookDataService implements BookDataService {
+
   private static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("book");
   private final EntityManager em = emf.createEntityManager();
   private static final String FROM_CLAUSE = "SELECT FROM " + Book.class.getName();
 
   @SuppressWarnings("unchecked")
-  @Override
   public Iterable<Book> asIterable(String jpqlQuery) {
     return em.createQuery(FROM_CLAUSE + jpqlQuery).getResultList();
   }
 
   @SuppressWarnings("unchecked")
-  @Override
   public Iterable<Book> asIterable(String jpqlQuery, int limit, int offset) {
     Query query = em.createQuery(FROM_CLAUSE + jpqlQuery);
     query.setMaxResults(limit);
@@ -37,28 +35,36 @@ final class JPABookDataService implements BookDataService {
   }
 
   @SuppressWarnings("unchecked")
-  @Override
   public int countEntities(String jpqlQuery) {
     return ((Collection) asIterable(jpqlQuery)).size();
   }
 
-  @Override
   public void delete(Book book) {
     EntityTransaction txn = em.getTransaction();
-    txn.begin();
-    em.remove(book);
-    txn.commit();
+    try {
+      txn.begin();
+      em.remove(book);
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
   }
 
-  @Override
   public void put(Book book) {
     EntityTransaction txn = em.getTransaction();
-    txn.begin();
-    em.persist(book);
-    txn.commit();
+    try {
+      txn.begin();
+      em.persist(book);
+      txn.commit();
+    } finally {
+      if (txn.isActive()) {
+        txn.rollback();
+      }
+    }
   }
 
-  @Override
   public void close() {
     em.close();
   }

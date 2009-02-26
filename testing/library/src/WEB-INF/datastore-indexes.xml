@@ -1,0 +1,76 @@
+<!-- Indices written at 2/26/09 9:29 AM -->
+
+<datastore-indexes autoGenerate="true">
+
+    <!-- Used 56 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="lastname" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 25 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="title" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 11 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="year" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="year" direction="asc"/>
+        <property name="lastname" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="lastname" direction="asc"/>
+        <property name="year" direction="asc"/>
+    </datastore-index>
+
+    <!-- Used 1 time in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="lastname" direction="asc"/>
+        <property name="year" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="firstname" direction="asc"/>
+        <property name="lastname" direction="desc"/>
+        <property name="title" direction="desc"/>
+    </datastore-index>
+
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="firstname" direction="asc"/>
+        <property name="lastname" direction="desc"/>
+        <property name="title" direction="asc"/>
+    </datastore-index>
+
+    <!-- Used 2 times in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="firstname" direction="asc"/>
+        <property name="lastname" direction="asc"/>
+        <property name="title" direction="asc"/>
+        <property name="year" direction="asc"/>
+    </datastore-index>
+
+    <!-- Used 1 time in query history -->
+    <datastore-index kind="Book" ancestor="false" source="auto">
+        <property name="category" direction="asc"/>
+        <property name="firstname" direction="asc"/>
+        <property name="lastname" direction="asc"/>
+    </datastore-index>
+
+</datastore-indexes>
