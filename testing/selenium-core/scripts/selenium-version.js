@@ -1,1 +1,5 @@
-/home/kjin/clients/appengine/READONLY/google3/third_party/javascript/selenium_core/v0_8_3/core/scripts/selenium-version.js
+Selenium.version = "@VERSION@";
+Selenium.revision = "@REVISION@";
+
+window.top.document.title += " v" + Selenium.version + " [" + Selenium.revision + "]";
+
