@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Link;
 import com.google.appengine.api.datastore.Text;
+import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.users.User;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -114,6 +115,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(KitchenSink.BLOB1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.TEXT1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.LINK1, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(KitchenSink.SHORTBLOB1, fieldManager.fetchObjectField(iter.next()));
     assertTrue(Arrays.equals(new String[] {"a", "b"},
         (String[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new int[] {1, 2}, (int[]) fieldManager.fetchObjectField(iter.next())));
@@ -301,6 +303,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     fieldManager.storeObjectField(iter.next(), KitchenSink.BLOB1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.TEXT1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.LINK1);
+    fieldManager.storeObjectField(iter.next(), KitchenSink.SHORTBLOB1);
 
     fieldManager.storeObjectField(iter.next(), new String[] {"a", "b"});
     fieldManager.storeObjectField(iter.next(), new int[] {1, 2});

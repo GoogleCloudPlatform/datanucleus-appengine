@@ -217,10 +217,11 @@ public class DatastoreFieldManager implements FieldManager {
         // This is trouble, probably an incorrect mapping.
         throw new NucleusUserException(
             "The primary key for " + getClassMetaData().getFullClassName() + " is an unencoded "
-            + "string but the key of the coresponding entity in the datastore does not have a "
+            + "string but the key of the corresponding entity in the datastore does not have a "
             + "name.  You may want to either change the primary key to be an encoded string "
-            + "(add the \"" + DatastoreManager.ENCODED_PK + "\" extension), or change the "
-            + "primary key to be of type " + Key.class.getName() + ".");
+            + "(add the \"" + DatastoreManager.ENCODED_PK + "\" extension), change the "
+            + "primary key to be of type " + Key.class.getName() + ", or, if you're certain that "
+            + "this class will never have a parent, change the primary key to be of type Long.");
       }
       return datastoreEntity.getKey().getName();
     }

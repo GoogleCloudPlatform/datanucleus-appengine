@@ -74,6 +74,8 @@ public class AllTests {
     suite.addTestSuite(JPAPrimaryKeyTest.class);
     suite.addTestSuite(JPAMetaDataValidatorTest.class);
     suite.addTestSuite(EntityUtilsTest.class);
+    suite.addTestSuite(JDOBytesTest.class);
+    suite.addTestSuite(JPABytesTest.class);
     return suite;
   }
 }

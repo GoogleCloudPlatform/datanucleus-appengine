@@ -15,7 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.Blob;
+import com.google.appengine.api.datastore.ShortBlob;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.StateManager;
@@ -195,48 +195,47 @@ class TypeConversionUtils {
    * @return {@code true} if the pojo property is an array of bytes.
    */
   private boolean pojoPropertyIsByteArray(AbstractMemberMetaData metaData) {
-    ContainerMetaData cmd = metaData.getContainer();
-    if (cmd instanceof ArrayMetaData) {
-      String containerType = ((ArrayMetaData)cmd).getElementType();
-      return containerType.equals(Byte.class.getName()) ||
-          containerType.equals(Byte.TYPE.getName());
-    }
-    return false;
+    Class<?> componentType = metaData.getType().getComponentType();
+    return componentType.equals(Byte.class) || componentType.equals(Byte.TYPE);
   }
 
   /**
    * @param metaData The meta data we'll consult.
    *
-   * @return {@code true} if the pojo property is a Collection of Characters.
+   * @return {@code true} if the pojo property is a collection of bytes.
    */
-  private boolean pojoPropertyIsCharacterCollection(AbstractMemberMetaData metaData) {
+  private boolean pojoPropertyIsByteCollection(AbstractMemberMetaData metaData) {
     ContainerMetaData cmd = metaData.getContainer();
-    if (cmd instanceof CollectionMetaData) {
-      String containerType = ((CollectionMetaData)cmd).getElementType();
-      return containerType.equals(Character.class.getName());
-    }
-    return false;
+    String containerClassStr = ((CollectionMetaData) cmd).getElementType();
+    return containerClassStr.equals(Byte.class.getName()) ||
+           containerClassStr.equals(Byte.TYPE.getName());
   }
 
   /**
-   * Converts a pojo array of bytes to a datastore blob.
+   * Converts an array of bytes to a datastore short blob.
    *
    * @param value The pojo array.  It could be a primitive array, which is why
    * the type of the param is Object and not Object[].
    *
-   * @return A Blob representing the byte array.
+   * @return A {@code ShortBlob} representing the byte array.
    */
-  private Blob convertByteArrayToBlob(Object value) {
+  private ShortBlob convertByteArrayToShortBlob(Object value) {
     if (value.getClass().getComponentType().isPrimitive()) {
-      return new Blob((byte[]) value);
+      return new ShortBlob((byte[]) value);
     } else {
-      Byte[] bytes = (Byte[]) value;
-      byte[] array = (byte[]) Array.newInstance(Byte.TYPE, bytes.length);
-      for (int i = 0; i < bytes.length; i++) {
-        array[i] = bytes[i];
-      }
-      return new Blob(array);
+      return convertByteCollectionToShortBlob(Arrays.asList((Byte[]) value));
     }
+  }
+
+  /**
+   * Converts a collection of bytes to a datastore short blob.
+   *
+   * @param value The pojo collection.
+   *
+   * @return A {@code ShortBlob} representing the byte collection.
+   */
+  private ShortBlob convertByteCollectionToShortBlob(Collection<Byte> value) {
+    return new ShortBlob(PrimitiveArrays.toByteArray(value));
   }
 
   /**
@@ -296,42 +295,64 @@ class TypeConversionUtils {
       ClassLoaderResolver clr, Object value, StateManager ownerSM, AbstractMemberMetaData ammd) {
     ContainerMetaData cmd = ammd.getContainer();
     if (pojoPropertyIsArray(ammd)) {
-      String memberTypeStr = ((ArrayMetaData)cmd).getElementType();
-      Class<?> memberType = classForName(clr, memberTypeStr);
-
-      if (value instanceof Blob) {
-        if (memberType != Byte.TYPE && memberType != Byte.class) {
-          throw new NucleusException("Cannot convert a Blob to an array of type " + memberTypeStr);
-        }
-        value = convertDatastoreBlobToByteArray((Blob) value, memberType);
-      } else {
-        // The pojo property is an array.  The datastore only supports
-        // Collections so we need to translate.
-        @SuppressWarnings("unchecked")
-        List<Object> datastoreList = (List<Object>) value;
-        value = convertDatastoreListToPojoArray(datastoreList, memberType);
-      }
+      value = datastoreValueToPojoArray(value, ammd);
     } else if (pojoPropertyIsCollection(cmd)) {
-      CollectionMetaData collMetaData = (CollectionMetaData) cmd;
-      String pojoTypeStr = collMetaData.getElementType();
-      Class<?> pojoType = classForName(clr, pojoTypeStr);
-      @SuppressWarnings("unchecked")
-      List<Object> datastoreList = (List<Object>) value;
-      if (pojoPropertyIsList(ammd)) {
-        @SuppressWarnings("unchecked")
-        Class<? extends List> listType = ammd.getType();
-        value = convertDatastoreListToPojoList(datastoreList, pojoType, listType);
-      } else if (pojoPropertyIsSet(ammd)) {
-        @SuppressWarnings("unchecked")
-        Class<? extends Set> setType = ammd.getType();
-        value = convertDatastoreListToPojoSet(datastoreList, pojoType, setType);
-      }
-      value = wrap(ownerSM, ammd, value);
+      value = datastoreValueToPojoCollection(clr, value, ownerSM, ammd, cmd);
     } else { // neither array nor collection
       if (value != null) {
         // nothing to convert
         value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
       }
+    }
+    return value;
+  }
+
+  private Object datastoreValueToPojoCollection(ClassLoaderResolver clr, Object value,
+                                                StateManager ownerSM, AbstractMemberMetaData ammd,
+                                                ContainerMetaData cmd) {
+    CollectionMetaData collMetaData = (CollectionMetaData) cmd;
+    String memberTypeStr = collMetaData.getElementType();
+    Class<?> memberType = classForName(clr, memberTypeStr);
+    Function<Object, Object> conversionFunc = DATASTORE_TO_POJO_TYPE_FUNC.get(memberType);
+    if (value instanceof ShortBlob) {
+      if (!memberType.equals(Byte.TYPE) && !memberType.equals(Byte.class)) {
+        throw new NucleusException(
+            "Cannot convert a ShortBlob to an array of type " + memberType.getName());
+      }
+      value = Arrays.asList((Byte[]) convertShortBlobToByteArray((ShortBlob) value, memberType));
+      // We don't want any conversions applied - we've got bytes from the
+      // datastore and the property on the pojo wants bytes.
+      conversionFunc = null;
+    }
+    @SuppressWarnings("unchecked")
+    List<Object> datastoreList = (List<Object>) value;
+    if (pojoPropertyIsList(ammd)) {
+      @SuppressWarnings("unchecked")
+      Class<? extends List> listType = ammd.getType();
+      value = convertDatastoreListToPojoList(datastoreList, memberType, listType, conversionFunc);
+    } else if (pojoPropertyIsSet(ammd)) {
+      @SuppressWarnings("unchecked")
+      Class<? extends Set> setType = ammd.getType();
+      value = convertDatastoreListToPojoSet(datastoreList, memberType, setType, conversionFunc);
+    }
+    return wrap(ownerSM, ammd, value);
+  }
+
+  private Object datastoreValueToPojoArray(Object value, AbstractMemberMetaData ammd) {
+    Class<?> memberType = ammd.getType().getComponentType();
+
+    if (value instanceof ShortBlob) {
+      if (!memberType.equals(Byte.TYPE) && !memberType.equals(Byte.class)) {
+        throw new NucleusException(
+            "Cannot convert a ShortBlob to an array of type " + memberType.getName());
+      }
+      value = convertShortBlobToByteArray((ShortBlob) value, memberType);
+    } else {
+      // The pojo property is an array.  The datastore only supports
+      // Collections so we need to translate.
+      @SuppressWarnings("unchecked")
+      List<Object> datastoreList = (List<Object>) value;
+      value = convertDatastoreListToPojoArray(datastoreList, memberType);
     }
     return value;
   }
@@ -346,16 +367,16 @@ class TypeConversionUtils {
   /**
    * Converts a datastore blob to either a byte[] or a Byte[].
    *
-   * @param blob The blob to convert.
+   * @param shortBlob The short blob to convert.
    * @param pojoType The destination type for the array.
    * @return Object instead of Object[] because primitive arrays don't extend
    * Object[].
    */
-  private Object convertDatastoreBlobToByteArray(Blob blob, Class<?> pojoType) {
+  private Object convertShortBlobToByteArray(ShortBlob shortBlob, Class<?> pojoType) {
     if (pojoType.isPrimitive()) {
-      return blob.getBytes();
+      return shortBlob.getBytes();
     } else {
-      byte[] bytes = blob.getBytes();
+      byte[] bytes = shortBlob.getBytes();
       Byte[] array = (Byte[]) Array.newInstance(pojoType, bytes.length);
       for (int i = 0; i < bytes.length; i++) {
         array[i] = bytes[i];
@@ -364,24 +385,34 @@ class TypeConversionUtils {
     }
   }
 
-  List<Object> convertDatastoreListToPojoList(List<Object> datastoreList, Class<?> pojoType,
-      Class<? extends List> listType) {
+  private List<Object> newList(Class<? extends List> listType) {
     List<Object> listToReturn;
     if (listType.isInterface()) {
       listToReturn = Utils.newArrayList();
     } else {
       try {
-        listToReturn = listType.newInstance();
+        listToReturn = (List<Object>) listType.newInstance();
       } catch (InstantiationException e) {
         throw new NucleusException("Cannot instantiate List of type " + listType.getName(), e);
       } catch (IllegalAccessException e) {
         throw new NucleusException("Cannot instantiate List of type " + listType.getName(), e);
       }
     }
+    return listToReturn;
+  }
+
+  List<Object> convertDatastoreListToPojoList(List<Object> datastoreList, Class<?> pojoType,
+      Class<? extends List> listType) {
+    Function<Object, Object> func = DATASTORE_TO_POJO_TYPE_FUNC.get(pojoType);
+    return convertDatastoreListToPojoList(datastoreList, pojoType, listType, func);
+  }
+
+  List<Object> convertDatastoreListToPojoList(List<Object> datastoreList, Class<?> pojoType,
+      Class<? extends List> listType, Function<Object, Object> func) {
+    List<Object> listToReturn = newList(listType);
     if (datastoreList == null) {
       return listToReturn;
     }
-    Function<Object, Object> func = DATASTORE_TO_POJO_TYPE_FUNC.get(pojoType);
     if (func != null) {
       datastoreList = Utils.transform(datastoreList, func);
     } else if (Enum.class.isAssignableFrom(pojoType)) {
@@ -397,10 +428,7 @@ class TypeConversionUtils {
     return listToReturn;
   }
 
-  Set<Object> convertDatastoreListToPojoSet(List<Object> datastoreList, Class<?> pojoType,
-      Class<? extends Set> setType) {
-    List<?> convertedList =
-        convertDatastoreListToPojoList(datastoreList, pojoType, ArrayList.class);
+  private Set<Object> newSet(Class<? extends Set> setType) {
     Set<Object> setToReturn;
     if (Set.class.equals(setType)) {
       setToReturn = Utils.newHashSet();
@@ -415,6 +443,14 @@ class TypeConversionUtils {
         throw new NucleusException("Cannot instantiate Set of type " + setType.getName(), e);
       }
     }
+    return setToReturn;
+  }
+
+  Set<Object> convertDatastoreListToPojoSet(List<Object> datastoreList, Class<?> pojoType,
+      Class<? extends Set> setType, Function<Object, Object> conversionFunc) {
+    List<?> convertedList =
+        convertDatastoreListToPojoList(datastoreList, pojoType, ArrayList.class, conversionFunc);
+    Set<Object> setToReturn = newSet(setType);
     setToReturn.addAll(convertedList);
     return setToReturn;
   }
@@ -514,9 +550,9 @@ class TypeConversionUtils {
   Object pojoValueToDatastoreValue(
       ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
     if (pojoPropertyIsArray(ammd)) {
-      value = convertPojoArrayToDatastoreList(ammd, value);
+      value = convertPojoArrayToDatastoreValue(ammd, value);
     } else if (pojoPropertyIsCollection(ammd.getContainer())) {
-      value = convertPojoCollectionToDatastoreList(clr, ammd, (Collection<?>) value);
+      value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
     } else { // neither array nor collection
       if (value != null) {
         value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
@@ -525,7 +561,7 @@ class TypeConversionUtils {
     return value;
   }
 
-  private Object convertPojoCollectionToDatastoreList(
+  private Object convertPojoCollectionToDatastoreValue(
       ClassLoaderResolver clr, AbstractMemberMetaData ammd, Collection<?> value) {
     Object result = value;
     Class<?> elementType = clr.classForName(ammd.getCollection().getElementType());
@@ -533,6 +569,8 @@ class TypeConversionUtils {
       @SuppressWarnings("unchecked")
       Iterable<Enum> enums = (Iterable<Enum>) value;
       result = convertEnumsToStringList(enums);
+    } else if (pojoPropertyIsByteCollection(ammd)) {
+      result = convertByteCollectionToShortBlob((Collection<Byte>) value);
     } else {
 
       if (POJO_TO_DATASTORE_TYPE_FUNC.get(elementType) != null) {
@@ -547,10 +585,10 @@ class TypeConversionUtils {
     return result;
   }
 
-  private Object convertPojoArrayToDatastoreList(AbstractMemberMetaData ammd, Object value) {
+  private Object convertPojoArrayToDatastoreValue(AbstractMemberMetaData ammd, Object value) {
     Object result;
     if (pojoPropertyIsByteArray(ammd)) {
-      result = convertByteArrayToBlob(value);
+      result = convertByteArrayToShortBlob(value);
     } else if (Enum.class.isAssignableFrom(ammd.getType().getComponentType())) {
       result = convertEnumsToStringList(Arrays.<Enum>asList((Enum[]) value));
     } else {

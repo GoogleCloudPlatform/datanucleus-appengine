@@ -19,6 +19,8 @@ import junit.framework.TestCase;
 
 import org.datanucleus.test.HasEnumJDO;
 
+import java.util.Arrays;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -34,5 +36,10 @@ public class TypeConversionUtilsTest extends TestCase {
     int[] intArray =
         (int[]) tcu.convertDatastoreListToPojoArray(null, Integer.TYPE);
 
+  }
+
+  public void testAsListBehavior() {
+    Byte[] bArray = {0, 5, 8};
+    assertEquals(3, Arrays.asList(bArray).size());
   }
 }

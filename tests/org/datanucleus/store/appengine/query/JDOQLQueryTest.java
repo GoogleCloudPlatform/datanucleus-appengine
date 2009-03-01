@@ -1042,6 +1042,22 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
 
+  public void testSetOrdering() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery(Flight.class);
+    q.setOrdering("you");
+    @SuppressWarnings("unchecked")
+    List<Flight> results = (List<Flight>) q.execute();
+    assertEquals(2, results.size());
+    Flight f1 = results.get(0);
+    Flight f2 = results.get(1);
+    assertEquals(KeyFactory.stringToKey(f2.getId()), e2.getKey());
+    assertEquals(KeyFactory.stringToKey(f1.getId()), e1.getKey());
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {

@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Link;
+import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.api.users.User;
 
@@ -73,6 +74,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public Blob blobVal;
   @Persistent(defaultFetchGroup = "true") public Text textVal;
   @Persistent(defaultFetchGroup = "true") public Link linkVal;
+  @Persistent(defaultFetchGroup = "true") public ShortBlob shortBlobVal;
 
   @Persistent(defaultFetchGroup = "true") public String[] strArray;
   @Persistent(defaultFetchGroup = "true") public int[] primitiveIntArray;
@@ -120,6 +122,7 @@ public class KitchenSink {
   public static final User USER2 = new User("c", "d");
   public static final Blob BLOB1 = new Blob("a blob".getBytes());
   public static final Blob BLOB2 = new Blob("another blob".getBytes());
+  public static final ShortBlob SHORTBLOB1 = new ShortBlob("a short blob".getBytes());
   public static final Text TEXT1 = new Text("some text");
   public static final Text TEXT2 = new Text("more text");
   public static final Link LINK1 = new Link("www.google.com");
@@ -155,6 +158,7 @@ public class KitchenSink {
     ks.blobVal = BLOB1;
     ks.textVal = TEXT1;
     ks.linkVal = LINK1;
+    ks.shortBlobVal = SHORTBLOB1;
 
     ks.strArray = new String[] {"a", "b"};
     ks.primitiveIntArray = new int[] {1, 2};
@@ -233,6 +237,7 @@ public class KitchenSink {
     entity.setProperty("blobVal", BLOB1);
     entity.setProperty("textVal", TEXT1);
     entity.setProperty("linkVal", LINK1);
+    entity.setProperty("shortBlobVal", SHORTBLOB1);
     entity.setProperty("strArray", Utils.newArrayList("a", "b"));
     entity.setProperty("primitiveIntArray", Utils.newArrayList(1L, 2L));
     entity.setProperty("integerArray", Utils.newArrayList(3L, 4L));
@@ -246,8 +251,8 @@ public class KitchenSink {
     entity.setProperty("floatArray", Utils.newArrayList((double) 1.03f, (double) 1.04f));
     entity.setProperty("primitiveDoubleArray", Utils.newArrayList(2.01d, 2.02d));
     entity.setProperty("doubleArray", Utils.newArrayList(2.03d, 2.04d));
-    entity.setProperty("primitiveByteArray", new Blob(new byte[] {0xb, 0xc}));
-    entity.setProperty("byteArray", new Blob(new byte[] {0xe, 0xf}));
+    entity.setProperty("primitiveByteArray", new ShortBlob(new byte[] {0xb, 0xc}));
+    entity.setProperty("byteArray", new ShortBlob(new byte[] {0xe, 0xf}));
     entity.setProperty("primitiveBooleanArray", Utils.newArrayList(true, false));
     entity.setProperty("booleanArray", Utils.newArrayList(false, true));
     entity.setProperty("dateArray", Utils.newArrayList(DATE1, DATE2));
@@ -262,7 +267,7 @@ public class KitchenSink {
     entity.setProperty("integerList", Utils.newArrayList(11L, 12L));
     entity.setProperty("longList", Utils.newArrayList(13L, 14L));
     entity.setProperty("shortList", Utils.newArrayList((long) (short) 15, (long) (short) 16));
-    entity.setProperty("byteList", Utils.newArrayList((long) (byte) 0x8, (long) (byte) 0x9));
+    entity.setProperty("byteList", new ShortBlob(new byte[] {(byte) 0x8, (byte) 0x9}));
     entity.setProperty("charList", Utils.newArrayList((long) 'q', (long) 'r'));
     entity.setProperty("doubleList", Utils.newArrayList(22.44d, 23.55d));
     entity.setProperty("floatList", Utils.newArrayList((double) 23.44f, (double) 24.55f));
@@ -338,6 +343,9 @@ public class KitchenSink {
       return false;
     }
     if (blobVal != null ? !blobVal.equals(that.blobVal) : that.blobVal != null) {
+      return false;
+    }
+    if (shortBlobVal != null ? !shortBlobVal.equals(that.shortBlobVal) : that.shortBlobVal != null) {
       return false;
     }
     if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null) {
@@ -524,6 +532,7 @@ public class KitchenSink {
     result = 31 * result + (ksEnum != null ? ksEnum.hashCode() : 0);
     result = 31 * result + (userVal != null ? userVal.hashCode() : 0);
     result = 31 * result + (blobVal != null ? blobVal.hashCode() : 0);
+    result = 31 * result + (shortBlobVal != null ? shortBlobVal.hashCode() : 0);
     result = 31 * result + (textVal != null ? textVal.hashCode() : 0);
     result = 31 * result + (linkVal != null ? linkVal.hashCode() : 0);
     result = 31 * result + (strArray != null ? Arrays.hashCode(strArray) : 0);
