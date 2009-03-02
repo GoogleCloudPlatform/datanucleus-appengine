@@ -354,6 +354,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     @SuppressWarnings("unchecked")
     List<Flight> result3 = (List<Flight>) q.execute();
     assertEquals(1, result3.size());
+    assertEquals("1", result3.get(0).getName());
 
     q.setRange(0, 2);
     @SuppressWarnings("unchecked")
@@ -1040,6 +1041,15 @@ public class JDOQLQueryTest extends JDOTestCase {
     List<HasLongPkJDO> results2 = (List<HasLongPkJDO>) q.execute(e.getKey().getId());
     assertEquals(1, results2.size());
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
+  }
+
+  public void testSortByUnknownProperty() {
+    try {
+      pm.newQuery("select from " + Flight.class.getName() + " order by dne").execute();
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+    }
   }
 
   public void testSetOrdering() {

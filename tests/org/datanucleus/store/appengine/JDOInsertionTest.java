@@ -236,5 +236,33 @@ public class JDOInsertionTest extends JDOTestCase {
       pmf.close();
     }
   }
+
+  public void testInsertMultipleEntityGroups() {
+    Flight f1 = new Flight();
+    f1.setOrigin("BOS");
+    f1.setDest("MIA");
+    f1.setMe(2);
+    f1.setYou(4);
+    f1.setName("Harold");
+
+    Flight f2 = new Flight();
+    f2.setOrigin("BOS");
+    f2.setDest("MIA");
+    f2.setMe(2);
+    f2.setYou(4);
+    f2.setName("Harold");
+
+    beginTxn();
+    pm.makePersistent(f1);
+    try {
+      pm.makePersistent(f2);
+      fail("expected iae");
+    } catch (IllegalArgumentException iae) {
+      iae.printStackTrace();
+      // good
+    } finally {
+      rollbackTxn();
+    }
+  }
 }
 

@@ -18,6 +18,8 @@ package org.datanucleus.test;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 
+import java.io.Serializable;
+
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -31,9 +33,9 @@ import javax.jdo.annotations.VersionStrategy;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
 @Version(strategy = VersionStrategy.VERSION_NUMBER)
-public class Flight {
+public class Flight implements Serializable {
   private String id;
   @Persistent
   private String origin;

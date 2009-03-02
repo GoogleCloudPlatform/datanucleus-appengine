@@ -67,7 +67,7 @@ public class DatastoreTestHelper {
     }
   };
 
-  private final DatastoreDelegate delegate = getDatastoreDelegate();
+  private final DatastoreDelegate delegate = newDatastoreDelegate();
 
   private static final String DATASTORE_DELEGATE_PROP = "orm.DatastoreDelegate";
 
@@ -97,7 +97,7 @@ public class DatastoreTestHelper {
     }
   }
 
-  private DatastoreDelegate getDatastoreDelegate() {
+  protected DatastoreDelegate newDatastoreDelegate() {
     String helperClass =
         System.getProperty(DATASTORE_DELEGATE_PROP, LocalDatastoreDelegate.class.getName());
     try {

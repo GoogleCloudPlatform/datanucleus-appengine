@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -30,8 +31,8 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasOneToManyListJDO implements HasOneToManyJDO {
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+public class HasOneToManyListJDO implements HasOneToManyJDO, Serializable {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

@@ -15,12 +15,13 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.io.Serializable;
 import java.util.Collection;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public interface HasOneToManyJDO {
+public interface HasOneToManyJDO extends Serializable {
   Collection<BidirectionalChildJDO> getBidirChildren();
   void addBidirChild(BidirectionalChildJDO child);
   void nullBidirChildren();

@@ -17,6 +17,8 @@ package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
 
+import java.io.Serializable;
+
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -27,8 +29,8 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasKeyPkJDO {
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+public class HasKeyPkJDO implements Serializable {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

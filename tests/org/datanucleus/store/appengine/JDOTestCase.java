@@ -67,12 +67,10 @@ public class JDOTestCase extends TestCase {
   protected void tearDown() throws Exception {
     boolean throwIfActiveTxn = !failed;
     failed = false;
-    ldth.tearDown(throwIfActiveTxn);
-    ldth = null;
-    if (pm.currentTransaction().isActive()) {
-      pm.currentTransaction().rollback();
-    }
     if (!pm.isClosed()) {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
       pm.close();
     }
     pm = null;
@@ -80,6 +78,8 @@ public class JDOTestCase extends TestCase {
       pmf.close();
     }
     pmf = null;
+    ldth.tearDown(throwIfActiveTxn);
+    ldth = null;
     super.tearDown();
   }
 

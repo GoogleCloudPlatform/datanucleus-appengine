@@ -948,6 +948,15 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
 
+  public void testSortByUnknownProperty() {
+    try {
+      em.createQuery("select from " + Book.class.getName() + " order by dne").getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
 
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
