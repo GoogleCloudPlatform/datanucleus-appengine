@@ -15,11 +15,14 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Transaction;
 
-import org.datanucleus.exceptions.NucleusDataStoreException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 import java.util.ConcurrentModificationException;
 import java.util.Map;
@@ -55,15 +58,25 @@ class DatastoreTransaction {
   void commit() {
     try {
       txn.commit();
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
     } catch (ConcurrentModificationException e) {
-      throw new NucleusDataStoreException("Datastore threw a ConcurrentModificationException", e);      
+      throw wrapConcurrentModificationException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
     }
     clear();
   }
 
   void rollback() {
-    txn.rollback();
-    clear();
+    try {
+      txn.rollback();
+      clear();
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
   }
 
   Transaction getInnerTxn() {

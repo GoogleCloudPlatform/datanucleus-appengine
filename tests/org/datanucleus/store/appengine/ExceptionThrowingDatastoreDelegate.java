@@ -19,27 +19,23 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.ApiProxy;
 
-import java.util.ConcurrentModificationException;
+import java.util.Set;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class CollidingUpdateDatastoreDelegate implements ApiProxy.Delegate {
+public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
   private final ApiProxy.Delegate inner;
-  private final CollisionPolicy policy;
+  private final ExceptionPolicy policy;
 
-  public CollidingUpdateDatastoreDelegate(ApiProxy.Delegate inner, CollisionPolicy policy) {
+  public ExceptionThrowingDatastoreDelegate(ApiProxy.Delegate inner, ExceptionPolicy policy) {
     this.inner = inner;
     this.policy = policy;
   }
 
-  public CollidingUpdateDatastoreDelegate(ApiProxy.Delegate inner) {
-    this(inner, ALWAYS_COLLIDE);
-  }
-
   public byte[] makeSyncCall(ApiProxy.Environment environment, String packageName,
       String methodName, byte[] request) throws ApiProxy.ApiProxyException {
-    policy.collide(methodName);
+    policy.intercept(methodName);
     return inner.makeSyncCall(environment, packageName, methodName, request);
   }
 
@@ -47,24 +43,21 @@ public class CollidingUpdateDatastoreDelegate implements ApiProxy.Delegate {
     inner.log(environment, logRecord);
   }
 
-  public interface CollisionPolicy {
-    void collide(String methodName);
+  public interface ExceptionPolicy {
+    void intercept(String methodName);
   }
 
-  public static abstract class BaseCollisionPolicy implements CollisionPolicy {
+  public static abstract class BaseExceptionPolicy implements ExceptionPolicy {
 
-    public final void collide(String methodName) {
-      if (methodName.equals("Put") || methodName.equals("Commit") || methodName.equals("Delete")) {
-        doCollide(methodName);
+    private static final Set<String> RPCS_TO_INTERCEPT =
+        Utils.newHashSet("Put", "Delete", "Commit", "RunQuery", "Next");
+
+    public final void intercept(String methodName) {
+      if (RPCS_TO_INTERCEPT.contains(methodName)) {
+        doIntercept(methodName);
       }
     }
 
-    protected abstract void doCollide(String methodName);
+    protected abstract void doIntercept(String methodName);
   }
-
-  public static final CollisionPolicy ALWAYS_COLLIDE = new BaseCollisionPolicy() {
-    protected void doCollide(String methodName) {
-      throw new ConcurrentModificationException();
-    }
-  };
 }

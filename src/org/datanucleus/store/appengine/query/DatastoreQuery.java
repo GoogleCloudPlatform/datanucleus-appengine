@@ -130,10 +130,9 @@ public class DatastoreQuery implements Serializable {
   private final AbstractJavaQuery query;
 
   /**
-   * The datastore query that we most recently executed.
-   * This should only be used for testing.
+   * The current datastore query.
    */
-  private transient Query mostRecentDatastoreQuery;
+  private transient Query datastoreQuery;
 
   /**
    * Constructs a new Datastore query based on a Datanucleus query.
@@ -186,16 +185,16 @@ public class DatastoreQuery implements Serializable {
       }
       String kind =
           getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-      mostRecentDatastoreQuery = new Query(kind);
+      datastoreQuery = new Query(kind);
       DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-      addFilters(compilation, mostRecentDatastoreQuery, parameters, acmd, table);
-      addSorts(compilation, mostRecentDatastoreQuery, acmd);
+      addFilters(compilation, parameters, acmd, table);
+      addSorts(compilation, acmd);
       Iterable<Entity> entities;
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
       if (opts != null) {
-        entities = ds.prepare(mostRecentDatastoreQuery).asIterable(opts);
+        entities = ds.prepare(datastoreQuery).asIterable(opts);
       } else {
-        entities = ds.prepare(mostRecentDatastoreQuery).asIterable();
+        entities = ds.prepare(datastoreQuery).asIterable();
       }
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         NucleusLogger.QUERY.debug(localiser.msg("021074", "DATASTORE",
@@ -207,7 +206,8 @@ public class DatastoreQuery implements Serializable {
           return entityToPojo(entity, acmd, clr, (DatastoreManager) om.getStoreManager());
         }
       };
-      return new StreamingQueryResult(query, entities, entityToPojoFunc);
+      return new StreamingQueryResult(
+          query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
     } finally {
       mconn.release();
     }
@@ -345,7 +345,7 @@ public class DatastoreQuery implements Serializable {
    * Adds sorts to the given {@link Query} by examining the compiled order
    * expression.
    */
-  private void addSorts(QueryCompilation compilation, Query q, AbstractClassMetaData acmd) {
+  private void addSorts(QueryCompilation compilation, AbstractClassMetaData acmd) {
     Expression[] orderBys = compilation.getExprOrdering();
     if (orderBys == null) {
       return;
@@ -369,7 +369,7 @@ public class DatastoreQuery implements Serializable {
         } else {
           sortProp = determinePropertyName(ammd);
         }
-        q.addSort(sortProp, dir);
+        datastoreQuery.addSort(sortProp, dir);
       }
     }
   }
@@ -382,10 +382,10 @@ public class DatastoreQuery implements Serializable {
    * Adds filters to the given {@link Query} by examining the compiled filter
    * expression.
    */
-  private void addFilters(QueryCompilation compilation, Query q, Map parameters,
+  private void addFilters(QueryCompilation compilation, Map parameters,
       AbstractClassMetaData acmd, DatastoreTable table) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(q, parameters, acmd, table);
+    QueryData qd = new QueryData(parameters, acmd, table);
     addExpression(filter, qd);
   }
 
@@ -393,13 +393,11 @@ public class DatastoreQuery implements Serializable {
    * Struct used to represent info about the query we need to fulfill.
    */
   private static final class QueryData {
-    private final Query query;
     private final Map parameters;
     private final AbstractClassMetaData acmd;
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
 
-    private QueryData(Query query, Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
-      this.query = query;
+    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
@@ -491,7 +489,7 @@ public class DatastoreQuery implements Serializable {
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isParentPK(ammd)) {
-      addParentFilter(op, qd, internalPkToKey(qd.acmd, value));
+      addParentFilter(op, internalPkToKey(qd.acmd, value));
     } else {
       String datastorePropName;
       if (ammd.isPrimaryKey()) {
@@ -500,7 +498,7 @@ public class DatastoreQuery implements Serializable {
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
-      qd.query.addFilter(datastorePropName, op, value);
+      datastoreQuery.addFilter(datastorePropName, op, value);
     }
   }
 
@@ -608,10 +606,10 @@ public class DatastoreQuery implements Serializable {
 
       // The field is the child side of an owned one to one.  We can just add
       // the parent key to the query as an equality filter on id.
-      qd.query.addFilter(
+      datastoreQuery.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else {
-      addParentFilter(op, qd, valueKey);
+      addParentFilter(op, valueKey);
     }
   }
 
@@ -672,7 +670,7 @@ public class DatastoreQuery implements Serializable {
     return key;
   }
 
-  private void addParentFilter(Query.FilterOperator op, QueryData qd, Key key) {
+  private void addParentFilter(Query.FilterOperator op, Key key) {
     // We only support queries on parent if it is an equality filter.
     if (op != Query.FilterOperator.EQUAL) {
       throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
@@ -680,7 +678,7 @@ public class DatastoreQuery implements Serializable {
           query.getSingleStringQuery());
     }
     // value must be String or Key
-    qd.query.setAncestor(key);
+    datastoreQuery.setAncestor(key);
   }
 
   private void checkForUnsupportedOperator(Expression.Operator operator) {
@@ -695,8 +693,8 @@ public class DatastoreQuery implements Serializable {
   }
 
   // Exposed for tests
-  Query getMostRecentDatastoreQuery() {
-    return mostRecentDatastoreQuery;
+  Query getDatastoreQuery() {
+    return datastoreQuery;
   }
 
   private ObjectManager getObjectManager() {

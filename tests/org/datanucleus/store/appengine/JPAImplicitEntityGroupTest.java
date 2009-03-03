@@ -139,8 +139,8 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(parent);
     try {
       commitTxn();
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
+      fail("expected exception");
+    } catch (PersistenceException e) {
       // good
     }
   }
@@ -160,8 +160,8 @@ public class JPAImplicitEntityGroupTest extends JPATestCase {
     em.persist(parent);
     try {
       commitTxn();
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
+      fail("expected exception");
+    } catch (PersistenceException e) {
       // good
     }
   }

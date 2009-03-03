@@ -35,8 +35,7 @@ import javax.persistence.RollbackException;
 public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testInsertCollides() {
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
     Book book = new Book();
     book.setAuthor("harold");
@@ -58,18 +57,18 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   }
 
   public void testInsertCollidesOnCommit() {
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count != 0) {
               throw new ConcurrentModificationException();
             }
             count++;
           }
         };
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
     Book book = new Book();
     book.setAuthor("harold");
@@ -94,8 +93,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testUpdateCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd =
+        new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     beginTxn();
@@ -120,8 +119,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -145,10 +143,10 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testUpdateOfDetachedCollidesThenSucceeds() {
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -162,8 +160,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -192,10 +190,10 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testUpdateOfAttachedCollidesThenSucceeds() {
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -207,8 +205,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     ldth.ds.put(e);
     beginTxn();
     Book b = em.find(Book.class, e.getKey());
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update attached object
@@ -238,8 +236,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testDeleteCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     beginTxn();
@@ -258,8 +255,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testInsertCollides_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
     Book book = new Book();
     book.setAuthor("harold");
@@ -282,8 +278,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     Book b = em.find(Book.class, e.getKey());
@@ -310,8 +305,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -335,10 +329,10 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testUpdateOfDetachedCollidesThenSucceeds_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -353,8 +347,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     commitTxn();
     em.close();
     em = emf.createEntityManager();
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -382,10 +376,10 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testUpdateOfAttachedCollidesThenSucceeds_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -398,8 +392,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     Book b = em.find(Book.class, e.getKey());
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update attached object
@@ -430,8 +424,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     Book b = em.find(Book.class, e.getKey());

@@ -45,17 +45,20 @@ public final class DatastoreServiceFactoryInternal {
   /**
    * @return If a {@link DatastoreService} to return has been explicitly provided by a
    * call to
-   * {@link #setDatastoreService(com.google.appengine.api.datastore.DatastoreService)},
+   * {@link #setDatastoreService(DatastoreService)},
    * the explicitly provided instance.  Otherwise a {@link DatastoreService}
    * constructed by calling.
-   * {@link com.google.appengine.api.datastore.DatastoreServiceFactory#getDatastoreService()}
+   * {@link DatastoreServiceFactory#getDatastoreService()}
    * .
    */
   public static DatastoreService getDatastoreService() {
     if (datastoreServiceToReturn != null) {
       return datastoreServiceToReturn;
     }
-    return DatastoreServiceFactory.getDatastoreService();
+    // Wrap the service in an impl that properly translates the runtime
+    // exceptions thrown by the datastore api
+    return new RuntimeExceptionWrappingDatastoreService(
+        DatastoreServiceFactory.getDatastoreService());
   }
 
   /**

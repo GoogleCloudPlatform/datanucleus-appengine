@@ -147,8 +147,8 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     beginTxn();
     try {
       pm.makePersistent(parent);
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
+      fail("expected exception");
+    } catch (JDOUserException e) {
       // good
     } finally {
       rollbackTxn();
@@ -169,8 +169,8 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     beginTxn();
     try {
       pm.makePersistent(parent);
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
+      fail("expected exception");
+    } catch (JDOUserException e) {
       // good
     } finally {
       rollbackTxn();

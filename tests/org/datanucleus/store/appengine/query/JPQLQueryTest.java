@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
+import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -22,9 +23,12 @@ import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.apphosting.api.ApiProxy;
 
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJPA;
@@ -442,7 +446,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
     assertEquals(
-        bookEntity.getKey(), getDatastoreQuery(q).getMostRecentDatastoreQuery().getAncestor());
+        bookEntity.getKey(), getDatastoreQuery(q).getDatastoreQuery().getAncestor());
     assertEquals(NO_FILTERS, getFilterPredicates(q));
     assertEquals(NO_SORTS, getSortPredicates(q));
   }
@@ -957,6 +961,62 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testDatastoreFailureWhileIterating() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
+          int count = 0;
+          protected void doIntercept(String methodName) {
+            count++;
+            if (count == 3) {
+              throw new DatastoreFailureException("boom");
+            }
+          }
+        };
+
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ApiProxy.setDelegate(dd);
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where id = :key");
+    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    try {
+      books.size();
+      fail("expected exception");
+    } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JPA exceptions
+      // good
+      assertTrue(e.getCause() instanceof DatastoreFailureException);
+    }
+  }
+
+  public void testBadRequest() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
+          int count = 0;
+          protected void doIntercept(String methodName) {
+            count++;
+            if (count == 1) {
+              throw new IllegalArgumentException("boom");
+            }
+          }
+        };
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ApiProxy.setDelegate(dd);
+
+    Query q = em.createQuery("select from " + Book.class.getName());
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+      assertTrue(e.getCause() instanceof IllegalArgumentException);
+    }
+  }
 
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
@@ -986,7 +1046,7 @@ public class JPQLQueryTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected IllegalArgumentException for query <" + query + ">");
-    } catch (IllegalArgumentException iae) {
+    } catch (PersistenceException e) {
       // good
     }
   }
@@ -1033,10 +1093,10 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private List<FilterPredicate> getFilterPredicates(javax.persistence.Query q) {
-    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getFilterPredicates();
+    return getDatastoreQuery(q).getDatastoreQuery().getFilterPredicates();
   }
 
   private List<SortPredicate> getSortPredicates(javax.persistence.Query q) {
-    return getDatastoreQuery(q).getMostRecentDatastoreQuery().getSortPredicates();
+    return getDatastoreQuery(q).getDatastoreQuery().getSortPredicates();
   }
 }

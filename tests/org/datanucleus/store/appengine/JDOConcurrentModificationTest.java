@@ -34,8 +34,7 @@ import javax.jdo.JDOException;
 public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testInsertCollides() {
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
     Flight flight = new Flight();
     flight.setName("harold");
@@ -58,18 +57,18 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   }
 
   public void testInsertCollidesOnCommit() {
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count != 0) {
               throw new ConcurrentModificationException();
             }
             count++;
           }
         };
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
     Flight flight = new Flight();
     flight.setName("harold");
@@ -95,8 +94,8 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testUpdateCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd =
+        new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     beginTxn();
@@ -119,8 +118,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     commitTxn();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -143,10 +141,10 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testUpdateOfDetachedCollidesThenSucceeds() {
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -160,8 +158,8 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     commitTxn();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -189,10 +187,10 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testUpdateOfAttachedCollidesThenSucceeds() {
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -207,8 +205,8 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
     Flight fCopy = pm.detachCopy(f);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update attached object
@@ -234,8 +232,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testDeleteCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     beginTxn();
@@ -254,8 +251,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testInsertCollides_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
     Flight flight = new Flight();
     flight.setName("harold");
@@ -278,8 +274,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     Flight f = pm.getObjectById(Flight.class, e.getKey());
@@ -302,8 +297,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     pm.close();
     pm = pmf.getPersistenceManager();
 
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -326,10 +320,10 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testUpdateOfDetachedCollidesThenSucceeds_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -342,8 +336,8 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     pm.close();
     pm = pmf.getPersistenceManager();
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update detached object
@@ -371,10 +365,10 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testUpdateOfAttachedCollidesThenSucceeds_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
-        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
           int count = 0;
-          protected void doCollide(String methodName) {
+          protected void doIntercept(String methodName) {
             if (count == 0) {
               count++;
               throw new ConcurrentModificationException();
@@ -388,8 +382,8 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
     Flight fCopy = pm.detachCopy(f);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
     // update attached object
@@ -417,8 +411,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ldth.ds.put(e);
-    CollidingUpdateDatastoreDelegate dd =
-        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
     Flight f = pm.getObjectById(Flight.class, e.getKey());

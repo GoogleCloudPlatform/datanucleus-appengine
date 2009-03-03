@@ -31,6 +31,7 @@ import org.datanucleus.test.Person;
 import java.util.Arrays;
 
 import javax.jdo.JDOHelper;
+import javax.jdo.JDOUserException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
@@ -256,9 +257,8 @@ public class JDOInsertionTest extends JDOTestCase {
     pm.makePersistent(f1);
     try {
       pm.makePersistent(f2);
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
-      iae.printStackTrace();
+      fail("expected exception");
+    } catch (JDOUserException iae) {
       // good
     } finally {
       rollbackTxn();
