@@ -8,3 +8,10 @@ This tells Datanucleus to automatically enhance any classes it encounters that l
 org.datanucleus.test package.  The enhancer ignores classes in org.datanucleus unless
 the package is org.datanucleus.test, so you'll be happiest if you just put all the classes
 you want enhanced in this package.
+
+You must also set the following System properties:
+-Dappengine.orm.disable.duplicate.emf.exception
+-Dappengine.orm.disable.duplicate.pmf.exception
+
+These flags tell the App Engine plugin not to throw exceptions when emfs and pmfs with the same
+name are created.

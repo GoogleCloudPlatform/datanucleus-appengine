@@ -17,12 +17,16 @@ package org.datanucleus.store.appengine.jpa;
 
 import org.datanucleus.jpa.EntityManagerFactoryImpl;
 import org.datanucleus.jpa.PersistenceProviderImpl;
+import org.datanucleus.store.appengine.ConcurrentHashMapHelper;
 import org.datanucleus.store.appengine.Utils;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jdo.PersistenceManagerFactory;
 import javax.persistence.EntityManager;
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContextType;
 import javax.persistence.spi.PersistenceUnitInfo;
 
@@ -31,12 +35,38 @@ import javax.persistence.spi.PersistenceUnitInfo;
  */
 public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
 
+  /**
+   * Keeps track of the number of instances we've allocated per EMF in this
+   * class loader.  We do this to try and detect when users are allocating
+   * these over and over when they should just be allocating one and reusing
+   * it.
+   */
+  private static final ConcurrentHashMap<String, AtomicInteger> NUM_INSTANCES_PER_PERSISTENCE_UNIT =
+      new ConcurrentHashMap<String, AtomicInteger>();
+
+  /**
+   * System property that enables users to disable the emf warning.  Useful for situations
+   * where you really do want to create the same EMF over and over, like unit tests.
+   */
+  public static final String
+      DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY = "appengine.orm.disable.duplicate.emf.exception";
+
+  private static final String DUPLICATE_EMF_ERROR_FORMAT =
+      "Application code attempted to create a EntityManagerFactory named %s, but "
+      + "one with this name already exists!  Instances of EntityManagerFactory are extremely slow "
+      + "to create and it is usually not necessary to create one with a given name more than once.  "
+      + "Instead, create a singleton and share it throughout your code.  If you really do need "
+      + "to create a duplicate EntityManagerFactory (such as for a unittest suite), set the "
+      + DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY + " system property to avoid this error.";
+
   public DatastoreEntityManagerFactory(String unitName, Map<String, Object> overridingProps) {
     super(unitName, manageOverridingProps(overridingProps));
+    checkForRepeatedAllocation(unitName);
   }
 
   public DatastoreEntityManagerFactory(PersistenceUnitInfo unitInfo, Map<String, Object> overridingProps) {
     super(unitInfo, manageOverridingProps(overridingProps));
+    checkForRepeatedAllocation(unitInfo.getPersistenceUnitName());
   }
 
   private static Map<String, Object> manageOverridingProps(Map<String, Object> overridingProps) {
@@ -70,5 +100,34 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
   protected EntityManager newEntityManager(PersistenceContextType contextType,
       PersistenceManagerFactory pmf) {
     return new DatastoreEntityManager(this, pmf, contextType);
+  }
+
+  /**
+   * @return {@code true} if the user has already allocated a
+   * {@link PersistenceManagerFactory} with the provided name, {@code false}
+   * otherwise.
+   */
+  private static boolean alreadyAllocated(String name) {
+    AtomicInteger count =
+        ConcurrentHashMapHelper.getCounter(NUM_INSTANCES_PER_PERSISTENCE_UNIT, name);
+    return count.incrementAndGet() > 1 &&
+        !System.getProperties().containsKey(DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
+  }
+
+  /**
+   * Throws {@link IllegalStateException} when the user allocates more than one
+   * {@link EntityManagerFactory} with the same name, unless the user has
+   * added the {@link #DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY} system property.
+   */
+  private void checkForRepeatedAllocation(String name) {
+    if (alreadyAllocated(name)) {
+      try {
+        close();
+      } finally {
+        // this exception is more important than any exception that might be
+        // raised by close()
+        throw new IllegalStateException(String.format(DUPLICATE_EMF_ERROR_FORMAT, name));
+      }
+    }
   }
 }

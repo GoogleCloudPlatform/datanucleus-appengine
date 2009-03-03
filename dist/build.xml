@@ -106,6 +106,8 @@
         <path refid="appengine.plugin.test.compile.deps"/>
         <pathelement location="${compile.tests.dest.dir}"/>
       </classpath>
+      <jvmarg value="-Dappengine.orm.disable.duplicate.pmf.exception"/>
+      <jvmarg value="-Dappengine.orm.disable.duplicate.emf.exception"/>
       <formatter type="plain"/>
       <batchtest fork="yes" todir="testresults">
         <fileset dir="${plugin.test.dir}">

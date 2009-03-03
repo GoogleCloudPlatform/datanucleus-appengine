@@ -51,7 +51,7 @@ public class JPATestCase extends TestCase {
     em = emf.createEntityManager();
   }
 
-  protected enum EntityManagerFactoryName {
+  public enum EntityManagerFactoryName {
     // nonTransactionalRead and nonTransactionalWrite are true
     transactional_ds_non_transactional_ops_allowed,
     // nonTransactionalRead and nonTransactionalWrite are false

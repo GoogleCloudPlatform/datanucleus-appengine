@@ -18,6 +18,8 @@ package org.datanucleus.store.appengine;
 import junit.framework.Test;
 import junit.framework.TestSuite;
 
+import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactoryTest;
+import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactoryTest;
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
 import org.datanucleus.store.appengine.query.StreamingQueryResultTest;
@@ -32,6 +34,8 @@ public class AllTests {
   public static Test suite() {
     TestSuite suite = new TestSuite();
     suite.addTestSuite(DatastoreFieldManagerTest.class);
+    suite.addTestSuite(DatastoreJDOPersistenceManagerFactoryTest.class);
+    suite.addTestSuite(DatastoreEntityManagerFactoryTest.class);
     suite.addTestSuite(JDOQLQueryTest.class);
     suite.addTestSuite(JPQLQueryTest.class);
     suite.addTestSuite(StreamingQueryResultTest.class);
