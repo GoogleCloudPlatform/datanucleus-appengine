@@ -76,6 +76,8 @@ public class AllTests {
     suite.addTestSuite(EntityUtilsTest.class);
     suite.addTestSuite(JDOBytesTest.class);
     suite.addTestSuite(JPABytesTest.class);
+    suite.addTestSuite(JDOConcurrentModificationTest.class);
+    suite.addTestSuite(JPAConcurrentModificationTest.class);
     return suite;
   }
 }
