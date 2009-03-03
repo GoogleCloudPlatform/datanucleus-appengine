@@ -57,6 +57,40 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     assertEquals(book, "harold", "1234", 1888, "the title");
   }
 
+  public void testInsertCollidesOnCommit() {
+    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
+        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+          int count = 0;
+          protected void doCollide(String methodName) {
+            if (count != 0) {
+              throw new ConcurrentModificationException();
+            }
+            count++;
+          }
+        };
+    CollidingUpdateDatastoreDelegate dd =
+        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ApiProxy.setDelegate(dd);
+    Book book = new Book();
+    book.setAuthor("harold");
+    book.setIsbn("1234");
+    book.setFirstPublished(1888);
+    book.setTitle("the title");
+    beginTxn();
+    em.persist(book);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (RollbackException e) {
+      // good
+      assertTrue(e.getCause() instanceof PersistenceException);
+      assertTrue(e.getCause().getCause() instanceof NucleusDataStoreException);
+      assertTrue(e.getCause().getCause().getCause() instanceof ConcurrentModificationException);
+    }
+    assertFalse(em.getTransaction().isActive());
+    assertEquals(book, "harold", "1234", 1888, "the title");
+  }
+
   public void testUpdateCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ldth.ds.put(e);

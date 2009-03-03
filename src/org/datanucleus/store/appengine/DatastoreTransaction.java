@@ -19,6 +19,9 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Transaction;
 
+import org.datanucleus.exceptions.NucleusDataStoreException;
+
+import java.util.ConcurrentModificationException;
 import java.util.Map;
 import java.util.Set;
 
@@ -50,7 +53,11 @@ class DatastoreTransaction {
   }
 
   void commit() {
-    txn.commit();
+    try {
+      txn.commit();
+    } catch (ConcurrentModificationException e) {
+      throw new NucleusDataStoreException("Datastore threw a ConcurrentModificationException", e);      
+    }
     clear();
   }
 
@@ -59,11 +66,11 @@ class DatastoreTransaction {
     clear();
   }
 
-  public Transaction getInnerTxn() {
+  Transaction getInnerTxn() {
     return txn;
   }
 
-  public void addPutEntity(Entity entity) {
+  void addPutEntity(Entity entity) {
     // Make a copy in case someone changes
     // the provided entity after we add it to our cache.
     putEntities.put(entity.getKey(), makeCopy(entity));
@@ -89,6 +96,7 @@ class DatastoreTransaction {
     return deletedKeys;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -106,6 +114,7 @@ class DatastoreTransaction {
     return true;
   }
 
+  @Override
   public int hashCode() {
     return txn.hashCode();
   }

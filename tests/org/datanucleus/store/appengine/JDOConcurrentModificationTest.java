@@ -57,6 +57,41 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
   }
 
+  public void testInsertCollidesOnCommit() {
+    CollidingUpdateDatastoreDelegate.CollisionPolicy policy =
+        new CollidingUpdateDatastoreDelegate.BaseCollisionPolicy() {
+          int count = 0;
+          protected void doCollide(String methodName) {
+            if (count != 0) {
+              throw new ConcurrentModificationException();
+            }
+            count++;
+          }
+        };
+    CollidingUpdateDatastoreDelegate dd =
+        new CollidingUpdateDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ApiProxy.setDelegate(dd);
+    Flight flight = new Flight();
+    flight.setName("harold");
+    flight.setOrigin("bos");
+    flight.setDest("mia");
+    flight.setYou(23);
+    flight.setMe(24);
+    flight.setFlightNumber(88);
+    beginTxn();
+    pm.makePersistent(flight);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (JDOException e) {
+      // good
+      assertTrue(e.getCause() instanceof NucleusDataStoreException);
+      assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+    }
+    assertFalse(pm.currentTransaction().isActive());
+    assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
+  }
+
   public void testUpdateCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ldth.ds.put(e);
