@@ -208,14 +208,16 @@
       <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
         <include name="asm*.jar"/>
         <include name="jdo2-api*.jar"/>
-        <include name="geronimo*.jar"/>
+        <include name="geronimo-jpa*.jar"/>
+        <include name="geronimo-jta*.jar"/>
         <include name="datanucleus-enhancer*.jar"/>
         <include name="datanucleus-jpa*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
       <zipfileset prefix="lib/user/orm" dir="${orm.lib.dir}">
         <include name="jdo2-api*.jar"/>
-        <include name="geronimo*.jar"/>
+        <include name="geronimo-jpa*.jar"/>
+        <include name="geronimo-jta*.jar"/>
         <include name="datanucleus-jpa*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
