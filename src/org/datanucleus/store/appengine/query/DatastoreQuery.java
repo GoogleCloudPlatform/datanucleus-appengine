@@ -114,6 +114,21 @@ public class DatastoreQuery implements Serializable {
   private static final
   Map<Expression.Operator, Query.FilterOperator> DATANUCLEUS_OP_TO_APPENGINE_OP = buildNewOpMap();
 
+  /**
+   * The DataNucleus query cache has a pretty nasty bug where it caches the symbol table along with
+   * the compiled query.  The query cache uses weak references so it doesn't always happen, but if
+   * you get a cache hit and your param values are different from the param values in the cached
+   * symbol table, your query will execute with old param values and return incorrect results.
+   * There is a property you can set to disable query caching, except there's a bug in {@link
+   * org.datanucleus.store.query.Query#getBooleanExtensionProperty(String)} that prevents us from
+   * using it.  The bug is that if you set the property to false the method returns {@code null},
+   * and the caller of this method interprets {@code null} to mean "not set" and so uses the default
+   * value for the property, which is {@code true}.  So, our solution is to intercept all calls to
+   * this method and make sure we always return {@code false} when the call is asking about the
+   * query cache.
+   */
+  static final String QUERY_CACHE_PROPERTY = "datanucleus.query.cached";
+
   private static Map<Expression.Operator, Query.FilterOperator> buildNewOpMap() {
     Map<Expression.Operator, Query.FilterOperator> map =
         new HashMap<Expression.Operator, Query.FilterOperator>();
@@ -169,7 +184,6 @@ public class DatastoreQuery implements Serializable {
       return Collections.emptyList();
     }
     final ObjectManager om = getObjectManager();
-    long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
@@ -347,20 +361,23 @@ public class DatastoreQuery implements Serializable {
 
     boolean isCountQuery = false;
     if (compilation.getExprResult() != null) {
-      // the only expression result we support is count()
+      // the only expression results we support are count() and PrimaryExpression
       for (Expression resultExpr : compilation.getExprResult()) {
-        if (!(resultExpr instanceof InvokeExpression)) {
+        if (resultExpr instanceof InvokeExpression) {
+          InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
+          if (!invokeExpr.getOperation().equals("count")) {
+            Expression.Operator operator =
+                new Expression.Operator(invokeExpr.getOperation(), 0);
+            throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+          } else {
+            isCountQuery = true;
+          }
+        } else if (resultExpr instanceof PrimaryExpression) {
+          // this is ok, just let it go
+        } else {
           Expression.Operator operator =
               new Expression.Operator(resultExpr.getClass().getName(), 0);
           throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
-        }
-        InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
-        if (!invokeExpr.getOperation().equals("count")) {
-          Expression.Operator operator =
-              new Expression.Operator(invokeExpr.getOperation(), 0);
-          throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
-        } else {
-          isCountQuery = true;
         }
       }
     }

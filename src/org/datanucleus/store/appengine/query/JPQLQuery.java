@@ -80,4 +80,15 @@ public class JPQLQuery extends AbstractJPQLQuery {
   DatastoreQuery getDatastoreQuery() {
     return datastoreQuery;
   }
+
+  /**
+   * @see DatastoreQuery#QUERY_CACHE_PROPERTY
+   */
+  @Override
+  public Boolean getBooleanExtensionProperty(String name) {
+    if (name.equals(DatastoreQuery.QUERY_CACHE_PROPERTY)) {
+      return false;
+    }
+    return super.getBooleanExtensionProperty(name);
+  }
 }

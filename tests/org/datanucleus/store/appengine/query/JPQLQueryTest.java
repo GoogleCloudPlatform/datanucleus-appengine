@@ -25,7 +25,9 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.apphosting.api.ApiProxy;
 
+import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
@@ -84,9 +86,16 @@ public class JPQLQueryTest extends JPATestCase {
     return EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
   }
 
-  public void testUnsupportedFilters() {
+  public void testUnsupportedFilters_NoResultExpr() {
     String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
+    testUnsupportedFilters(baseQuery);
+  }
+  public void testUnsupportedFilters_PrimaryResultExpr() {
+    String baseQuery = "SELECT b FROM " + Book.class.getName() + " ";
+    testUnsupportedFilters(baseQuery);
+  }
 
+  private void testUnsupportedFilters(String baseQuery) {
     assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author", DatastoreQuery.GROUP_BY_OP);
     // Can't actually test having because the parser doesn't recognize it unless there is a
     // group by, and the group by gets seen first.
@@ -123,8 +132,17 @@ public class JPQLQueryTest extends JPATestCase {
         Expression.OP_ISNOT)), unsupportedOps);
   }
 
-  public void testSupportedFilters() {
+  public void testSupportedFilters_NoResultExpr() {
     String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
+    testSupportedFilters(baseQuery);
+  }
+
+  public void testSupportedFilters_PrimaryResultExpr() {
+    String baseQuery = "SELECT b FROM " + Book.class.getName() + " ";
+    testSupportedFilters(baseQuery);
+  }
+
+  private void testSupportedFilters(String baseQuery) {
 
     assertQuerySupported(baseQuery, NO_FILTERS, NO_SORTS);
 
@@ -1063,6 +1081,12 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (UnsupportedOperationException uoe) {
       // good
     }
+  }
+
+  public void testQueryCacheDisabled() {
+    ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
+    JDOQLQuery q = new JDOQLQuery(om, "select from " + Book.class.getName());
+    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
   }
 
   private static Entity newBook(String title, String author, String isbn) {

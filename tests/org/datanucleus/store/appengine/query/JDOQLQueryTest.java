@@ -26,7 +26,9 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.users.User;
 import com.google.apphosting.api.ApiProxy;
 
+import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
@@ -1183,6 +1185,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (UnsupportedOperationException uoe) {
       // good
     }
+  }
+
+  public void testQueryCacheDisabled() {
+    ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
+    JDOQLQuery q = new JDOQLQuery(om, "select from " + Flight.class.getName());
+    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
+  }
+
+  public void testPrimaryResultExpression() {
+    Query q = pm.newQuery("select f from " + Flight.class.getName() + " where you == 23");
+    q.execute();
   }
 
   private void assertQueryUnsupportedByOrm(
