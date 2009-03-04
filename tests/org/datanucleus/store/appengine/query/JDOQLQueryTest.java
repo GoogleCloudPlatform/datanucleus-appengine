@@ -104,6 +104,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     // group by, and the group by gets seen first
     assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
         + " where origin == 2 group by dest having dest == 2", DatastoreQuery.GROUP_BY_OP);
+    assertQueryUnsupportedByOrm(
+        "select avg(you) from " + Flight.class.getName(), new Expression.Operator("avg", 0));
     Set<Expression.Operator> unsupportedOps = Utils.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
     assertQueryUnsupportedByOrm(Flight.class,
         "origin == 2 || dest == 3", Expression.OP_OR, unsupportedOps);
@@ -1128,6 +1130,61 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testCountQuery_SetResult() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery(Flight.class);
+    q.setResult("count(id)");
+    assertEquals(2, q.execute());
+  }
+
+  public void testCountQuery_SingleString() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
+    assertEquals(2, q.execute());
+  }
+
+  public void testCountQueryWithFilter_SingleString() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where you == 23");
+    assertEquals(1, q.execute());
+  }
+
+  public void testCountQueryWithUnknownCountProp_SingleString() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    // letting this go through intentionally
+    // we may want to circle back and lock this down but for now it's really
+    // not a big deal
+    Query q = pm.newQuery("select count(doesnotexist) from " + Flight.class.getName());
+    assertEquals(2, q.execute());
+  }
+
+  public void testCountQueryWithOffsetFails() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
+    q.setRange(1, Long.MAX_VALUE);
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
@@ -1159,7 +1216,9 @@ public class JDOQLQueryTest extends JDOTestCase {
       fail("expected UnsupportedOperationException for query <" + query + ">");
     } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
       // good
-      assertEquals(unsupportedOp, uoe.getOperation());
+      // Expression.Operator doesn't override equals
+      // so we just compare the string representation.
+      assertEquals(unsupportedOp.toString(), uoe.getOperation().toString());
     }
   }
 

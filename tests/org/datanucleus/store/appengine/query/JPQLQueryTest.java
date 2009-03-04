@@ -91,6 +91,8 @@ public class JPQLQueryTest extends JPATestCase {
     // Can't actually test having because the parser doesn't recognize it unless there is a
     // group by, and the group by gets seen first.
     assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author HAVING title = 'foo'", DatastoreQuery.GROUP_BY_OP);
+    assertQueryUnsupportedByOrm(
+        "select avg(firstPublished) from " + Book.class.getName(), new Expression.Operator("avg", 0));
 
     Set<Expression.Operator> unsupportedOps =
         new HashSet<Expression.Operator>(DatastoreQuery.UNSUPPORTED_OPERATORS);
@@ -1018,6 +1020,51 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testCountQuery() {
+    Entity e1 = newBook("the title", "jimmy", "12345", 2003);
+    Entity e2 = newBook("the title", "jimmy", "12345", 2004);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    assertEquals(2, q.getSingleResult());
+  }
+
+  public void testCountQueryWithFilter() {
+    Entity e1 = newBook("the title", "jimmy", "12345", 2003);
+    Entity e2 = newBook("the title", "jimmy", "12345", 2004);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where firstPublished = 2003");
+    assertEquals(1, q.getSingleResult());
+  }
+
+  public void testCountQueryWithUnknownCountProp() {
+    Entity e1 = newBook("the title", "jimmy", "12345", 2003);
+    Entity e2 = newBook("the title", "jimmy", "12345", 2004);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    // letting this go through intentionally
+    // we may want to circle back and lock this down but for now it's really
+    // not a big deal
+    Query q = em.createQuery("select count(doesnotexist) from " + Book.class.getName());
+    assertEquals(2, q.getSingleResult());
+  }
+
+  public void testCountQueryWithOffsetFails() {
+    Entity e1 = newBook("the title", "jimmy", "12345", 2003);
+    Entity e2 = newBook("the title", "jimmy", "12345", 2004);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    q.setFirstResult(1);
+    try {
+      q.getSingleResult();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }
@@ -1059,7 +1106,9 @@ public class JPQLQueryTest extends JPATestCase {
       fail("expected UnsupportedOperationException for query <" + query + ">");
     } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
       // Good.
-      assertEquals(unsupportedOp, uoe.getOperation());
+      // Expression.Operator doesn't override equals
+      // so we just compare the string representation.
+      assertEquals(unsupportedOp.toString(), uoe.getOperation().toString());
     }
   }
 

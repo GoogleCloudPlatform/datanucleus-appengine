@@ -15,18 +15,17 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
-import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
-import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
@@ -38,6 +37,7 @@ import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.query.expression.InvokeExpression;
 import org.datanucleus.query.expression.JoinExpression;
 import org.datanucleus.query.expression.Literal;
 import org.datanucleus.query.expression.OrderExpression;
@@ -47,6 +47,7 @@ import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
+import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
@@ -158,7 +159,7 @@ public class DatastoreQuery implements Serializable {
   public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
 
-    validate(compilation);
+    boolean isCountQuery = validate(compilation);
 
     if (toExclNo == 0 ||
         (rangeValueIsSet(toExclNo)
@@ -173,44 +174,60 @@ public class DatastoreQuery implements Serializable {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
     DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-    ManagedConnection mconn = storeMgr.getConnection(om);
-    try {
-      DatastoreService ds = (DatastoreService) mconn.getConnection();
-      final ClassLoaderResolver clr = om.getClassLoaderResolver();
-      final AbstractClassMetaData acmd =
-          getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
-      if (acmd == null) {
-        throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
-            + ".  Perhaps you need to run the enhancer on this class?");
-      }
-      String kind =
-          getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-      datastoreQuery = new Query(kind);
-      DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-      addFilters(compilation, parameters, acmd, table);
-      addSorts(compilation, acmd);
-      Iterable<Entity> entities;
-      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-      if (opts != null) {
-        entities = ds.prepare(datastoreQuery).asIterable(opts);
-      } else {
-        entities = ds.prepare(datastoreQuery).asIterable();
-      }
-      if (NucleusLogger.QUERY.isDebugEnabled()) {
-        NucleusLogger.QUERY.debug(localiser.msg("021074", "DATASTORE",
-            "" + (System.currentTimeMillis() - startTime)));
-      }
-
-      Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
-        public Object apply(Entity entity) {
-          return entityToPojo(entity, acmd, clr, (DatastoreManager) om.getStoreManager());
-        }
-      };
-      return new StreamingQueryResult(
-          query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
-    } finally {
-      mconn.release();
+    final ClassLoaderResolver clr = om.getClassLoaderResolver();
+    final AbstractClassMetaData acmd =
+        getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+    if (acmd == null) {
+      throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
+          + ".  Perhaps you need to run the enhancer on this class?");
     }
+    String kind =
+        getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+    datastoreQuery = new Query(kind);
+    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
+    addFilters(compilation, parameters, acmd, table);
+    addSorts(compilation, acmd);
+    PreparedQuery preparedQuery =
+        DatastoreServiceFactoryInternal.getDatastoreService().prepare(datastoreQuery);
+    FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+    if (isCountQuery) {
+      return fulfillCountQuery(preparedQuery, opts);
+    } else {
+      return fulfillEntityQuery(
+          preparedQuery, opts, acmd, clr, (DatastoreManager) om.getStoreManager());
+    }
+  }
+
+  private List<?> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
+    if (opts != null) {
+      // TODO(maxr) support count + offset/limit by issuing a non-count
+      // query and returning the size of the result set
+      throw new UnsupportedOperationException(
+          "The datastore does not support using count() in conjunction with offset and/or "
+          + "limit.  You can get the answer to this query by issuing the query without "
+          + "count() and then counting the size of the result set.");
+    }
+
+    return Collections.singletonList(preparedQuery.countEntities());
+  }
+
+  private List<?> fulfillEntityQuery(
+      PreparedQuery preparedQuery, FetchOptions opts, final AbstractClassMetaData acmd,
+      final ClassLoaderResolver clr, final DatastoreManager storeMgr) {
+    Iterable<Entity> entities;
+    if (opts != null) {
+      entities = preparedQuery.asIterable(opts);
+    } else {
+      entities = preparedQuery.asIterable();
+    }
+
+    Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
+      public Object apply(Entity entity) {
+        return entityToPojo(entity, acmd, clr, storeMgr);
+      }
+    };
+    return new StreamingQueryResult(
+        query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
   }
 
   /**
@@ -302,7 +319,10 @@ public class DatastoreQuery implements Serializable {
     return pojo;
   }
 
-  private void validate(QueryCompilation compilation) {
+  /**
+   * @return {@code true} if this is a count() query, {@code false} otherwise
+   */
+  private boolean validate(QueryCompilation compilation) {
     if (query.getCandidateClass() == null) {
       throw new NucleusUserException(
           "Candidate class could not be found: " + query.getSingleStringQuery());
@@ -324,8 +344,30 @@ public class DatastoreQuery implements Serializable {
         checkNotJoin(fromExpr);
       }
     }
+
+    boolean isCountQuery = false;
+    if (compilation.getExprResult() != null) {
+      // the only expression result we support is count()
+      for (Expression resultExpr : compilation.getExprResult()) {
+        if (!(resultExpr instanceof InvokeExpression)) {
+          Expression.Operator operator =
+              new Expression.Operator(resultExpr.getClass().getName(), 0);
+          throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+        }
+        InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
+        if (!invokeExpr.getOperation().equals("count")) {
+          Expression.Operator operator =
+              new Expression.Operator(invokeExpr.getOperation(), 0);
+          throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+        } else {
+          isCountQuery = true;
+        }
+      }
+    }
     // TODO(maxr): Add checks for subqueries and anything else we don't
     // allow.
+
+    return isCountQuery;
   }
 
   private void checkNotJoin(Expression expr) {
