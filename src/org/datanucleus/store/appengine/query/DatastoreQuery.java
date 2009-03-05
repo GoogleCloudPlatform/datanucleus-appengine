@@ -561,8 +561,6 @@ public class DatastoreQuery implements Serializable {
         datastorePropName = determinePropertyName(ammd);
       }
       value = pojoParamToDatastoreParam(value);
-      // TODO(maxr) Other transformation may be necessary.
-      // byte[] --> ShortBlob?
       datastoreQuery.addFilter(datastorePropName, op, value);
     }
   }
