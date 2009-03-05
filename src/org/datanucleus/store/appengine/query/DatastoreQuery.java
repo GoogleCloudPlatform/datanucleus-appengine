@@ -557,6 +557,11 @@ public class DatastoreQuery implements Serializable {
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
+      if (value instanceof Enum) {
+        value = ((Enum) value).name();
+      }
+      // TODO(maxr) Other transformation may be necessary.
+      // byte[] --> ShortBlob?
       datastoreQuery.addFilter(datastorePropName, op, value);
     }
   }

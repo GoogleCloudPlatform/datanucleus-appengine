@@ -37,6 +37,7 @@ import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasDoubleJPA;
+import org.datanucleus.test.HasEnumJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
@@ -1087,6 +1088,37 @@ public class JPQLQueryTest extends JPATestCase {
     ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
     JDOQLQuery q = new JDOQLQuery(om, "select from " + Book.class.getName());
     assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
+  }
+
+  public void testFilterByEnum_ProvideStringExplicitly() {
+    Entity e = new Entity(HasEnumJPA.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
+    q.setParameter("p1", HasEnumJPA.MyEnum.V1.name());
+    List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideEnumExplicitly() {
+    Entity e = new Entity(HasEnumJPA.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
+    q.setParameter("p1", HasEnumJPA.MyEnum.V1);
+    List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideLiteral() {
+    Entity e = new Entity(HasEnumJPA.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + HasEnumJPA.class.getName() + " where myEnum = '"
+        + HasEnumJPA.MyEnum.V1.name() + "'");
+    List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
+    assertEquals(1, result.size());
   }
 
   private static Entity newBook(String title, String author, String isbn) {

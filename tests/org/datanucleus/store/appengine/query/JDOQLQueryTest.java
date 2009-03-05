@@ -47,6 +47,7 @@ import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.HasEnumJDO;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -1196,6 +1197,55 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testPrimaryResultExpression() {
     Query q = pm.newQuery("select f from " + Flight.class.getName() + " where you == 23");
     q.execute();
+  }
+
+  public void testFilterByEnum_ProvideStringExplicitly() {
+    Entity e = new Entity(HasEnumJDO.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1");
+    q.declareParameters(String.class.getName() + " p1");
+    List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1.name());
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideEnumExplicitly() {
+    Entity e = new Entity(HasEnumJDO.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1");
+    q.declareParameters(String.class.getName() + " p1");
+    List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1);
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideStringParameterInline() {
+    Entity e = new Entity(HasEnumJDO.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1 parameters String p1");
+    List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1.name());
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideEnumParameterInline() {
+    Entity e = new Entity(HasEnumJDO.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1 parameters " + HasEnumJDO.MyEnum.class.getName() + " p1");
+    List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1);
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEnum_ProvideLiteral() {
+    Entity e = new Entity(HasEnumJDO.class.getSimpleName());
+    e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + HasEnumJDO.class.getName() + " where myEnum == '"
+        + HasEnumJDO.MyEnum.V1.name() + "'");
+    List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute();
+    assertEquals(1, result.size());
   }
 
   private void assertQueryUnsupportedByOrm(
