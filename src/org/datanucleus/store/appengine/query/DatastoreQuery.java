@@ -23,6 +23,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.ShortBlob;
+import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
@@ -66,6 +68,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.Arrays;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -557,15 +560,23 @@ public class DatastoreQuery implements Serializable {
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
-      if (value instanceof Enum) {
-        value = ((Enum) value).name();
-      }
+      value = pojoParamToDatastoreParam(value);
       // TODO(maxr) Other transformation may be necessary.
       // byte[] --> ShortBlob?
       datastoreQuery.addFilter(datastorePropName, op, value);
     }
   }
 
+  private Object pojoParamToDatastoreParam(Object param) {
+    if (param instanceof Enum) {
+      param = ((Enum) param).name();
+    } else if (param instanceof byte[]) {
+      param = new ShortBlob((byte[]) param);
+    } else if (param instanceof Byte[]) {
+      param = new ShortBlob(PrimitiveArrays.toByteArray(Arrays.asList((Byte[]) param)));
+    }
+    return param;
+  }
   private NucleusUserException noMetaDataException(String member, String fullClassName) {
     return new NucleusUserException(
         "No meta-data for member named " + member + " on class " + fullClassName

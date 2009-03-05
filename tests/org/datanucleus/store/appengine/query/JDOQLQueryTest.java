@@ -19,11 +19,13 @@ import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.users.User;
+import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
@@ -48,6 +50,7 @@ import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
 import org.datanucleus.test.HasEnumJDO;
+import org.datanucleus.test.HasBytesJDO;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -1245,6 +1248,41 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + HasEnumJDO.class.getName() + " where myEnum == '"
         + HasEnumJDO.MyEnum.V1.name() + "'");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByShortBlob() {
+    Entity e = new Entity(HasBytesJDO.class.getSimpleName());
+    e.setProperty("onePrimByte", 8L);
+    e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where shortBlob == p1");
+    q.declareParameters(String.class.getName() + " p1");
+    List<HasBytesJDO> result =
+        (List<HasBytesJDO>) q.execute(new ShortBlob("short blob".getBytes()));
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByPrimitiveByteArray() {
+    Entity e = new Entity(HasBytesJDO.class.getSimpleName());
+    e.setProperty("onePrimByte", 8L);
+    e.setProperty("primBytes", new ShortBlob("short blob".getBytes()));
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where primBytes == p1");
+    q.declareParameters(String.class.getName() + " p1");
+    List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute("short blob".getBytes());
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByByteArray() {
+    Entity e = new Entity(HasBytesJDO.class.getSimpleName());
+    e.setProperty("onePrimByte", 8L);
+    e.setProperty("bytes", new ShortBlob("short blob".getBytes()));
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where bytes == p1");
+    q.declareParameters(String.class.getName() + " p1");
+    List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute(
+        PrimitiveArrays.asList("short blob".getBytes()).toArray(new Byte[0]));
     assertEquals(1, result.size());
   }
 
