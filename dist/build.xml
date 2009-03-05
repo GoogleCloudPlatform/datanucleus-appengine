@@ -4,7 +4,7 @@
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
   <property name="version.point" value="0"/>
-  <property name="version.rc" value=".RC1"/>
+  <property name="version.rc" value=".RC2"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -232,7 +232,7 @@
       <zipfileset dir=".">
         <include name="README.ORM"/>
         <include name="RELEASE_NOTES.ORM"/>
-      </zipfileset>      
+      </zipfileset>
     </zip>
     <delete file="${orm.jar}"/>
     <delete file="${orm.source.zip}"/>
@@ -253,6 +253,10 @@
       /tmp/testdist/lib/shared/geronimo-jsp_2.1_spec-1.0.1.jar
       /tmp/testdist/lib/shared/geronimo-el_1.0_spec-1.0.1.jar
       /tmp/testdist/lib/shared/appengine-local-runtime-shared.jar
+      /tmp/testdist/lib/shared/jsp/jasper-compiler-5.0.28.jar
+      /tmp/testdist/lib/shared/jsp/jasper-runtime-5.0.28.jar
+      /tmp/testdist/lib/shared/jsp/commons-logging-1.1.1.jar
+      /tmp/testdist/lib/tools/jsp
      -->
     <delete dir="${orm.tmpdist.dir}"/>
     <mkdir dir="${orm.tmpdist.dir}"/>
@@ -283,6 +287,17 @@
         <include name="geronimo-el*.jar"/>
       </fileset>
     </copy>
+    <mkdir dir="${orm.sdk.tmpdist.dir}/shared/jsp"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/shared/jsp">
+      <fileset dir="${orm.lib.dir}">
+        <include name="jasper-compiler-5.0.28.jar"/>
+        <include name="jasper-runtime-5.0.28.jar"/>
+        <include name="commons-logging-1.1.1.jar"/>
+      </fileset>
+    </copy>
+
+    <!-- directory just needs to exist -->
+    <mkdir dir="${orm.sdk.tmpdist.dir}/tools/jsp"/>
 
     <unzip src="${dist.target}" dest="${orm.tmpdist.dir}"/>
 
