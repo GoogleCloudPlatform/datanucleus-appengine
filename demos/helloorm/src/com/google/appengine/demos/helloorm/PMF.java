@@ -9,8 +9,12 @@ import javax.jdo.PersistenceManagerFactory;
  */
 public final class PMF {
 
-  public static final PersistenceManagerFactory pmf =
+  private static final PersistenceManagerFactory INSTANCE =
       JDOHelper.getPersistenceManagerFactory("transactional");
+
+  public static PersistenceManagerFactory get() {
+    return INSTANCE;
+  }
 
   private PMF() {}
 }

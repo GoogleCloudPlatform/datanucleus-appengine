@@ -9,7 +9,11 @@ import javax.persistence.Persistence;
  */
 public final class EMF {
 
-  public static final EntityManagerFactory emf = Persistence.createEntityManagerFactory("helloorm");
+  private static final EntityManagerFactory INSTANCE = Persistence.createEntityManagerFactory("helloorm");
+
+  public static EntityManagerFactory get() {
+    return INSTANCE;
+  }
 
   private EMF() {}
 }

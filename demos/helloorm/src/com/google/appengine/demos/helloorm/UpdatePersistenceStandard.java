@@ -1,22 +1,16 @@
 // Copyright 2008 Google Inc. All Rights Reserved.
 package com.google.appengine.demos.helloorm;
 
-import javax.servlet.ServletConfig;
+import java.io.IOException;
+
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class UpdatePersistenceStandard extends HttpServlet {
-
-  private ServletConfig config;
-  @Override
-  public void init(ServletConfig config) {
-    this.config = config;
-  }
 
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {

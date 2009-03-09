@@ -5,8 +5,6 @@ import java.io.IOException;
 
 import javax.jdo.PersistenceManager;
 import javax.persistence.EntityManager;
-import javax.persistence.EntityTransaction;
-import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -15,12 +13,6 @@ import javax.servlet.http.HttpServletResponse;
  * @author Max Ross <maxr@google.com>
  */
 public class UpdateFlight extends HttpServlet {
-
-  private ServletConfig config;
-  @Override
-  public void init(ServletConfig config) {
-    this.config = config;
-  }
 
   @Override
   public void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -42,36 +34,33 @@ public class UpdateFlight extends HttpServlet {
       return;
     }
     if (PersistenceStandard.get() == PersistenceStandard.JPA) {
-      EntityManager em = EMF.emf.createEntityManager();
-      EntityTransaction txn = em.getTransaction();
-      try {
-        txn.begin();
-        Flight f = em.find(Flight.class, key);
-        f.setOrig(orig);
-        f.setDest(dest);
-        txn.commit();
-      } finally {
-        if (txn.isActive()) {
-          txn.rollback();
-        }
-        em.close();
-      }
+      doPostJPA(Long.valueOf(key), orig, dest);
     } else {
-      PersistenceManager pm = PMF.pmf.getPersistenceManager();
-      try {
-        Flight f = pm.getObjectById(Flight.class, key);
-        pm.currentTransaction().begin();
-        f.setOrig(orig);
-        f.setDest(dest);
-        pm.currentTransaction().commit();
-      } finally {
-        if (pm.currentTransaction().isActive()) {
-          pm.currentTransaction().rollback();
-        }
-        pm.close();
-      }
+      doPostJDO(Long.valueOf(key), orig, dest);
     }
     resp.sendRedirect("/");
+  }
+
+  private void doPostJDO(long key, String orig, String dest) {
+    PersistenceManager pm = PMF.get().getPersistenceManager();
+    try {
+      Flight f = pm.getObjectById(Flight.class, key);
+      f.setOrig(orig);
+      f.setDest(dest);
+    } finally {
+      pm.close();
+    }
+  }
+
+  private void doPostJPA(long key, String orig, String dest) {
+    EntityManager em = EMF.get().createEntityManager();
+    try {
+      Flight f = em.find(Flight.class, key);
+      f.setOrig(orig);
+      f.setDest(dest);
+    } finally {
+      em.close();
+    }
   }
 
 }

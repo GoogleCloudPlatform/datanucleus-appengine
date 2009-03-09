@@ -2,11 +2,11 @@
 package com.google.appengine.demos.helloorm;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 import javax.jdo.PersistenceManager;
 import javax.persistence.EntityManager;
-import javax.servlet.ServletConfig;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -14,12 +14,6 @@ import javax.servlet.http.HttpServletResponse;
 public class GetFlights extends HttpServlet {
 
   private static final String DEFAULT_QUERY = "select from " + Flight.class.getName();
-
-  private ServletConfig config;
-  @Override
-  public void init(ServletConfig config) {
-    this.config = config;
-  }
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
@@ -30,41 +24,52 @@ public class GetFlights extends HttpServlet {
   public void doGet(HttpServletRequest req, HttpServletResponse resp) throws IOException {
     resp.setContentType("text/html");
     long start = System.currentTimeMillis();
-    PersistenceManager pm = null;
-    EntityManager em = null;
-    List<Flight> flights;
+    Collection<Flight> flights;
     String query = DEFAULT_QUERY;
     String customQuery = req.getParameter("q");
     if (customQuery != null) {
       query = customQuery;
     }
+    if (PersistenceStandard.get() == PersistenceStandard.JPA) {
+      flights = queryJPA(query);
+    } else {
+      flights = queryJDO(query);
+    }
+    printQueryFlightForm(query, resp);
+    printTableHeader(resp);
+
+    resp.getWriter().println("<table>");
+
+    printFlights(resp, flights);
+    resp.getWriter().println("</table>");
+    printAddFlightForm(query, resp);
+    resp.getWriter().println("Request time in millis: " + (System.currentTimeMillis() - start));
+    resp.getWriter().println("<br>");
+    printPersistenceStandardForm(query, resp);
+  }
+
+  private Collection<Flight> queryJDO(String query) {
+    PersistenceManager pm = PMF.get().getPersistenceManager();
     try {
-      if (PersistenceStandard.get() == PersistenceStandard.JPA) {
-        em = EMF.emf.createEntityManager();
-        flights = em.createQuery(query).getResultList();
-      } else {
-        pm = PMF.pmf.getPersistenceManager();
-        flights = (List<Flight>) pm.newQuery(query).execute();
-      }
-      printQueryFlightForm(query, resp);
-      printTableHeader(resp);
-
-      resp.getWriter().println("<table>");
-
-      printFlights(resp, flights);
-      resp.getWriter().println("</table>");
-      printAddFlightForm(query, resp);
-      resp.getWriter().println("Request time in millis: " + (System.currentTimeMillis() - start));
-      resp.getWriter().println("<br>");
-      printPersistenceStandardForm(query, resp);
+      List<Flight> flights = (List<Flight>) pm.newQuery(query).execute();
+      // Force all results to be pulled back before we close the entity manager.
+      // We could have also called pm.detachCopyAll() 
+      flights.size();
+      return flights;
     } finally {
-      if (pm != null) {
-        pm.close();
-      }
+      pm.close();
+    }
+  }
 
-      if (em != null) {
-        em.close();
-      }
+  private List<Flight> queryJPA(String query) {
+    EntityManager em = EMF.get().createEntityManager();
+    try {
+      List<Flight> flights = em.createQuery(query).getResultList();
+      // force all results to be pulled back before we close the entity manager
+      flights.size();
+      return flights;
+    } finally {
+      em.close();
     }
   }
 
@@ -103,7 +108,7 @@ public class GetFlights extends HttpServlet {
     resp.getWriter().println("</form>");
   }
 
-  private void printFlights(HttpServletResponse resp, List<Flight> flights) throws IOException {
+  private void printFlights(HttpServletResponse resp, Collection<Flight> flights) throws IOException {
     if (flights.isEmpty()) {
       resp.getWriter().println("<br>No Flights!");
     }
