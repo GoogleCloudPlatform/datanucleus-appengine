@@ -108,6 +108,13 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
    * otherwise.
    */
   private static boolean alreadyAllocated(String name) {
+    // It's not clear if it is possible create an EMF without a name,
+    // but since we do our duplicate detection based on name we need to be
+    // careful.  We have to short-circuit here because ConcurrentHashMap
+    // throws NPE if you pass it a null key.
+    if (name == null) {
+      return false;
+    }
     AtomicInteger count =
         ConcurrentHashMapHelper.getCounter(NUM_INSTANCES_PER_PERSISTENCE_UNIT, name);
     return count.incrementAndGet() > 1 &&

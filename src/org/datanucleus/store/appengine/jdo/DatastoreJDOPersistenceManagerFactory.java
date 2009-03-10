@@ -145,6 +145,13 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
    * otherwise.
    */
   private static boolean alreadyAllocated(String name) {
+    // Not all PMFs have names (like those created by Spring), and since we do
+    // our duplicate detection based on name we just have to assume that if
+    // there isn't a name it isn't a duplicate.  We have to short-circuit here
+    // because ConcurrentHashMap throws NPE if you pass it a null key.
+    if (name == null) {
+      return false;
+    }
     AtomicInteger count =
         ConcurrentHashMapHelper.getCounter(NUM_INSTANCES_PER_PERSISTENCE_UNIT, name);
     return count.incrementAndGet() > 1 &&

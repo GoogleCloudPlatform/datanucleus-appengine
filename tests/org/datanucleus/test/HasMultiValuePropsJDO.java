@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import com.google.appengine.api.datastore.Key;
+
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
@@ -46,7 +48,7 @@ public class HasMultiValuePropsJDO {
   List<String> strList;
 
   @Persistent
-  List<String> keyList;
+  List<Key> keyList;
 
   @Persistent(defaultFetchGroup = "true")
   Set<String> strSet;
@@ -85,11 +87,11 @@ public class HasMultiValuePropsJDO {
     this.strList = strList;
   }
 
-  public List<String> getKeyList() {
+  public List<Key> getKeyList() {
     return keyList;
   }
 
-  public void setKeyList(List<String> keyList) {
+  public void setKeyList(List<Key> keyList) {
     this.keyList = keyList;
   }
 

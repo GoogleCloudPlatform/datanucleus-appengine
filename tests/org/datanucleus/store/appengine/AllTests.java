@@ -83,6 +83,7 @@ public class AllTests {
     suite.addTestSuite(JDOConcurrentModificationTest.class);
     suite.addTestSuite(JPAConcurrentModificationTest.class);
     suite.addTestSuite(JDOEmbeddedTest.class);
+    suite.addTestSuite(JDOFetchGroupTest.class);
     return suite;
   }
 }

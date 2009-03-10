@@ -18,6 +18,9 @@ package org.datanucleus.store.appengine.jdo;
 import junit.framework.TestCase;
 
 import static org.datanucleus.store.appengine.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
+import org.datanucleus.store.appengine.Utils;
+
+import java.util.Map;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
@@ -54,5 +57,19 @@ public class DatastoreJDOPersistenceManagerFactoryTest extends TestCase {
             Boolean.TRUE.toString());
       }
     }
+  }
+
+  public void testPMFWithoutName() {
+    Map<String, String> propMap = Utils.newHashMap();
+    propMap.put("javax.jdo.PersistenceManagerFactoryClass",
+                DatastoreJDOPersistenceManagerFactory.class.getName());
+    propMap.put("javax.jdo.option.ConnectionURL", "appengine");
+    PersistenceManagerFactory pmf =
+        JDOHelper.getPersistenceManagerFactory(propMap);
+    pmf.close();
+    // Make sure our duplicate detection is disabled for pmfs that don't have
+    // names.
+    pmf = JDOHelper.getPersistenceManagerFactory(propMap);
+    pmf.close();
   }
 }
