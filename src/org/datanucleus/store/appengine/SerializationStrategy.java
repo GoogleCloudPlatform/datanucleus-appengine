@@ -20,6 +20,9 @@ import com.google.appengine.api.datastore.Blob;
 /**
  * A strategy for serializing objects to the datastore.
  *
+ * This class is part of the public interface of the DataNucleus App Engine
+ * Plugin and can be safely referenced in user code.
+ *
  * @author Max Ross <maxr@google.com>
  */
 public interface SerializationStrategy {
