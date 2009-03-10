@@ -19,11 +19,11 @@ import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.users.User;
 import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 import com.google.apphosting.api.ApiProxy;
@@ -35,10 +35,13 @@ import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JDOTestCase;
+import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
+import org.datanucleus.test.HasBytesJDO;
+import org.datanucleus.test.HasEnumJDO;
 import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
@@ -49,17 +52,18 @@ import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
-import org.datanucleus.test.HasEnumJDO;
-import org.datanucleus.test.HasBytesJDO;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import javax.jdo.Extent;
 import javax.jdo.JDOException;
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 
@@ -1130,7 +1134,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof IllegalArgumentException);
     }
@@ -1286,6 +1290,28 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, result.size());
   }
 
+  public void testFilterByDate() {
+    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
+    Query q = pm.newQuery("select from " + KitchenSink.class.getName()
+                          + " where dateVal >= p1 parameters java.util.Date p1");
+    List<KitchenSink> result = (List<KitchenSink>) q.execute(KitchenSink.DATE1);
+    assertEquals(1, result.size());
+    assertEquals(key, KeyFactory.stringToKey(result.get(0).key));
+  }
+
+  public void testExtents() {
+    LinkedList<Key> keyStack = new LinkedList<Key>();
+    keyStack.addFirst(ldth.ds.put(new Entity(HasLongPkJDO.class.getSimpleName())));
+    keyStack.addFirst(ldth.ds.put(new Entity(HasLongPkJDO.class.getSimpleName())));
+    keyStack.addFirst(ldth.ds.put(new Entity(HasLongPkJDO.class.getSimpleName())));
+
+    Extent<HasLongPkJDO> ext = pm.getExtent(HasLongPkJDO.class);
+    for (HasLongPkJDO pojo : ext) {
+      assertEquals(keyStack.removeLast(), TestUtils.createKey(pojo, pojo.getId()));
+    }
+    assertTrue(keyStack.isEmpty());
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
@@ -1305,7 +1331,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected IllegalArgumentException for query <" + query + ">");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }

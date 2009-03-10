@@ -30,8 +30,8 @@ import org.datanucleus.test.Person;
 
 import java.util.Arrays;
 
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
-import javax.jdo.JDOUserException;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 
@@ -258,7 +258,7 @@ public class JDOInsertionTest extends JDOTestCase {
     try {
       pm.makePersistent(f2);
       fail("expected exception");
-    } catch (JDOUserException iae) {
+    } catch (JDOFatalUserException iae) {
       // good
     } finally {
       rollbackTxn();

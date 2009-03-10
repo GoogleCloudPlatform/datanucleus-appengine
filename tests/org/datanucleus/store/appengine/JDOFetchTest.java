@@ -27,6 +27,9 @@ import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.Person;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import javax.jdo.JDOObjectNotFoundException;
 
 /**
@@ -291,5 +294,16 @@ public class JDOFetchTest extends JDOTestCase {
     Flight f = pm.getObjectById(Flight.class, "yar");
     // no exception, just overflow
     assertEquals(-2147483648, f.getYou());
+  }
+
+  public void testMultiValuePropWithOneNullElement() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    List<String> oneNullElement = new ArrayList<String>();
+    oneNullElement.add(null);
+    e.setProperty("strList", oneNullElement);
+    Key key = ldth.ds.put(e);
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, key);
+    assertEquals(1, pojo.getStrList().size());
+    assertNull(pojo.getStrList().get(0));
   }
 }

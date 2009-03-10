@@ -26,6 +26,7 @@ import org.datanucleus.test.HasOneToOneParentJDO;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
 
 /**
@@ -148,7 +149,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     try {
       pm.makePersistent(parent);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     } finally {
       rollbackTxn();
@@ -170,7 +171,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     try {
       pm.makePersistent(parent);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     } finally {
       rollbackTxn();

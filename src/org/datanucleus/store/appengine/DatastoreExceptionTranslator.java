@@ -34,16 +34,20 @@ import java.util.ConcurrentModificationException;
  */
 public final class DatastoreExceptionTranslator {
 
-  public static NucleusUserException wrapIllegalArgumentException(IllegalArgumentException e) {
-    return new NucleusUserException("Illegal argument", e);
+  public static NucleusException wrapIllegalArgumentException(IllegalArgumentException e) {
+    // Bad input, so mark fatal to let user know not to retry.
+    return new NucleusUserException("Illegal argument", e).setFatal();
   }
 
-  public static NucleusDataStoreException wrapDatastoreFailureException(DatastoreFailureException e) {
+  public static NucleusDataStoreException wrapDatastoreFailureException(
+      DatastoreFailureException e) {
+    // could be a transient error so don't mark fatal
     return new NucleusDataStoreException("Datastore Failure", e);
   }
 
   static NucleusDataStoreException wrapConcurrentModificationException(
       ConcurrentModificationException e) {
+    // do not mark fatal
     return new NucleusDataStoreException("Concurrent Modification", e);
   }
 
