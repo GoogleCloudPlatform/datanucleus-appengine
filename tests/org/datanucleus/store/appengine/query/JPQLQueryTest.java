@@ -61,6 +61,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
+import javax.persistence.NoResultException;
+import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
@@ -962,10 +964,11 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasLongPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getId());
-    @SuppressWarnings("unchecked")
-    List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
-    assertEquals(1, results.size());
-    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
+    q.getSingleResult();
+//    @SuppressWarnings("unchecked")
+//    List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
+//    assertEquals(1, results.size());
+//    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
 
     q = em.createQuery(
         "select from " + HasLongPkJPA.class.getName() + " where id = :p");
@@ -975,6 +978,47 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, results2.size());
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
+
+  public void testQuerySingleResult_OneResult() {
+    Entity e = newBook("t1", "max", "12345");
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where title = :p");
+    q.setParameter("p", "t1");
+    Book pojo = (Book) q.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(pojo.getId()));
+  }
+
+  public void testQuerySingleResult_NoResult() {
+    Entity e = newBook("t1", "max", "12345");
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where title = :p");
+    q.setParameter("p", "not t1");
+    try {
+      q.getSingleResult();
+      fail("expected exception");
+    } catch (NoResultException ex) {
+      // good
+    }
+  }
+
+  public void testQuerySingleResult_MultipleResults() {
+    Entity e1 = newBook("t1", "max", "12345");
+    Entity e2 = newBook("t1", "max", "12345");
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = em.createQuery(
+        "select from " + Book.class.getName() + " where title = :p");
+    q.setParameter("p", "t1");
+    try {
+      q.getSingleResult();
+      fail("expected exception");
+    } catch (NonUniqueResultException ex) {
+      // good
+    }
+  }
+
 
   public void testSortByUnknownProperty() {
     try {

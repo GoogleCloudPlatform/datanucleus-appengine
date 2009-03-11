@@ -91,4 +91,14 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
     return super.getBooleanExtensionProperty(name);
   }
+
+  @Override
+  public void setUnique(boolean unique) {
+    // Workaround a DataNucleus bug.
+    // The superclass implementation discards the comiled query when this is set,
+    // but since jpql param values are set _before_ the query is executed,
+    // discarding the compiled query discards the parameter values as well and
+    // we have no way of getting them back.
+    this.unique = unique;
+  }
 }

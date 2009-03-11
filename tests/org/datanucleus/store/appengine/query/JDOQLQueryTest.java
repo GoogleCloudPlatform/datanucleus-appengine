@@ -1059,6 +1059,42 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
   }
 
+  public void testUniqueQuery_OneResult() {
+    Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you == p parameters Long p");
+    q.setUnique(true);
+    @SuppressWarnings("unchecked")
+    Flight result = (Flight) q.execute(23);
+    assertEquals(e.getKey(), KeyFactory.stringToKey(result.getId()));
+  }
+
+  public void testUniqueQuery_NoResult() {
+    Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you == p parameters Long p");
+    q.setUnique(true);
+    assertNull(q.execute(43));
+  }
+
+  public void testUniqueQuery_MultipleResults() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where you == p parameters Long p");
+    q.setUnique(true);
+    try {
+      q.execute(23);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+    }
+  }
+
   public void testSortByUnknownProperty() {
     try {
       pm.newQuery("select from " + Flight.class.getName() + " order by dne").execute();
