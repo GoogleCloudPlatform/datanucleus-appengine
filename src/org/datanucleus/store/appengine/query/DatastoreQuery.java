@@ -63,12 +63,12 @@ import org.datanucleus.util.NucleusLogger;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Arrays;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -417,7 +417,8 @@ public class DatastoreQuery implements Serializable {
       Query.SortDirection dir = oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
               ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
       PrimaryExpression left = (PrimaryExpression) oe.getLeft();
-      AbstractMemberMetaData ammd = getMemberMetaData(acmd, left);
+      AbstractMemberMetaData ammd =
+          getMemberMetaData(acmd, getTuples(left, compilation.getCandidateAlias()));
       if (ammd == null) {
         throw noMetaDataException(left.getId(), acmd.getFullClassName());
       }
@@ -447,7 +448,7 @@ public class DatastoreQuery implements Serializable {
   private void addFilters(QueryCompilation compilation, Map parameters,
       AbstractClassMetaData acmd, DatastoreTable table) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(parameters, acmd, table);
+    QueryData qd = new QueryData(parameters, acmd, table, compilation.getCandidateAlias());
     addExpression(filter, qd);
   }
 
@@ -458,11 +459,13 @@ public class DatastoreQuery implements Serializable {
     private final Map parameters;
     private final AbstractClassMetaData acmd;
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
+    private final String alias;
 
-    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table) {
+    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table, String alias) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
+      this.alias = alias;
     }
   }
 
@@ -543,11 +546,12 @@ public class DatastoreQuery implements Serializable {
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
     }
-    AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, left);
+    List<String> tuples = getTuples(left, qd.alias);
+    AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, tuples);
     if (ammd == null) {
       throw noMetaDataException(left.getId(), qd.acmd.getFullClassName());
     }
-    JavaTypeMapping mapping = getMappingForFieldWithName(left.getTuples(), qd);
+    JavaTypeMapping mapping = getMappingForFieldWithName(tuples, qd);
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isParentPK(ammd)) {
@@ -563,6 +567,19 @@ public class DatastoreQuery implements Serializable {
       value = pojoParamToDatastoreParam(value);
       datastoreQuery.addFilter(datastorePropName, op, value);
     }
+  }
+
+  /**
+   * Fetches the tuples of the provided expression, stripping off the first
+   * tuple if there are multiple tuples, the table name is aliased, and the
+   * first tuple matches the alias.
+   */
+  private List<String> getTuples(PrimaryExpression expr, String alias) {
+    List<String> tuples = expr.getTuples();
+    if (alias != null && tuples.size() > 1 && alias.equals(tuples.get(0))) {
+      tuples = tuples.subList(1, tuples.size());
+    }
+    return tuples;
   }
 
   private Object pojoParamToDatastoreParam(Object param) {
@@ -616,8 +633,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private AbstractMemberMetaData getMemberMetaData(
-      AbstractClassMetaData acmd, PrimaryExpression left) {
-    List<String> tuples = left.getTuples();
+      AbstractClassMetaData acmd, List<String> tuples) {
     AbstractMemberMetaData ammd = acmd.getMetaDataForMember(tuples.get(0));
     if (tuples.size() == 1) {
       return ammd;

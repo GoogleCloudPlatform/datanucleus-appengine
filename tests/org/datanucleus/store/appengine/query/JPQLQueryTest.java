@@ -34,6 +34,7 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JPATestCase;
+import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.Book;
@@ -363,8 +364,7 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName()
-            + " where id = :key");
+        "select from " + Book.class.getName() + " where id = :key");
     q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
@@ -1155,6 +1155,72 @@ public class JPQLQueryTest extends JPATestCase {
     q.setParameter("p1", PrimitiveArrays.asList("short blob".getBytes()).toArray(new Byte[0]));
     List<HasBytesJPA> result = (List<HasBytesJPA>) q.getResultList();
     assertEquals(1, result.size());
+  }
+
+  public void testAliasedFilter() {
+    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName() + " b where b.id = :key");
+    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+  }
+
+  public void testAliasedSort() {
+    Entity bookEntity1 = newBook("Bar Book", "Joe Blow", "67891");
+    Entity bookEntity2 = newBook("Bar Book", "Joe Blow", "67890");
+    ldth.ds.put(bookEntity1);
+    ldth.ds.put(bookEntity2);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName() + " b order by b.isbn");
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(bookEntity2.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+    assertEquals(bookEntity1.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
+  }
+
+  public void testAliasedEmbeddedFilter() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName() + " p where p.name.first = \"max\"");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testAliasedEmbeddedSort() {
+    Entity entity1 = new Entity(Person.class.getSimpleName());
+    entity1.setProperty("first", "max");
+    entity1.setProperty("last", "ross");
+    entity1.setProperty("anotherFirst", "notmax2");
+    entity1.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity1);
+    Entity entity2 = new Entity(Person.class.getSimpleName());
+    entity2.setProperty("first", "max");
+    entity2.setProperty("last", "ross");
+    entity2.setProperty("anotherFirst", "notmax1");
+    entity2.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity2);
+
+    Query q = em.createQuery(
+        "select from " + Person.class.getName() + " p order by p.anotherName.first");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(entity2.getKey(), TestUtils.createKey(Person.class, result.get(0).getId()));
+    assertEquals(entity1.getKey(), TestUtils.createKey(Person.class, result.get(1).getId()));
   }
 
   private static Entity newBook(String title, String author, String isbn) {

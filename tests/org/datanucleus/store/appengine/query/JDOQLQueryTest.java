@@ -1312,6 +1312,71 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertTrue(keyStack.isEmpty());
   }
 
+  public void testAliasedFilter() {
+    Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity);
+
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where this.id == key parameters String key");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(KeyFactory.keyToString(flightEntity.getKey()));
+    assertEquals(1, flights.size());
+    assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+  }
+
+  public void testAliasedSort() {
+    Entity flightEntity1 = newFlightEntity("1", "yam", "bam", 2, 2);
+    Entity flightEntity2 = newFlightEntity("1", "yam", "bam", 1, 2);
+    ldth.ds.put(flightEntity1);
+    ldth.ds.put(flightEntity2);
+
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " order by this.you");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(2, flights.size());
+    assertEquals(flightEntity2.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+    assertEquals(flightEntity1.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
+  }
+
+  public void testAliasedEmbeddedFilter() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + Person.class.getName() + " where this.name.first == \"max\"");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.execute();
+    assertEquals(1, result.size());
+  }
+
+  public void testAliasedEmbeddedSort() {
+    Entity entity1 = new Entity(Person.class.getSimpleName());
+    entity1.setProperty("first", "max");
+    entity1.setProperty("last", "ross");
+    entity1.setProperty("anotherFirst", "notmax2");
+    entity1.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity1);
+    Entity entity2 = new Entity(Person.class.getSimpleName());
+    entity2.setProperty("first", "max");
+    entity2.setProperty("last", "ross");
+    entity2.setProperty("anotherFirst", "notmax1");
+    entity2.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity2);
+
+    Query q = pm.newQuery(
+        "select from " + Person.class.getName() + " order by this.anotherName.first");
+    @SuppressWarnings("unchecked")
+    List<Person> result = (List<Person>) q.execute();
+    assertEquals(2, result.size());
+    assertEquals(entity2.getKey(), TestUtils.createKey(Person.class, result.get(0).getId()));
+    assertEquals(entity1.getKey(), TestUtils.createKey(Person.class, result.get(1).getId()));
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
