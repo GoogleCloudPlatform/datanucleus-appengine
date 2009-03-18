@@ -2,13 +2,19 @@ Release Notes for the Google App Engine ORM, a DataNucleus plugin that provides
 access to the Google App Engine Datastore via JDO and JPA.
 
 VERSION 1.0.0 Final
-- Translate IllegalAccessException to JDOFatalUserException when thrown by datastore api
-- Handle PMFs with no name
-- Added package-info.java
+- Fix automatic entity group assignment with non-transactional datasources.
+- Support aliased table names.
+- Fix getSingleResult() (jpa)
+- Support filtering with transient params
 
 -------------------------------------------------------------------------------
 UNRELEASED VERSIONS
 -------------------------------------------------------------------------------
+
+VERSION 1.0.0 RC3
+- Translate IllegalAccessException to JDOFatalUserException when thrown by datastore api
+- Handle PMFs with no name
+- Added package-info.java
 
 VERSION 1.0.0 RC2
 - Support for ShortBlob
