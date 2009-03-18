@@ -95,6 +95,15 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJDO());
   }
 
+  public void testAddAlreadyPersistedChildToParent_NoTxnSamePm() {
+    testAddAlreadyPersistedChildToParent_NoTxnSamePm(new HasOneToManySetJDO());
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentPm() {
+    testAddAlreadyPersistedChildToParent_NoTxnDifferentPm(new HasOneToManySetJDO());
+  }
+
+
   @Override
   boolean isIndexed() {
     return false;

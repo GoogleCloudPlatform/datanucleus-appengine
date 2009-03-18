@@ -73,4 +73,10 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
     testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJPA());
   }
+  public void testAddAlreadyPersistedChildToParent_NoTxnSameEm() {
+    testAddAlreadyPersistedChildToParent_NoTxnSameEm(new HasOneToManySetJPA());
+  }
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
+    testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManySetJPA());
+  }
 }

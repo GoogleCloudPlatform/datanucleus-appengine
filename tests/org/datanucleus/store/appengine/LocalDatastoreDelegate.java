@@ -29,22 +29,30 @@ import java.io.File;
  */
 class LocalDatastoreDelegate implements DatastoreDelegate {
 
-  private ApiProxyLocalImpl localProxy;
+  // Ok to reuse this across tests so long as we clear out the
+  // datastore in tearDown()
+  private static final ApiProxyLocalImpl localProxy = createLocalProxy();
 
-  public void setUp() throws Exception {
-    localProxy = new ApiProxyLocalImpl(new File(".")) {};
+  private static ApiProxyLocalImpl createLocalProxy() {
+    ApiProxyLocalImpl proxy = new ApiProxyLocalImpl(new File(".")){};
     // run completely in-memory
-    localProxy.setProperty(LocalDatastoreService.NO_STORAGE_PROPERTY, Boolean.TRUE.toString());
+    proxy.setProperty(LocalDatastoreService.NO_STORAGE_PROPERTY, Boolean.TRUE.toString());
     // don't expire queries - makes debugging easier
-    localProxy.setProperty(LocalDatastoreService.MAX_QUERY_LIFETIME_PROPERTY,
+    proxy.setProperty(LocalDatastoreService.MAX_QUERY_LIFETIME_PROPERTY,
         Integer.toString(Integer.MAX_VALUE));
     // don't expire txns - makes debugging easier
-    localProxy.setProperty(LocalDatastoreService.MAX_TRANSACTION_LIFETIME_PROPERTY,
+    proxy.setProperty(LocalDatastoreService.MAX_TRANSACTION_LIFETIME_PROPERTY,
         Integer.toString(Integer.MAX_VALUE));
+    return proxy;
+  }
+
+  public void setUp() {
+    // nothing to set up
   }
 
   public void tearDown() throws Exception {
-    localProxy.stop();
+    LocalDatastoreService lds = (LocalDatastoreService) localProxy.getService("datastore_v3");
+    lds.clearProfiles();
   }
 
   public byte[] makeSyncCall(ApiProxy.Environment environment, String packageName,

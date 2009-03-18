@@ -635,14 +635,31 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
-  public void testFilterByChildObject() {
+  private interface FlightProvider {
+    Flight getFlight(Key key);
+  }
+
+  private class AttachedFlightProvider implements FlightProvider {
+    public Flight getFlight(Key key) {
+      return pm.getObjectById(Flight.class, key);
+    }
+  }
+
+  private class TransientFlightProvider implements FlightProvider {
+    public Flight getFlight(Key key) {
+      Flight f = new Flight();
+      f.setId(KeyFactory.keyToString(key));
+      return f;
+    }
+  }
+
+  private void testFilterByChildObject(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
     ldth.ds.put(flightEntity);
 
-    Flight flight =
-        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
@@ -651,14 +668,20 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
   }
 
-  public void testFilterByChildObject_AdditionalFilterOnParent() {
+  public void testFilterByChildObject() {
+    testFilterByChildObject(new AttachedFlightProvider());
+    commitTxn();
+    beginTxn();
+    testFilterByChildObject(new TransientFlightProvider());
+  }
+
+  private void testFilterByChildObject_AdditionalFilterOnParent(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
     ldth.ds.put(flightEntity);
 
-    Flight flight =
-        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where id == parentId && flight == f "
@@ -671,14 +694,20 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
   }
 
-  public void testFilterByChildObject_UnsupportedOperator() {
+  public void testFilterByChildObject_AdditionalFilterOnParent() {
+    testFilterByChildObject_AdditionalFilterOnParent(new AttachedFlightProvider());
+    commitTxn();
+    beginTxn();
+    testFilterByChildObject_AdditionalFilterOnParent(new TransientFlightProvider());
+  }
+
+  private void testFilterByChildObject_UnsupportedOperator(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
     ldth.ds.put(flightEntity);
 
-    Flight flight =
-        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight > f parameters " + Flight.class.getName() + " f");
@@ -690,14 +719,20 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
-  public void testFilterByChildObject_ValueWithoutAncestor() {
+  public void testFilterByChildObject_UnsupportedOperator() {
+    testFilterByChildObject_UnsupportedOperator(new AttachedFlightProvider());
+    commitTxn();
+    beginTxn();
+    testFilterByChildObject_UnsupportedOperator(new TransientFlightProvider());
+  }
+
+  private void testFilterByChildObject_ValueWithoutAncestor(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity flightEntity = newFlightEntity("f", "bos", "mia", 2, 4, 33);
     ldth.ds.put(flightEntity);
 
-    Flight flight =
-        pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+    Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
@@ -707,6 +742,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (JDOException e) {
       // good
     }
+  }
+
+  public void testFilterByChildObject_ValueWithoutAncestor() {
+    testFilterByChildObject_ValueWithoutAncestor(new AttachedFlightProvider());
+    commitTxn();
+    beginTxn();
+    testFilterByChildObject_ValueWithoutAncestor(new TransientFlightProvider());
   }
 
   public void testFilterByChildObject_KeyIsWrongType() {
@@ -1411,6 +1453,35 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, result.size());
     assertEquals(entity2.getKey(), TestUtils.createKey(Person.class, result.get(0).getId()));
     assertEquals(entity1.getKey(), TestUtils.createKey(Person.class, result.get(1).getId()));
+  }
+
+  // This test will start to fail once we add support for double literals
+  public void testFilterByLiteralDoubleValue() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery(
+        "select from " + KitchenSink.class.getName() + " where doublePrimVal > 2.1");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (IllegalArgumentException iae) {
+      // expected
+    }
+//    @SuppressWarnings("unchecked")
+//    List<KitchenSink> results = (List<KitchenSink>) q.execute();
+//    assertEquals(1, results.size());
+  }
+
+  public void testFilterByParameterDoubleValue() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery(
+        "select from " + KitchenSink.class.getName() + " where doublePrimVal > p parameters double p");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute(2.1d);
+    assertEquals(1, results.size());
   }
 
   private void assertQueryUnsupportedByOrm(

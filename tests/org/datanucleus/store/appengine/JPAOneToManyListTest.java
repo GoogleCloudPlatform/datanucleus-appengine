@@ -478,4 +478,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
     assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
   }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnSameEm() {
+    testAddAlreadyPersistedChildToParent_NoTxnSameEm(new HasOneToManyListJPA());
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
+    testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManyListJPA());
+  }
+  
 }

@@ -40,6 +40,7 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
+import javax.jdo.JDOFatalUserException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -716,6 +717,52 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(HasOneToOneStringPkParentJPA.class.getName(),1, countForClass(HasOneToOneStringPkParentJPA.class));
     assertEquals(HasOneToOneStringPkParentKeyPkJPA.class.getName(),
                  1, countForClass(HasOneToOneStringPkParentKeyPkJPA.class));
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    Book book = new Book();
+    em.persist(book);
+    em.close();
+    em = emf.createEntityManager();
+    pojo.setBook(book);
+    em.persist(pojo);
+    try {
+      em.close();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Book.class));
+    em = emf.createEntityManager();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertNull(pojo.getBook());
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnSameEm() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    Book book = new Book();
+    em.persist(book);
+    em.close();
+    em = emf.createEntityManager();
+    pojo.setBook(book);
+    em.persist(pojo);
+    try {
+      em.close();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Book.class));
+    em = emf.createEntityManager();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertNull(pojo.getBook());
   }
 
   private Book newBook() {

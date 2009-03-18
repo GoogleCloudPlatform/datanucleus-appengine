@@ -27,7 +27,6 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 
-import javax.jdo.JDOUserException;
 import javax.jdo.JDOFatalUserException;
 
 /**
@@ -57,7 +56,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -133,7 +132,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -188,7 +187,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       System.out.println(e);
       rollbackTxn();
@@ -206,7 +205,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -219,7 +218,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.getObjectById(HasUnencodedStringPkJDO.class, key);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -232,7 +231,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.getObjectById(HasLongPkJDO.class, key);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -246,7 +245,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.getObjectById(HasUnencodedStringPkJDO.class, key);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -260,7 +259,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     try {
       pm.getObjectById(HasLongPkJDO.class, key);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }

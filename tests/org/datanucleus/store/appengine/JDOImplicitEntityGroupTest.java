@@ -27,7 +27,6 @@ import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -128,7 +127,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
       // for an entity that was originally persisted without a parent.
       pm.makePersistent(parent);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }

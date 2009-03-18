@@ -22,7 +22,6 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusOptimisticException;
@@ -69,17 +68,6 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   private enum VersionBehavior { INCREMENT, NO_INCREMENT }
 
-  /**
-   * Get the active transaction.  Depending on the connection factory
-   * associated with the store manager, this may establish a transaction if one
-   * is not currently active.  This method will return null if the connection
-   * factory associated with the store manager is nontransactional
-   */
-  public DatastoreTransaction getCurrentTransaction(ObjectManager om) {
-    ManagedConnection mconn = storeMgr.getConnection(om);
-    return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
-  }
-
   Entity get(DatastoreTransaction txn, Key key) {
     NucleusLogger.DATASTORE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
     Entity entity;
@@ -96,7 +84,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private Entity get(StateManager sm, Key key) {
-    DatastoreTransaction txn = getCurrentTransaction(sm.getObjectManager());
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(sm.getObjectManager());
     Entity entity = get(txn, key);
     setAssociatedEntity(sm, txn, entity);
     return entity;
@@ -115,7 +103,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         NucleusLogger.DATASTORE.debug("  " + entry.getKey() + " : " + entry.getValue());
       }
     }
-    DatastoreTransaction txn = getCurrentTransaction(om);
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
     if (txn == null) {
       datastoreService.put(entity);
     } else if (txn.getDeletedKeys().contains(entity.getKey())) {
@@ -143,7 +131,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
   private void delete(ObjectManager om, Key key) {
     NucleusLogger.DATASTORE.debug("Deleting entity of kind " + key.getKind() + " with key " + key);
-    DatastoreTransaction txn = getCurrentTransaction(om);
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
     if (txn == null) {
       datastoreService.delete(key);
     } else {
@@ -354,7 +342,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   Entity getAssociatedEntityForCurrentTransaction(StateManager sm) {
-    DatastoreTransaction txn = getCurrentTransaction(sm.getObjectManager());
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(sm.getObjectManager());
     return (Entity) sm.getAssociatedValue(txn);
   }
 
@@ -449,7 +437,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
     DatastoreClass dc = storeMgr.getDatastoreClass(sm.getObject().getClass().getName(), clr);
 
-    DatastoreTransaction txn = getCurrentTransaction(sm.getObjectManager());
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(sm.getObjectManager());
     if (txn != null) {
       if (txn.getDeletedKeys().contains(entity.getKey())) {
         // need to check this _before_ we execute the dependent delete request

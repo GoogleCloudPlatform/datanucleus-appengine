@@ -51,6 +51,7 @@ import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreTable;
+import org.datanucleus.store.appengine.EntityUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
@@ -69,6 +70,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import javax.jdo.spi.PersistenceCapable;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -177,19 +180,7 @@ public class DatastoreQuery implements Serializable {
   public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
 
-    boolean isCountQuery = validate(compilation);
-
-    if (toExclNo == 0 ||
-        (rangeValueIsSet(toExclNo)
-            && rangeValueIsSet(fromInclNo)
-            && (toExclNo - fromInclNo) <= 0)) {
-      // short-circuit - no point in executing the query
-      return Collections.emptyList();
-    }
     final ObjectManager om = getObjectManager();
-    if (NucleusLogger.QUERY.isDebugEnabled()) {
-      NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
-    }
     DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
     final ClassLoaderResolver clr = om.getClassLoaderResolver();
     final AbstractClassMetaData acmd =
@@ -197,6 +188,22 @@ public class DatastoreQuery implements Serializable {
     if (acmd == null) {
       throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
           + ".  Perhaps you need to run the enhancer on this class?");
+    }
+
+    storeMgr.validateMetaDataForClass(acmd, clr);
+
+    boolean isCountQuery = validate(compilation);
+
+    if (NucleusLogger.QUERY.isDebugEnabled()) {
+      NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
+    }
+
+    if (toExclNo == 0 ||
+        (rangeValueIsSet(toExclNo)
+            && rangeValueIsSet(fromInclNo)
+            && (toExclNo - fromInclNo) <= 0)) {
+      // short-circuit - no point in executing the query
+      return Collections.emptyList();
     }
     String kind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
@@ -331,7 +338,7 @@ public class DatastoreQuery implements Serializable {
     // TODO(maxr): Seems like we should be able to refactor the handler
     // so that we can do a fetch without having to hide the entity in the
     // state manager.
-    handler.setAssociatedEntity(stateMgr, handler.getCurrentTransaction(om), entity);
+    handler.setAssociatedEntity(stateMgr, EntityUtils.getCurrentTransaction(om), entity);
     storeMgr.getPersistenceHandler().fetchObject(stateMgr, acmd.getAllMemberPositions());
     return pojo;
   }
@@ -664,22 +671,39 @@ public class DatastoreQuery implements Serializable {
 
   private void processPersistenceCapableMapping(QueryData qd, Query.FilterOperator op,
                                                 AbstractMemberMetaData ammd, Object value) {
-    Object keyOrString;
+    ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
+    AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+    Object jdoPrimaryKey;
     if (value instanceof Key || value instanceof String) {
       // This is a bit odd, but just to be nice we let users
       // provide the id itself rather than the object containing the id.
-      keyOrString = value;
+      jdoPrimaryKey = value;
     } else {
       ApiAdapter apiAdapter = getObjectManager().getApiAdapter();
-      keyOrString =
+      jdoPrimaryKey =
           apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
-      if (keyOrString == null) {
+      if (jdoPrimaryKey == null) {
+        // JDO couldn't find a primary key value on the object, but that
+        // doesn't mean the object doesn't have a pk.  It could instead mean
+        // that the object is transient and doesn't have an associated state
+        // manager.  In this scenario we need to work harder to extract the pk.
+        // We'll create a StateManager for a fresh PC object and then copy the
+        // pk field of the parameter value into the fresh PC object.  We will
+        // the extract the PK value from the fresh PC object.  The reason we
+        // don't want to associate the state manager with the parameter value is
+        // that this would be a very surprising (and meaningful) side effect.
+        StateManager sm = apiAdapter.newStateManager(getObjectManager(), acmd);
+        sm.initialiseForHollow(null, null, value.getClass());
+        sm.copyFieldsFromObject((PersistenceCapable) value, acmd.getPKMemberPositions());
+        jdoPrimaryKey = sm.provideField(acmd.getPKMemberPositions()[0]);
+      }
+      if (jdoPrimaryKey == null) {
         throw new NucleusUserException(query.getSingleStringQuery()
                                    + ": Parameter value " + value + " does not have an id.");
       }
     }
-    Key valueKey = internalPkToKey(qd.acmd, keyOrString);
-    verifyRelatedKeyIsOfProperType(ammd, valueKey);
+    Key valueKey = internalPkToKey(qd.acmd, jdoPrimaryKey);
+    verifyRelatedKeyIsOfProperType(ammd, valueKey, acmd);
     if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
       // Looks like a join.  If it can be satisfied with just a
       // get on the secondary table, fulfill it.
@@ -702,10 +726,9 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private void verifyRelatedKeyIsOfProperType(AbstractMemberMetaData ammd, Key key) {
+  private void verifyRelatedKeyIsOfProperType(
+      AbstractMemberMetaData ammd, Key key, AbstractClassMetaData acmd) {
     String keyKind = key.getKind();
-    ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
-    AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     String fieldKind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     if (!keyKind.equals(fieldKind)) {

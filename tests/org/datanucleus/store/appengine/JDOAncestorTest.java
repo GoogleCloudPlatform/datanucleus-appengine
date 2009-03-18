@@ -28,7 +28,7 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 
-import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -81,7 +81,7 @@ public class JDOAncestorTest extends JDOTestCase {
     try {
       pm.makePersistent(ha);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -149,7 +149,7 @@ public class JDOAncestorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -183,7 +183,7 @@ public class JDOAncestorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -244,7 +244,7 @@ public class JDOAncestorTest extends JDOTestCase {
     try {
       pm.makePersistent(hk1);
       fail("expected exception");
-    } catch (JDOUserException ex) {
+    } catch (JDOFatalUserException ex) {
       // good
       rollbackTxn();
     }
@@ -292,7 +292,7 @@ public class JDOAncestorTest extends JDOTestCase {
     try {
       pm.makePersistent(hk1);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }

@@ -84,6 +84,8 @@ public class AllTests {
     suite.addTestSuite(JPAConcurrentModificationTest.class);
     suite.addTestSuite(JDOEmbeddedTest.class);
     suite.addTestSuite(JDOFetchGroupTest.class);
+    suite.addTestSuite(JDOAttachDetachTest.class);
+    suite.addTestSuite(JPAAttachDetachTest.class);
     return suite;
   }
 }

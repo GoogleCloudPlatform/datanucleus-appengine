@@ -127,6 +127,9 @@ class DatastoreRelationFieldManager {
       private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
           StateManager sm, int fieldNumber) {
         boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
+        if (!fieldIsParentKeyProvider) {
+          checkForParentSwitch(value, sm);
+        }
         Entity entity = fieldManager.getEntity();
         mapping.setObject(
             fieldManager.getObjectManager(),
@@ -146,9 +149,6 @@ class DatastoreRelationFieldManager {
           entity.removeProperty(PARENT_KEY_PROPERTY);
           fieldManager.recreateEntityWithParent(parentKey instanceof Key ?
                                   (Key) parentKey : KeyFactory.stringToKey((String) parentKey));
-        }
-        if (!fieldIsParentKeyProvider) {
-          checkForParentSwitch(value, sm);
         }
       }
     };
@@ -172,12 +172,27 @@ class DatastoreRelationFieldManager {
     }
     ObjectManager om = parentSM.getObjectManager();
     ApiAdapter apiAdapter = om.getApiAdapter();
-    if (apiAdapter.isNew(child)) {
+
+    StateManager childStateMgr = om.findStateManager(child);
+    if (apiAdapter.isNew(child) &&
+        (childStateMgr == null ||
+         childStateMgr.getAssociatedValue(EntityUtils.getCurrentTransaction(om)) == null)) {
+      // This condition is difficult to get right.  An object that has been persisted
+      // (and therefore had its primary key already established) may still be considered
+      // NEW by the apiAdapter if there is a txn and the txn has not yet committed.
+      // In order to determine if an object has been persisted we see if there is
+      // a state manager for it.  If there isn't, there's no way it was persisted.
+      // If there is, it's still possible that it hasn't been persisted so we check
+      // to see if there is an associated Entity.
       return;
     }
     // Since we only support owned relationships right now, we can assume
     // that this is parent/child and verify that the parent of the childSM
     // is the parent object in this cascade.
+    // We know that the child primary key is a Key or an encoded String
+    // because we don't support child objects with primary keys of type
+    // Long or unencoded String and our metadata validation would have
+    // caught it.
     Object childKeyOrString =
         apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(child));
     if (childKeyOrString == null) {
@@ -186,24 +201,42 @@ class DatastoreRelationFieldManager {
     }
     Key childKey = childKeyOrString instanceof Key
                    ? (Key) childKeyOrString : KeyFactory.stringToKey((String) childKeyOrString);
-    Object parentKeyOrString =
-        apiAdapter.getTargetKeyForSingleFieldIdentity(parentSM.getInternalObjectId());
-    Key parentKey = parentKeyOrString instanceof Key
-                   ? (Key) parentKeyOrString : KeyFactory.stringToKey((String) parentKeyOrString);
 
+    Key parentKey = getParentPrimaryKeyAsKey(apiAdapter, parentSM);
 
     if (childKey.getParent() == null) {
       throw new NucleusUserException(
           "Detected attempt to establish " + parentKey + " as the "
          + "parent of " + childKey + " but the entity identified by "
          + childKey + " has already been persisted without a parent.  A parent cannot "
-         + "be established or changed once an object has been persisted.");
+         + "be established or changed once an object has been persisted.").setFatal();
     } else if (!parentKey.equals(childKey.getParent())) {
       throw new NucleusUserException(
           "Detected attempt to establish " + parentKey + " as the "
          + "parent of " + childKey + " but the entity identified by "
          + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
-         + "be established or changed once an object has been persisted.");
+         + "be established or changed once an object has been persisted.").setFatal();
+    }
+  }
+
+  private static Key getParentPrimaryKeyAsKey(ApiAdapter apiAdapter, StateManager parentSM) {
+    Object parentPrimaryKey =
+        apiAdapter.getTargetKeyForSingleFieldIdentity(parentSM.getInternalObjectId());
+
+    // TODO(maxr): Consolidate this logic in a single location.
+    // Also, we should be able to look at the meta data to see if we have
+    // an encoded or unencoded String.
+    String kind =
+        EntityUtils.determineKind(parentSM.getClassMetaData(), parentSM.getObjectManager());
+    if (parentPrimaryKey instanceof Key) {
+      return (Key) parentPrimaryKey;
+    } else if (parentPrimaryKey instanceof Long) {
+      return KeyFactory.createKey(kind, (Long) parentPrimaryKey);
+    }
+    try {
+      return KeyFactory.stringToKey((String) parentPrimaryKey);
+    } catch (IllegalArgumentException iae) {
+      return KeyFactory.createKey(kind, (String) parentPrimaryKey);
     }
   }
 
@@ -291,7 +324,7 @@ class DatastoreRelationFieldManager {
           + "provide a reference to its parent but the entity does not have an parent.  "
           + "Did you perhaps try to establish an instance of " + childClass  +  " as "
           + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
-          + "persisted?");
+          + "persisted?").setFatal();
     }
     ObjectManager om = getStateManager().getObjectManager();
     return mapping.getObject(om, parentKey, NOT_USED);

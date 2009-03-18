@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
+import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -140,11 +141,14 @@ public final class EntityUtils {
       throw new NucleusUserException(
           "Received a request to find an object of type " + cls.getName() + " identified by "
           + val + ".  This is not a valid representation of a primary key for an instance of "
-          + cls.getName() + ".");
+          + cls.getName() + ".").setFatal();
     }
     return result;
   }
 
+  // TODO(maxr): This method is generally useful.  Consider making it public
+  // and refactoring the error messages so that they aren't specific to
+  // object lookups.
   private static Object keyToInternalKey(String kind, Class<?> pkType,
                                          AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
                                          Object val) {
@@ -153,12 +157,12 @@ public final class EntityUtils {
     if (!key.getKind().equals(kind)) {
       throw new NucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
-          + "identifier is a Key for kind " + key.getKind());
+          + "identifier is a Key for kind " + key.getKind()).setFatal();
     }
     if (!key.isComplete()) {
       throw new NucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
-          + "identifier is is an incomplete Key");
+          + "identifier is is an incomplete Key").setFatal();
     }
     if (pkType.equals(String.class)) {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
@@ -172,7 +176,7 @@ public final class EntityUtils {
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the Key that was provided as an argument has a "
-              + "parent.");
+              + "parent.").setFatal();
         }
         result = key.getName();
       }
@@ -185,14 +189,14 @@ public final class EntityUtils {
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the Key that was provided as an argument has a "
-            + "parent.");
+            + "parent.").setFatal();
       }
       if (key.getName() != null) {
         throw new NucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long.  However, the encoded string "
             + "representation of the Key that was provided as an argument has its name field "
-            + "set, not its id.  This makes it an invalid key for this class.");
+            + "set, not its id.  This makes it an invalid key for this class.").setFatal();
       }
       result = key.getId();
     } else if (pkType.equals(Key.class)) {
@@ -212,7 +216,7 @@ public final class EntityUtils {
         throw new NucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is an unencoded String.  However, the provided value is of type "
-            + val.getClass().getName() + ".");
+            + val.getClass().getName() + ".").setFatal();
       }
     } else if (pkType.equals(Long.class)) {
       result = keyWithId.getId();
@@ -232,7 +236,7 @@ public final class EntityUtils {
         throw new NucleusUserException(
             "Received a request to find an object of kind " + kind + " but the provided "
             + "identifier is the String representation of an incomplete Key for kind "
-            + decodedKey.getKind());
+            + decodedKey.getKind()).setFatal();
       }
     } catch (IllegalArgumentException iae) {
       if (pkType.equals(Long.class)) {
@@ -240,7 +244,7 @@ public final class EntityUtils {
         // There's no way that can be valid
         throw new NucleusUserException(
             "Received a request to find an object of type " + cls.getName() + " identified by the String "
-            + val + ", but the primary key of " + cls.getName() + " is of type Long.");        
+            + val + ", but the primary key of " + cls.getName() + " is of type Long.").setFatal();
       }
       // this is ok, it just means we were only given the name
       decodedKey = KeyFactory.createKey(kind, (String) val);
@@ -249,7 +253,7 @@ public final class EntityUtils {
       throw new NucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is the String representation of a Key for kind "
-          + decodedKey.getKind());
+          + decodedKey.getKind()).setFatal();
     }
     if (pkType.equals(String.class)) {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
@@ -261,7 +265,7 @@ public final class EntityUtils {
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the encoded string representation of the Key that "
-              + "was provided as an argument has a parent.");
+              + "was provided as an argument has a parent.").setFatal();
         }
         // Pk is an unencoded string so need to pass on just the name
         // component.  However, we need to make sure the provided key actually
@@ -271,7 +275,7 @@ public final class EntityUtils {
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String.  However, the encoded string "
               + "representation of the Key that was provided as an argument has its id field "
-              + "set, not its name.  This makes it an invalid key for this class.");
+              + "set, not its name.  This makes it an invalid key for this class.").setFatal();
         }
         result = decodedKey.getName();
       }
@@ -281,7 +285,7 @@ public final class EntityUtils {
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the encoded string representation of the Key that "
-            + "was provided as an argument has a parent.");
+            + "was provided as an argument has a parent.").setFatal();
       }
 
       if (decodedKey.getName() != null) {
@@ -290,7 +294,7 @@ public final class EntityUtils {
             + "encoded String representation of "
             + decodedKey + ", but the primary key of " + cls.getName() + " is of type Long and the "
             + "encoded String has its name component set.  It must have its id component set "
-            + "instead in order to be legal.");
+            + "instead in order to be legal.").setFatal();
       }
       // pk is a long so just pass on the id component
       result = decodedKey.getId();
@@ -305,4 +309,16 @@ public final class EntityUtils {
             cls, om.getClassLoaderResolver());
     return cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]);
   }
+
+  /**
+   * Get the active transaction.  Depending on the connection factory
+   * associated with the store manager, this may establish a transaction if one
+   * is not currently active.  This method will return null if the connection
+   * factory associated with the store manager is nontransactional
+   */
+  public static DatastoreTransaction getCurrentTransaction(ObjectManager om) {
+    ManagedConnection mconn = om.getStoreManager().getConnection(om);
+    return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
+  }
+
 }

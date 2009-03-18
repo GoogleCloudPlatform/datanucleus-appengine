@@ -33,6 +33,7 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
+import javax.jdo.JDOFatalUserException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -655,6 +656,50 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
     assertEquals("named key", bookEntity.getKey().getName());
+  }
+
+  void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(HasOneToManyJPA pojo) {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Book book = new Book();
+    em.persist(book);
+    em.close();
+    em = emf.createEntityManager();
+    pojo.getBooks().add(book);
+    em.persist(pojo);
+    try {
+      em.close();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Book.class));
+    em = emf.createEntityManager();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getBooks().size());
+  }
+
+  void testAddAlreadyPersistedChildToParent_NoTxnSameEm(HasOneToManyJPA pojo) {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Book book = new Book();
+    em.persist(book);
+    em.close();
+    em = emf.createEntityManager();
+    pojo.getBooks().add(book);
+    em.persist(pojo);
+    try {
+      em.close();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Book.class));
+    em = emf.createEntityManager();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getBooks().size());
   }
 
   int countForClass(Class<?> clazz) {

@@ -288,6 +288,14 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals(HasKeyPkJDO.class.getName(), 1, countForClass(HasKeyPkJDO.class));
   }
 
+  public void testAddAlreadyPersistedChildToParent_NoTxnSamePm() {
+    testAddAlreadyPersistedChildToParent_NoTxnSamePm(new HasOneToManyListJDO());
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentPm() {
+    testAddAlreadyPersistedChildToParent_NoTxnDifferentPm(new HasOneToManyListJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return true;

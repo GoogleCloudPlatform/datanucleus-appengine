@@ -45,6 +45,24 @@ public class JPAInsertionTest extends JPATestCase {
     assertEquals(Book.class.getSimpleName(), entity.getKind());
   }
 
+  public void testSimpleInsert_Merge() throws EntityNotFoundException {
+    Book b1 = new Book();
+    b1.setAuthor("jimmy");
+    b1.setIsbn("isbn");
+    b1.setTitle("the title");
+    assertNull(b1.getId());
+    beginTxn();
+    em.merge(b1);
+    commitTxn();
+    assertNotNull(b1.getId());
+    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    assertNotNull(entity);
+    assertEquals("jimmy", entity.getProperty("author"));
+    assertEquals("isbn", entity.getProperty("isbn"));
+    assertEquals("the title", entity.getProperty("title"));
+    assertEquals(Book.class.getSimpleName(), entity.getKind());
+  }
+
   public void testSimpleInsertWithNamedKey() throws EntityNotFoundException {
     Book b1 = new Book("named key");
     b1.setAuthor("jimmy");

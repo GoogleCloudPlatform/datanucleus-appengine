@@ -513,13 +513,31 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("67890", result.get(2).getIsbn());
   }
 
-  public void testFilterByChildObject() {
+  private interface BookProvider {
+    Book getBook(Key key);
+  }
+
+  private class AttachedBookProvider implements BookProvider {
+    public Book getBook(Key key) {
+      return em.find(Book.class, key);
+    }
+  }
+
+  private class TransientBookProvider implements BookProvider {
+    public Book getBook(Key key) {
+      Book b = new Book();
+      b.setId(KeyFactory.keyToString(key));
+      return b;
+    }
+  }
+  
+  private void testFilterByChildObject(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
-    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
     q.setParameter("b", book);
@@ -528,13 +546,18 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
   }
 
-  public void testFilterByChildObject_AdditionalFilterOnParent() {
+  public void testFilterByChildObject() {
+    testFilterByChildObject(new AttachedBookProvider());
+    testFilterByChildObject(new TransientBookProvider());
+  }
+
+  private void testFilterByChildObject_AdditionalFilterOnParent(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
-    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where id = :parentId and book = :b");
     q.setParameter("parentId", KeyFactory.keyToString(bookEntity.getKey()));
@@ -549,13 +572,19 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(parentEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
   }
 
-  public void testFilterByChildObject_UnsupportedOperator() {
+  public void testFilterByChildObject_AdditionalFilterOnParent() {
+    testFilterByChildObject_AdditionalFilterOnParent(new AttachedBookProvider());
+    testFilterByChildObject_AdditionalFilterOnParent(new TransientBookProvider());
+  }
+
+
+  private void testFilterByChildObject_UnsupportedOperator(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity bookEntity = newBookEntity(parentEntity.getKey(), "Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
-    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book > :b");
         q.setParameter("b", book);
@@ -567,13 +596,18 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  public void testFilterByChildObject_ValueWithoutAncestor() {
+  public void testFilterByChildObject_UnsupportedOperator() {
+    testFilterByChildObject_UnsupportedOperator(new AttachedBookProvider());
+    testFilterByChildObject_UnsupportedOperator(new TransientBookProvider());
+  }
+
+  private void testFilterByChildObject_ValueWithoutAncestor(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity bookEntity = newBook("Bar Book", "Joe Blow", "11111", 1929);
     ldth.ds.put(bookEntity);
 
-    Book book = em.find(Book.class, KeyFactory.keyToString(bookEntity.getKey()));
+    Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
     q.setParameter("b", book);
@@ -583,6 +617,11 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (PersistenceException e) {
       // good
     }
+  }
+
+  public void testFilterByChildObject_ValueWithoutAncestor() {
+    testFilterByChildObject_ValueWithoutAncestor(new AttachedBookProvider());
+    testFilterByChildObject_ValueWithoutAncestor(new TransientBookProvider());
   }
 
   public void testFilterByChildObject_KeyIsWrongType() {

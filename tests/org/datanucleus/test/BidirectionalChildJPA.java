@@ -15,10 +15,12 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.io.Serializable;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
-public interface BidirectionalChildJPA {
+public interface BidirectionalChildJPA extends Serializable {
   HasOneToManyJPA getParent();
   void setParent(HasOneToManyJPA parent);
   String getId();

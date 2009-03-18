@@ -174,6 +174,7 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public Extent getExtent(ObjectManager om, Class c, boolean subclasses) {
     AbstractClassMetaData cmd = getMetaDataManager().getMetaDataForClass(c, om.getClassLoaderResolver());
+    validateMetaDataForClass(cmd, om.getClassLoaderResolver());
     if (!cmd.isRequiresExtent()) {
         throw new NoExtentException(c.getName());
     }

@@ -228,15 +228,6 @@ public class MetaDataValidator {
     return pkMemberMetaData;
   }
 
-  private AbstractMemberMetaData hasFieldWithExtension(AbstractClassMetaData acmd, String extension) {
-    for (AbstractMemberMetaData ammd : acmd.getManagedMembers()) {
-      if (ammd.hasExtension(extension)) {
-        return ammd;
-      }
-    }
-    return null;
-  }
-
   static final class DatastoreMetaDataException extends NucleusUserException {
     private static final String MSG_FORMAT_CLASS_ONLY = "Error in meta-data for %s: %s";
     private static final String MSG_FORMAT = "Error in meta-data for %s.%s: %s";

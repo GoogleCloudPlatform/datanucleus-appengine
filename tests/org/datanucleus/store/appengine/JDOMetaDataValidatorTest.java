@@ -42,6 +42,7 @@ import org.datanucleus.test.IllegalMappingsJDO.PkNameOnNonStringField;
 import org.datanucleus.test.IllegalMappingsJDO.PkNameWithUnencodedStringPrimaryKey;
 
 import javax.jdo.JDOUserException;
+import javax.jdo.Query;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -323,6 +324,31 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     beginTxn();
     try {
       pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testLongPkWithUnidirectionalOneToOneChild_Fetch() {
+    beginTxn();
+    try {
+      pm.getObjectById(OneToOneParentWithRootOnlyLongUniChild.class, "yar");
+      fail("expected exception");
+    } catch (JDOUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testLongPkWithUnidirectionalOneToOneChild_Query() {
+    beginTxn();
+    try {
+      Query q = pm.newQuery(OneToOneParentWithRootOnlyLongUniChild.class);
+      q.execute();
       fail("expected exception");
     } catch (JDOUserException e) {
       // good

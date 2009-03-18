@@ -39,9 +39,9 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
 import javax.jdo.JDOOptimisticVerificationException;
-import javax.jdo.JDOUserException;
 
 /**
  * @author Erick Armbrust <earmbrust@google.com>
@@ -236,7 +236,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -262,7 +262,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -279,7 +279,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -299,7 +299,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -314,7 +314,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -674,7 +674,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -690,7 +690,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -706,7 +706,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -722,7 +722,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -739,7 +739,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -755,7 +755,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -773,7 +773,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -790,7 +790,7 @@ public class JDOUpdateTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }

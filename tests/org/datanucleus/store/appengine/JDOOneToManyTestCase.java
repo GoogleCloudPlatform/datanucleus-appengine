@@ -34,7 +34,7 @@ import org.easymock.EasyMock;
 import java.util.Collections;
 import java.util.List;
 
-import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -1000,7 +1000,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     try {
       pm.makePersistent(pojo2);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       rollbackTxn();
     }
   }
@@ -1017,6 +1017,49 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals("named key", flightEntity.getKey().getName());
   }
+
+  void testAddAlreadyPersistedChildToParent_NoTxnDifferentPm(HasOneToManyJDO pojo) {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = new Flight();
+    pm.makePersistent(f1);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    pojo.addFlight(f1);
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    pm.close();
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Flight.class));
+    pm = pmf.getPersistenceManager();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getFlights().size());
+  }
+
+  void testAddAlreadyPersistedChildToParent_NoTxnSamePm(HasOneToManyJDO pojo) {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = new Flight();
+    pm.makePersistent(f1);
+    pojo.addFlight(f1);
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    pm.close();
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Flight.class));
+    pm = pmf.getPersistenceManager();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getFlights().size());
+  }
+
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {

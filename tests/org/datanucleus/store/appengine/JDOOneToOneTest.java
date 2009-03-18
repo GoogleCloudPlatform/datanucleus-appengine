@@ -38,7 +38,7 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
-import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
 
 /**
@@ -125,7 +125,7 @@ public class JDOOneToOneTest extends JDOTestCase {
       // that was originally saved without a parent
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -161,7 +161,7 @@ public class JDOOneToOneTest extends JDOTestCase {
       // was originally saved without a parent
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -606,7 +606,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo2);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       rollbackTxn();
     }
@@ -740,6 +740,50 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(1, countForClass(HasKeyPkJDO.class));
     assertEquals(1, countForClass(HasOneToOneStringPkParentJDO.class));
     assertEquals(1, countForClass(HasOneToOneStringPkParentKeyPkJDO.class));
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnDifferentPm() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = new Flight();
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    pm.makePersistent(f1);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    pojo.setFlight(f1);
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    pm.close();
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Flight.class));
+    pm = pmf.getPersistenceManager();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertNull(pojo.getFlight());
+  }
+
+  public void testAddAlreadyPersistedChildToParent_NoTxnSamePm() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = new Flight();
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    pm.makePersistent(f1);
+    pojo.setFlight(f1);
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    pm.close();
+
+    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(1, countForClass(Flight.class));
+    pm = pmf.getPersistenceManager();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertNull(pojo.getFlight());
   }
 
   private Flight newFlight() {

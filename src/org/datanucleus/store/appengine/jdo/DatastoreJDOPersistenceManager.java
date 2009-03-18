@@ -22,6 +22,7 @@ import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.store.appengine.EntityUtils;
 
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
 
 /**
@@ -53,7 +54,12 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
       key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
     } catch (NucleusUserException e) {
       String keyStr = key == null ? "" : key.toString();
-      throw new JDOUserException("Exception converting " + keyStr + " to an internal key.", e);
+      String msg = "Exception converting " + keyStr + " to an internal key.";
+      if (e.isFatal()) {
+        throw new JDOFatalUserException(msg, e);
+      } else {
+        throw new JDOUserException(msg, e);
+      }
     }
     return super.getObjectById(cls, key);
   }
