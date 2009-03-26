@@ -51,6 +51,7 @@ import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.Person;
 
 import java.io.ByteArrayOutputStream;
@@ -1481,6 +1482,29 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + KitchenSink.class.getName() + " where doublePrimVal > p parameters double p");
     @SuppressWarnings("unchecked")
     List<KitchenSink> results = (List<KitchenSink>) q.execute(2.1d);
+    assertEquals(1, results.size());
+  }
+
+  public void testFilterByNullValue_Literal() {
+    Entity e = new Entity(NullDataJDO.class.getSimpleName());
+    e.setProperty("string", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + NullDataJDO.class.getName() + " where string == null");
+    @SuppressWarnings("unchecked")
+    List<NullDataJDO> results = (List<NullDataJDO>) q.execute();
+    assertEquals(1, results.size());
+  }
+
+  public void testFilterByNullValue_Param() {
+    Entity e = new Entity(NullDataJDO.class.getSimpleName());
+    e.setProperty("string", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + NullDataJDO.class.getName() + " where string == p");
+    q.declareParameters("String p");
+    @SuppressWarnings("unchecked")
+    List<NullDataJDO> results = (List<NullDataJDO>) q.execute(null);
     assertEquals(1, results.size());
   }
 

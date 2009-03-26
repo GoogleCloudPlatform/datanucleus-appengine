@@ -91,6 +91,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   }
 
   /**
+   * TODO(maxr): Remove this once DataNucleus core is fixed.
    * @see DatastoreQuery#QUERY_CACHE_PROPERTY
    */
   @Override

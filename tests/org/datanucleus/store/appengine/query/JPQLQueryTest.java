@@ -50,6 +50,7 @@ import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasStringAncestorStringPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
 import org.datanucleus.test.KitchenSink;
+import org.datanucleus.test.NullDataJPA;
 import org.datanucleus.test.Person;
 
 import java.io.ByteArrayOutputStream;
@@ -1003,11 +1004,10 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasLongPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getId());
-    q.getSingleResult();
-//    @SuppressWarnings("unchecked")
-//    List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
-//    assertEquals(1, results.size());
-//    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
+    @SuppressWarnings("unchecked")
+    List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
 
     q = em.createQuery(
         "select from " + HasLongPkJPA.class.getName() + " where id = :p");
@@ -1305,6 +1305,30 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(entity2.getKey(), TestUtils.createKey(Person.class, result.get(0).getId()));
     assertEquals(entity1.getKey(), TestUtils.createKey(Person.class, result.get(1).getId()));
   }
+
+  public void testFilterByNullValue_Literal() {
+    Entity e = new Entity(NullDataJPA.class.getSimpleName());
+    e.setProperty("string", null);
+    ldth.ds.put(e);
+
+    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = null");
+    @SuppressWarnings("unchecked")
+    List<NullDataJPA> results = (List<NullDataJPA>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+
+  public void testFilterByNullValue_Param() {
+    Entity e = new Entity(NullDataJPA.class.getSimpleName());
+    e.setProperty("string", null);
+    ldth.ds.put(e);
+
+    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = :p");
+    q.setParameter("p", null);
+    @SuppressWarnings("unchecked")
+    List<NullDataJPA> results = (List<NullDataJPA>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+
 
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);

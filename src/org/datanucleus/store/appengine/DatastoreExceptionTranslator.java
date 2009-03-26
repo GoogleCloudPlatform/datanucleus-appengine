@@ -34,6 +34,9 @@ import java.util.ConcurrentModificationException;
  */
 public final class DatastoreExceptionTranslator {
 
+  private DatastoreExceptionTranslator() {
+  }
+
   public static NucleusException wrapIllegalArgumentException(IllegalArgumentException e) {
     // Bad input, so mark fatal to let user know not to retry.
     return new NucleusUserException("Illegal argument", e).setFatal();
@@ -55,8 +58,5 @@ public final class DatastoreExceptionTranslator {
       EntityNotFoundException e, Key key) {
     return new NucleusObjectNotFoundException(
         "Could not retrieve entity of kind " + key.getKind() + " with key " + key);
-  }
-
-  private DatastoreExceptionTranslator() {
   }
 }

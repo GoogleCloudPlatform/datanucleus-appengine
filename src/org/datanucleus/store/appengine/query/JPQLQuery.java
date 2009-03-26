@@ -82,6 +82,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
   }
 
   /**
+   * TODO(maxr): Remove this once DataNucleus core is fixed.
    * @see DatastoreQuery#QUERY_CACHE_PROPERTY
    */
   @Override
