@@ -199,11 +199,14 @@
       <fileset dir="${plugin.src.dir}" includes="**/*"/>
     </zip>
     <zip destfile="${dist.target}">
-      <zipfileset prefix="demos/helloorm/src" dir="../demos/helloorm/src">
-        <include name="**"/>
-        <exclude name="**/*.iml"/>
+      <zipfileset prefix="demos/helloorm" dir="../demos/helloorm">
+        <include name="build.xml"/>
       </zipfileset>
-      <zipfileset prefix="demos/helloorm/www" dir="${orm.tmp.dir}/exploded">
+      <zipfileset prefix="demos/helloorm/src" dir="../demos/helloorm/src">
+        <!-- Avoids grabbing WEB-INF and META-INF -->
+        <include name="com/**"/>
+      </zipfileset>
+      <zipfileset prefix="demos/helloorm/war" dir="${orm.tmp.dir}/exploded">
         <include name="**"/>
         <exclude name="META-INF/**"/>
       </zipfileset>
@@ -305,7 +308,7 @@
       <daemons>
         <java fork="true" classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
               classname="com.google.appengine.tools.development.DevAppServerMain">
-          <arg value="${orm.tmpdist.dir}/demos/helloorm/www"/>
+          <arg value="${orm.tmpdist.dir}/demos/helloorm/war"/>
         </java>
       </daemons>
       <sequential>

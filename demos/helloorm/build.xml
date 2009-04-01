@@ -1,103 +1,81 @@
-<!-- ant build for the hello orm demo app -->
-<project name="helloorm" default="launch" basedir=".">
+<project name="Hello ORM" default="datanucleusenhance">
+  <property name="sdk.dir" location="../.." />
 
-  <property name="sdk.lib.dir" value="../../lib"/>
-  <property name="helloorm.orm.lib.user.dir" value="${sdk.lib.dir}/user/orm"/>
-  <property name="helloorm.orm.lib.tools.dir" value="${sdk.lib.dir}/tools/orm"/>
+  <import file="${sdk.dir}/config/user/ant-macros.xml" />
 
-  <target name="clean" description="clean up">
-    <delete dir="classes"/>
-    <delete dir="exploded"/>
-    <delete file="helloorm.war"/>
-    <delete file="local_bin.bin"/>
-  </target>
+  <path id="project.classpath">
+    <pathelement path="war/WEB-INF/classes" />
+    <fileset dir="war/WEB-INF/lib">
+      <include name="**/*.jar" />
+    </fileset>
+    <fileset dir="${sdk.dir}/lib">
+      <include name="shared/**/*.jar" />
+    </fileset>
+  </path>
 
-  <target name="launch" description="launch the app" depends="explode">
-    <java fork="true" classpath="${sdk.lib.dir}/appengine-tools-api.jar"
-          classname="com.google.appengine.tools.development.DevAppServerMain">
-      <arg value="exploded"/>
-    </java>
-  </target>
-
-  <target name="explode" description="explode the war" depends="war">
-    <delete dir="exploded"/>
-    <mkdir dir="exploded"/>
-    <unwar src="helloorm.war" dest="exploded"/>
-  </target>
-
-  <target name="war" description="build the war" depends="enhance">
-    <!--
-    The contents of src/META-INF need to go in the classes
-    directory of the war, not the top-level META-INF
-    directory of the war.
-    -->
-    <copy todir="classes">
-      <fileset dir="src">
-        <include name="META-INF/*"/>
+  <target name="copyjars"
+      description="Copies the App Engine JARs to the WAR.">
+    <mkdir dir="war/WEB-INF/lib" />
+    <copy
+        todir="war/WEB-INF/lib"
+        flatten="true">
+      <fileset dir="${sdk.dir}/lib/user">
+        <include name="**/*.jar" />
       </fileset>
     </copy>
-    <war destfile="helloorm.war" webxml="src/WEB-INF/web.xml">
-      <lib dir="${helloorm.orm.lib.user.dir}">
-        <include name="datanucleus-appengine*.jar"/>
-        <include name="datanucleus-core*.jar"/>
-        <include name="datanucleus-jpa*.jar"/>
-        <include name="persistence-api*.jar"/>
-        <include name="jdo2-api*.jar"/>
-        <include name="transaction-api*.jar"/>
-        <include name="persistence-api*.jar"/>
-      </lib>
-      <lib dir="${sdk.lib.dir}/impl">
-        <include name="appengine-api.jar"/>
-      </lib>
-      <classes dir="classes"/>
-      <webinf dir="src/WEB-INF">
-        <include name="appengine-web.xml"/>
-      </webinf>
-    </war>
   </target>
 
-  <path id="helloorm.classpath">
-    <pathelement location="${helloorm.orm.lib.user.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${helloorm.orm.lib.user.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="${helloorm.orm.lib.user.dir}/datanucleus-core-1.1.0.m1.jar"/>
-    <pathelement location="${sdk.lib.dir}/appengine-api.jar"/>
-    <pathelement location="${sdk.lib.dir}/shared/servlet-api-2.5.jar"/>
-  </path>
-
-  <!-- TODO(maxr): Implement this check -->
-  <!--<target name="check_sdk" description="make sure the sdk is available">-->
-  <!--</target>-->
-
-  <target name="compile" description="compile the webapp">
-    <mkdir dir="classes"/>
-    <javac srcdir="src" destdir="classes" classpathref="helloorm.classpath" debug="on"/>
-  </target>
-
-  <target name="compile-distro" description="compile the webapp for inclusion in the distro">
-    <mkdir dir="classes"/>
-    <javac srcdir="src" destdir="classes" classpathref="helloorm.classpath" debug="on"/>
-  </target>
-
-  <path id="enhancer.classpath">
-    <pathelement location="${helloorm.orm.lib.tools.dir}/jdo2-api-2.2.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/persistence-api-1.0.2.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/datanucleus-enhancer-1.0.1.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/datanucleus-core-1.1.0.m1.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/datanucleus-jpa-1.1.0.m1.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/asm-3.1.jar"/>
-    <pathelement location="${helloorm.orm.lib.tools.dir}/log4j.jar"/>
-    <pathelement location="classes"/>
-  </path>
-
-  <target name="enhance" description="enhance" depends="compile">
-    <taskdef name="datanucleusenhancer" classpathref="enhancer.classpath"
-             classname="org.datanucleus.enhancer.tools.EnhancerTask"/>
-
-    <datanucleusenhancer classpathref="enhancer.classpath" failonerror="true">
-      <jvmarg line="-Dlog4j.configuration=blafile:WEB-INF/log4j.properties -Dlog4j.debug"/>
-      <fileset dir="classes">
-        <include name="**/*.class"/>
+  <target name="compile" depends="copyjars"
+      description="Compiles Java source and copies other source files to the WAR.">
+    <mkdir dir="war/WEB-INF/classes" />
+    <copy todir="war/WEB-INF/classes">
+      <fileset dir="src">
+        <exclude name="**/*.java" />
       </fileset>
-    </datanucleusenhancer>
+    </copy>
+    <javac
+        srcdir="src"
+        destdir="war/WEB-INF/classes"
+        classpathref="project.classpath"
+        debug="on" />
   </target>
+
+  <target name="datanucleusenhance" depends="compile"
+      description="Performs enhancement on compiled data classes.">
+    <enhance_war war="war" />
+  </target>
+
+  <target name="runserver" depends="datanucleusenhance"
+      description="Starts the development server.">
+    <dev_appserver war="war" />
+  </target>
+
+  <target name="update" depends="datanucleusenhance"
+      description="Uploads the application to App Engine.">
+    <appcfg action="update" war="war" />
+  </target>
+
+  <target name="update_indexes" depends="datanucleusenhance"
+      description="Uploads just the datastore index configuration to App Engine.">
+    <appcfg action="update_indexes" war="war" />
+  </target>
+
+  <target name="rollback" depends="datanucleusenhance"
+      description="Rolls back an interrupted application update.">
+    <appcfg action="rollback" war="war" />
+  </target>
+
+  <target name="request_logs"
+      description="Downloads log data from App Engine for the application.">
+    <appcfg action="request_logs" war="war">
+      <options>
+        <arg value="--num_days=5"/>
+      </options>
+      <args>
+        <arg value="logs.txt"/>
+      </args>
+    </appcfg>
+  </target>
+
 </project>
+
