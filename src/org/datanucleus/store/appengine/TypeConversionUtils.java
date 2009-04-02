@@ -28,6 +28,7 @@ import org.datanucleus.sco.SCOUtils;
 import org.datanucleus.store.appengine.Utils.Function;
 
 import java.lang.reflect.Array;
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -93,6 +94,16 @@ class TypeConversionUtils {
   };
 
   /**
+  /**
+   * A {@link Function} that converts {@link Double} to {@link BigDecimal}.
+   */
+  private static final Function<Object, Object> DOUBLE_TO_BIG_DECIMAL = new Function<Object, Object>() {
+    public BigDecimal apply(Object in) {
+      return new BigDecimal((Double) in);
+    }
+  };
+
+  /**
    * A {@link Function} that converts {@link Integer} to {@link Long}.
    */
   private static final Function<Object, Object> INTEGER_TO_LONG = new Function<Object, Object>() {
@@ -138,6 +149,15 @@ class TypeConversionUtils {
   };
 
   /**
+   * A {@link Function} that converts {@link BigDecimal} to {@link Double}.
+   */
+  private static final Function<Object, Object> BIG_DECIMAL_TO_DOUBLE = new Function<Object, Object>() {
+    public Double apply(Object in) {
+      return ((BigDecimal) in).doubleValue();
+    }
+  };
+
+  /**
    * Maps primitive types to functions which demote from the datastore
    * representation to the primitive type.  Note that we map both
    * the true primitive class and the object version.
@@ -157,6 +177,7 @@ class TypeConversionUtils {
     map.put(Character.TYPE, LONG_TO_CHARACTER);
     map.put(Float.class, DOUBLE_TO_FLOAT);
     map.put(Float.TYPE, DOUBLE_TO_FLOAT);
+    map.put(BigDecimal.class, DOUBLE_TO_BIG_DECIMAL);
     return map;
   }
 
@@ -180,6 +201,7 @@ class TypeConversionUtils {
     map.put(Character.TYPE, CHARACTER_TO_LONG);
     map.put(Float.class, FLOAT_TO_DOUBLE);
     map.put(Float.TYPE, FLOAT_TO_DOUBLE);
+    map.put(BigDecimal.class, BIG_DECIMAL_TO_DOUBLE);
     return map;
   }
 

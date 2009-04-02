@@ -26,6 +26,7 @@ import com.google.appengine.api.users.User;
 import org.datanucleus.store.appengine.Utils;
 
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.List;
@@ -70,6 +71,7 @@ public class KitchenSink {
   @Persistent public double doublePrimVal;
   @Persistent public Date dateVal;
   @Persistent public KitchenSinkEnum ksEnum;
+  @Persistent public BigDecimal bigDecimal;
   @Persistent(defaultFetchGroup = "true") public User userVal;
   @Persistent(defaultFetchGroup = "true") public Blob blobVal;
   @Persistent(defaultFetchGroup = "true") public Text textVal;
@@ -95,6 +97,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public Boolean[] booleanArray;
   @Persistent(defaultFetchGroup = "true") public Date[] dateArray;
   @Persistent(defaultFetchGroup = "true") public KitchenSinkEnum[] ksEnumArray;
+  @Persistent(defaultFetchGroup = "true") public BigDecimal[] bigDecimalArray;
   @Persistent(defaultFetchGroup = "true") public User[] userArray;
   @Persistent(defaultFetchGroup = "true") public Blob[] blobArray;
   @Persistent(defaultFetchGroup = "true") public Text[] textArray;
@@ -111,6 +114,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public List<Boolean> booleanList;
   @Persistent(defaultFetchGroup = "true") public List<Date> dateList;
   @Persistent(defaultFetchGroup = "true") public List<KitchenSinkEnum> ksEnumList;
+  @Persistent(defaultFetchGroup = "true") public List<BigDecimal> bigDecimalList;
   @Persistent(defaultFetchGroup = "true") public List<User> userList;
   @Persistent(defaultFetchGroup = "true") public List<Blob> blobList;
   @Persistent(defaultFetchGroup = "true") public List<Text> textList;
@@ -154,6 +158,7 @@ public class KitchenSink {
     ks.doublePrimVal = 2.22d;
     ks.dateVal = DATE1;
     ks.ksEnum = KitchenSinkEnum.ONE;
+    ks.bigDecimal = new BigDecimal(2.444d);
     ks.userVal = USER1;
     ks.blobVal = BLOB1;
     ks.textVal = TEXT1;
@@ -179,6 +184,7 @@ public class KitchenSink {
     ks.booleanArray = new Boolean[] {Boolean.FALSE, Boolean.TRUE};
     ks.dateArray = new Date[] {DATE1, DATE2};
     ks.ksEnumArray = new KitchenSinkEnum[] {KitchenSinkEnum.TWO, KitchenSinkEnum.ONE};
+    ks.bigDecimalArray = new BigDecimal[] {new BigDecimal(3.4444d), new BigDecimal(4.3333d)};
     ks.userArray = new User[] {USER1, USER2};
     ks.blobArray = new Blob[] {BLOB1, BLOB2};
     ks.textArray = new Text[] {TEXT1, TEXT2};
@@ -195,6 +201,7 @@ public class KitchenSink {
     ks.booleanList = Utils.newArrayList(true, false);
     ks.dateList = Utils.newArrayList(DATE1, DATE2);
     ks.ksEnumList = Utils.newArrayList(KitchenSinkEnum.TWO, KitchenSinkEnum.ONE);
+    ks.bigDecimalList = Utils.newArrayList(new BigDecimal(7.6666d), new BigDecimal(6.7777d));
     ks.userList = Utils.newArrayList(USER1, USER2);
     ks.blobList = Utils.newArrayList(BLOB1, BLOB2);
     ks.textList = Utils.newArrayList(TEXT1, TEXT2);
@@ -233,6 +240,7 @@ public class KitchenSink {
     entity.setProperty("doubleVal", 2.22d);
     entity.setProperty("dateVal", DATE1);
     entity.setProperty("ksEnum", KitchenSinkEnum.ONE.name());
+    entity.setProperty("bigDecimal", 2.444d);
     entity.setProperty("userVal", USER1);
     entity.setProperty("blobVal", BLOB1);
     entity.setProperty("textVal", TEXT1);
@@ -258,6 +266,7 @@ public class KitchenSink {
     entity.setProperty("dateArray", Utils.newArrayList(DATE1, DATE2));
     entity.setProperty("ksEnumArray",
                        Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
+    entity.setProperty("bigDecimalArray", Utils.newArrayList(3.4444d, 4.3333d));
     entity.setProperty("userArray", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobArray", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textArray", Utils.newArrayList(TEXT1, TEXT2));
@@ -275,6 +284,7 @@ public class KitchenSink {
     entity.setProperty("dateList", Utils.newArrayList(DATE1, DATE2));
     entity.setProperty("ksEnumList",
                        Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
+    entity.setProperty("bigDecimalList", Utils.newArrayList(7.6666d, 6.7777d));
     entity.setProperty("userList", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));
@@ -302,6 +312,7 @@ public class KitchenSink {
     return fields;
   }
 
+  @Override
   public boolean equals(Object o) {
     if (this == o) {
       return true;
@@ -336,6 +347,16 @@ public class KitchenSink {
     if (shortPrimVal != that.shortPrimVal) {
       return false;
     }
+    if (bigDecimal != null ? !bigDecimal.equals(that.bigDecimal) : that.bigDecimal != null) {
+      return false;
+    }
+    if (!Arrays.equals(bigDecimalArray, that.bigDecimalArray)) {
+      return false;
+    }
+    if (bigDecimalList != null ? !bigDecimalList.equals(that.bigDecimalList)
+                               : that.bigDecimalList != null) {
+      return false;
+    }
     if (!Arrays.equals(blobArray, that.blobArray)) {
       return false;
     }
@@ -343,9 +364,6 @@ public class KitchenSink {
       return false;
     }
     if (blobVal != null ? !blobVal.equals(that.blobVal) : that.blobVal != null) {
-      return false;
-    }
-    if (shortBlobVal != null ? !shortBlobVal.equals(that.shortBlobVal) : that.shortBlobVal != null) {
       return false;
     }
     if (boolVal != null ? !boolVal.equals(that.boolVal) : that.boolVal != null) {
@@ -373,7 +391,7 @@ public class KitchenSink {
       return false;
     }
     if (characterVal != null ? !characterVal.equals(that.characterVal)
-        : that.characterVal != null) {
+                             : that.characterVal != null) {
       return false;
     }
     if (!Arrays.equals(dateArray, that.dateArray)) {
@@ -469,6 +487,10 @@ public class KitchenSink {
     if (!Arrays.equals(shortArray, that.shortArray)) {
       return false;
     }
+    if (shortBlobVal != null ? !shortBlobVal.equals(that.shortBlobVal)
+                             : that.shortBlobVal != null) {
+      return false;
+    }
     if (shortList != null ? !shortList.equals(that.shortList) : that.shortList != null) {
       return false;
     }
@@ -506,10 +528,11 @@ public class KitchenSink {
     return true;
   }
 
+  @Override
   public int hashCode() {
     int result;
     long temp;
-    result = (key != null ? key.hashCode() : 0);
+    result = key != null ? key.hashCode() : 0;
     result = 31 * result + (strVal != null ? strVal.hashCode() : 0);
     result = 31 * result + (boolVal != null ? boolVal.hashCode() : 0);
     result = 31 * result + (boolPrimVal ? 1 : 0);
@@ -530,11 +553,12 @@ public class KitchenSink {
     result = 31 * result + (int) (temp ^ (temp >>> 32));
     result = 31 * result + (dateVal != null ? dateVal.hashCode() : 0);
     result = 31 * result + (ksEnum != null ? ksEnum.hashCode() : 0);
+    result = 31 * result + (bigDecimal != null ? bigDecimal.hashCode() : 0);
     result = 31 * result + (userVal != null ? userVal.hashCode() : 0);
     result = 31 * result + (blobVal != null ? blobVal.hashCode() : 0);
-    result = 31 * result + (shortBlobVal != null ? shortBlobVal.hashCode() : 0);
     result = 31 * result + (textVal != null ? textVal.hashCode() : 0);
     result = 31 * result + (linkVal != null ? linkVal.hashCode() : 0);
+    result = 31 * result + (shortBlobVal != null ? shortBlobVal.hashCode() : 0);
     result = 31 * result + (strArray != null ? Arrays.hashCode(strArray) : 0);
     result = 31 * result + (primitiveIntArray != null ? Arrays.hashCode(primitiveIntArray) : 0);
     result = 31 * result + (integerArray != null ? Arrays.hashCode(integerArray) : 0);
@@ -556,6 +580,7 @@ public class KitchenSink {
     result = 31 * result + (booleanArray != null ? Arrays.hashCode(booleanArray) : 0);
     result = 31 * result + (dateArray != null ? Arrays.hashCode(dateArray) : 0);
     result = 31 * result + (ksEnumArray != null ? Arrays.hashCode(ksEnumArray) : 0);
+    result = 31 * result + (bigDecimalArray != null ? Arrays.hashCode(bigDecimalArray) : 0);
     result = 31 * result + (userArray != null ? Arrays.hashCode(userArray) : 0);
     result = 31 * result + (blobArray != null ? Arrays.hashCode(blobArray) : 0);
     result = 31 * result + (textArray != null ? Arrays.hashCode(textArray) : 0);
@@ -571,6 +596,7 @@ public class KitchenSink {
     result = 31 * result + (booleanList != null ? booleanList.hashCode() : 0);
     result = 31 * result + (dateList != null ? dateList.hashCode() : 0);
     result = 31 * result + (ksEnumList != null ? ksEnumList.hashCode() : 0);
+    result = 31 * result + (bigDecimalList != null ? bigDecimalList.hashCode() : 0);
     result = 31 * result + (userList != null ? userList.hashCode() : 0);
     result = 31 * result + (blobList != null ? blobList.hashCode() : 0);
     result = 31 * result + (textList != null ? textList.hashCode() : 0);

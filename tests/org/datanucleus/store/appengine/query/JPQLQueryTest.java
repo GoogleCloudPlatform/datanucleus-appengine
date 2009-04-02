@@ -56,6 +56,7 @@ import org.datanucleus.test.Person;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
@@ -936,6 +937,18 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (PersistenceException e) {
       // good
     }
+  }
+
+  public void testBigDecimalQuery() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    Query q = em.createQuery(
+        "select from " + KitchenSink.class.getName() + " where bigDecimal = :bd");
+    q.setParameter("bd", new BigDecimal(2.444d));
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
+    assertEquals(1, results.size());
   }
 
   public void testQueryWithNegativeLiteralLong() {

@@ -57,6 +57,7 @@ import org.datanucleus.test.Person;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -1027,6 +1028,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, results2.size());
   }
 
+  public void testBigDecimalQuery() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery(
+        "select from " + KitchenSink.class.getName() + " where bigDecimal == bd parameters " + BigDecimal.class.getName() + " bd");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute(new BigDecimal(2.444d));
+    assertEquals(1, results.size());
+  }
+
   public void testQueryWithNegativeLiteralLong() {
     ldth.ds.put(newFlightEntity("1", "yam", "bam", -1, 2));
 
@@ -1456,22 +1468,15 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(entity1.getKey(), TestUtils.createKey(Person.class, result.get(1).getId()));
   }
 
-  // This test will start to fail once we add support for double literals
   public void testFilterByLiteralDoubleValue() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
     ldth.ds.put(e);
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where doublePrimVal > 2.1");
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (IllegalArgumentException iae) {
-      // expected
-    }
-//    @SuppressWarnings("unchecked")
-//    List<KitchenSink> results = (List<KitchenSink>) q.execute();
-//    assertEquals(1, results.size());
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute();
+    assertEquals(1, results.size());
   }
 
   public void testFilterByParameterDoubleValue() {

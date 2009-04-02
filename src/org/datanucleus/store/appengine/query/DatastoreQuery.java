@@ -589,6 +589,7 @@ public class DatastoreQuery implements Serializable {
     return tuples;
   }
 
+  // TODO(maxr): Use TypeConversionUtils
   private Object pojoParamToDatastoreParam(Object param) {
     if (param instanceof Enum) {
       param = ((Enum) param).name();
@@ -596,6 +597,8 @@ public class DatastoreQuery implements Serializable {
       param = new ShortBlob((byte[]) param);
     } else if (param instanceof Byte[]) {
       param = new ShortBlob(PrimitiveArrays.toByteArray(Arrays.asList((Byte[]) param)));
+    } else if (param instanceof BigDecimal) {
+      param = ((BigDecimal) param).doubleValue();
     }
     return param;
   }

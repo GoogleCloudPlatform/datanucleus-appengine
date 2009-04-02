@@ -20,7 +20,6 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Link;
 import com.google.appengine.api.datastore.Text;
-import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.users.User;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -40,6 +39,7 @@ import java.lang.reflect.Field;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
+import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
@@ -111,6 +111,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(2.22d, fieldManager.fetchDoubleField(iter.next()));
     assertEquals(KitchenSink.DATE1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.KitchenSinkEnum.ONE, fieldManager.fetchObjectField(iter.next()));
+    assertEquals(new BigDecimal(2.444d), fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.USER1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.BLOB1, fieldManager.fetchObjectField(iter.next()));
     assertEquals(KitchenSink.TEXT1, fieldManager.fetchObjectField(iter.next()));
@@ -154,6 +155,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertTrue(Arrays.equals(new KitchenSink.KitchenSinkEnum[]
         {KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE},
         (KitchenSink.KitchenSinkEnum[]) fieldManager.fetchObjectField(iter.next())));
+    assertTrue(Arrays.equals(new BigDecimal[] {new BigDecimal(3.4444d), new BigDecimal(4.3333d)},
+        (BigDecimal[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new User[] {KitchenSink.USER1, KitchenSink.USER2},
         (User[]) fieldManager.fetchObjectField(iter.next())));
     assertTrue(Arrays.equals(new Blob[] {KitchenSink.BLOB1, KitchenSink.BLOB2},
@@ -177,6 +180,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(Utils.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2),
         fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE),
+        fieldManager.fetchObjectField(iter.next()));
+    assertEquals(Utils.newArrayList(new BigDecimal(7.6666d), new BigDecimal(6.7777d)),
         fieldManager.fetchObjectField(iter.next()));
     assertEquals(Utils.newArrayList(KitchenSink.USER1, KitchenSink.USER2),
         fieldManager.fetchObjectField(iter.next()));
@@ -299,6 +304,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     fieldManager.storeDoubleField(iter.next(), 2.22d);
     fieldManager.storeObjectField(iter.next(), KitchenSink.DATE1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.KitchenSinkEnum.ONE);
+    fieldManager.storeObjectField(iter.next(), new BigDecimal(2.444d));
     fieldManager.storeObjectField(iter.next(), KitchenSink.USER1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.BLOB1);
     fieldManager.storeObjectField(iter.next(), KitchenSink.TEXT1);
@@ -325,6 +331,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     fieldManager.storeObjectField(iter.next(), new Date[] {KitchenSink.DATE1, KitchenSink.DATE2});
     fieldManager.storeObjectField(iter.next(), new KitchenSink.KitchenSinkEnum[]
         {KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE});
+    fieldManager.storeObjectField(iter.next(), new BigDecimal[]
+        {new BigDecimal(3.4444d), new BigDecimal(4.3333d)});
     fieldManager.storeObjectField(iter.next(), new User[] {KitchenSink.USER1, KitchenSink.USER2});
     fieldManager.storeObjectField(iter.next(), new Blob[] {KitchenSink.BLOB1, KitchenSink.BLOB2});
     fieldManager.storeObjectField(iter.next(), new Text[] {KitchenSink.TEXT1, KitchenSink.TEXT2});
@@ -343,6 +351,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
                                   Utils.newArrayList(KitchenSink.DATE1, KitchenSink.DATE2));
     fieldManager.storeObjectField(iter.next(),
                                   Utils.newArrayList(KitchenSink.KitchenSinkEnum.TWO, KitchenSink.KitchenSinkEnum.ONE));
+    fieldManager.storeObjectField(iter.next(),
+                                  Utils.newArrayList(new BigDecimal(7.6666d), new BigDecimal(6.7777d)));
     fieldManager.storeObjectField(iter.next(),
                                   Utils.newArrayList(KitchenSink.USER1, KitchenSink.USER2));
     fieldManager.storeObjectField(iter.next(),
@@ -374,6 +384,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertEquals(KitchenSink.DATE1, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.KitchenSinkEnum.ONE.name(),
                  ksEntity.getProperty(fieldIter.next().getName()));
+    assertEquals(
+        new BigDecimal(2.444d).doubleValue(), ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.USER1, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.BLOB1, ksEntity.getProperty(fieldIter.next().getName()));
     assertEquals(KitchenSink.TEXT1, ksEntity.getProperty(fieldIter.next().getName()));
