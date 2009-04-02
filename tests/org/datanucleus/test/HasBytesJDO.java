@@ -20,11 +20,12 @@ import com.google.appengine.api.datastore.ShortBlob;
 import java.util.List;
 import java.util.Set;
 
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PrimaryKey;
-import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Serialized;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -56,6 +57,22 @@ public class HasBytesJDO {
 
   @Persistent
   private ShortBlob shortBlob;
+
+  @Persistent
+  @Serialized
+  private byte[] serializedPrimBytes;
+
+  @Persistent
+  @Serialized
+  private Byte[] serializedBytes;
+
+  @Persistent
+  @Serialized
+  private List<Byte> serializedByteList;
+
+  @Persistent
+  @Serialized
+  private Set<Byte> serializedByteSet;
 
   public Long getId() {
     return id;
@@ -119,5 +136,37 @@ public class HasBytesJDO {
 
   public void setShortBlob(ShortBlob shortBlob) {
     this.shortBlob = shortBlob;
+  }
+
+  public byte[] getSerializedPrimBytes() {
+    return serializedPrimBytes;
+  }
+
+  public Byte[] getSerializedBytes() {
+    return serializedBytes;
+  }
+
+  public List<Byte> getSerializedByteList() {
+    return serializedByteList;
+  }
+
+  public Set<Byte> getSerializedByteSet() {
+    return serializedByteSet;
+  }
+
+  public void setSerializedPrimBytes(byte[] serializedPrimBytes) {
+    this.serializedPrimBytes = serializedPrimBytes;
+  }
+
+  public void setSerializedBytes(Byte[] serializedBytes) {
+    this.serializedBytes = serializedBytes;
+  }
+
+  public void setSerializedByteList(List<Byte> serializedByteList) {
+    this.serializedByteList = serializedByteList;
+  }
+
+  public void setSerializedByteSet(Set<Byte> serializedByteSet) {
+    this.serializedByteSet = serializedByteSet;
   }
 }

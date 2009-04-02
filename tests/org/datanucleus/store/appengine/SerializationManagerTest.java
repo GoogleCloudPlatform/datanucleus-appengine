@@ -34,9 +34,9 @@ import java.io.Serializable;
  */
 public class SerializationManagerTest extends TestCase {
 
-  public void testDeserialize_NonSerializableClass() {
+  public void testDeserialize_NonObjectBytes() {
     try {
-      SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(new Blob("".getBytes()), getClass());
+      SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(new Blob("yar".getBytes()), getClass());
       fail("Expcted NucleusException");
     } catch (NucleusException ne) {
       // good

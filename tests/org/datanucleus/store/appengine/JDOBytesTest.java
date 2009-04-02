@@ -15,9 +15,10 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.ShortBlob;
 
 import org.datanucleus.test.HasBytesJDO;
@@ -30,6 +31,9 @@ import java.util.HashSet;
  */
 public class JDOBytesTest extends JDOTestCase {
 
+  private static final SerializationStrategy SS =
+      SerializationManager.DEFAULT_SERIALIZATION_STRATEGY;
+
   public void testInsert() throws EntityNotFoundException {
     HasBytesJDO pojo = new HasBytesJDO();
 
@@ -40,6 +44,10 @@ public class JDOBytesTest extends JDOTestCase {
     pojo.setOnePrimByte(Integer.valueOf(1).byteValue());
     pojo.setOneByte(Integer.valueOf(2).byteValue());
     pojo.setShortBlob(new ShortBlob("short blob".getBytes()));
+    pojo.setSerializedPrimBytes("serialized prim bytes".getBytes());
+    pojo.setSerializedBytes(PrimitiveArrays.asList("serialized bytes".getBytes()).toArray(new Byte[5]));
+    pojo.setSerializedByteList(PrimitiveArrays.asList("serialized byte list".getBytes()));
+    pojo.setSerializedByteSet(new HashSet<Byte>(PrimitiveArrays.asList("serialized byte set".getBytes())));
 
     beginTxn();
     pm.makePersistent(pojo);
@@ -55,6 +63,12 @@ public class JDOBytesTest extends JDOTestCase {
     assertEquals(1L, e.getProperty("onePrimByte"));
     assertEquals(2L, e.getProperty("oneByte"));
     assertEquals(new ShortBlob("short blob".getBytes()), e.getProperty("shortBlob"));
+    assertEquals(new Blob("serialized prim bytes".getBytes()), e.getProperty("serializedPrimBytes"));
+    assertEquals(new Blob("serialized bytes".getBytes()), e.getProperty("serializedBytes"));
+    assertEquals(SS.serialize(PrimitiveArrays.asList("serialized byte list".getBytes())),
+                 e.getProperty("serializedByteList"));
+    assertEquals(SS.serialize(new HashSet<Byte>(PrimitiveArrays.asList(
+        "serialized byte set".getBytes()))), e.getProperty("serializedByteSet"));
   }
 
   public void testFetch() {
@@ -66,6 +80,10 @@ public class JDOBytesTest extends JDOTestCase {
     e.setProperty("onePrimByte", 1L);
     e.setProperty("oneByte", 2L);
     e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
+    e.setProperty("serializedPrimBytes", new Blob("serialized prim bytes".getBytes()));
+    e.setProperty("serializedBytes", new Blob("serialized bytes".getBytes()));
+    e.setProperty("serializedByteList", SS.serialize(PrimitiveArrays.asList("serialized byte list".getBytes())));
+    e.setProperty("serializedByteSet", SS.serialize(new HashSet<Byte>(PrimitiveArrays.asList("serialized byte set".getBytes()))));
 
     ldth.ds.put(e);
 
@@ -78,6 +96,13 @@ public class JDOBytesTest extends JDOTestCase {
     assertEquals(Integer.valueOf(1).byteValue(), pojo.getOnePrimByte());
     assertEquals(Integer.valueOf(2).byteValue(), pojo.getOneByte().byteValue());
     assertEquals(new ShortBlob("short blob".getBytes()), pojo.getShortBlob());
+    assertEquals(new Blob("serialized prim bytes".getBytes()), new Blob(pojo.getSerializedPrimBytes()));
+    assertEquals(new Blob("serialized bytes".getBytes()),
+                 new Blob(PrimitiveArrays.toByteArray(Arrays.asList(pojo.getSerializedBytes()))));
+    assertEquals(PrimitiveArrays.asList("serialized byte list".getBytes()),
+                 pojo.getSerializedByteList());
+    assertEquals(new HashSet<Byte>(PrimitiveArrays.asList("serialized byte set".getBytes())),
+                 pojo.getSerializedByteSet());
     commitTxn();
   }
 }

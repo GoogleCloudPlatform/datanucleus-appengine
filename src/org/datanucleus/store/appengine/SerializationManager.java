@@ -28,6 +28,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Arrays;
 
 /**
  * Helper used by {@link DatastoreFieldManager} to process serialized fields.
@@ -72,6 +73,12 @@ class SerializationManager {
       if (obj == null) {
         throw new NullPointerException("Object cannot be null.");
       }
+      // No need to actually serialize byte arrays
+      if (obj instanceof byte[]) {
+        return new Blob((byte[]) obj);
+      } else if (obj instanceof Byte[]) {
+        return new Blob(PrimitiveArrays.toByteArray(Arrays.asList((Byte[]) obj)));
+      }
       ByteArrayOutputStream baos = new ByteArrayOutputStream();
       ObjectOutputStream oos = null;
       try {
@@ -105,11 +112,14 @@ class SerializationManager {
       if (blob == null) {
         throw new NullPointerException("Blob cannot be null.");
       }
-      if (!Serializable.class.isAssignableFrom(targetClass)) {
-        throw new NucleusException("Attempting to deserialize a Blob into an instance of "
-            + targetClass.getName()
-            + " but this class does not implement the Serializable interface.");
+      if (targetClass.equals(byte[].class)) {
+        return blob.getBytes();
+      } else if (targetClass.equals(Byte[].class)){
+        byte[] bytes = blob.getBytes();
+        return PrimitiveArrays.asList(bytes).toArray(new Byte[bytes.length]);
       }
+      // If the bytes don't contain a valid java object we'll get
+      // an exception.
       ByteArrayInputStream bais = new ByteArrayInputStream(blob.getBytes());
       ObjectInputStream ois = null;
       try {

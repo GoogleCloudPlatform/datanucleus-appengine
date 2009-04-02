@@ -283,17 +283,21 @@ public class DatastoreFieldManager implements FieldManager {
       Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
       if (value != null) {
         ClassLoaderResolver clr = getClassLoaderResolver();
-        // Datanucleus invokes this method for the object versions
-        // of primitive types.  We need to make sure we convert
-        // appropriately.
-        value = getConversionUtils().datastoreValueToPojoValue(
-            clr, value, getStateManager(), getMetaData(fieldNumber));
         if (ammd.isSerialized()) {
+          // If the field is serialized we know it's a Blob that we
+          // can deserialize without any conversion necessary.
           value = deserializeFieldValue(value, clr, ammd);
-        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
-          @SuppressWarnings("unchecked")
-          Class<Enum> enumClass = ammd.getType();
-          value = Enum.valueOf(enumClass, (String) value);
+        } else {
+          // Datanucleus invokes this method for the object versions
+          // of primitive types.  We need to make sure we convert
+          // appropriately.
+          value = getConversionUtils().datastoreValueToPojoValue(
+              clr, value, getStateManager(), getMetaData(fieldNumber));
+          if (Enum.class.isAssignableFrom(ammd.getType())) {
+            @SuppressWarnings("unchecked")
+            Class<Enum> enumClass = ammd.getType();
+            value = Enum.valueOf(enumClass, (String) value);
+          }
         }
       }
       return value;
@@ -711,11 +715,16 @@ public class DatastoreFieldManager implements FieldManager {
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (value != null ) {
         if (ammd.isSerialized()) {
+          // If the field is serialized we don't need to apply
+          // any conversions before setting it on the entity since
+          // the serialization is guaranteed to produce a Blob.
           value = serializationManager.serialize(clr, ammd, value);
-        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
-          value = ((Enum) value).name();
+        } else {
+          if (Enum.class.isAssignableFrom(ammd.getType())) {
+            value = ((Enum) value).name();
+          }
+          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, getMetaData(fieldNumber));
         }
-        value = getConversionUtils().pojoValueToDatastoreValue(clr, value, getMetaData(fieldNumber));
       }
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
