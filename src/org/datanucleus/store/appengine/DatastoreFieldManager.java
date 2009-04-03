@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Text;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
@@ -177,7 +178,12 @@ public class DatastoreFieldManager implements FieldManager {
       }
       return fetchPKNameField();
     }
-    return (String) fetchObjectField(fieldNumber);
+    Object fieldVal = fetchObjectField(fieldNumber);
+    if (fieldVal instanceof Text) {
+      // must be a lob field
+      fieldVal = ((Text) fieldVal).getValue();
+    }
+    return (String) fieldVal;
   }
 
   private String fetchPKNameField() {
@@ -416,7 +422,17 @@ public class DatastoreFieldManager implements FieldManager {
     } else if (isPKNameField(fieldNumber)) {
       storePKNameField(fieldNumber, value);
     } else {
-      storeObjectField(fieldNumber, value);
+      // could be a JPA "lob" field, in which case we want to store it as
+      // Text.  DataNucleus sets a cmd with a jdbc type of CLOB
+      // if this is the case.
+      Object valueToStore = value;
+      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+      if (ammd.getColumnMetaData() != null &&
+          ammd.getColumnMetaData().length == 1 &&
+          "CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
+        valueToStore = new Text(value);
+      }
+      storeObjectField(fieldNumber, valueToStore);
     }
   }
 
