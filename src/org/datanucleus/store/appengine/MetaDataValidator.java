@@ -190,7 +190,7 @@ public class MetaDataValidator {
       return;
     }
     int pkPos = pkPositions[0];
-    AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtPosition(pkPos);
+    AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
     Class<?> pkType = pkMemberMetaData.getType();
     if (pkType.equals(Long.class) ||
         (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK))) {
@@ -210,7 +210,7 @@ public class MetaDataValidator {
       throw new DatastoreMetaDataException(acmd, "More than one primary key field.");
     }
     int pkPos = pkPositions[0];
-    AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtPosition(pkPos);
+    AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
 
     Class<?> pkType = pkMemberMetaData.getType();
     if (pkType.equals(Long.class)) {

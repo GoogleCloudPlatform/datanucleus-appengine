@@ -199,7 +199,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         // to a String.  If the pk field is anything else, we've got a problem.
         // Assumes we only have a single pk member position
         Class<?> pkType =
-            acmd.getMetaDataForManagedMemberAtPosition(acmd.getPKMemberPositions()[0]).getType();
+            acmd.getMetaDataForManagedMemberAtAbsolutePosition(acmd.getPKMemberPositions()[0]).getType();
 
         Object newObjectId;
         if (pkType.equals(Key.class)) {

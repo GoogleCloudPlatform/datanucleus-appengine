@@ -488,7 +488,7 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   private static boolean memberHasExtension(AbstractClassMetaData acmd, int pos, String extensionName) {
-    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtPosition(pos);
+    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pos);
     return ammd.hasExtension(extensionName);
   }
 

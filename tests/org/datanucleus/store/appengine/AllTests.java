@@ -86,6 +86,8 @@ public class AllTests {
     suite.addTestSuite(JDOFetchGroupTest.class);
     suite.addTestSuite(JDOAttachDetachTest.class);
     suite.addTestSuite(JPAAttachDetachTest.class);
+    suite.addTestSuite(JDOSubclassTest.class);
+    suite.addTestSuite(JPASubclassTest.class);
     return suite;
   }
 }

@@ -121,7 +121,7 @@ public class DatastoreFieldManager implements FieldManager {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
-        return getClassMetaData().getMetaDataForManagedMemberAtPosition(fieldNumber);
+        return getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
       }
     };
     this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider));
