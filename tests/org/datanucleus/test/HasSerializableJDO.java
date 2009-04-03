@@ -23,6 +23,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.appengine.SerializationStrategy;
 
 import java.io.Serializable;
+import java.util.List;
 
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -45,6 +46,9 @@ public class HasSerializableJDO {
   private Yam yam;
 
   @Persistent(serialized = "true")
+  private List<Yam> yamList;
+
+  @Persistent(serialized = "true")
   @Extension(vendorName = "datanucleus", key="serialization-strategy",
              value="org.datanucleus.test.HasSerializableJDO$ProtocolBufferSerializationStrategy")
   private DatastorePb.Query query;
@@ -55,6 +59,14 @@ public class HasSerializableJDO {
 
   public void setYam(Yam yam) {
     this.yam = yam;
+  }
+
+  public List<Yam> getYamList() {
+    return yamList;
+  }
+
+  public void setYamList(List<Yam> yamList) {
+    this.yamList = yamList;
   }
 
   public DatastorePb.Query getQuery() {
@@ -108,6 +120,34 @@ public class HasSerializableJDO {
 
     public void setStr2(String str2) {
       this.str2 = str2;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+      if (this == o) {
+        return true;
+      }
+      if (o == null || getClass() != o.getClass()) {
+        return false;
+      }
+
+      Yam yam = (Yam) o;
+
+      if (str1 != null ? !str1.equals(yam.str1) : yam.str1 != null) {
+        return false;
+      }
+      if (str2 != null ? !str2.equals(yam.str2) : yam.str2 != null) {
+        return false;
+      }
+
+      return true;
+    }
+
+    @Override
+    public int hashCode() {
+      int result = str1 != null ? str1.hashCode() : 0;
+      result = 31 * result + (str2 != null ? str2.hashCode() : 0);
+      return result;
     }
   }
 }

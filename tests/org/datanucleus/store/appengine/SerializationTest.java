@@ -23,6 +23,8 @@ import com.google.apphosting.api.DatastorePb;
 
 import org.datanucleus.test.HasSerializableJDO;
 
+import java.util.List;
+
 /**
  * Serialization tests.
  *
@@ -41,6 +43,7 @@ public class SerializationTest extends JDOTestCase {
 
     HasSerializableJDO hasSerializable = new HasSerializableJDO();
     hasSerializable.setYam(yam);
+    hasSerializable.setYamList(Utils.newArrayList(yam));
     hasSerializable.setQuery(query);
     beginTxn();
     pm.makePersistent(hasSerializable);
@@ -51,6 +54,13 @@ public class SerializationTest extends JDOTestCase {
     assertNotNull(yamBlob);
     HasSerializableJDO.Yam reloadedYam = (HasSerializableJDO.Yam)
         SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(yamBlob, HasSerializableJDO.Yam.class);
+    assertEquals(yam.getStr1(), reloadedYam.getStr1());
+    assertEquals(yam.getStr2(), reloadedYam.getStr2());
+    Blob yamListBlob = (Blob) e.getProperty("yamList");
+    List<HasSerializableJDO.Yam> reloadedYamList = (List<HasSerializableJDO.Yam>)
+        SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(yamListBlob, List.class);
+    assertEquals(1, reloadedYamList.size());
+    reloadedYam = reloadedYamList.get(0);
     assertEquals(yam.getStr1(), reloadedYam.getStr1());
     assertEquals(yam.getStr2(), reloadedYam.getStr2());
     Blob queryBlob = (Blob) e.getProperty("query");
@@ -70,6 +80,8 @@ public class SerializationTest extends JDOTestCase {
     yam.setStr2("b");
     e.setProperty("yam", SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(yam));
 
+    List<HasSerializableJDO.Yam> yamList = Utils.newArrayList(yam);
+    e.setProperty("yamList", SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(yamList));
     DatastorePb.Query query = new DatastorePb.Query();
     query.setApp("harold");
     query.setKind("yes");
@@ -82,6 +94,7 @@ public class SerializationTest extends JDOTestCase {
     assertNotNull(hasSerializable.getYam());
     assertEquals(yam.getStr1(), hasSerializable.getYam().getStr1());
     assertEquals(yam.getStr2(), hasSerializable.getYam().getStr2());
+    assertEquals(yamList, hasSerializable.getYamList());
     assertNotNull(hasSerializable.getQuery());
     assertEquals(query.getApp(), hasSerializable.getQuery().getApp());
     assertEquals(query.getKind(), hasSerializable.getQuery().getKind());
