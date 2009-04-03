@@ -45,6 +45,7 @@ import org.datanucleus.query.expression.Literal;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.query.expression.ParameterExpression;
 import org.datanucleus.query.expression.PrimaryExpression;
+import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
@@ -455,7 +456,8 @@ public class DatastoreQuery implements Serializable {
   private void addFilters(QueryCompilation compilation, Map parameters,
       AbstractClassMetaData acmd, DatastoreTable table) {
     Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(parameters, acmd, table, compilation.getCandidateAlias());
+    QueryData qd = new QueryData(
+        parameters, acmd, table, compilation.getCandidateAlias(), compilation.getSymbolTable());
     addExpression(filter, qd);
   }
 
@@ -467,12 +469,15 @@ public class DatastoreQuery implements Serializable {
     private final AbstractClassMetaData acmd;
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
     private final String alias;
+    private final SymbolTable symbolTable;
 
-    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table, String alias) {
+    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table, String alias,
+                      SymbolTable symbolTable) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
       this.alias = alias;
+      this.symbolTable = symbolTable;
     }
   }
 
@@ -498,8 +503,8 @@ public class DatastoreQuery implements Serializable {
         throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
             expr.getOperator());
       } else if (expr.getLeft() instanceof PrimaryExpression) {
-        addLeftPrimaryExpression((PrimaryExpression) expr.getLeft(), expr
-            .getOperator(), expr.getRight(), qd);
+        addLeftPrimaryExpression(
+            (PrimaryExpression) expr.getLeft(), expr.getOperator(), expr.getRight(), qd);
       } else {
         // Recurse!
         addExpression(expr.getLeft(), qd);
@@ -509,6 +514,19 @@ public class DatastoreQuery implements Serializable {
       // Recurse!
       addExpression(expr.getLeft(), qd);
       addExpression(expr.getRight(), qd);
+    } else if (expr instanceof InvokeExpression) {
+      InvokeExpression invocation = ((InvokeExpression) expr);
+      if (invocation.getOperation().equals("contains") && expr.getLeft() instanceof PrimaryExpression &&
+          (invocation.getParameters().size() == 1)) {
+        PrimaryExpression left = (PrimaryExpression) expr.getLeft();
+        Expression param = (Expression) invocation.getParameters().get(0);
+        param.bind();
+        addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
+      } else {
+        throw new UnsupportedDatastoreFeatureException(
+            "Unsupported method <" + invocation.getOperation() + "> while parsing query: "
+                + expr.getClass().getName(), query.getSingleStringQuery());
+      }
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Unexpected expression type while parsing query: "

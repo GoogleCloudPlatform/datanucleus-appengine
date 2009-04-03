@@ -845,6 +845,43 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(0, result.size());
   }
 
+  public void testFilterByMultiValueProperty_ContainsWithParam() {
+    Entity entity = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+        Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + HasMultiValuePropsJDO.class.getName()
+        + " where strList.contains(p1) parameters String p1");
+    List<HasMultiValuePropsJDO> result = (List<HasMultiValuePropsJDO>) q.execute("1");
+    assertEquals(1, result.size());
+    result = (List<HasMultiValuePropsJDO>) q.execute("4");
+    assertEquals(0, result.size());
+
+    q = pm.newQuery(
+        "select from " + HasMultiValuePropsJDO.class.getName()
+        + " where keyList.contains(p1) && keyList.contains(p2) parameters "
+        + Key.class.getName() + " p1, " + Key.class.getName() + " p2");
+    result = (List<HasMultiValuePropsJDO>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    result = (List<HasMultiValuePropsJDO>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be2"));
+    assertEquals(0, result.size());
+  }
+
+  public void testFilterByMultiValueProperty_ContainsWithLiteralString() {
+    Entity entity = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + HasMultiValuePropsJDO.class.getName()
+        + " where strList.contains(\"1\")");
+    List<HasMultiValuePropsJDO> result = (List<HasMultiValuePropsJDO>) q.execute();
+    assertEquals(1, result.size());
+  }
+
   public void testFilterByEmbeddedField() {
     Entity entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max");
