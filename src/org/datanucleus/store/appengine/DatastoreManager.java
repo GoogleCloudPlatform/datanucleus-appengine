@@ -15,9 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
-
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ConnectionFactoryRegistry;
@@ -259,7 +256,12 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
       StatementMappingForClass resultMappings) {
-    return new KeyOnlyFieldManager((Key) obj);
+    ObjectManager om = sm.getObjectManager();
+    Class<?> cls = om.getClassLoaderResolver().classForName(sm.getClassMetaData().getFullClassName());
+    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj);
+    // Need to provide this to the field manager in the form of the pk
+    // of the type: Key, Long, encoded String, or unencoded String
+    return new KeyOnlyFieldManager(internalKey);
   }
 
   @Override
@@ -348,10 +350,10 @@ public class DatastoreManager extends MappedStoreManager {
    * A {@link FieldManager} implementation that can only be used for managing
    * keys.  Everything else throws {@link UnsupportedOperationException}.
    */
-  private static class KeyOnlyFieldManager implements FieldManager {
-    private final Key key;
+  private static final class KeyOnlyFieldManager implements FieldManager {
+    private final Object key;
 
-    private KeyOnlyFieldManager(Key key) {
+    private KeyOnlyFieldManager(Object key) {
       this.key = key;
     }
 
@@ -428,7 +430,8 @@ public class DatastoreManager extends MappedStoreManager {
     }
 
     public String fetchStringField(int fieldNumber) {
-      return KeyFactory.keyToString(key);
+      // Trust that a value of the right type was provided.
+      return (String) key;
     }
 
     public Object fetchObjectField(int fieldNumber) {

@@ -25,10 +25,12 @@ import org.datanucleus.test.BidirectionalChildListLongPkJDO;
 import org.datanucleus.test.BidirectionalChildListStringPkJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToManyListLongPkJDO;
 import org.datanucleus.test.HasOneToManyListStringPkJDO;
 import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
+import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -294,6 +296,35 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testAddAlreadyPersistedChildToParent_NoTxnDifferentPm() {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentPm(new HasOneToManyListJDO());
+  }
+
+  public void testLongPkOneToManyBidirChildren() {
+    HasLongPkOneToManyBidirChildrenJDO pojo = new HasLongPkOneToManyBidirChildrenJDO();
+    HasLongPkOneToManyBidirChildrenJDO.ChildA
+        a = new HasLongPkOneToManyBidirChildrenJDO.ChildA();
+    pojo.setChildAList(Utils.newArrayList(a));
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = pm.getObjectById(HasLongPkOneToManyBidirChildrenJDO.class, pojo.getId());
+    assertEquals(1, pojo.getChildAList().size());
+    assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+  }
+
+  public void testUnencodedStringPkOneToManyBidirChildren() {
+    HasUnencodedStringPkOneToManyBidirChildrenJDO pojo = new HasUnencodedStringPkOneToManyBidirChildrenJDO();
+    pojo.setId("yar");
+    HasUnencodedStringPkOneToManyBidirChildrenJDO.ChildA
+        a = new HasUnencodedStringPkOneToManyBidirChildrenJDO.ChildA();
+    pojo.setChildAList(Utils.newArrayList(a));
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = pm.getObjectById(HasUnencodedStringPkOneToManyBidirChildrenJDO.class, pojo.getId());
+    assertEquals(1, pojo.getChildAList().size());
+    assertEquals(pojo, pojo.getChildAList().get(0).getParent());
   }
 
   @Override

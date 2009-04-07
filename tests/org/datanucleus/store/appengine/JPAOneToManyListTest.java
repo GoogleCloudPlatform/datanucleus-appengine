@@ -26,10 +26,12 @@ import org.datanucleus.test.BidirectionalChildListLongPkJPA;
 import org.datanucleus.test.BidirectionalChildListStringPkJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyListLongPkJPA;
 import org.datanucleus.test.HasOneToManyListStringPkJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
+import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -486,5 +488,35 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
   public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManyListJPA());
   }
-  
+
+  public void testLongPkOneToManyBidirChildren() {
+    HasLongPkOneToManyBidirChildrenJPA pojo = new HasLongPkOneToManyBidirChildrenJPA();
+    HasLongPkOneToManyBidirChildrenJPA.ChildA
+        a = new HasLongPkOneToManyBidirChildrenJPA.ChildA();
+    pojo.setChildAList(Utils.newArrayList(a));
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = em.find(HasLongPkOneToManyBidirChildrenJPA.class, pojo.getId());
+    assertEquals(1, pojo.getChildAList().size());
+    assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+  }
+
+  public void testUnencodedStringPkOneToManyBidirChildren() {
+    HasUnencodedStringPkOneToManyBidirChildrenJPA
+        pojo = new HasUnencodedStringPkOneToManyBidirChildrenJPA();
+    pojo.setId("yar");
+    HasUnencodedStringPkOneToManyBidirChildrenJPA.ChildA
+        a = new HasUnencodedStringPkOneToManyBidirChildrenJPA.ChildA();
+    pojo.setChildAList(Utils.newArrayList(a));
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = em.find(HasUnencodedStringPkOneToManyBidirChildrenJPA.class, pojo.getId());
+    assertEquals(1, pojo.getChildAList().size());
+    assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+  }
+
 }
