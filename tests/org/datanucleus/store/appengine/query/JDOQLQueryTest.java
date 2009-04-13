@@ -1624,7 +1624,16 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(0, results.get(0).getFlights().size());
   }
 
-
+  public void testImplicitParams() {
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :orig");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute("bos");
+    assertEquals(2, flights.size());
+  }
 
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,

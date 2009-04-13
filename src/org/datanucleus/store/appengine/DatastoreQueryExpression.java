@@ -164,7 +164,6 @@ class DatastoreQueryExpression implements QueryExpression {
       IntegerLiteral integerLiteral = (IntegerLiteral) appended.get(0);
       String kind = getKind((ScalarExpression.DatastoreFieldExpression) appended.get(2));
       return KeyFactory.createKey(kind, (Long) integerLiteral.getValue());
-
     }
     return null;
   }

@@ -547,7 +547,13 @@ public class DatastoreQuery implements Serializable {
     } else if (right instanceof Literal) {
       value = ((Literal) right).getLiteral();
     } else if (right instanceof ParameterExpression) {
-      value = right.getSymbol().getValue();
+      ParameterExpression paramExpr = (ParameterExpression) right;
+      if (paramExpr.getPosition() != -1 && qd.parameters != null) {
+        // implicit param
+        value = qd.parameters.get(paramExpr.getPosition());
+      } else {
+        value = right.getSymbol().getValue();
+      }
     } else if (right instanceof DyadicExpression) {
       // In general we don't support nested dyadic expressions
       // but we special case negation:
