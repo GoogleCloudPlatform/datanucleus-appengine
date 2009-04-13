@@ -46,7 +46,13 @@ import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
 import org.datanucleus.test.HasMultiValuePropsJDO;
+import org.datanucleus.test.HasOneToManyKeyPkListJDO;
+import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasOneToManyLongPkListJDO;
+import org.datanucleus.test.HasOneToManyLongPkSetJDO;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkListJDO;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
@@ -1549,6 +1555,76 @@ public class JDOQLQueryTest extends JDOTestCase {
     List<NullDataJDO> results = (List<NullDataJDO>) q.execute(null);
     assertEquals(1, results.size());
   }
+
+  public void testQueryForOneToManySetWithKeyPk() {
+    Entity e = new Entity(HasOneToManyKeyPkSetJDO.class.getSimpleName());
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyKeyPkSetJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyKeyPkSetJDO> results = (List<HasOneToManyKeyPkSetJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+  public void testQueryForOneToManyListWithKeyPk() {
+    Entity e = new Entity(HasOneToManyKeyPkListJDO.class.getSimpleName());
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyKeyPkListJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyKeyPkListJDO> results = (List<HasOneToManyKeyPkListJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+  public void testQueryForOneToManySetWithLongPk() {
+    Entity e = new Entity(HasOneToManyLongPkSetJDO.class.getSimpleName());
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyLongPkSetJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyLongPkSetJDO> results = (List<HasOneToManyLongPkSetJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+  public void testQueryForOneToManyListWithLongPk() {
+    Entity e = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyLongPkListJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyLongPkListJDO> results = (List<HasOneToManyLongPkListJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+  public void testQueryForOneToManySetWithUnencodedStringPk() {
+    Entity e = new Entity(HasOneToManyUnencodedStringPkSetJDO.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyUnencodedStringPkSetJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyUnencodedStringPkSetJDO> results =
+        (List<HasOneToManyUnencodedStringPkSetJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+  public void testQueryForOneToManyListWithUnencodedStringPk() {
+    Entity e = new Entity(HasOneToManyUnencodedStringPkListJDO.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+
+    Query q = pm.newQuery("select from " + HasOneToManyUnencodedStringPkListJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyUnencodedStringPkListJDO> results =
+        (List<HasOneToManyUnencodedStringPkListJDO>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getFlights().size());
+  }
+
+
 
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,

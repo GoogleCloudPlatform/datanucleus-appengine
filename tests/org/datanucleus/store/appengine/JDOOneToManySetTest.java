@@ -18,8 +18,11 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildSetJDO;
+import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
 import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
+import org.datanucleus.test.HasOneToManyLongPkSetJDO;
 import org.datanucleus.test.HasOneToManySetJDO;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -103,6 +106,17 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentPm(new HasOneToManySetJDO());
   }
 
+  public void testFetchOfOneToManyParentWithKeyPk() {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJDO());
+  }
+
+  public void testFetchOfOneToManyParentWithLongPk() {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO());
+  }
+
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJDO());
+  }
 
   @Override
   boolean isIndexed() {

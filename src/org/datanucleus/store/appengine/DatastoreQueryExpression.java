@@ -31,6 +31,7 @@ import org.datanucleus.store.mapped.expression.BooleanExpression;
 import org.datanucleus.store.mapped.expression.IntegerLiteral;
 import org.datanucleus.store.mapped.expression.LogicSetExpression;
 import org.datanucleus.store.mapped.expression.NumericExpression;
+import org.datanucleus.store.mapped.expression.ObjectLiteral;
 import org.datanucleus.store.mapped.expression.QueryExpression;
 import org.datanucleus.store.mapped.expression.ScalarExpression;
 import org.datanucleus.store.mapped.expression.StatementText;
@@ -91,13 +92,17 @@ class DatastoreQueryExpression implements QueryExpression {
     return map;
   }
 
-  private static final Field APPENDED_FIELD = getAppendedField();
+  private static final Field APPENDED_FIELD =
+      getDeclaredFieldQuietly(StatementText.class, "appended");
+
+  private static final Field DATASTORE_FIELD_FIELD =
+      getDeclaredFieldQuietly(ScalarExpression.DatastoreFieldExpression.class, "field");
 
   // TODO(maxr) Add an accessor to StatementText.
-  private static Field getAppendedField() {
+  private static Field getDeclaredFieldQuietly(Class<?> cls, String fieldName) {
     Field field;
     try {
-      field = StatementText.class.getDeclaredField("appended");
+      field = cls.getDeclaredField(fieldName);
     } catch (NoSuchFieldException e) {
       throw new RuntimeException(e);
     }
@@ -114,6 +119,14 @@ class DatastoreQueryExpression implements QueryExpression {
     }
   }
 
+  private DatastoreProperty getDatastoreProperty(ScalarExpression.DatastoreFieldExpression dfe) {
+    try {
+      return (DatastoreProperty) DATASTORE_FIELD_FIELD.get(dfe);
+    } catch (IllegalAccessException e) {
+      return null;
+    }
+  }
+
   /**
    * Extract the parent key from the expression.  This is totally fragile and
    * needs to be rewritten.
@@ -125,21 +138,41 @@ class DatastoreQueryExpression implements QueryExpression {
    */
   Key getParentKey() {
     // We are relying on the query having at least one 'and' condition where
-    // the first element of the first condition is a StringLiteral whose value
-    // is the string version of the parent key.  Like I said, totally fragile.
+    // the first element of the first condition is the parent key.
+    // Like I said, totally fragile.
     if (andConditions.size() < 1) {
       return null;
     }
     List<?> appended =
         getAppended(andConditions.get(0).toStatementText(ScalarExpression.PROJECTION));
-    if (appended.isEmpty()) {
+    if (appended.size() != 3) {
       return null;
     }
-    if (!(appended.get(0) instanceof StringLiteral)) {
-      return null;
+    if (appended.get(0) instanceof StringLiteral) {
+      StringLiteral stringLiteral = (StringLiteral) appended.get(0);
+      try {
+        return KeyFactory.stringToKey(stringLiteral.getValue().toString());
+      } catch (IllegalArgumentException iae) {
+        // treat it as an unencoded String
+        String kind = getKind((ScalarExpression.DatastoreFieldExpression) appended.get(2));
+        return KeyFactory.createKey(kind, stringLiteral.getValue().toString());
+      }
+    } else if (appended.get(0) instanceof ObjectLiteral) {
+      ObjectLiteral objectLiteral = (ObjectLiteral) appended.get(0);
+      return (Key) objectLiteral.getValue();
+    } else if (appended.get(0) instanceof IntegerLiteral) {
+      IntegerLiteral integerLiteral = (IntegerLiteral) appended.get(0);
+      String kind = getKind((ScalarExpression.DatastoreFieldExpression) appended.get(2));
+      return KeyFactory.createKey(kind, (Long) integerLiteral.getValue());
+
     }
-    StringLiteral stringLiteral = (StringLiteral) appended.get(0);
-    return KeyFactory.stringToKey(stringLiteral.getValue().toString());
+    return null;
+  }
+
+  private String getKind(ScalarExpression.DatastoreFieldExpression dfe) {
+    DatastoreProperty prop = getDatastoreProperty(dfe);
+    return EntityUtils.determineKind(
+        prop.getOwningClassMetaData(), mainTable.getStoreManager().getIdentifierFactory());
   }
 
   Collection<SortPredicate> getSortPredicates() {

@@ -210,7 +210,7 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   // Mostly copied from AbstractTable.addDatastoreField
-  public DatastoreField addDatastoreField(String storedJavaType, DatastoreIdentifier name,
+  public DatastoreProperty addDatastoreField(String storedJavaType, DatastoreIdentifier name,
       JavaTypeMapping mapping, MetaData colmd) {
 
     if (hasColumnName(name)) {
@@ -984,7 +984,7 @@ public class DatastoreTable implements DatastoreClass {
               // User-defined name
               identifier = idFactory.newDatastoreFieldIdentifier(colmd.getName());
             }
-            DatastoreField refColumn =
+            DatastoreProperty refColumn =
                 addDatastoreField(mapping.getJavaType().getName(), identifier, mapping, colmd);
             refDatastoreMapping.getDatastoreField().copyConfigurationTo(refColumn);
 
@@ -993,7 +993,10 @@ public class DatastoreTable implements DatastoreClass {
               // User either wants it nullable, or havent specified anything, so make it nullable
               refColumn.setNullable();
             }
-
+            AbstractClassMetaData acmd =
+                storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
+            // this is needed for one-to-many sets
+            refColumn.setOwningClassMetaData(acmd);
             fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
                 .createDatastoreMapping(mapping, refColumn,
                                         refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));

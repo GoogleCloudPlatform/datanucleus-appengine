@@ -26,10 +26,13 @@ import org.datanucleus.test.BidirectionalChildListStringPkJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
+import org.datanucleus.test.HasOneToManyKeyPkListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToManyListLongPkJDO;
 import org.datanucleus.test.HasOneToManyListStringPkJDO;
 import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
+import org.datanucleus.test.HasOneToManyLongPkListJDO;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkListJDO;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJDO;
 
 /**
@@ -327,6 +330,18 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
   }
 
+  public void testFetchOfOneToManyParentWithKeyPk() {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJDO());
+  }
+
+  public void testFetchOfOneToManyParentWithLongPk() {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJDO());
+  }
+
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
+  }
+  
   @Override
   boolean isIndexed() {
     return true;

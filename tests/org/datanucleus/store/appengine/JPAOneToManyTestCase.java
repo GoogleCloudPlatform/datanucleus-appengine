@@ -28,6 +28,9 @@ import org.datanucleus.test.BidirectionalChildJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyJPA;
+import org.datanucleus.test.HasOneToManyKeyPkJPA;
+import org.datanucleus.test.HasOneToManyLongPkJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.easymock.EasyMock;
 
@@ -700,6 +703,40 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     em = emf.createEntityManager();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getBooks().size());
+  }
+
+  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJPA pojo) {
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getBooks().size());
+    commitTxn();
+  }
+
+  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJPA pojo) {
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getBooks().size());
+    commitTxn();
+  }
+
+  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJPA pojo) {
+    pojo.setId("yar");
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getBooks().size());
+    commitTxn();
   }
 
   int countForClass(Class<?> clazz) {

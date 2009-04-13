@@ -27,9 +27,12 @@ import org.datanucleus.test.BidirectionalChildListStringPkJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
+import org.datanucleus.test.HasOneToManyKeyPkListJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyListLongPkJPA;
 import org.datanucleus.test.HasOneToManyListStringPkJPA;
+import org.datanucleus.test.HasOneToManyLongPkListJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJPA;
 
@@ -517,6 +520,18 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo = em.find(HasUnencodedStringPkOneToManyBidirChildrenJPA.class, pojo.getId());
     assertEquals(1, pojo.getChildAList().size());
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+  }
+
+  public void testFetchOfOneToManyParentWithKeyPk() {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJPA());
+  }
+
+  public void testFetchOfOneToManyParentWithLongPk() {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+  }
+
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
   }
 
 }

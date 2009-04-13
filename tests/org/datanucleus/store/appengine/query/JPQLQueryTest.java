@@ -45,7 +45,13 @@ import org.datanucleus.test.HasEnumJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
+import org.datanucleus.test.HasOneToManyKeyPkListJPA;
+import org.datanucleus.test.HasOneToManyKeyPkSetJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
+import org.datanucleus.test.HasOneToManyLongPkListJPA;
+import org.datanucleus.test.HasOneToManyLongPkSetJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
 import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasStringAncestorStringPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
@@ -1342,6 +1348,83 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, results.size());
   }
 
+  public void testQueryForOneToManySetWithKeyPk() {
+    Entity e = new Entity(HasOneToManyKeyPkSetJPA.class.getSimpleName());
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyKeyPkSetJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyKeyPkSetJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
+
+  public void testQueryForOneToManyListWithKeyPk() {
+    Entity e = new Entity(HasOneToManyKeyPkListJPA.class.getSimpleName());
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyKeyPkListJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyKeyPkListJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
+
+  public void testQueryForOneToManySetWithLongPk() {
+    Entity e = new Entity(HasOneToManyLongPkSetJPA.class.getSimpleName());
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyLongPkSetJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyLongPkSetJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
+
+  public void testQueryForOneToManyListWithLongPk() {
+    Entity e = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyLongPkListJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyLongPkListJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
+
+  public void testQueryForOneToManySetWithUnencodedStringPk() {
+    Entity e = new Entity(HasOneToManyUnencodedStringPkSetJPA.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkSetJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyUnencodedStringPkSetJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
+
+  public void testQueryForOneToManyListWithUnencodedStringPk() {
+    Entity e = new Entity(HasOneToManyUnencodedStringPkListJPA.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkListJPA.class.getName());
+    @SuppressWarnings("unchecked")
+    List<HasOneToManyUnencodedStringPkListJPA> results = q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(0, results.get(0).getBooks().size());
+    commitTxn();
+  }
 
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);

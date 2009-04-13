@@ -27,7 +27,10 @@ import org.datanucleus.test.BidirectionalChildJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyJDO;
+import org.datanucleus.test.HasOneToManyKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasOneToManyLongPkJDO;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
 import org.easymock.EasyMock;
 
@@ -1060,6 +1063,39 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(0, pojo.getFlights().size());
   }
 
+  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJDO pojo) {
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getFlights().size());
+    commitTxn();
+  }
+
+  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJDO pojo) {
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getFlights().size());
+    commitTxn();
+  }
+
+  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJDO pojo) {
+    pojo.setId("yar");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(0, pojo.getFlights().size());
+    commitTxn();
+  }
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {

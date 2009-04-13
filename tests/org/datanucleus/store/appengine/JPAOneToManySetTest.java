@@ -18,7 +18,10 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildSetJPA;
+import org.datanucleus.test.HasOneToManyKeyPkSetJPA;
+import org.datanucleus.test.HasOneToManyLongPkListJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 
 /**
@@ -78,5 +81,14 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   }
   public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManySetJPA());
+  }
+  public void testFetchOfOneToManyParentWithKeyPk() {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJPA());
+  }
+  public void testFetchOfOneToManyParentWithLongPk() {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+  }
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
   }
 }
