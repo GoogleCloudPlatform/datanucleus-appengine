@@ -480,7 +480,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(bookEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
     assertEquals(
-        bookEntity.getKey(), getDatastoreQuery(q).getDatastoreQuery().getAncestor());
+        bookEntity.getKey(), getDatastoreQuery(q).getLatestDatastoreQuery().getAncestor());
     assertEquals(NO_FILTERS, getFilterPredicates(q));
     assertEquals(NO_SORTS, getSortPredicates(q));
   }
@@ -1426,6 +1426,111 @@ public class JPQLQueryTest extends JPATestCase {
     commitTxn();
   }
 
+  public void testBatchGet_NoTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Entity e1 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e1);
+    Entity e2 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e2);
+    Entity e3 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(2, books.size());
+    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+        books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+    assertTrue(keys.contains(e1.getKey()));
+    assertTrue(keys.contains(e2.getKey()));
+  }
+
+  public void testBatchGet_Count_NoTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Entity e1 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e1);
+    Entity e2 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e2);
+    Entity e3 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    int count = (Integer) q.getSingleResult();
+    assertEquals(2, count);
+  }
+
+  public void testBatchGet_Txn() {
+    Entity e1 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e1);
+    Entity e2 = newBookEntity(e1.getKey(), "title", "auth", "123432", -40);
+    ldth.ds.put(e2);
+    Entity e3 = newBookEntity(null, "title", "auth", "123432", -40);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
+    Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(2, books.size());
+    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+             books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+    assertTrue(keys.contains(e1.getKey()));
+    assertTrue(keys.contains(e2.getKey()));
+  }
+
+  public void testBatchGet_Illegal() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Query q = em.createQuery("select from " + Flight.class.getName() + " where origin = :ids");
+    q.setParameter("ids", Utils.newArrayList());
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+    q = em.createQuery(
+        "select from " + Flight.class.getName() + " where id = :ids and origin = :origin");
+    q.setParameter("ids", Utils.newArrayList());
+    q.setParameter("origin", "bos");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+    q = em.createQuery(
+        "select from " + Flight.class.getName() + " where origin = :origin and id = :ids");
+    q.setParameter("origin", "bos");
+    q.setParameter("ids", Utils.newArrayList());
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+    q = em.createQuery("select from " + Flight.class.getName() + " where id > :ids");
+    q.setParameter("ids", Utils.newArrayList());
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+    q = em.createQuery("select from " + Flight.class.getName() + " where id = :ids order by id");
+    q.setParameter("ids", Utils.newArrayList());
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }
@@ -1503,10 +1608,10 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private List<FilterPredicate> getFilterPredicates(javax.persistence.Query q) {
-    return getDatastoreQuery(q).getDatastoreQuery().getFilterPredicates();
+    return getDatastoreQuery(q).getLatestDatastoreQuery().getFilterPredicates();
   }
 
   private List<SortPredicate> getSortPredicates(javax.persistence.Query q) {
-    return getDatastoreQuery(q).getDatastoreQuery().getSortPredicates();
+    return getDatastoreQuery(q).getLatestDatastoreQuery().getSortPredicates();
   }
 }

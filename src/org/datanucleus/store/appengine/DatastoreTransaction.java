@@ -35,7 +35,7 @@ import java.util.Set;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreTransaction {
+public class DatastoreTransaction {
 
   private final Transaction txn;
 
@@ -79,7 +79,7 @@ class DatastoreTransaction {
     }
   }
 
-  Transaction getInnerTxn() {
+  public Transaction getInnerTxn() {
     return txn;
   }
 

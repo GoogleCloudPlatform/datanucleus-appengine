@@ -111,7 +111,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    commitTxn();
+    if (pm.currentTransaction().isActive()) {
+      commitTxn();
+    }
     super.tearDown();
   }
 
@@ -571,7 +573,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(flightEntity.getKey(), KeyFactory.stringToKey(haList.get(0).getAncestorId()));
 
     assertEquals(
-        flightEntity.getKey(), getDatastoreQuery(q).getDatastoreQuery().getAncestor());
+        flightEntity.getKey(), getDatastoreQuery(q).getLatestDatastoreQuery().getAncestor());
     assertEquals(NO_FILTERS, getFilterPredicates(q));
     assertEquals(NO_SORTS, getSortPredicates(q));
   }
@@ -1635,6 +1637,103 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, flights.size());
   }
 
+  public void testBatchGet_NoTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    assertEquals(2, flights.size());
+    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+        flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+    assertTrue(keys.contains(e1.getKey()));
+    assertTrue(keys.contains(e2.getKey()));
+  }
+
+  public void testBatchGet_Count_NoTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where id == :ids");
+    int count = (Integer) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    assertEquals(2, count);
+  }
+
+  public void testBatchGet_Txn() {
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity(e1.getKey(), "blar", "the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+    assertEquals(2, flights.size());
+    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+        flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+    assertTrue(keys.contains(e1.getKey()));
+    assertTrue(keys.contains(e2.getKey()));
+  }
+
+  public void testBatchGet_Illegal() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :ids");
+    try {
+      q.execute(Utils.newArrayList());
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids && origin == :origin");
+    try {
+      q.execute(Utils.newArrayList(), "bos");
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :origin && id == :ids");
+    try {
+      q.execute("bos", Utils.newArrayList());
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    q = pm.newQuery("select from " + Flight.class.getName() + " where id > :ids");
+    try {
+      q.execute(Utils.newArrayList());
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids order by id");
+    try {
+      q.execute(Utils.newArrayList());
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
@@ -1706,11 +1805,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 }
 
   private List<FilterPredicate> getFilterPredicates(Query q) {
-    return getDatastoreQuery(q).getDatastoreQuery().getFilterPredicates();
+    return getDatastoreQuery(q).getLatestDatastoreQuery().getFilterPredicates();
   }
 
   private List<SortPredicate> getSortPredicates(Query q) {
-    return getDatastoreQuery(q).getDatastoreQuery().getSortPredicates();
+    return getDatastoreQuery(q).getLatestDatastoreQuery().getSortPredicates();
   }
 
   private void assertQuerySupportedWithExplicitParams(String query,

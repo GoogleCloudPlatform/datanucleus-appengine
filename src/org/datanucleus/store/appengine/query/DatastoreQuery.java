@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
+import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
@@ -24,6 +25,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.ShortBlob;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -45,13 +47,13 @@ import org.datanucleus.query.expression.Literal;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.query.expression.ParameterExpression;
 import org.datanucleus.query.expression.PrimaryExpression;
-import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreTable;
+import org.datanucleus.store.appengine.DatastoreTransaction;
 import org.datanucleus.store.appengine.EntityUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
@@ -66,6 +68,7 @@ import org.datanucleus.util.NucleusLogger;
 import java.io.Serializable;
 import java.math.BigDecimal;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -155,7 +158,7 @@ public class DatastoreQuery implements Serializable {
   /**
    * The current datastore query.
    */
-  private transient Query datastoreQuery;
+  private transient Query latestDatastoreQuery;
 
   /**
    * Constructs a new Datastore query based on a Datanucleus query.
@@ -208,22 +211,40 @@ public class DatastoreQuery implements Serializable {
     }
     String kind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-    datastoreQuery = new Query(kind);
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-    addFilters(compilation, parameters, acmd, table);
-    addSorts(compilation, acmd);
-    PreparedQuery preparedQuery =
-        DatastoreServiceFactoryInternal.getDatastoreService().prepare(datastoreQuery);
-    FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-    if (isCountQuery) {
-      return fulfillCountQuery(preparedQuery, opts);
+    QueryData qd =
+        new QueryData(parameters, acmd, table, compilation, new Query(kind));
+    addFilters(qd);
+    addSorts(qd);
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
+
+    if (qd.batchGetKeys != null) {
+      return fulfillBatchGetQuery(ds, qd.batchGetKeys, acmd, clr, isCountQuery);
     } else {
-      return fulfillEntityQuery(
-          preparedQuery, opts, acmd, clr, (DatastoreManager) om.getStoreManager());
+      latestDatastoreQuery = qd.datastoreQuery;
+      PreparedQuery preparedQuery = ds.prepare(qd.datastoreQuery);
+      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      if (isCountQuery) {
+        return fulfillCountQuery(preparedQuery, opts);
+      } else {
+        return fulfillEntityQuery(preparedQuery, opts, acmd, clr);
+      }
     }
   }
 
-  private List<?> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
+  private List<?> fulfillBatchGetQuery(
+      DatastoreService ds, Set<Key> batchGetKeys, AbstractClassMetaData acmd, ClassLoaderResolver clr,
+      boolean isCountQuery) {
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
+    Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
+    Collection<Entity> entities = ds.get(innerTxn, batchGetKeys).values();
+    if (isCountQuery) {
+      return Collections.singletonList(entities.size());
+    }
+    return newStreamingQueryResultForEntities(entities, acmd, clr);
+  }
+
+  private List<Integer> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
     if (opts != null) {
       // TODO(maxr) support count + offset/limit by issuing a non-count
       // query and returning the size of the result set
@@ -237,22 +258,26 @@ public class DatastoreQuery implements Serializable {
   }
 
   private List<?> fulfillEntityQuery(
-      PreparedQuery preparedQuery, FetchOptions opts, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, final DatastoreManager storeMgr) {
+      PreparedQuery preparedQuery, FetchOptions opts, AbstractClassMetaData acmd,
+      ClassLoaderResolver clr) {
     Iterable<Entity> entities;
     if (opts != null) {
       entities = preparedQuery.asIterable(opts);
     } else {
       entities = preparedQuery.asIterable();
     }
+    return newStreamingQueryResultForEntities(entities, acmd, clr);
+  }
 
+  private List<?> newStreamingQueryResultForEntities(
+      Iterable<Entity> entities, final AbstractClassMetaData acmd, final ClassLoaderResolver clr) {
     Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
       public Object apply(Entity entity) {
-        return entityToPojo(entity, acmd, clr, storeMgr);
+        return entityToPojo(entity, acmd, clr, getDatastoreManager());
       }
     };
-    return new StreamingQueryResult(
-        query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
+    return new StreamingQueryResult(query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
+
   }
 
   /**
@@ -291,7 +316,7 @@ public class DatastoreQuery implements Serializable {
         // index of the last result minus the offset.  For example, if
         // fromInclNo is 10 and toExclNo is 25, the limit for the query
         // is 15 because we want 15 results starting after the first 10.
-        
+
         // We know that offset won't be null because opts is not null.
         opts.limit(intExclNo - offset);
       }
@@ -415,8 +440,8 @@ public class DatastoreQuery implements Serializable {
    * Adds sorts to the given {@link Query} by examining the compiled order
    * expression.
    */
-  private void addSorts(QueryCompilation compilation, AbstractClassMetaData acmd) {
-    Expression[] orderBys = compilation.getExprOrdering();
+  private void addSorts(QueryData qd) {
+    Expression[] orderBys = qd.compilation.getExprOrdering();
     if (orderBys == null) {
       return;
     }
@@ -426,9 +451,9 @@ public class DatastoreQuery implements Serializable {
               ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
       PrimaryExpression left = (PrimaryExpression) oe.getLeft();
       AbstractMemberMetaData ammd =
-          getMemberMetaData(acmd, getTuples(left, compilation.getCandidateAlias()));
+          getMemberMetaData(qd.acmd, getTuples(left, qd.compilation.getCandidateAlias()));
       if (ammd == null) {
-        throw noMetaDataException(left.getId(), acmd.getFullClassName());
+        throw noMetaDataException(left.getId(), qd.acmd.getFullClassName());
       }
       if (isParentPK(ammd)) {
         throw new UnsupportedDatastoreFeatureException(
@@ -440,7 +465,11 @@ public class DatastoreQuery implements Serializable {
         } else {
           sortProp = determinePropertyName(ammd);
         }
-        datastoreQuery.addSort(sortProp, dir);
+        if (qd.batchGetKeys != null) {
+          // Can't have any sort orders if doing a batch get
+          throwInvalidBatchLookupException();
+        }
+        qd.datastoreQuery.addSort(sortProp, dir);
       }
     }
   }
@@ -453,11 +482,8 @@ public class DatastoreQuery implements Serializable {
    * Adds filters to the given {@link Query} by examining the compiled filter
    * expression.
    */
-  private void addFilters(QueryCompilation compilation, Map parameters,
-      AbstractClassMetaData acmd, DatastoreTable table) {
-    Expression filter = compilation.getExprFilter();
-    QueryData qd = new QueryData(
-        parameters, acmd, table, compilation.getCandidateAlias(), compilation.getSymbolTable());
+  private void addFilters(QueryData qd) {
+    Expression filter = qd.compilation.getExprFilter();
     addExpression(filter, qd);
   }
 
@@ -468,16 +494,18 @@ public class DatastoreQuery implements Serializable {
     private final Map parameters;
     private final AbstractClassMetaData acmd;
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
-    private final String alias;
-    private final SymbolTable symbolTable;
+    private final QueryCompilation compilation;
+    private final Query datastoreQuery;
+    private Set<Key> batchGetKeys;
 
-    private QueryData(Map parameters, AbstractClassMetaData acmd, DatastoreTable table, String alias,
-                      SymbolTable symbolTable) {
+    private QueryData(
+        Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
+        QueryCompilation compilation, Query datastoreQuery) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
-      this.alias = alias;
-      this.symbolTable = symbolTable;
+      this.compilation = compilation;
+      this.datastoreQuery = datastoreQuery;
     }
   }
 
@@ -577,7 +605,7 @@ public class DatastoreQuery implements Serializable {
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
     }
-    List<String> tuples = getTuples(left, qd.alias);
+    List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
     AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, tuples);
     if (ammd == null) {
       throw noMetaDataException(left.getId(), qd.acmd.getFullClassName());
@@ -586,20 +614,47 @@ public class DatastoreQuery implements Serializable {
     if (mapping instanceof PersistenceCapableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isParentPK(ammd)) {
-      addParentFilter(op, internalPkToKey(qd.acmd, value));
+      addParentFilter(op, internalPkToKey(qd.acmd, value), qd);
     } else {
       String datastorePropName;
       if (ammd.isPrimaryKey()) {
+        if (value instanceof Collection) {
+          // let's handle this as a batch get request
+          if (!qd.datastoreQuery.getFilterPredicates().isEmpty()) {
+            // can only do a batch get if no other filters defined
+            throwInvalidBatchLookupException();
+          } else if (!op.equals(Query.FilterOperator.EQUAL)) {
+            throw new NucleusUserException(
+                "Batch lookup by primary key is only supported with the equality operator.").setFatal();
+          }
+          qd.batchGetKeys = Utils.newHashSet();
+          for (Object obj : (Collection) value) {
+            qd.batchGetKeys.add(internalPkToKey(qd.acmd, obj));
+          }
+          return;
+        }
         datastorePropName = Entity.KEY_RESERVED_PROPERTY;
         value = internalPkToKey(qd.acmd, value);
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
+      if (value instanceof Collection) {
+        throw new NucleusUserException(
+            "Collection parameters are only supported when filtering on primary key.").setFatal();
+      }
+      if (qd.batchGetKeys != null) {
+        // can only do a batch get if no other filters defined
+        throwInvalidBatchLookupException();
+      }
       value = pojoParamToDatastoreParam(value);
-      datastoreQuery.addFilter(datastorePropName, op, value);
+      qd.datastoreQuery.addFilter(datastorePropName, op, value);
     }
   }
 
+  private void throwInvalidBatchLookupException() {
+    throw new NucleusUserException(
+        "Batch lookup by primary key is only supported if no other filters are defined.").setFatal();
+  }
   /**
    * Fetches the tuples of the provided expression, stripping off the first
    * tuple if there are multiple tuples, the table name is aliased, and the
@@ -737,7 +792,7 @@ public class DatastoreQuery implements Serializable {
       if (op != Query.FilterOperator.EQUAL) {
         throw new UnsupportedDatastoreFeatureException(
             "Only the equals operator is supported on conditions involving the owning side of a "
-            + "one-to-one.", query.getSingleStringQuery());        
+            + "one-to-one.", query.getSingleStringQuery());
       }
       if (valueKey.getParent() == null) {
         throw new NucleusUserException(query.getSingleStringQuery() + ": Key of parameter value does "
@@ -746,10 +801,10 @@ public class DatastoreQuery implements Serializable {
 
       // The field is the child side of an owned one to one.  We can just add
       // the parent key to the query as an equality filter on id.
-      datastoreQuery.addFilter(
+      qd.datastoreQuery.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else {
-      addParentFilter(op, valueKey);
+      addParentFilter(op, valueKey, qd);
     }
   }
 
@@ -809,7 +864,7 @@ public class DatastoreQuery implements Serializable {
     return key;
   }
 
-  private void addParentFilter(Query.FilterOperator op, Key key) {
+  private void addParentFilter(Query.FilterOperator op, Key key, QueryData qd) {
     // We only support queries on parent if it is an equality filter.
     if (op != Query.FilterOperator.EQUAL) {
       throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
@@ -817,7 +872,7 @@ public class DatastoreQuery implements Serializable {
           query.getSingleStringQuery());
     }
     // value must be String or Key
-    datastoreQuery.setAncestor(key);
+    qd.datastoreQuery.setAncestor(key);
   }
 
   private void checkForUnsupportedOperator(Expression.Operator operator) {
@@ -832,12 +887,16 @@ public class DatastoreQuery implements Serializable {
   }
 
   // Exposed for tests
-  Query getDatastoreQuery() {
-    return datastoreQuery;
+  Query getLatestDatastoreQuery() {
+    return latestDatastoreQuery;
   }
 
   private ObjectManager getObjectManager() {
     return query.getObjectManager();
+  }
+
+  private DatastoreManager getDatastoreManager() {
+    return (DatastoreManager) getObjectManager().getStoreManager();
   }
 
   private MetaDataManager getMetaDataManager() {
