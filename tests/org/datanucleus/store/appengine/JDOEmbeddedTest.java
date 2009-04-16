@@ -17,10 +17,10 @@
 
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.KeyFactory;
-
-import org.datanucleus.test.HasEmbeddedJDO;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasEmbeddedJDO;
+import org.datanucleus.test.HasEmbeddedWithKeyPkJDO;
+import org.datanucleus.test.HasKeyPkJDO;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -46,8 +46,50 @@ public class JDOEmbeddedTest extends JDOTestCase {
     pojo = pm.getObjectById(HasEmbeddedJDO.class, pojo.getId());
     assertNotNull(pojo.getFlight());
     // wild
-    assertEquals(
-        TestUtils.createKey(pojo, pojo.getId()), KeyFactory.stringToKey(pojo.getFlight().getId()));
+    assertNull(pojo.getFlight().getId());
+    commitTxn();
+  }
+
+  public void testEmbeddedWithKeyPk_NullEmbedded() {
+    HasEmbeddedWithKeyPkJDO pojo = new HasEmbeddedWithKeyPkJDO();
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());
+    assertNotNull(pojo.getEmbedded());
+    commitTxn();
+  }
+
+  public void testEmbeddedWithKeyPk_NotNullEmbedded() {
+    HasEmbeddedWithKeyPkJDO pojo = new HasEmbeddedWithKeyPkJDO();
+    HasKeyPkJDO embedded = new HasKeyPkJDO();
+    embedded.setStr("yar");
+    pojo.setEmbedded(embedded);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());
+    assertNotNull(pojo.getEmbedded());
+    assertEquals("yar", pojo.getEmbedded().getStr());
+    commitTxn();
+  }
+
+  public void testEmbeddedWithKeyPk_AddEmbeddedToExistingParent() {
+    HasEmbeddedWithKeyPkJDO pojo = new HasEmbeddedWithKeyPkJDO();
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    HasKeyPkJDO embedded = new HasKeyPkJDO();
+    embedded.setStr("yar");
+    beginTxn();
+    pojo.setEmbedded(embedded);
+    pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());
+    pojo.setEmbedded(embedded);
     commitTxn();
   }
 }

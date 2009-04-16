@@ -125,7 +125,7 @@ public class DatastoreFieldManager implements FieldManager {
         return getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
       }
     };
-    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider));
+    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider, false));
     this.createdWithoutEntity = createdWithoutEntity;
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
@@ -361,7 +361,7 @@ public class DatastoreFieldManager implements FieldManager {
   private Object fetchEmbeddedField(AbstractMemberMetaData ammd) {
     StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, null);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.replaceFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
@@ -777,7 +777,7 @@ public class DatastoreFieldManager implements FieldManager {
   private void storeEmbeddedField(AbstractMemberMetaData ammd, Object value) {
     StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, value);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider));
+    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
     embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
@@ -850,6 +850,10 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private boolean isPK(int fieldNumber) {
+    // ignore the pk annotations if this object is embedded
+    if (fieldManagerStateStack.getFirst().isEmbedded) {
+      return false;
+    }
     int[] pkPositions = getClassMetaData().getPKMemberPositions();
     // Assumes that if we have a pk we only have a single field pk
     return pkPositions != null && pkPositions[0] == fieldNumber;
@@ -970,11 +974,14 @@ public class DatastoreFieldManager implements FieldManager {
   private static final class FieldManagerState {
     private final StateManager stateManager;
     private final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
+    private final boolean isEmbedded;
 
     private FieldManagerState(StateManager stateManager,
-        AbstractMemberMetaDataProvider abstractMemberMetaDataProvider) {
+        AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,
+        boolean isEmbedded) {
       this.stateManager = stateManager;
       this.abstractMemberMetaDataProvider = abstractMemberMetaDataProvider;
+      this.isEmbedded = isEmbedded;
     }
   }
 

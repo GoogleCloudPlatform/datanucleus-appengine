@@ -93,6 +93,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
     DatastoreProperty prop;
     ColumnMetaData[] colmds;
     if (columnContainer != null
+        && columnContainer.getColumnMetaData() != null
         && columnContainer.getColumnMetaData().length > datastoreFieldIndex) {
       colmd = columnContainer.getColumnMetaData()[datastoreFieldIndex];
       colmds = columnContainer.getColumnMetaData();
