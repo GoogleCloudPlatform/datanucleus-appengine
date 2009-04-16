@@ -739,6 +739,31 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     commitTxn();
   }
 
+  void testAddChildToOneToManyParentWithLongPk(HasOneToManyLongPkJPA pojo) {
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    Book b = new Book();
+    pojo.getBooks().add(b);
+    commitTxn();
+  }
+
+  void testAddChildToOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJPA pojo) {
+    pojo.setId("yar");
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    Book b = new Book();
+    pojo.getBooks().add(b);
+    commitTxn();
+  }
+
   int countForClass(Class<?> clazz) {
     return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
   }

@@ -304,34 +304,18 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    * Get the primary key of the object associated with the provided
    * state manager.  Can return {@code null}.
    */
-  private Object getPk(StateManager sm) {
+  private static Object getPk(StateManager sm) {
     return sm.getObjectManager().getApiAdapter()
         .getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
   }
 
-  private Key getPkAsKey(StateManager sm) {
+  private static Key getPkAsKey(StateManager sm) {
     Object pk = getPk(sm);
     if (pk == null) {
       throw new IllegalStateException(
           "Primary key for object of type " + sm.getClassMetaData().getName() + " is null.");
-    } else if (pk instanceof Key) {
-      return (Key) pk;
-    } else if (pk instanceof String) {
-      if (storeMgr.hasEncodedPKField(sm.getClassMetaData())) {
-        return KeyFactory.stringToKey((String) pk);
-      } else {
-        String kind = EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
-        return KeyFactory.createKey(kind, (String) pk);
-      }
-    } else if (pk instanceof Long) {
-      String kind = EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
-      return KeyFactory.createKey(kind, (Long) pk);
-    } else {
-      throw new IllegalStateException(
-          "Primary key for object of type " + sm.getClassMetaData().getName()
-              + " is of unexpected type " + pk.getClass().getName()
-              + " (must be String, Long, or " + Key.class.getName() + ")");
     }
+    return EntityUtils.getPkAsKey(pk, sm.getClassMetaData(), sm.getObjectManager());
   }
 
   public void setAssociatedEntity(StateManager sm, DatastoreTransaction txn, Entity entity) {

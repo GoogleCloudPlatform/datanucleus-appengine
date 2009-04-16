@@ -341,7 +341,15 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
   public void testFetchOfOneToManyParentWithUnencodedStringPk() {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
   }
-  
+
+  public void testAddChildToOneToManyParentWithLongPk() {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkListJDO());
+  }
+
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
+    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return true;

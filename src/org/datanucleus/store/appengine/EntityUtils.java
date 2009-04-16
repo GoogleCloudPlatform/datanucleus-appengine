@@ -124,9 +124,8 @@ public final class EntityUtils {
   }
 
   // broken out for testing
-  static Object idToInternalKey(String kind, AbstractMemberMetaData pkMemberMetaData,
-                                      Class<?> cls, Object val) {
-
+  static Object idToInternalKey(
+      String kind, AbstractMemberMetaData pkMemberMetaData,Class<?> cls, Object val) {
     Object result = null;
     Class<?> pkType = pkMemberMetaData.getType();
     if (val instanceof String) {
@@ -144,6 +143,30 @@ public final class EntityUtils {
           + cls.getName() + ".").setFatal();
     }
     return result;
+  }
+
+  static Key getPkAsKey(Object pk, AbstractClassMetaData acmd, ObjectManager om) {
+    if (pk == null) {
+      throw new IllegalStateException(
+          "Primary key for object of type " + acmd.getName() + " is null.");
+    } else if (pk instanceof Key) {
+      return (Key) pk;
+    } else if (pk instanceof String) {
+      if (DatastoreManager.hasEncodedPKField(acmd)) {
+        return KeyFactory.stringToKey((String) pk);
+      } else {
+        String kind = EntityUtils.determineKind(acmd, om);
+        return KeyFactory.createKey(kind, (String) pk);
+      }
+    } else if (pk instanceof Long) {
+      String kind = EntityUtils.determineKind(acmd, om);
+      return KeyFactory.createKey(kind, (Long) pk);
+    } else {
+      throw new IllegalStateException(
+          "Primary key for object of type " + acmd.getName()
+              + " is of unexpected type " + pk.getClass().getName()
+              + " (must be String, Long, or " + Key.class.getName() + ")");
+    }
   }
 
   // TODO(maxr): This method is generally useful.  Consider making it public

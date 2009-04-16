@@ -534,4 +534,12 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
   }
 
+  public void testAddChildToOneToManyParentWithLongPk() {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+  }
+
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
+    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
+  }
+
 }

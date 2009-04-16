@@ -19,9 +19,9 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 
 import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.HasOneToManyKeyPkSetJPA;
-import org.datanucleus.test.HasOneToManyLongPkListJPA;
+import org.datanucleus.test.HasOneToManyLongPkSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
-import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
+import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 
 /**
@@ -86,9 +86,16 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
     testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJPA());
   }
   public void testFetchOfOneToManyParentWithLongPk() {
-    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA());
   }
   public void testFetchOfOneToManyParentWithUnencodedStringPk() {
-    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
   }
+  public void testAddChildToOneToManyParentWithLongPk() {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA());
+  }
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
+    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
+  }
+
 }

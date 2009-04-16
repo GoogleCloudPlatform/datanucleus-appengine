@@ -1097,6 +1097,31 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     commitTxn();
   }
 
+  void testAddChildToOneToManyParentWithLongPk(HasOneToManyLongPkJDO pojo) {
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    Flight f = new Flight();
+    pojo.addFlight(f);
+    commitTxn();
+  }
+
+  void testAddChildToOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJDO pojo) {
+    pojo.setId("yar");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    Flight f = new Flight();
+    pojo.addFlight(f);
+    commitTxn();
+  }
+
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {
 //

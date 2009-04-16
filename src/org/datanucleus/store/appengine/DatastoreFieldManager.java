@@ -559,11 +559,13 @@ public class DatastoreFieldManager implements FieldManager {
     return null;
   }
 
-  private Key getIdForObject(Object pc) {
+  private Key getKeyForObject(Object pc) {
     ApiAdapter adapter = getStoreManager().getOMFContext().getApiAdapter();
-    Object keyOrString = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
-    return keyOrString instanceof Key ?
-           (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
+    Object internalPk = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
+    ObjectManager om = getObjectManager();
+    AbstractClassMetaData acmd =
+        om.getMetaDataManager().getMetaDataForClass(pc.getClass(), getClassLoaderResolver());
+    return EntityUtils.getPkAsKey(internalPk, acmd, om);
   }
 
   private Key getParentKeyFromParentField(StateManager sm) {
@@ -572,7 +574,7 @@ public class DatastoreFieldManager implements FieldManager {
       return null;
     }
     Object parent = sm.provideField(parentField.getAbsoluteFieldNumber());
-    return parent == null ? null : getIdForObject(parent);
+    return parent == null ? null : getKeyForObject(parent);
   }
 
   private Key getParentKeyFromExternalFKMappings(StateManager sm) {
@@ -586,7 +588,7 @@ public class DatastoreFieldManager implements FieldManager {
     for (JavaTypeMapping fkMapping : externalFKMappings) {
       Object fkValue = sm.getAssociatedValue(fkMapping);
       if (fkValue != null) {
-        return getIdForObject(fkValue);
+        return getKeyForObject(fkValue);
       }
     }
     return null;
