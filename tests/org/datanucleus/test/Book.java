@@ -25,11 +25,13 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.NamedQuery;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 @Entity
+@NamedQuery(name="namedQuery", query = "SELECT from org.datanucleus.test.Book where title = 'yam'")
 public class Book {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)

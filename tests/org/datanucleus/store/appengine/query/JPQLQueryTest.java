@@ -1531,6 +1531,18 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testNamedQuery() {
+    // need to persist an instance to force the metadata to load.
+    // TODO(maxr) Remove this when we upgrade to DataNuc 1.1.2
+    Book b = new Book();
+    b.setTitle("yam");
+    beginTxn();
+    em.persist(b);
+    commitTxn();
+    Query q = em.createNamedQuery("namedQuery");
+    assertEquals(b, q.getResultList().get(0));
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }
