@@ -17,7 +17,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
@@ -26,7 +25,6 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -341,22 +339,22 @@ class DatastoreRelationFieldManager {
     // the parent entity's key as their parent.  There should be only 1.
     Query q = new Query(kind, parentEntity.getKey());
     DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService();
-    List<Entity> results = datastoreService.prepare(q).asList(withLimit(2));
-    Object value;
-    if (results.size() > 1) {
-      throw new NucleusDataStoreException(ammd.getFullFieldName() + " is mapped as a 1 to 1 "
-                                          + "relationship but there is more than one enity "
-                                          + "of kind " + kind + " that is a child of "
-                                          + parentEntity.getKey());
-    } else if (results.isEmpty()) {
-      value = null;
-    } else {
-      // Exactly one result
-      value = DatastoreQuery.entityToPojo(
-          results.get(0), childClassMetaData, clr, getStoreManager(), om, false);
+    // We have to pull back all children because the datastore does not let us
+    // filter ancestors by depth and an indirect child could come back before a
+    // direct child.  eg:
+    // a/b/c
+    // a/c
+    for (Entity e : datastoreService.prepare(q).asIterable()) {
+      if (parentEntity.getKey().equals(e.getKey().getParent())) {
+        // TODO(maxr) Figure out how to hook this up to a StateManager!
+        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, getStoreManager(), om, false);
+        // We are potentially ignoring data errors where there is more than one
+        // direct child for the one to one.  Unfortunately, in order to detect
+        // this we need to read all the way to the end of the Iterable and that
+        // might pull back a lot more data than is really necessary.
+      }
     }
-    // TODO(maxr) Figure out how to hook this up to a StateManager!
-    return value;
+    return null;
   }
 
   private StateManager getStateManager() {

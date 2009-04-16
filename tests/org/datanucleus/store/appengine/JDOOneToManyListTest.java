@@ -26,6 +26,7 @@ import org.datanucleus.test.BidirectionalChildListStringPkJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
+import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJDO;
 import org.datanucleus.test.HasOneToManyKeyPkListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToManyListLongPkJDO;
@@ -348,6 +349,28 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testAddChildToOneToManyParentWithUnencodedStringPk() {
     testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
+  }
+
+  public void testOneToManyChildAtMultipleLevels() {
+    HasOneToManyChildAtMultipleLevelsJDO pojo = new HasOneToManyChildAtMultipleLevelsJDO();
+    Flight f1 = new Flight();
+    pojo.setFlights(Utils.newArrayList(f1));
+    HasOneToManyChildAtMultipleLevelsJDO child = new HasOneToManyChildAtMultipleLevelsJDO();
+    Flight f2 = new Flight();
+    child.setFlights(Utils.newArrayList(f2));
+    pojo.setChild(child);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    assertEquals(2, countForClass(Flight.class));
+    pojo = pm.getObjectById(HasOneToManyChildAtMultipleLevelsJDO.class, pojo.getId());
+    assertEquals(child.getId(), pojo.getChild().getId());
+    assertEquals(1, pojo.getFlights().size());
+    assertEquals(pojo.getFlights().get(0), f1);
+    assertEquals(child.getFlights().get(0), f2);
+    assertEquals(1, child.getFlights().size());
+    commitTxn();
   }
 
   @Override

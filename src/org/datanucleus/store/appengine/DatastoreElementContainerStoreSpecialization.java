@@ -104,10 +104,13 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
     List<Object> result = new ArrayList<Object>();
     int numChildren = 0;
     for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, ecs).asIterable()) {
-      numChildren++;
-      result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false));
-      if (logger.isDebugEnabled()) {
-        logger.debug("Retrieved entity with key " + e.getKey());
+      // We only want direct children
+      if (parentKey.equals(e.getKey().getParent())) {
+        numChildren++;
+        result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false));
+        if (logger.isDebugEnabled()) {
+          logger.debug("Retrieved entity with key " + e.getKey());
+        }
       }
     }
     logger.debug(String.format("Query had %d result%s.", numChildren, numChildren == 1 ? "" : "s"));
@@ -115,11 +118,18 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
   }
 
   int getNumChildren(Key parentKey, ElementContainerStore ecs) {
-    return prepareChildrenQuery(
+    Iterable<Entity> children = prepareChildrenQuery(
         parentKey,
         Collections.<FilterPredicate>emptyList(),
         Collections.<SortPredicate>emptyList(),
-        ecs).countEntities();
+        ecs).asIterable();
+    int count = 0;
+    for (Entity e : children) {
+      if (parentKey.equals(e.getKey().getParent())) {
+        count++;
+      }
+    }
+    return count;
   }
 
   public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,

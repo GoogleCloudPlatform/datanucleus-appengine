@@ -27,6 +27,7 @@ import org.datanucleus.test.BidirectionalChildListStringPkJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
+import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJPA;
 import org.datanucleus.test.HasOneToManyKeyPkListJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyListLongPkJPA;
@@ -540,6 +541,28 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
 
   public void testAddChildToOneToManyParentWithUnencodedStringPk() {
     testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
+  }
+
+  public void testOneToManyChildAtMultipleLevels() {
+    HasOneToManyChildAtMultipleLevelsJPA pojo = new HasOneToManyChildAtMultipleLevelsJPA();
+    Book b1 = new Book();
+    pojo.setBooks(Utils.newArrayList(b1));
+    HasOneToManyChildAtMultipleLevelsJPA child = new HasOneToManyChildAtMultipleLevelsJPA();
+    Book b2 = new Book();
+    child.setBooks(Utils.newArrayList(b2));
+    pojo.setChild(child);
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    beginTxn();
+    assertEquals(2, countForClass(Book.class));
+    pojo = em.find(HasOneToManyChildAtMultipleLevelsJPA.class, pojo.getId());
+    assertEquals(child.getId(), pojo.getChild().getId());
+    assertEquals(1, pojo.getBooks().size());
+    assertEquals(pojo.getBooks().get(0), b1);
+    assertEquals(child.getBooks().get(0), b2);
+    assertEquals(1, child.getBooks().size());
+    commitTxn();
   }
 
 }

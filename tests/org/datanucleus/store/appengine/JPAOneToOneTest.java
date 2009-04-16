@@ -26,6 +26,7 @@ import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasOneToOneChildAtMultipleLevelsJPA;
 import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneLongPkJPA;
 import org.datanucleus.test.HasOneToOneLongPkParentJPA;
@@ -763,6 +764,24 @@ public class JPAOneToOneTest extends JPATestCase {
     em = emf.createEntityManager();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertNull(pojo.getBook());
+  }
+
+  public void testChildAtMultipleLevels() {
+    HasOneToOneChildAtMultipleLevelsJPA pojo = new HasOneToOneChildAtMultipleLevelsJPA();
+    Book b1 = new Book();
+    pojo.setBook(b1);
+    HasOneToOneChildAtMultipleLevelsJPA child = new HasOneToOneChildAtMultipleLevelsJPA();
+    Book b2 = new Book();
+    child.setBook(b2);
+    pojo.setChild(child);
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = em.find(HasOneToOneChildAtMultipleLevelsJPA.class, pojo.getId());
+    assertEquals(child.getId(), pojo.getChild().getId());
+    assertEquals(child.getBook(), b2);
+    commitTxn();
   }
 
   private Book newBook() {

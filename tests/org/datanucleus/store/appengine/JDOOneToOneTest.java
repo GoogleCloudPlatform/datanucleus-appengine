@@ -25,6 +25,7 @@ import com.google.appengine.api.datastore.Transaction;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
+import org.datanucleus.test.HasOneToOneChildAtMultipleLevelsJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasOneToOneLongPkJDO;
 import org.datanucleus.test.HasOneToOneLongPkParentJDO;
@@ -784,6 +785,24 @@ public class JDOOneToOneTest extends JDOTestCase {
     pm = pmf.getPersistenceManager();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertNull(pojo.getFlight());
+  }
+
+  public void testChildAtMultipleLevels() {
+    HasOneToOneChildAtMultipleLevelsJDO pojo = new HasOneToOneChildAtMultipleLevelsJDO();
+    Flight f1 = new Flight();
+    pojo.setFlight(f1);
+    HasOneToOneChildAtMultipleLevelsJDO child = new HasOneToOneChildAtMultipleLevelsJDO();
+    Flight f2 = new Flight();
+    child.setFlight(f2);
+    pojo.setChild(child);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = pm.getObjectById(HasOneToOneChildAtMultipleLevelsJDO.class, pojo.getId());
+    assertEquals(child.getId(), pojo.getChild().getId());
+    assertEquals(child.getFlight(), f2);
+    commitTxn();
   }
 
   private Flight newFlight() {
