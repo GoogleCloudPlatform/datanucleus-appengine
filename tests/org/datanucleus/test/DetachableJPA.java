@@ -20,26 +20,23 @@ package org.datanucleus.test;
 import java.io.Serializable;
 import java.util.Date;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
-public class DetachableJDO implements Serializable {
+@Entity
+public class DetachableJPA implements Serializable {
 
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)      
+  @Id
+  @GeneratedValue(strategy= GenerationType.IDENTITY)
   Long id;
 
-  @Persistent
   String val;
 
-  @Persistent
   Date date;
 
   public Long getId() {

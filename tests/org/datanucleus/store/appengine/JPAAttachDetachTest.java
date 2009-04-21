@@ -22,7 +22,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.BidirectionalChildListJPA;
-import org.datanucleus.test.DetachableJDO;
+import org.datanucleus.test.DetachableJPA;
 import org.datanucleus.test.DetachableWithMultiValuePropsJDO;
 import org.datanucleus.test.HasOneToManyListJPA;
 
@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import javax.jdo.JDOHelper;
@@ -56,8 +57,10 @@ public class JPAAttachDetachTest extends JPATestCase {
   public void testSimpleSerializeWithTxns()
       throws IOException, ClassNotFoundException, EntityNotFoundException {
     beginTxn();
-    DetachableJDO pojo = new DetachableJDO();
+    DetachableJPA pojo = new DetachableJPA();
     pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
     em.persist(pojo);
     commitTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
@@ -69,23 +72,29 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo = toBytesAndBack(pojo);
 
     assertEquals("yar", pojo.getVal());
+    assertEquals(now, pojo.getDate());
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     beginTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.setVal("not yar");
+    Date differentNow = new Date(now.getTime() + 1);
+    pojo.setDate(differentNow);
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     pojo = em.merge(pojo);
     assertEquals(ObjectState.PERSISTENT_DIRTY, JDOHelper.getObjectState(pojo));
     commitTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
-    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJPA.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
+    assertEquals(differentNow, e.getProperty("date"));
   }
 
   public void testSimpleSerializeWithoutTxns() throws Exception {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
-    DetachableJDO pojo = new DetachableJDO();
+    DetachableJPA pojo = new DetachableJPA();
     pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
     em.persist(pojo);
     assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
     em.close();
@@ -98,11 +107,14 @@ public class JPAAttachDetachTest extends JPATestCase {
     assertEquals("yar", pojo.getVal());
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.setVal("not yar");
+    Date differentNow = new Date(now.getTime() + 1);
+    pojo.setDate(differentNow);
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     em.merge(pojo);
     em.close();
-    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJPA.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
+    assertEquals(differentNow, e.getProperty("date"));
   }
 
   public void testSerializeWithMultiValueProps() throws Exception {

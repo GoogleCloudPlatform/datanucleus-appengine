@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.Serializable;
+import java.util.Date;
 import java.util.List;
 
 import javax.jdo.JDOHelper;
@@ -59,6 +60,8 @@ public class JDOAttachDetachTest extends JDOTestCase {
     beginTxn();
     DetachableJDO pojo = new DetachableJDO();
     pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
     pm.makePersistent(pojo);
     commitTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
@@ -70,15 +73,19 @@ public class JDOAttachDetachTest extends JDOTestCase {
     pojo = toBytesAndBack(pojo);
 
     assertEquals("yar", pojo.getVal());
+    assertEquals(now, pojo.getDate());
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     beginTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.setVal("not yar");
+    Date newDate = new Date(pojo.getDate().getTime() + 1);
+    pojo.getDate().setTime(newDate.getTime());
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     pm.makePersistent(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
+    assertEquals(newDate, e.getProperty("date"));
   }
 
   public void testSimpleSerializeWithoutTxns() throws Exception {
@@ -86,6 +93,8 @@ public class JDOAttachDetachTest extends JDOTestCase {
     pm.setDetachAllOnCommit(true);
     DetachableJDO pojo = new DetachableJDO();
     pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
     pm.makePersistent(pojo);
     assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
     pm.close();
@@ -98,11 +107,14 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals("yar", pojo.getVal());
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.setVal("not yar");
+    Date newDate = new Date(pojo.getDate().getTime() + 1);
+    pojo.getDate().setTime(newDate.getTime());
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     pm.makePersistent(pojo);
     pm.close();
     Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
+    assertEquals(newDate, e.getProperty("date"));
   }
 
   public void testSerializeWithMultiValueProps() throws Exception {

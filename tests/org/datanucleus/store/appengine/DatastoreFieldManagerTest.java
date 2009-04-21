@@ -281,6 +281,11 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
       ClassLoaderResolver getClassLoaderResolver() {
         return clr;
       }
+
+      @Override
+      Object unwrapSCOField(int fieldNumber, Object value) {
+        return value;
+      }
     };
     FieldPositionIterator iter = new FieldPositionIterator(acmd);
     // skip the key field because storing it doesn't do anything

@@ -750,9 +750,16 @@ public class DatastoreFieldManager implements FieldManager {
         relationFieldManager.storeRelationField(
             getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
       } else {
+        // unwrap SCO values so that the datastore api doesn't
+        // honk on unknown types
+        value = unwrapSCOField(fieldNumber, value);
         datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
       }
     }
+  }
+
+  Object unwrapSCOField(int fieldNumber, Object value) {
+    return getStateManager().unwrapSCOField(fieldNumber, value, false);
   }
 
   /**
