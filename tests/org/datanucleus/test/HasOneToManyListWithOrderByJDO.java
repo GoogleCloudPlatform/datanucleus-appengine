@@ -49,6 +49,9 @@ public class HasOneToManyListWithOrderByJDO implements HasOneToManyWithOrderByJD
   @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="origin DESC, id ASC"))
   private List<Flight> flightsByOrigAndId = new ArrayList<Flight>();
 
+  @Order(mappedBy="index")
+  private List<HasExplicitIndexColumnJDO> hasIndexColumn = new ArrayList<HasExplicitIndexColumnJDO>();
+
   public Long getId() {
     return id;
   }
@@ -63,5 +66,9 @@ public class HasOneToManyListWithOrderByJDO implements HasOneToManyWithOrderByJD
 
   public List<Flight> getFlightsByOrigAndId() {
     return flightsByOrigAndId;
+  }
+
+  public List<HasExplicitIndexColumnJDO> getHasIndexColumn() {
+    return hasIndexColumn;
   }
 }

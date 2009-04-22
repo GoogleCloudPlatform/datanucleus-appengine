@@ -25,6 +25,7 @@ import com.google.appengine.api.datastore.Transaction;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildJDO;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasExplicitIndexColumnJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyJDO;
 import org.datanucleus.test.HasOneToManyKeyPkJDO;
@@ -750,6 +751,21 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     flightEntity3.setProperty("flightsByOrigAndId_INTEGER_IDX", 2);
     ldth.ds.put(flightEntity3);
 
+    Entity explicitIndexEntity1 =
+        new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
+    explicitIndexEntity1.setProperty("index", 3);
+    ldth.ds.put(explicitIndexEntity1);
+
+    Entity explicitIndexEntity2 =
+        new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
+    explicitIndexEntity2.setProperty("index", 2);
+    ldth.ds.put(explicitIndexEntity2);
+
+    Entity explicitIndexEntity3 =
+        new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
+    explicitIndexEntity3.setProperty("index", 1);
+    ldth.ds.put(explicitIndexEntity3);
+
     beginTxn();
     HasOneToManyWithOrderByJDO pojo = pm.getObjectById(
         pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -771,6 +787,12 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("name 2", pojo.getFlightsByOrigAndId().get(0).getName());
     assertEquals("name 1", pojo.getFlightsByOrigAndId().get(1).getName());
     assertEquals("name 0", pojo.getFlightsByOrigAndId().get(2).getName());
+
+    assertNotNull(pojo.getHasIndexColumn());
+    assertEquals(3, pojo.getHasIndexColumn().size());
+    assertEquals(explicitIndexEntity3.getKey(), pojo.getHasIndexColumn().get(0).getId());
+    assertEquals(explicitIndexEntity2.getKey(), pojo.getHasIndexColumn().get(1).getId());
+    assertEquals(explicitIndexEntity1.getKey(), pojo.getHasIndexColumn().get(2).getId());
 
     commitTxn();
   }

@@ -35,6 +35,7 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
@@ -920,14 +921,16 @@ public class DatastoreFieldManager implements FieldManager {
     Set<JavaTypeMapping> orderMappings = insertMappingConsumer.getExternalOrderMappings();
     boolean delayWrite = false;
     for (JavaTypeMapping orderMapping : orderMappings) {
-      delayWrite = true;
-      // DataNucleus hides the value in the state mamanger, keyed by the
-      // mapping for the order field.
-      Object orderValue = getStateManager().getAssociatedValue(orderMapping);
-      if (orderValue != null) {
-        // We got a value!  Set it on the entity.
-        delayWrite = false;
-        orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
+      if (orderMapping instanceof IndexMapping) {
+        delayWrite = true;
+        // DataNucleus hides the value in the state mamanger, keyed by the
+        // mapping for the order field.
+        Object orderValue = getStateManager().getAssociatedValue(orderMapping);
+        if (orderValue != null) {
+          // We got a value!  Set it on the entity.
+          delayWrite = false;
+          orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
+        }
       }
     }
     return delayWrite;

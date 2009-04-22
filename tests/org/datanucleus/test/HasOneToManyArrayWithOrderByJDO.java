@@ -75,4 +75,8 @@ public class HasOneToManyArrayWithOrderByJDO implements HasOneToManyWithOrderByJ
   public List<Flight> getFlightsByOrigAndId() {
     return asList(flightsByOrigAndId);
   }
+
+  public List<HasExplicitIndexColumnJDO> getHasIndexColumn() {
+    throw new UnsupportedOperationException();
+  }
 }
