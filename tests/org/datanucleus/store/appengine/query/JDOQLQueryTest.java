@@ -953,7 +953,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       pm.newQuery(
           "select from " + HasOneToOneJDO.class.getName() + " where flight.origin == \"max\"").execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }
@@ -1042,7 +1042,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       pm.newQuery("select from " + Flight.class.getName() + " order by origin.first").execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }
@@ -1051,7 +1051,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " order by flight.origin").execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }
@@ -1199,7 +1199,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       pm.newQuery("select from " + Flight.class.getName() + " order by dne").execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }
@@ -1335,11 +1335,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
     JDOQLQuery q = new JDOQLQuery(om, "select from " + Flight.class.getName());
     assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
-  }
-
-  public void testPrimaryResultExpression() {
-    Query q = pm.newQuery("select f from " + Flight.class.getName() + " where you == 23");
-    q.execute();
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
@@ -1732,6 +1727,150 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (JDOFatalUserException e) {
       // good
     }
+  }
+
+  public void testRestrictFetchedFields_UnknownField() {
+    Query q = pm.newQuery("select dne from " + Flight.class.getName());
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+  }
+
+  public void testRestrictFetchedFields_OneField() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select origin from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<String> origins = (List<String>) q.execute();
+    assertEquals(1, origins.size());
+    assertEquals("bos", origins.get(0));
+
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<String> origins2 = (List<String>) q.execute();
+    assertEquals(2, origins2.size());
+    assertEquals("bos", origins2.get(0));
+    assertEquals("lax", origins2.get(1));
+
+    q = pm.newQuery("select id from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<String> ids = (List<String>) q.execute();
+    assertEquals(2, ids.size());
+    assertEquals(KeyFactory.keyToString(e1.getKey()), ids.get(0));
+    assertEquals(KeyFactory.keyToString(e2.getKey()), ids.get(1));
+  }
+
+  public void testRestrictFetchedFields_TwoFields() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select origin, dest from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals("bos", results.get(0)[0]);
+    assertEquals("mia", results.get(0)[1]);
+
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.execute();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals("bos", results2.get(0)[0]);
+    assertEquals("mia", results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals("lax", results2.get(1)[0]);
+    assertNull(results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_OneToOne() {
+    Entity e1 = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity(e1.getKey(), "key name", "jimmy", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select id, flight from " + HasOneToOneJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[0]);
+    Flight f = pm.getObjectById(Flight.class, e2.getKey());
+    assertEquals(f, results.get(0)[1]);
+  }
+
+  public void testRestrictFetchedFields_OneToMany() {
+    Entity e1 = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity(e1.getKey(), "key name", "jimmy", "bos", "mia", 23, 24, 25);
+    e2.setProperty("flights_INTEGER_IDX", 0);
+    ldth.ds.put(e2);
+    Query q = pm.newQuery("select id, flights from " + HasOneToManyListJDO.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[0]);
+    Flight f = pm.getObjectById(Flight.class, e2.getKey());
+    List<Flight> flights = (List<Flight>) results.get(0)[1];
+    assertEquals(1, flights.size());
+    assertEquals(f, flights.get(0));
+  }
+
+  public void testRestrictFetchedFields_AliasedField() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select this.origin from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<String> origins = (List<String>) q.execute();
+    assertEquals(1, origins.size());
+    assertEquals("bos", origins.get(0));
+  }
+
+  public void testRestrictFetchedFieldsAndCount() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select count(id), origin from " + Flight.class.getName());
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
+      // good
+    }
+
+    q = pm.newQuery("select origin, count(id) from " + Flight.class.getName());
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
+      // good
+    }
+  }
+
+  public void testRestrictFetchedFields_EmbeddedField() {
+    Entity entity = new Entity(Person.class.getSimpleName());
+    entity.setProperty("first", "max");
+    entity.setProperty("last", "ross");
+    entity.setProperty("anotherFirst", "notmax");
+    entity.setProperty("anotherLast", "notross");
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery("select name.first, anotherName.last from " + Person.class.getName());
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (UnsupportedOperationException e) {
+      // this will start to fail once we add support for selecting embedded fields
+    }
+//    @SuppressWarnings("unchecked")
+//    List<Object[]> result = (List<Object[]>) q.execute();
+//    assertEquals(1, result.size());
   }
 
   private void assertQueryUnsupportedByOrm(

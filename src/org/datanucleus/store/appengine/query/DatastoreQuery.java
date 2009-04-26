@@ -33,6 +33,7 @@ import org.datanucleus.FetchPlan;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -191,12 +192,13 @@ public class DatastoreQuery implements Serializable {
         getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     if (acmd == null) {
       throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
-          + ".  Perhaps you need to run the enhancer on this class?");
+          + ".  Perhaps you need to run the enhancer on this class?").setFatal();
     }
 
     storeMgr.validateMetaDataForClass(acmd, clr);
 
-    boolean isCountQuery = validate(compilation);
+    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
+    QueryData qd = validate(compilation, parameters, acmd, table, clr);
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
@@ -209,39 +211,32 @@ public class DatastoreQuery implements Serializable {
       // short-circuit - no point in executing the query
       return Collections.emptyList();
     }
-    String kind =
-        getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-    QueryData qd =
-        new QueryData(parameters, acmd, table, compilation, new Query(kind));
     addFilters(qd);
     addSorts(qd);
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
 
     if (qd.batchGetKeys != null) {
-      return fulfillBatchGetQuery(ds, qd.batchGetKeys, acmd, clr, isCountQuery);
+      return fulfillBatchGetQuery(ds, qd);
     } else {
       latestDatastoreQuery = qd.datastoreQuery;
       PreparedQuery preparedQuery = ds.prepare(qd.datastoreQuery);
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-      if (isCountQuery) {
+      if (qd.isCountQuery) {
         return fulfillCountQuery(preparedQuery, opts);
       } else {
-        return fulfillEntityQuery(preparedQuery, opts, acmd, clr);
+        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer);
       }
     }
   }
 
-  private List<?> fulfillBatchGetQuery(
-      DatastoreService ds, Set<Key> batchGetKeys, AbstractClassMetaData acmd, ClassLoaderResolver clr,
-      boolean isCountQuery) {
+  private List<?> fulfillBatchGetQuery(DatastoreService ds, QueryData qd) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
-    Collection<Entity> entities = ds.get(innerTxn, batchGetKeys).values();
-    if (isCountQuery) {
+    Collection<Entity> entities = ds.get(innerTxn, qd.batchGetKeys).values();
+    if (qd.isCountQuery) {
       return Collections.singletonList(entities.size());
     }
-    return newStreamingQueryResultForEntities(entities, acmd, clr);
+    return newStreamingQueryResultForEntities(entities, qd.resultTransformer);
   }
 
   private List<Integer> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
@@ -258,26 +253,19 @@ public class DatastoreQuery implements Serializable {
   }
 
   private List<?> fulfillEntityQuery(
-      PreparedQuery preparedQuery, FetchOptions opts, AbstractClassMetaData acmd,
-      ClassLoaderResolver clr) {
+      PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer) {
     Iterable<Entity> entities;
     if (opts != null) {
       entities = preparedQuery.asIterable(opts);
     } else {
       entities = preparedQuery.asIterable();
     }
-    return newStreamingQueryResultForEntities(entities, acmd, clr);
+    return newStreamingQueryResultForEntities(entities, resultTransformer);
   }
 
   private List<?> newStreamingQueryResultForEntities(
-      Iterable<Entity> entities, final AbstractClassMetaData acmd, final ClassLoaderResolver clr) {
-    Function<Entity, Object> entityToPojoFunc = new Function<Entity, Object>() {
-      public Object apply(Entity entity) {
-        return entityToPojo(entity, acmd, clr, getDatastoreManager());
-      }
-    };
-    return new StreamingQueryResult(query, new RuntimeExceptionWrappingIterable(entities), entityToPojoFunc);
-
+      Iterable<Entity> entities, final Function<Entity, Object> resultTransformer) {
+    return new StreamingQueryResult(query, new RuntimeExceptionWrappingIterable(entities), resultTransformer);
   }
 
   /**
@@ -369,13 +357,12 @@ public class DatastoreQuery implements Serializable {
     return pojo;
   }
 
-  /**
-   * @return {@code true} if this is a count() query, {@code false} otherwise
-   */
-  private boolean validate(QueryCompilation compilation) {
+  private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
+                             final AbstractClassMetaData acmd, DatastoreTable table,
+                             final ClassLoaderResolver clr) {
     if (query.getCandidateClass() == null) {
       throw new NucleusUserException(
-          "Candidate class could not be found: " + query.getSingleStringQuery());
+          "Candidate class could not be found: " + query.getSingleStringQuery()).setFatal();
     }
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
@@ -395,6 +382,36 @@ public class DatastoreQuery implements Serializable {
       }
     }
 
+    List<Integer> projectionFieldNums = Utils.newArrayList();
+    boolean isCountQuery = validateResultExpression(compilation, acmd, projectionFieldNums);
+    // TODO(maxr): Add checks for subqueries and anything else we don't allow
+    String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+    Function<Entity, Object> resultTransformer = new Function<Entity, Object>() {
+      public Object apply(Entity from) {
+        return entityToPojo(from, acmd, clr, getDatastoreManager());
+      }
+    };
+
+    if (!projectionFieldNums.isEmpty()) {
+      // Wrap the entityToPojo function with a function that will apply the
+      // appropriate projection to each Entity in the result set.
+      resultTransformer = newProjectionResultTransformer(projectionFieldNums, resultTransformer);
+    }
+    return new QueryData(
+        parameters, acmd, table, compilation, new Query(kind), isCountQuery, resultTransformer);
+  }
+
+  /**
+   * @param compilation The compiled query
+   * @param acmd The meta data for the class we're querying
+   * @param projectionFieldNums Out param that will contain the absolute field
+   * position of any fields that have been explicitly selected in the result
+   * expression.
+   *
+   * @return {@code true} if this is a count query, {@code false} otherwise
+   */
+  private boolean validateResultExpression(
+      QueryCompilation compilation, AbstractClassMetaData acmd, List<Integer> projectionFieldNums) {
     boolean isCountQuery = false;
     if (compilation.getExprResult() != null) {
       // the only expression results we support are count() and PrimaryExpression
@@ -402,14 +419,30 @@ public class DatastoreQuery implements Serializable {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
           if (!invokeExpr.getOperation().equals("count")) {
-            Expression.Operator operator =
-                new Expression.Operator(invokeExpr.getOperation(), 0);
+            Expression.Operator operator = new Expression.Operator(invokeExpr.getOperation(), 0);
             throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+          } else if (!projectionFieldNums.isEmpty()) {
+            throw newAggregateAndRowResultsException();
           } else {
             isCountQuery = true;
           }
         } else if (resultExpr instanceof PrimaryExpression) {
-          // this is ok, just let it go
+          if (isCountQuery) {
+            throw newAggregateAndRowResultsException();            
+          }
+          PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
+          if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
+            AbstractMemberMetaData ammd =
+                getMemberMetaData(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
+            if (ammd == null) {
+              throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
+            }
+            if (ammd.getParent() instanceof EmbeddedMetaData) {
+              throw new UnsupportedOperationException(
+                  "Selecting fields of embedded classes is not yet supported");
+            }
+            projectionFieldNums.add(ammd.getAbsoluteFieldNumber());
+          }
         } else {
           Expression.Operator operator =
               new Expression.Operator(resultExpr.getClass().getName(), 0);
@@ -417,10 +450,43 @@ public class DatastoreQuery implements Serializable {
         }
       }
     }
-    // TODO(maxr): Add checks for subqueries and anything else we don't
-    // allow.
-
     return isCountQuery;
+  }
+
+  private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {
+    // We don't let you combine aggregate functions with requests
+    // for specific fields in the result expression.  hsqldb has the
+    // same restriction so I feel ok about this
+    return new UnsupportedDatastoreFeatureException(
+        "Cannot combine an aggregate results with row results.", query.getSingleStringQuery());
+  }
+
+
+  /**
+   * Wraps the provided entity-to-pojo {@link Function} in a {@link Function}
+   * that extracts the fields identified by the provided field numbers.
+   */
+  private Function<Entity, Object> newProjectionResultTransformer(
+      final List<Integer> projectionFieldNums, final Function<Entity, Object> entityToPojoFunc) {
+    return new Function<Entity, Object>() {
+      public Object apply(Entity from) {
+        PersistenceCapable pc = (PersistenceCapable) entityToPojoFunc.apply(from);
+        StateManager sm = getObjectManager().findStateManager(pc);
+        List<Object> values = Utils.newArrayList();
+        // Need to fetch the fields one at a time instead of using
+        // sm.provideFields() because that method doesn't respect the ordering
+        // of the field numbers and that ordering is important here.
+        for (int fieldNum : projectionFieldNums) {
+          values.add(sm.provideField(fieldNum));
+        }
+        if (values.size() == 1) {
+          // If there's only one value, just return it.
+          return values.get(0);
+        }
+        // Return an Object array.
+        return values.toArray(new Object[values.size()]);
+      }
+    };
   }
 
   private void checkNotJoin(Expression expr) {
@@ -496,16 +562,21 @@ public class DatastoreQuery implements Serializable {
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
     private final QueryCompilation compilation;
     private final Query datastoreQuery;
+    private final boolean isCountQuery;
+    private final Function<Entity, Object> resultTransformer;
     private Set<Key> batchGetKeys;
 
     private QueryData(
         Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
-        QueryCompilation compilation, Query datastoreQuery) {
+        QueryCompilation compilation, Query datastoreQuery, boolean isCountQuery,
+        Function<Entity, Object> resultTransformer) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
       this.compilation = compilation;
       this.datastoreQuery = datastoreQuery;
+      this.isCountQuery = isCountQuery;
+      this.resultTransformer = resultTransformer;
     }
   }
 
@@ -655,6 +726,7 @@ public class DatastoreQuery implements Serializable {
     throw new NucleusUserException(
         "Batch lookup by primary key is only supported if no other filters are defined.").setFatal();
   }
+
   /**
    * Fetches the tuples of the provided expression, stripping off the first
    * tuple if there are multiple tuples, the table name is aliased, and the
@@ -681,10 +753,11 @@ public class DatastoreQuery implements Serializable {
     }
     return param;
   }
-  private NucleusUserException noMetaDataException(String member, String fullClassName) {
+
+  private NucleusException noMetaDataException(String member, String fullClassName) {
     return new NucleusUserException(
         "No meta-data for member named " + member + " on class " + fullClassName
-            + ".  Are you sure you provided the correct member name?");
+            + ".  Are you sure you provided the correct member name in your query?").setFatal();
   }
 
   private Object negateNumber(Number negateMe) {
@@ -733,7 +806,7 @@ public class DatastoreQuery implements Serializable {
       if (ammd.getEmbeddedMetaData() == null) {
         throw new NucleusUserException(
             query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "
-            + "the sub-object is embedded.");
+            + "the sub-object is embedded.").setFatal();
       }
       ammd = findMemberMetaDataWithName(tuple, emd.getMemberMetaData());
     }
@@ -780,8 +853,9 @@ public class DatastoreQuery implements Serializable {
         jdoPrimaryKey = sm.provideField(acmd.getPKMemberPositions()[0]);
       }
       if (jdoPrimaryKey == null) {
-        throw new NucleusUserException(query.getSingleStringQuery()
-                                   + ": Parameter value " + value + " does not have an id.");
+        throw new NucleusUserException(
+            query.getSingleStringQuery() + ": Parameter value " + value
+            + " does not have an id.").setFatal();
       }
     }
     Key valueKey = internalPkToKey(qd.acmd, jdoPrimaryKey);
@@ -796,7 +870,7 @@ public class DatastoreQuery implements Serializable {
       }
       if (valueKey.getParent() == null) {
         throw new NucleusUserException(query.getSingleStringQuery() + ": Key of parameter value does "
-                                   + "not have a parent.");
+                                   + "not have a parent.").setFatal();
       }
 
       // The field is the child side of an owned one to one.  We can just add
@@ -816,7 +890,7 @@ public class DatastoreQuery implements Serializable {
     if (!keyKind.equals(fieldKind)) {
       throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
                                  + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
-                                 + " parameter value contains Key of kind " + keyKind );
+                                 + " parameter value contains Key of kind " + keyKind ).setFatal();
     }
     // If the key has a parent, we also need to also verify that the parent of
     // the key is the property kind
@@ -829,7 +903,7 @@ public class DatastoreQuery implements Serializable {
                                    + ammd.getFullFieldName() + " is owned by a class that maps to "
                                    + "kind " + fieldOwnerKind + " but"
                                    + " parameter value contains Key with parent of kind "
-                                   + keyParentKind );
+                                   + keyParentKind ).setFatal();
       }
     }
   }
