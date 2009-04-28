@@ -1873,6 +1873,16 @@ public class JDOQLQueryTest extends JDOTestCase {
 //    assertEquals(1, result.size());
   }
 
+  public void testAggregateInFilterFails() {
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where you == max(you)");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
+      // good
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {

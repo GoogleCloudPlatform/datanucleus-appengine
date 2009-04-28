@@ -622,15 +622,20 @@ public class DatastoreQuery implements Serializable {
         param.bind();
         addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
       } else {
-        throw new UnsupportedDatastoreFeatureException(
-            "Unsupported method <" + invocation.getOperation() + "> while parsing query: "
-                + expr.getClass().getName(), query.getSingleStringQuery());
+        throw newUnsupportedQueryMethodException(invocation);
       }
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Unexpected expression type while parsing query: "
               + expr.getClass().getName(), query.getSingleStringQuery());
     }
+  }
+
+  private UnsupportedDatastoreFeatureException newUnsupportedQueryMethodException(
+      InvokeExpression invocation) {
+    throw new UnsupportedDatastoreFeatureException(
+        "Unsupported method <" + invocation.getOperation() + "> while parsing expression: " + invocation,
+        query.getSingleStringQuery());
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
@@ -671,6 +676,10 @@ public class DatastoreQuery implements Serializable {
             + ", Op: " + dyadic.getOperator()
             + ", Right: " + dyadic.getRight(), query.getSingleStringQuery());
       }
+    } else if (right instanceof InvokeExpression) {
+      // We don't support any InvokeExpressions right now but we can at least
+      // give a beter error.
+      throw newUnsupportedQueryMethodException((InvokeExpression) right);
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
