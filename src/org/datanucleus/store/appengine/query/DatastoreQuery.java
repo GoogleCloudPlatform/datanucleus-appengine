@@ -833,8 +833,8 @@ public class DatastoreQuery implements Serializable {
     return null;
   }
 
-  private void processPersistenceCapableMapping(QueryData qd, Query.FilterOperator op,
-                                                AbstractMemberMetaData ammd, Object value) {
+  private void processPersistenceCapableMapping(
+      QueryData qd, Query.FilterOperator op, AbstractMemberMetaData ammd, Object value) {
     ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
     AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     Object jdoPrimaryKey;
@@ -842,6 +842,8 @@ public class DatastoreQuery implements Serializable {
       // This is a bit odd, but just to be nice we let users
       // provide the id itself rather than the object containing the id.
       jdoPrimaryKey = value;
+    } else if (value == null) {
+      jdoPrimaryKey = null;
     } else {
       ApiAdapter apiAdapter = getObjectManager().getApiAdapter();
       jdoPrimaryKey =
@@ -867,25 +869,39 @@ public class DatastoreQuery implements Serializable {
             + " does not have an id.").setFatal();
       }
     }
-    Key valueKey = internalPkToKey(qd.acmd, jdoPrimaryKey);
-    verifyRelatedKeyIsOfProperType(ammd, valueKey, acmd);
+    Key valueKey = null;
+    if (jdoPrimaryKey != null) {
+      valueKey = internalPkToKey(qd.acmd, jdoPrimaryKey);
+      verifyRelatedKeyIsOfProperType(ammd, valueKey, acmd);
+    }
     if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
-      // Looks like a join.  If it can be satisfied with just a
-      // get on the secondary table, fulfill it.
+      // Looks like a join.  If it can be satisfied by just extracting the
+      // parent key from the provided key, fulfill it.
       if (op != Query.FilterOperator.EQUAL) {
         throw new UnsupportedDatastoreFeatureException(
             "Only the equals operator is supported on conditions involving the owning side of a "
             + "one-to-one.", query.getSingleStringQuery());
       }
+      if (valueKey == null) {
+        // User is asking for parents where child is null.  Unfortunately we
+        // don't have a way to fulfill this because one-to-one is actually
+        // implemented as a one-to-many
+        throw new NucleusUserException(
+            query.getSingleStringQuery() + ": Cannot query for parents with null children.").setFatal();
+      }
+
       if (valueKey.getParent() == null) {
-        throw new NucleusUserException(query.getSingleStringQuery() + ": Key of parameter value does "
-                                   + "not have a parent.").setFatal();
+        throw new NucleusUserException(
+            query.getSingleStringQuery() + ": Key of parameter value does not have a parent.").setFatal();
       }
 
       // The field is the child side of an owned one to one.  We can just add
       // the parent key to the query as an equality filter on id.
       qd.datastoreQuery.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
+    } else if (valueKey == null) {
+      throw new NucleusUserException(
+          query.getSingleStringQuery() + ": Cannot query for objects with null parents.").setFatal();      
     } else {
       addParentFilter(op, valueKey, qd);
     }
@@ -954,7 +970,6 @@ public class DatastoreQuery implements Serializable {
           + "datastore only supports parent queries using the equality operator.",
           query.getSingleStringQuery());
     }
-    // value must be String or Key
     qd.datastoreQuery.setAncestor(key);
   }
 

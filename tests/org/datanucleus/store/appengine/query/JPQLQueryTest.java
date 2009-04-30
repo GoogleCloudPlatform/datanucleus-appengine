@@ -53,6 +53,7 @@ import org.datanucleus.test.HasOneToManyLongPkSetJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
 import org.datanucleus.test.HasOneToOneJPA;
+import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasStringAncestorStringPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
 import org.datanucleus.test.KitchenSink;
@@ -1749,6 +1750,43 @@ public class JPQLQueryTest extends JPATestCase {
 //    @SuppressWarnings("unchecked")
 //    List<Object[]> result = (List<Object[]>) q.execute();
 //    assertEquals(1, result.size());
+  }
+
+  public void testIsNull() {
+    Entity e = newBook("title", "author", null);
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + Book.class.getName() + " where isbn is NULL");
+    @SuppressWarnings("unchecked")
+    List<Book> books = q.getResultList();
+    assertEquals(1, books.size());
+  }
+
+  public void testIsNullChild() {
+    Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + HasOneToOneJPA.class.getName() + " where book is null");
+    try {
+      q.getResultList();
+      fail("expected");
+    } catch (PersistenceException pe) {
+      // good
+    }
+  }
+
+  public void testIsNullParent() {
+    Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
+    Key key = ldth.ds.put(e);
+    e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
+    ldth.ds.put(e);
+    Query q = em.createQuery(
+        "select from " + HasOneToOneParentJPA.class.getName() + " where parent is null");
+    try {
+      q.getResultList();
+      fail("expected");
+    } catch (PersistenceException pe) {
+      // good
+    }
   }
 
   private static Entity newBook(String title, String author, String isbn) {

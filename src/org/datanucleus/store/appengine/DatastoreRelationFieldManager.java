@@ -319,7 +319,7 @@ class DatastoreRelationFieldManager {
     if (parentKey == null) {
       String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
       throw new NucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
-          + "provide a reference to its parent but the entity does not have an parent.  "
+          + "provide a reference to its parent but the entity does not have a parent.  "
           + "Did you perhaps try to establish an instance of " + childClass  +  " as "
           + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
           + "persisted?").setFatal();

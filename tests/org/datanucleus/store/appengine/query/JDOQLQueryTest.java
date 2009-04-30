@@ -54,6 +54,7 @@ import org.datanucleus.test.HasOneToManyLongPkSetJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
 import org.datanucleus.test.HasOneToOneJDO;
+import org.datanucleus.test.HasOneToOneParentJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
@@ -683,6 +684,38 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     beginTxn();
     testFilterByChildObject(new TransientFlightProvider());
+  }
+
+  public void testFilterByNullChildObject() {
+    Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
+    ldth.ds.put(flightEntity);
+
+    Query q = pm.newQuery(
+        "select from " + HasOneToOneJDO.class.getName()
+        + " where flight == f parameters " + Flight.class.getName() + " f");
+    try {
+      q.execute(null);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+  }
+
+  public void testIsNullParent() {
+    Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
+    Key key = ldth.ds.put(e);
+    e = new Entity(HasOneToOneParentJDO.class.getSimpleName(), key);
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + HasOneToOneParentJDO.class.getName() + " where parent == null");
+    try {
+      q.execute();
+      fail("expected");
+    } catch (JDOFatalUserException ex) {
+      // good
+    }
   }
 
   private void testFilterByChildObject_AdditionalFilterOnParent(FlightProvider fp) {
