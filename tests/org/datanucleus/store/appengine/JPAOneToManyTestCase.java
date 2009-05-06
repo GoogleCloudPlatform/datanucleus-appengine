@@ -764,6 +764,22 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     commitTxn();
   }
 
+  void testAddQueriedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir) {
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
+    bidir.setParent(pojo);
+    em.persist(bidir);
+    commitTxn();
+    beginTxn();
+    pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
+    assertEquals(1, pojo.getBidirChildren().size());
+    commitTxn();
+  }
+
   int countForClass(Class<?> clazz) {
     return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
   }

@@ -177,6 +177,10 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
   protected Key extractElementKey(ObjectManager om, Object element) {
     ApiAdapter apiAdapter = om.getApiAdapter();
     Object id = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(element));
+    if (id == null) {
+      return null;
+    }
+    // This is a child object so we know the pk is Key or encoded String
     return id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
   }
 }

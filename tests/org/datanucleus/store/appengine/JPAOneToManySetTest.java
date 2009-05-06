@@ -97,5 +97,8 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   public void testAddChildToOneToManyParentWithUnencodedStringPk() {
     testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
   }
+  public void testAddQueriedParentToBidirChild() {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  }
 
 }

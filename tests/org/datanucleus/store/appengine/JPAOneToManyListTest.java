@@ -24,6 +24,7 @@ import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.BidirectionalChildListLongPkJPA;
 import org.datanucleus.test.BidirectionalChildListStringPkJPA;
+import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
@@ -33,6 +34,7 @@ import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyListLongPkJPA;
 import org.datanucleus.test.HasOneToManyListStringPkJPA;
 import org.datanucleus.test.HasOneToManyLongPkListJPA;
+import org.datanucleus.test.HasOneToManySetJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJPA;
@@ -563,6 +565,10 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(child.getBooks().get(0), b2);
     assertEquals(1, child.getBooks().size());
     commitTxn();
+  }
+
+  public void testAddQueriedParentToBidirChild() {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
 
 }

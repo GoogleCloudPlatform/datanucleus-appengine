@@ -373,6 +373,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     commitTxn();
   }
 
+  public void testAddQueriedParentToBidirChild() {
+    testAddQueriedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return true;

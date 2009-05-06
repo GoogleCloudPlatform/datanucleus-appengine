@@ -52,10 +52,11 @@ abstract class DatastoreAbstractCollectionStoreSpecialization
   public boolean contains(StateManager ownerSM, Object element, AbstractCollectionStore acs) {
     // Since we only support owned relationships right now, we can
     // check containment simply by looking to see if the element's
-    // Key contains the parnet Key.
+    // Key contains the parent Key.
     ObjectManager om = ownerSM.getObjectManager();
     Key childKey = extractElementKey(om, element);
-    if (childKey.getParent() == null) {
+    // Child key can be null if element has not yet been persisted
+    if (childKey == null || childKey.getParent() == null) {
       return false;
     }
     Key parentKey = extractElementKey(om, ownerSM.getObject());

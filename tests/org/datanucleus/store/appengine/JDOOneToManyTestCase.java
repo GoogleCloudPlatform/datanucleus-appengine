@@ -1144,6 +1144,22 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     commitTxn();
   }
 
+  void testAddQueriedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir) {
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
+    bidir.setParent(pojo);
+    pm.makePersistent(bidir);
+    commitTxn();
+    beginTxn();
+    pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
+    assertEquals(1, pojo.getBidirChildren().size());
+    commitTxn();
+  }
+
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {
 //
