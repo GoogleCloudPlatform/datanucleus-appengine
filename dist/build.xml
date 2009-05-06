@@ -4,7 +4,7 @@
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
   <property name="version.point" value="1"/>
-  <property name="version.rc" value=".RC1"/>
+  <property name="version.rc" value=".RC2"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -293,9 +293,9 @@
     <mkdir dir="${orm.sdk.tmpdist.dir}/shared/jsp"/>
     <copy todir="${orm.sdk.tmpdist.dir}/shared/jsp">
       <fileset dir="${orm.lib.dir}">
-        <include name="jasper-compiler-5.0.28.jar"/>
-        <include name="jasper-runtime-5.0.28.jar"/>
-        <include name="commons-logging-1.1.1.jar"/>
+        <include name="repackaged-appengine-jasper-compiler-5.0.28.jar"/>
+        <include name="repackaged-appengine-jasper-runtime-5.0.28.jar"/>
+        <include name="repackaged-appengine-commons-logging-1.1.1.jar"/>
       </fileset>
     </copy>
 

@@ -16,7 +16,6 @@ limitations under the License.
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.repackaged.com.google.common.collect.AbstractIterator;
 
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
