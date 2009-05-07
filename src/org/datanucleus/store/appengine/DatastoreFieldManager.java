@@ -923,7 +923,7 @@ public class DatastoreFieldManager implements FieldManager {
     for (JavaTypeMapping orderMapping : orderMappings) {
       if (orderMapping instanceof IndexMapping) {
         delayWrite = true;
-        // DataNucleus hides the value in the state mamanger, keyed by the
+        // DataNucleus hides the value in the state manager, keyed by the
         // mapping for the order field.
         Object orderValue = getStateManager().getAssociatedValue(orderMapping);
         if (orderValue != null) {
