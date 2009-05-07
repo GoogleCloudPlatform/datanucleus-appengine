@@ -53,6 +53,9 @@ public class HasSerializableJDO {
              value="org.datanucleus.test.HasSerializableJDO$ProtocolBufferSerializationStrategy")
   private DatastorePb.Query query;
 
+  @Persistent(serialized = "true")
+  Integer integer;
+
   public Yam getYam() {
     return yam;
   }
@@ -79,6 +82,14 @@ public class HasSerializableJDO {
 
   public Long getId() {
     return id;
+  }
+
+  public Integer getInteger() {
+    return integer;
+  }
+
+  public void setInteger(Integer integer) {
+    this.integer = integer;
   }
 
   public static class ProtocolBufferSerializationStrategy implements SerializationStrategy {

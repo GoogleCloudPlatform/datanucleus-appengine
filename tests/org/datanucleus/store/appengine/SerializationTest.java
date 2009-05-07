@@ -45,20 +45,22 @@ public class SerializationTest extends JDOTestCase {
     hasSerializable.setYam(yam);
     hasSerializable.setYamList(Utils.newArrayList(yam));
     hasSerializable.setQuery(query);
+    hasSerializable.setInteger(3);
     beginTxn();
     pm.makePersistent(hasSerializable);
     commitTxn();
 
+    SerializationStrategy ss = SerializationManager.DEFAULT_SERIALIZATION_STRATEGY;
     Entity e = ldth.ds.get(TestUtils.createKey(hasSerializable, hasSerializable.getId()));
     Blob yamBlob = (Blob) e.getProperty("yam");
     assertNotNull(yamBlob);
     HasSerializableJDO.Yam reloadedYam = (HasSerializableJDO.Yam)
-        SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(yamBlob, HasSerializableJDO.Yam.class);
+        ss.deserialize(yamBlob, HasSerializableJDO.Yam.class);
     assertEquals(yam.getStr1(), reloadedYam.getStr1());
     assertEquals(yam.getStr2(), reloadedYam.getStr2());
     Blob yamListBlob = (Blob) e.getProperty("yamList");
     List<HasSerializableJDO.Yam> reloadedYamList = (List<HasSerializableJDO.Yam>)
-        SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.deserialize(yamListBlob, List.class);
+        ss.deserialize(yamListBlob, List.class);
     assertEquals(1, reloadedYamList.size());
     reloadedYam = reloadedYamList.get(0);
     assertEquals(yam.getStr1(), reloadedYam.getStr1());
@@ -69,23 +71,27 @@ public class SerializationTest extends JDOTestCase {
         new HasSerializableJDO.ProtocolBufferSerializationStrategy().deserialize(queryBlob, DatastorePb.Query.class);
     assertEquals(query.getApp(), reloadedQuery.getApp());
     assertEquals(query.getKind(), reloadedQuery.getKind());
+    Blob integerBlob = (Blob) e.getProperty("integer");
+    assertEquals(Integer.valueOf(3), ss.deserialize(integerBlob, Integer.class));
   }
 
   public void testFetch() {
 
     Entity e = new Entity(HasSerializableJDO.class.getSimpleName());
+    SerializationStrategy ss = SerializationManager.DEFAULT_SERIALIZATION_STRATEGY;
 
     HasSerializableJDO.Yam yam = new HasSerializableJDO.Yam();
     yam.setStr1("a");
     yam.setStr2("b");
-    e.setProperty("yam", SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(yam));
+    e.setProperty("yam", ss.serialize(yam));
 
     List<HasSerializableJDO.Yam> yamList = Utils.newArrayList(yam);
-    e.setProperty("yamList", SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(yamList));
+    e.setProperty("yamList", ss.serialize(yamList));
     DatastorePb.Query query = new DatastorePb.Query();
     query.setApp("harold");
     query.setKind("yes");
     e.setProperty("query", new HasSerializableJDO.ProtocolBufferSerializationStrategy().serialize(query));
+    e.setProperty("integer", ss.serialize(3));
     ldth.ds.put(e);
     beginTxn();
     HasSerializableJDO hasSerializable = pm.getObjectById(
@@ -98,6 +104,7 @@ public class SerializationTest extends JDOTestCase {
     assertNotNull(hasSerializable.getQuery());
     assertEquals(query.getApp(), hasSerializable.getQuery().getApp());
     assertEquals(query.getKind(), hasSerializable.getQuery().getKind());
+    assertEquals(Integer.valueOf(3), hasSerializable.getInteger());
     commitTxn();
   }
 }
