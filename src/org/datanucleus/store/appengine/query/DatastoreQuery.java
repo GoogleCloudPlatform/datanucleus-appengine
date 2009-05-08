@@ -26,7 +26,6 @@ import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
@@ -57,6 +56,7 @@ import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.DatastoreTransaction;
 import org.datanucleus.store.appengine.EntityUtils;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;

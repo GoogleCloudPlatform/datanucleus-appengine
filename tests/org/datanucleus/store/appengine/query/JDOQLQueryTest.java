@@ -25,7 +25,6 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.users.User;
-import com.google.appengine.repackaged.com.google.common.collect.PrimitiveArrays;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
@@ -37,6 +36,7 @@ import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;

@@ -16,9 +16,6 @@
 
 package org.datanucleus.store.appengine.query;
 
-import com.google.appengine.repackaged.com.google.common.base.Preconditions;
-import com.google.appengine.repackaged.com.google.common.collect.PeekingIterator;
-
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
@@ -117,7 +114,9 @@ abstract class AbstractIterator<T> implements Iterator<T> {
   }
 
   public boolean hasNext() {
-    Preconditions.checkState(state != State.FAILED);
+    if (state == State.FAILED) {
+      throw new IllegalStateException();
+    }
     switch (state) {
       case DONE:
         return false;
@@ -143,20 +142,6 @@ abstract class AbstractIterator<T> implements Iterator<T> {
       throw new NoSuchElementException();
     }
     state = State.NOT_READY;
-    return next;
-  }
-
-  /**
-   * Returns the next element in the iteration without advancing the iteration,
-   * according to the contract of {@link PeekingIterator#peek()}.
-   *
-   * <p>Implementations of {@code AbstractIterator} that wish to expose this
-   * functionality should implement {@code PeekingIterator}.
-   */
-  public T peek() {
-    if (!hasNext()) {
-      throw new NoSuchElementException();
-    }
     return next;
   }
 

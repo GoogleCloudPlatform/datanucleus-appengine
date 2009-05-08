@@ -15,8 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import static com.google.appengine.repackaged.com.google.common.base.Preconditions.checkNotNull;
-
 import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -32,7 +30,7 @@ import java.util.RandomAccess;
  * @author Michael Parker
  * @author Jared Levy
  */
-final class PrimitiveArrays {
+public final class PrimitiveArrays {
   private PrimitiveArrays() {}
 
   /*
@@ -92,6 +90,13 @@ final class PrimitiveArrays {
    */
   public static List<Short> asList(short[] backingArray) {
     return new ShortArray(backingArray);
+  }
+
+  private static <T> T checkNotNull(T obj) {
+    if (obj == null) {
+      throw new NullPointerException();
+    }
+    return obj;
   }
 
   private static class ShortArray extends PrimitiveArray<Short> {

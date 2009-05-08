@@ -15,8 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.repackaged.com.google.common.base.Preconditions;
-
 import java.io.Serializable;
 import java.util.AbstractList;
 import java.util.Arrays;
@@ -136,7 +134,6 @@ final class Ints {
     }
 
     @Override public Integer get(int index) {
-      Preconditions.checkElementIndex(index, size());
       return array[start + index];
     }
 
@@ -169,7 +166,6 @@ final class Ints {
     }
 
     @Override public Integer set(int index, Integer element) {
-      Preconditions.checkElementIndex(index, size());
       int oldValue = array[start + index];
       array[start + index] = element;
       return oldValue;
@@ -177,7 +173,6 @@ final class Ints {
 
     @Override public List<Integer> subList(int fromIndex, int toIndex) {
       int size = size();
-      Preconditions.checkPositionIndexes(fromIndex, toIndex, size);
       if (fromIndex == toIndex) {
         return Collections.emptyList();
       }
