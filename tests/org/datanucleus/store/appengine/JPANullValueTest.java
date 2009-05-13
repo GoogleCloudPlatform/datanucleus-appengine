@@ -40,6 +40,27 @@ public class JPANullValueTest extends JPATestCase {
     commitTxn();
   }
 
+  public void testFetchNullValue() {
+    Entity e = new Entity(NullDataJPA.class.getSimpleName());
+    e.setProperty("list", null);
+    ldth.ds.put(e);
+    beginTxn();
+    NullDataJPA pojo = em.find(NullDataJPA.class, e.getKey());
+    assertNull(pojo.getList());
+  }
+
+  public void testFetchMultiValuePropWithOneNullEntry() {
+    Entity e = new Entity(NullDataJPA.class.getSimpleName());
+    e.setProperty("list", Utils.newArrayList((String) null));
+    ldth.ds.put(e);
+    beginTxn();
+    NullDataJPA pojo = em.find(NullDataJPA.class, e.getKey());
+    assertNotNull(pojo.getList());
+    assertEquals(1, pojo.getList().size());
+    assertNull(pojo.getList().get(0));
+  }
+
+
   public void testInsertNullData() throws EntityNotFoundException {
     NullDataJPA pojo = new NullDataJPA();
     beginTxn();
@@ -48,6 +69,10 @@ public class JPANullValueTest extends JPATestCase {
     Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
+    assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
+    for (Object val : e.getProperties().values()) {
+      assertNull(val);
+    }
   }
 
   public void testInsertContainersWithOneNullElement() throws EntityNotFoundException {

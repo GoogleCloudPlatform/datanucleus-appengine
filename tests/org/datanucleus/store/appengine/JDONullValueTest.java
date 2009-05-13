@@ -53,6 +53,26 @@ public class JDONullValueTest extends JDOTestCase {
     commitTxn();
   }
 
+  public void testFetchNullValue() {
+    Entity e = new Entity(NullDataJDO.class.getSimpleName());
+    e.setProperty("list", null);
+    ldth.ds.put(e);
+    beginTxn();
+    NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
+    assertNull(pojo.getList());
+  }
+
+  public void testFetchMultiValuePropWithOneNullEntry() {
+    Entity e = new Entity(NullDataJDO.class.getSimpleName());
+    e.setProperty("list", Utils.newArrayList((String) null));
+    ldth.ds.put(e);
+    beginTxn();
+    NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
+    assertNotNull(pojo.getList());
+    assertEquals(1, pojo.getList().size());
+    assertNull(pojo.getList().get(0));
+  }
+
   public void testInsertNullData() throws EntityNotFoundException {
     NullDataJDO pojo = new NullDataJDO();
     beginTxn();
@@ -61,6 +81,9 @@ public class JDONullValueTest extends JDOTestCase {
     Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
+    for (Object val : e.getProperties().values()) {
+      assertNull(val);
+    }
   }
 
   public void testInsertContainersWithOneNullElement() throws EntityNotFoundException {
