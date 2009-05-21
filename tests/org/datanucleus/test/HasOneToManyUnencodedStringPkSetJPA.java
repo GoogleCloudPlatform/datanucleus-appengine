@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -35,6 +36,10 @@ public class HasOneToManyUnencodedStringPkSetJPA implements HasOneToManyUnencode
   @OneToMany(cascade = CascadeType.ALL)
   private Set<Book> books = new HashSet<Book>();
 
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+  private Set<BidirectionalChildUnencodedStringPkSetJPA> bidirChildren =
+      new HashSet<BidirectionalChildUnencodedStringPkSetJPA>();
+
   public String getId() {
     return id;
   }
@@ -51,4 +56,7 @@ public class HasOneToManyUnencodedStringPkSetJPA implements HasOneToManyUnencode
     this.books = null;
   }
 
+  public Collection<BidirectionalChildUnencodedStringPkJPA> getBidirChildren() {
+    return (Set) bidirChildren;
+  }
 }

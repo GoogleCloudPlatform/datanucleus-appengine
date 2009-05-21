@@ -87,6 +87,7 @@ public class DatastoreTable implements DatastoreClass {
   private final ClassLoaderResolver clr;
   private final DatastoreAdapter dba;
   protected final DatastoreIdentifier identifier;
+  private final Map<String, AbstractClassMetaData> owningClassMetaData = Utils.newHashMap();
 
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
@@ -326,7 +327,12 @@ public class DatastoreTable implements DatastoreClass {
               dt.runCallBacks();
               dt.markFieldAsParentKeyProvider(fmd.getName());
             }
-
+          } else if (relationType == Relation.MANY_TO_ONE_BI) {
+            DatastoreTable dt =
+                (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+            AbstractClassMetaData acmd =
+                storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
+            dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
           }
 
           if (needsFKToContainerOwner) {
@@ -996,7 +1002,7 @@ public class DatastoreTable implements DatastoreClass {
             AbstractClassMetaData acmd =
                 storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
             // this is needed for one-to-many sets
-            refColumn.setOwningClassMetaData(acmd);
+            addOwningClassMetaData(colmd.getName(), acmd);
             fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
                 .createDatastoreMapping(mapping, refColumn,
                                         refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
@@ -1148,5 +1154,13 @@ public class DatastoreTable implements DatastoreClass {
 
   public AbstractClassMetaData getClassMetaData() {
     return cmd;
+  }
+
+  void addOwningClassMetaData(String columnName, AbstractClassMetaData acmd) {
+    owningClassMetaData.put(columnName, acmd);
+  }
+
+  AbstractClassMetaData getOwningClassMetaDataForColumn(String col) {
+    return owningClassMetaData.get(col);
   }
 }

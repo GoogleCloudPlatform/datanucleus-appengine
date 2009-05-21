@@ -17,12 +17,14 @@ package org.datanucleus.test;
 
 import org.datanucleus.store.appengine.Utils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 /**
@@ -36,6 +38,11 @@ public class HasOneToManyUnencodedStringPkListJDO implements HasOneToManyUnencod
 
   @Element(dependent = "true")
   private List<Flight> flights = Utils.newArrayList();
+
+  @Persistent(mappedBy = "parent")
+  @Element(dependent = "true")
+  private List<BidirectionalChildUnencodedStringPkListJDO> bidirChildren =
+      new ArrayList<BidirectionalChildUnencodedStringPkListJDO>();
 
   public void addFlight(Flight flight) {
     flights.add(flight);
@@ -51,5 +58,13 @@ public class HasOneToManyUnencodedStringPkListJDO implements HasOneToManyUnencod
 
   public void setId(String key) {
     this.key = key;
+  }
+
+  public void addBidirChild(BidirectionalChildUnencodedStringPkJDO child) {
+    bidirChildren.add((BidirectionalChildUnencodedStringPkListJDO) child);
+  }
+
+  public Collection<BidirectionalChildUnencodedStringPkJDO> getBidirChildren() {
+    return (List) bidirChildren;
   }
 }

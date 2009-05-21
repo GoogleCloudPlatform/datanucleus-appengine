@@ -142,11 +142,13 @@ class DatastoreRelationFieldManager {
         // currently populating.  We look for a magic property that tells
         // us if this change needs to be made.  See
         // DatastoreFKMapping.setObject for all the gory details.
-        Object parentKey = entity.getProperty(PARENT_KEY_PROPERTY);
-        if (parentKey != null) {
+        Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
+        if (parentKeyObj != null) {
+          AbstractClassMetaData parentCmd = sm.getMetaDataManager().getMetaDataForClass(
+              ammd.getType(), fieldManager.getClassLoaderResolver());
+          Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, fieldManager.getObjectManager());
           entity.removeProperty(PARENT_KEY_PROPERTY);
-          fieldManager.recreateEntityWithParent(parentKey instanceof Key ?
-                                  (Key) parentKey : KeyFactory.stringToKey((String) parentKey));
+          fieldManager.recreateEntityWithParent(parentKey);
         }
       }
     };

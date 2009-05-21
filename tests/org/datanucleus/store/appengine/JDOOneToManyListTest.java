@@ -21,18 +21,18 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJDO;
-import org.datanucleus.test.BidirectionalChildListLongPkJDO;
-import org.datanucleus.test.BidirectionalChildListStringPkJDO;
+import org.datanucleus.test.BidirectionalChildLongPkListJDO;
+import org.datanucleus.test.BidirectionalChildStringPkListJDO;
+import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
 import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJDO;
 import org.datanucleus.test.HasOneToManyKeyPkListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
-import org.datanucleus.test.HasOneToManyListLongPkJDO;
-import org.datanucleus.test.HasOneToManyListStringPkJDO;
 import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 import org.datanucleus.test.HasOneToManyLongPkListJDO;
+import org.datanucleus.test.HasOneToManyStringPkListJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJDO;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJDO;
 
@@ -166,7 +166,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
   }
 
   public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
-    BidirectionalChildListLongPkJDO bidirChild = new BidirectionalChildListLongPkJDO();
+    BidirectionalChildLongPkListJDO bidirChild = new BidirectionalChildLongPkListJDO();
     bidirChild.setChildVal("yam");
 
     Flight f = newFlight();
@@ -174,7 +174,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     hasKeyPk.setStr("yag");
 
-    HasOneToManyListLongPkJDO parent = new HasOneToManyListLongPkJDO();
+    HasOneToManyLongPkListJDO parent = new HasOneToManyLongPkListJDO();
     parent.addBidirChild(bidirChild);
     bidirChild.setParent(parent);
     parent.addFlight(f);
@@ -223,14 +223,15 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals(1, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
 
-    assertEquals(HasOneToManyListLongPkJDO.class.getName(), 1, countForClass(HasOneToManyListLongPkJDO.class));
-    assertEquals(BidirectionalChildListLongPkJDO.class.getName(), 1, countForClass(BidirectionalChildListLongPkJDO.class));
+    assertEquals(HasOneToManyLongPkListJDO.class.getName(), 1, countForClass(HasOneToManyLongPkListJDO.class));
+    assertEquals(BidirectionalChildLongPkListJDO.class.getName(), 1, countForClass(
+        BidirectionalChildLongPkListJDO.class));
     assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
     assertEquals(HasKeyPkJDO.class.getName(), 1, countForClass(HasKeyPkJDO.class));
   }
 
   public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
-    BidirectionalChildListStringPkJDO bidirChild = new BidirectionalChildListStringPkJDO();
+    BidirectionalChildStringPkListJDO bidirChild = new BidirectionalChildStringPkListJDO();
     bidirChild.setChildVal("yam");
 
     Flight f = newFlight();
@@ -238,7 +239,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     hasKeyPk.setStr("yag");
 
-    HasOneToManyListStringPkJDO parent = new HasOneToManyListStringPkJDO();
+    HasOneToManyStringPkListJDO parent = new HasOneToManyStringPkListJDO();
     parent.setId("yar");
     parent.addBidirChild(bidirChild);
     bidirChild.setParent(parent);
@@ -288,8 +289,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals(1, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
 
-    assertEquals(HasOneToManyListStringPkJDO.class.getName(), 1, countForClass(HasOneToManyListStringPkJDO.class));
-    assertEquals(BidirectionalChildListStringPkJDO.class.getName(), 1, countForClass(BidirectionalChildListStringPkJDO.class));
+    assertEquals(HasOneToManyStringPkListJDO.class.getName(), 1, countForClass(
+        HasOneToManyStringPkListJDO.class));
+    assertEquals(BidirectionalChildStringPkListJDO.class.getName(), 1, countForClass(
+        BidirectionalChildStringPkListJDO.class));
     assertEquals(Flight.class.getName(), 1, countForClass(Flight.class));
     assertEquals(HasKeyPkJDO.class.getName(), 1, countForClass(HasKeyPkJDO.class));
   }
@@ -343,12 +346,14 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
   }
 
-  public void testAddChildToOneToManyParentWithLongPk() {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkListJDO());
+  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(
+        new HasOneToManyLongPkListJDO(), new BidirectionalChildLongPkListJDO());
   }
 
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
-    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO());
   }
 
   public void testOneToManyChildAtMultipleLevels() {
@@ -373,7 +378,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     commitTxn();
   }
 
-  public void testAddQueriedParentToBidirChild() {
+  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
   }
 

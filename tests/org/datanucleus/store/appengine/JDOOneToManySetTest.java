@@ -17,7 +17,9 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
+import org.datanucleus.test.BidirectionalChildLongPkSetJDO;
 import org.datanucleus.test.BidirectionalChildSetJDO;
+import org.datanucleus.test.BidirectionalChildSetUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
 import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 import org.datanucleus.test.HasOneToManyLongPkSetJDO;
@@ -118,15 +120,16 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJDO());
   }
 
-  public void testAddChildToOneToManyParentWithLongPk() {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO());
+  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO(), new BidirectionalChildLongPkSetJDO());
   }
 
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
-    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJDO());
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkSetJDO(), new BidirectionalChildSetUnencodedStringPkJDO());
   }
 
-  public void testAddQueriedParentToBidirChild() {
+  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
   }
 

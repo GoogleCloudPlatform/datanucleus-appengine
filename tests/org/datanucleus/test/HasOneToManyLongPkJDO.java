@@ -24,5 +24,7 @@ import java.util.Collection;
 public interface HasOneToManyLongPkJDO extends Serializable {
   public void addFlight(Flight flight);
   public Collection<Flight> getFlights();
+  public void addBidirChild(BidirectionalChildLongPkJDO child);
+  public Collection<BidirectionalChildLongPkJDO> getBidirChildren();
   public Long getId();
 }

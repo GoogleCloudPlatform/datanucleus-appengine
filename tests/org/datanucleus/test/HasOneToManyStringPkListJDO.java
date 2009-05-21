@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
-import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -30,22 +29,25 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class HasOneToManyListLongPkJDO {
+public class HasOneToManyStringPkListJDO {
 
   @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private Long id;
+  private String id;
 
   @Persistent
   private String val;
 
-  public Long getId() {
+  public String getId() {
     return id;
+  }
+
+  public void setId(String id) {
+    this.id = id;
   }
 
   @Persistent(mappedBy = "parent")
   @Element(dependent = "true")
-  private List<BidirectionalChildListLongPkJDO> bidirChildren = new ArrayList<BidirectionalChildListLongPkJDO>();
+  private List<BidirectionalChildStringPkListJDO> bidirChildren = new ArrayList<BidirectionalChildStringPkListJDO>();
 
   @Element(dependent = "true")
   private List<Flight> flights = new ArrayList<Flight>();
@@ -57,7 +59,7 @@ public class HasOneToManyListLongPkJDO {
     return (List) bidirChildren;
   }
 
-  public void addBidirChild(BidirectionalChildListLongPkJDO bidirChild) {
+  public void addBidirChild(BidirectionalChildStringPkListJDO bidirChild) {
     bidirChildren.add(bidirChild);
   }
 
@@ -109,7 +111,7 @@ public class HasOneToManyListLongPkJDO {
     hasKeyPks.clear();
   }
 
-  public void addBidirChildAtPosition(BidirectionalChildListLongPkJDO bidir, int pos) {
+  public void addBidirChildAtPosition(BidirectionalChildStringPkListJDO bidir, int pos) {
     bidirChildren.set(pos, bidir);
   }
 
@@ -133,7 +135,7 @@ public class HasOneToManyListLongPkJDO {
     hasKeyPks.remove(i);
   }
 
-  public void addAtPosition(int i, BidirectionalChildListLongPkJDO bidir) {
+  public void addAtPosition(int i, BidirectionalChildStringPkListJDO bidir) {
     bidirChildren.add(i, bidir);
   }
 

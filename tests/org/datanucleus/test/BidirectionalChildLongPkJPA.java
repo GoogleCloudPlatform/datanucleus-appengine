@@ -16,18 +16,14 @@ limitations under the License.
 package org.datanucleus.test;
 
 import java.io.Serializable;
-import java.util.Collection;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public interface HasOneToManyUnencodedStringPkJPA extends Serializable {
-
-  Collection<Book> getBooks();
-
-  Collection<BidirectionalChildUnencodedStringPkJPA> getBidirChildren();
-
+public interface BidirectionalChildLongPkJPA extends Serializable {
+  HasOneToManyLongPkJPA getParent();
   String getId();
-
-  void setId(String id);
+  void setChildVal(String childVal);
+  void setParent(HasOneToManyLongPkJPA parent);
+  String getChildVal();
 }

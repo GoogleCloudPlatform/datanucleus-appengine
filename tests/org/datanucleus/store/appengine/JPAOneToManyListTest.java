@@ -22,19 +22,19 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJPA;
-import org.datanucleus.test.BidirectionalChildListLongPkJPA;
-import org.datanucleus.test.BidirectionalChildListStringPkJPA;
+import org.datanucleus.test.BidirectionalChildLongPkListJPA;
 import org.datanucleus.test.BidirectionalChildSetJPA;
+import org.datanucleus.test.BidirectionalChildStringPkListJPA;
+import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
 import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJPA;
 import org.datanucleus.test.HasOneToManyKeyPkListJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
-import org.datanucleus.test.HasOneToManyListLongPkJPA;
-import org.datanucleus.test.HasOneToManyListStringPkJPA;
 import org.datanucleus.test.HasOneToManyLongPkListJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
+import org.datanucleus.test.HasOneToManyStringPkListJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJPA;
@@ -377,7 +377,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
   }
 
   public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
-    BidirectionalChildListLongPkJPA bidirChild = new BidirectionalChildListLongPkJPA();
+    BidirectionalChildLongPkListJPA bidirChild = new BidirectionalChildLongPkListJPA();
     bidirChild.setChildVal("yam");
 
     Book b = newBook();
@@ -385,7 +385,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     hasKeyPk.setStr("yag");
 
-    HasOneToManyListLongPkJPA parent = new HasOneToManyListLongPkJPA();
+    HasOneToManyLongPkListJPA parent = new HasOneToManyLongPkListJPA();
     parent.getBidirChildren().add(bidirChild);
     bidirChild.setParent(parent);
     parent.getBooks().add(b);
@@ -425,14 +425,15 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(1, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
 
-    assertEquals(HasOneToManyListLongPkJPA.class.getName(), 1, countForClass(HasOneToManyListLongPkJPA.class));
-    assertEquals(BidirectionalChildListLongPkJPA.class.getName(), 1, countForClass(BidirectionalChildListLongPkJPA.class));
+    assertEquals(HasOneToManyLongPkListJPA.class.getName(), 1, countForClass(HasOneToManyLongPkListJPA.class));
+    assertEquals(BidirectionalChildLongPkListJPA.class.getName(), 1, countForClass(
+        BidirectionalChildLongPkListJPA.class));
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
     assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
   }
 
   public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
-    BidirectionalChildListStringPkJPA bidirChild = new BidirectionalChildListStringPkJPA();
+    BidirectionalChildStringPkListJPA bidirChild = new BidirectionalChildStringPkListJPA();
     bidirChild.setChildVal("yam");
 
     Book b = newBook();
@@ -440,7 +441,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     hasKeyPk.setStr("yag");
 
-    HasOneToManyListStringPkJPA parent = new HasOneToManyListStringPkJPA();
+    HasOneToManyStringPkListJPA parent = new HasOneToManyStringPkListJPA();
     parent.setId("yar");
     parent.getBidirChildren().add(bidirChild);
     bidirChild.setParent(parent);
@@ -481,8 +482,10 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(1, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
 
-    assertEquals(HasOneToManyListStringPkJPA.class.getName(), 1, countForClass(HasOneToManyListStringPkJPA.class));
-    assertEquals(BidirectionalChildListStringPkJPA.class.getName(), 1, countForClass(BidirectionalChildListStringPkJPA.class));
+    assertEquals(HasOneToManyStringPkListJPA.class.getName(), 1, countForClass(
+        HasOneToManyStringPkListJPA.class));
+    assertEquals(BidirectionalChildStringPkListJPA.class.getName(), 1, countForClass(
+        BidirectionalChildStringPkListJPA.class));
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
     assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
   }
@@ -537,12 +540,14 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
   }
 
-  public void testAddChildToOneToManyParentWithLongPk() {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(
+        new HasOneToManyLongPkListJPA(), new BidirectionalChildLongPkListJPA());
   }
 
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
-    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkListJPA(), new BidirectionalChildUnencodedStringPkListJPA());
   }
 
   public void testOneToManyChildAtMultipleLevels() {
@@ -567,7 +572,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     commitTxn();
   }
 
-  public void testAddQueriedParentToBidirChild() {
+  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
 

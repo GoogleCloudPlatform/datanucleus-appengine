@@ -170,8 +170,9 @@ class DatastoreQueryExpression implements QueryExpression {
 
   private String getKind(ScalarExpression.DatastoreFieldExpression dfe) {
     DatastoreProperty prop = getDatastoreProperty(dfe);
+    DatastoreTable dt = prop.getDatastoreContainerObject();
     return EntityUtils.determineKind(
-        prop.getOwningClassMetaData(), mainTable.getStoreManager().getIdentifierFactory());
+        dt.getOwningClassMetaDataForColumn(prop.getColumnMetaData().getName()), mainTable.getStoreManager().getIdentifierFactory());
   }
 
   Collection<SortPredicate> getSortPredicates() {

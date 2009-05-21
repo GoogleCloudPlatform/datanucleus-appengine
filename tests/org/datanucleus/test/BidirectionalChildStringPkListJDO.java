@@ -15,14 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
-import org.datanucleus.store.appengine.Utils;
-
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-
-import javax.jdo.annotations.Element;
+import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -32,38 +25,37 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
-public class HasOneToManyLongPkSetJDO implements HasOneToManyLongPkJDO {
+@PersistenceCapable(identityType = IdentityType.APPLICATION)
+public class BidirectionalChildStringPkListJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  private Long key;
+  @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")
+  private String id;
 
-  @Element(dependent = "true")
-  private Set<Flight> flights = Utils.newHashSet();
+  @Persistent
+  private HasOneToManyStringPkListJDO parent;
 
-  @Persistent(mappedBy = "parent")
-  @Element(dependent = "true")
-  private
-  List<BidirectionalChildLongPkSetJDO> bidirChildren = new ArrayList<BidirectionalChildLongPkSetJDO>();
+  @Persistent
+  private String childVal;
 
-  public void addFlight(Flight flight) {
-    flights.add(flight);
+  public String getId() {
+    return id;
   }
 
-  public Collection<Flight> getFlights() {
-    return flights;
+  public HasOneToManyStringPkListJDO getParent() {
+    return parent;
   }
 
-  public Long getId() {
-    return key;
+  public void setParent(HasOneToManyStringPkListJDO parent) {
+    this.parent = parent;
   }
 
-  public void addBidirChild(BidirectionalChildLongPkJDO child) {
-    bidirChildren.add((BidirectionalChildLongPkSetJDO) child);
+  public String getChildVal() {
+    return childVal;
   }
 
-  public Collection<BidirectionalChildLongPkJDO> getBidirChildren() {
-    return (List) bidirChildren;
+  public void setChildVal(String childVal) {
+    this.childVal = childVal;
   }
 }

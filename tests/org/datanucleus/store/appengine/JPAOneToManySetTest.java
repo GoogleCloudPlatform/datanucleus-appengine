@@ -17,7 +17,9 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
+import org.datanucleus.test.BidirectionalChildLongPkSetJPA;
 import org.datanucleus.test.BidirectionalChildSetJPA;
+import org.datanucleus.test.BidirectionalChildUnencodedStringPkSetJPA;
 import org.datanucleus.test.HasOneToManyKeyPkSetJPA;
 import org.datanucleus.test.HasOneToManyLongPkSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
@@ -91,13 +93,14 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   public void testFetchOfOneToManyParentWithUnencodedStringPk() {
     testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
   }
-  public void testAddChildToOneToManyParentWithLongPk() {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA());
+  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), new BidirectionalChildLongPkSetJPA());
   }
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() {
-    testAddChildToOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkSetJPA(), new BidirectionalChildUnencodedStringPkSetJPA());
   }
-  public void testAddQueriedParentToBidirChild() {
+  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
 

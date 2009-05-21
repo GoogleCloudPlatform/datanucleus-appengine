@@ -17,6 +17,7 @@ package org.datanucleus.test;
 
 import org.datanucleus.store.appengine.Utils;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
@@ -37,8 +38,17 @@ public class HasOneToManyLongPkListJDO implements HasOneToManyLongPkJDO {
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   private Long key;
 
+  @Persistent
+  private String val;
+
   @Element(dependent = "true")
   private List<Flight> flights = Utils.newArrayList();
+
+  @Persistent(mappedBy = "parent")
+  @Element(dependent = "true")
+  private List<BidirectionalChildLongPkListJDO> bidirChildren = new ArrayList<BidirectionalChildLongPkListJDO>();
+
+  private List<HasKeyPkJDO> hasKeyPks = new ArrayList<HasKeyPkJDO>();
 
   public void addFlight(Flight flight) {
     flights.add(flight);
@@ -48,7 +58,27 @@ public class HasOneToManyLongPkListJDO implements HasOneToManyLongPkJDO {
     return flights;
   }
 
+  public void addBidirChild(BidirectionalChildLongPkJDO child) {
+    bidirChildren.add((BidirectionalChildLongPkListJDO) child);
+  }
+
+  public Collection<BidirectionalChildLongPkJDO> getBidirChildren() {
+    return (List) bidirChildren;
+  }
+
   public Long getId() {
     return key;
+  }
+
+  public void addHasKeyPk(HasKeyPkJDO val) {
+    hasKeyPks.add(val);
+  }
+
+  public String getVal() {
+    return val;
+  }
+
+  public void setVal(String val) {
+    this.val = val;
   }
 }

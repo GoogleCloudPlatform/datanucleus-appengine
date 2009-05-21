@@ -24,6 +24,7 @@ import java.util.Collection;
 public interface HasOneToManyLongPkJPA extends Serializable {
 
   Collection<Book> getBooks();
+  Collection<BidirectionalChildLongPkJPA> getBidirChildren();
 
   Long getId();
 }

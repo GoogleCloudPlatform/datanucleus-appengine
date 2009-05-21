@@ -26,7 +26,7 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class BidirectionalChildListStringPkJDO {
+public class BidirectionalChildSetUnencodedStringPkJDO implements BidirectionalChildUnencodedStringPkJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -34,7 +34,7 @@ public class BidirectionalChildListStringPkJDO {
   private String id;
 
   @Persistent
-  private HasOneToManyListStringPkJDO parent;
+  private HasOneToManyUnencodedStringPkSetJDO parent;
 
   @Persistent
   private String childVal;
@@ -43,12 +43,12 @@ public class BidirectionalChildListStringPkJDO {
     return id;
   }
 
-  public HasOneToManyListStringPkJDO getParent() {
+  public HasOneToManyUnencodedStringPkSetJDO getParent() {
     return parent;
   }
 
-  public void setParent(HasOneToManyListStringPkJDO parent) {
-    this.parent = parent;
+  public void setParent(HasOneToManyUnencodedStringPkJDO parent) {
+    this.parent = (HasOneToManyUnencodedStringPkSetJDO) parent;
   }
 
   public String getChildVal() {

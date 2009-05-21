@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -35,8 +36,17 @@ public class HasOneToManyLongPkListJPA implements HasOneToManyLongPkJPA {
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Long id;
 
+  private String val;
+
   @OneToMany(cascade = CascadeType.ALL)
   private List<Book> books = new ArrayList<Book>();
+
+  @OneToMany(cascade = CascadeType.ALL)
+  private List<HasKeyPkJPA> hasKeyPks = new ArrayList<HasKeyPkJPA>();
+
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+  private List<BidirectionalChildLongPkListJPA> bidirChildren =
+      new ArrayList<BidirectionalChildLongPkListJPA>();
 
   public Long getId() {
     return id;
@@ -50,4 +60,19 @@ public class HasOneToManyLongPkListJPA implements HasOneToManyLongPkJPA {
     this.books = null;
   }
 
+  public Collection<BidirectionalChildLongPkJPA> getBidirChildren() {
+    return (List) bidirChildren;
+  }
+
+  public List<HasKeyPkJPA> getHasKeyPks() {
+    return hasKeyPks;
+  }
+
+  public String getVal() {
+    return val;
+  }
+
+  public void setVal(String val) {
+    this.val = val;
+  }
 }

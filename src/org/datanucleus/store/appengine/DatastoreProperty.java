@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.store.mapped.DatastoreField;
@@ -60,8 +59,6 @@ class DatastoreProperty implements DatastoreField {
    * it directly.
    */
   private AbstractMemberMetaData ammd;
-
-  private AbstractClassMetaData owningClassMetaData;
 
   public DatastoreProperty(DatastoreTable table, String javaType,
       DatastoreIdentifier identifier, ColumnMetaData colmd) {
@@ -196,13 +193,5 @@ class DatastoreProperty implements DatastoreField {
 
   void setMemberMetaData(AbstractMemberMetaData ammd) {
     this.ammd = ammd;
-  }
-
-  public void setOwningClassMetaData(AbstractClassMetaData owningClassMetaData) {
-    this.owningClassMetaData = owningClassMetaData;
-  }
-
-  public AbstractClassMetaData getOwningClassMetaData() {
-    return owningClassMetaData;
   }
 }

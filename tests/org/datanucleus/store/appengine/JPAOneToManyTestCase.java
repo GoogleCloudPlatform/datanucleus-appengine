@@ -25,6 +25,8 @@ import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildJPA;
+import org.datanucleus.test.BidirectionalChildLongPkJPA;
+import org.datanucleus.test.BidirectionalChildUnencodedStringPkJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToManyJPA;
@@ -739,7 +741,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     commitTxn();
   }
 
-  void testAddChildToOneToManyParentWithLongPk(HasOneToManyLongPkJPA pojo) {
+  void testAddChildToOneToManyParentWithLongPk(
+      HasOneToManyLongPkJPA pojo, BidirectionalChildLongPkJPA bidirChild)
+      throws EntityNotFoundException {
     beginTxn();
     em.persist(pojo);
     commitTxn();
@@ -748,10 +752,19 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo = em.find(pojo.getClass(), pojo.getId());
     Book b = new Book();
     pojo.getBooks().add(b);
+    pojo.getBidirChildren().add(bidirChild);
+    bidirChild.setParent(pojo);
     commitTxn();
+    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    assertEquals(pojoEntity.getKey(), bookEntity.getParent());
+    assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddChildToOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJPA pojo) {
+  void testAddChildToOneToManyParentWithUnencodedStringPk(
+      HasOneToManyUnencodedStringPkJPA pojo, BidirectionalChildUnencodedStringPkJPA bidirChild)
+      throws EntityNotFoundException {
     pojo.setId("yar");
     beginTxn();
     em.persist(pojo);
@@ -761,10 +774,17 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo = em.find(pojo.getClass(), pojo.getId());
     Book b = new Book();
     pojo.getBooks().add(b);
+    pojo.getBidirChildren().add(bidirChild);
     commitTxn();
+    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    assertEquals(pojoEntity.getKey(), bookEntity.getParent());
+    assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddQueriedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir) {
+  void testAddQueriedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
+      throws EntityNotFoundException {
     beginTxn();
     em.persist(pojo);
     commitTxn();
@@ -778,6 +798,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
     commitTxn();
+    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
   int countForClass(Class<?> clazz) {

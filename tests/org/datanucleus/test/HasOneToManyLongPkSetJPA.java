@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -38,6 +39,10 @@ public class HasOneToManyLongPkSetJPA implements HasOneToManyLongPkJPA {
   @OneToMany(cascade = CascadeType.ALL)
   private Set<Book> books = new HashSet<Book>();
 
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+  private Set<BidirectionalChildLongPkSetJPA> bidirChildren =
+      new HashSet<BidirectionalChildLongPkSetJPA>();
+
   public Long getId() {
     return id;
   }
@@ -50,4 +55,7 @@ public class HasOneToManyLongPkSetJPA implements HasOneToManyLongPkJPA {
     this.books = null;
   }
 
+  public Collection<BidirectionalChildLongPkJPA> getBidirChildren() {
+    return (Set) bidirChildren;
+  }
 }

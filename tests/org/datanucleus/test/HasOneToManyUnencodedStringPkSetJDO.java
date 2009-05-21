@@ -18,11 +18,13 @@ package org.datanucleus.test;
 import org.datanucleus.store.appengine.Utils;
 
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.Set;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 /**
@@ -36,6 +38,11 @@ public class HasOneToManyUnencodedStringPkSetJDO implements HasOneToManyUnencode
 
   @Element(dependent = "true")
   private Set<Flight> flights = Utils.newHashSet();
+
+  @Persistent(mappedBy = "parent")
+  @Element(dependent = "true")
+  private Set<BidirectionalChildSetUnencodedStringPkJDO> bidirChildren =
+      new HashSet<BidirectionalChildSetUnencodedStringPkJDO>();
 
   public void addFlight(Flight flight) {
     flights.add(flight);
@@ -51,5 +58,13 @@ public class HasOneToManyUnencodedStringPkSetJDO implements HasOneToManyUnencode
 
   public void setId(String key) {
     this.key = key;
+  }
+
+  public void addBidirChild(BidirectionalChildUnencodedStringPkJDO child) {
+    bidirChildren.add((BidirectionalChildSetUnencodedStringPkJDO) child);
+  }
+
+  public Collection<BidirectionalChildUnencodedStringPkJDO> getBidirChildren() {
+    return (Set) bidirChildren;
   }
 }

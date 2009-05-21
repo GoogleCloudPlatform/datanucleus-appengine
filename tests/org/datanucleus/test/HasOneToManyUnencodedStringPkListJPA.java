@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import javax.persistence.CascadeType;
@@ -35,6 +36,10 @@ public class HasOneToManyUnencodedStringPkListJPA implements HasOneToManyUnencod
   @OneToMany(cascade = CascadeType.ALL)
   private List<Book> books = new ArrayList<Book>();
 
+  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
+  private List<BidirectionalChildUnencodedStringPkListJPA> bidirChildren =
+      new ArrayList<BidirectionalChildUnencodedStringPkListJPA>();
+
   public String getId() {
     return id;
   }
@@ -51,4 +56,7 @@ public class HasOneToManyUnencodedStringPkListJPA implements HasOneToManyUnencod
     this.books = null;
   }
 
+  public Collection<BidirectionalChildUnencodedStringPkJPA> getBidirChildren() {
+    return (Collection) bidirChildren; 
+  }
 }

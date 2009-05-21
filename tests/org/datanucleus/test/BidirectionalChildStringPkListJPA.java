@@ -27,22 +27,22 @@ import javax.persistence.ManyToOne;
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class BidirectionalChildListLongPkJPA {
+public class BidirectionalChildStringPkListJPA {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
   @ManyToOne
-  private HasOneToManyListLongPkJPA parent;
+  private HasOneToManyStringPkListJPA parent;
 
   private String childVal;
 
-  public HasOneToManyListLongPkJPA getParent() {
+  public HasOneToManyStringPkListJPA getParent() {
     return parent;
   }
 
-  public void setParent(HasOneToManyListLongPkJPA parent) {
+  public void setParent(HasOneToManyStringPkListJPA parent) {
     this.parent = parent;
   }
 
@@ -66,7 +66,7 @@ public class BidirectionalChildListLongPkJPA {
       return false;
     }
 
-    BidirectionalChildListLongPkJPA that = (BidirectionalChildListLongPkJPA) o;
+    BidirectionalChildStringPkListJPA that = (BidirectionalChildStringPkListJPA) o;
 
     if (id != null ? !id.equals(that.id) : that.id != null) {
       return false;

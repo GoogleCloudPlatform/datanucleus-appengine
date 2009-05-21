@@ -20,8 +20,6 @@ import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 
@@ -29,16 +27,16 @@ import javax.persistence.OneToMany;
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class HasOneToManyListLongPkJPA {
+public class HasOneToManyStringPkListJPA {
 
   @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private Long id;
+  private String id;
 
   private String val;
 
   @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-  private List<BidirectionalChildListLongPkJPA> bidirChildren = new ArrayList<BidirectionalChildListLongPkJPA>();
+  private List<BidirectionalChildStringPkListJPA> bidirChildren =
+      new ArrayList<BidirectionalChildStringPkListJPA>();
 
   @OneToMany(cascade = CascadeType.ALL)
   private List<Book> books = new ArrayList<Book>();
@@ -46,11 +44,15 @@ public class HasOneToManyListLongPkJPA {
   @OneToMany(cascade = CascadeType.ALL)
   private List<HasKeyPkJPA> hasKeyPks = new ArrayList<HasKeyPkJPA>();
 
-  public Long getId() {
+  public String getId() {
     return id;
   }
 
-  public List<BidirectionalChildListLongPkJPA> getBidirChildren() {
+  public void setId(String id) {
+    this.id = id;
+  }
+
+  public List<BidirectionalChildStringPkListJPA> getBidirChildren() {
     return (List) bidirChildren;
   }
 
