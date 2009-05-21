@@ -55,8 +55,8 @@ import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.DatastoreTransaction;
 import org.datanucleus.store.appengine.EntityUtils;
-import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.PrimitiveArrays;
+import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -916,20 +916,6 @@ public class DatastoreQuery implements Serializable {
       throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
                                  + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
                                  + " parameter value contains Key of kind " + keyKind ).setFatal();
-    }
-    // If the key has a parent, we also need to also verify that the parent of
-    // the key is the property kind
-    if (key.getParent() != null) {
-      String keyParentKind = key.getParent().getKind();
-      String fieldOwnerKind = getIdentifierFactory().newDatastoreContainerIdentifier(
-          ammd.getAbstractClassMetaData()).getIdentifierName();
-      if (!keyParentKind.equals(fieldOwnerKind)) {
-        throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
-                                   + ammd.getFullFieldName() + " is owned by a class that maps to "
-                                   + "kind " + fieldOwnerKind + " but"
-                                   + " parameter value contains Key with parent of kind "
-                                   + keyParentKind ).setFatal();
-      }
     }
   }
 

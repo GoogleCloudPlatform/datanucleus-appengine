@@ -16,42 +16,34 @@ limitations under the License.
 package org.datanucleus.test;
 
 import org.datanucleus.jpa.annotations.Extension;
-import org.datanucleus.store.appengine.Utils;
 
-import java.util.List;
-
-import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.ManyToOne;
-import javax.persistence.OneToMany;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class BidirectionalChildListJPA implements BidirectionalChildJPA {
+public class BidirectionalGrandchildListJPA {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
   @ManyToOne
-  private HasOneToManyListJPA parent;
-
-  @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-  private List<BidirectionalGrandchildListJPA> bidirGrandchildre = Utils.newArrayList();
+  private BidirectionalChildListJPA parent;
 
   private String childVal;
 
-  public HasOneToManyListJPA getParent() {
+  public BidirectionalChildListJPA getParent() {
     return parent;
   }
 
-  public void setParent(HasOneToManyJPA parent) {
-    this.parent = (HasOneToManyListJPA) parent;
+  public void setParent(BidirectionalChildListJPA parent) {
+    this.parent = parent;
   }
 
   public String getId() {
@@ -74,7 +66,7 @@ public class BidirectionalChildListJPA implements BidirectionalChildJPA {
       return false;
     }
 
-    BidirectionalChildListJPA that = (BidirectionalChildListJPA) o;
+    BidirectionalGrandchildListJPA that = (BidirectionalGrandchildListJPA) o;
 
     if (id != null ? !id.equals(that.id) : that.id != null) {
       return false;

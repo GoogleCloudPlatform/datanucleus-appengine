@@ -15,6 +15,10 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import javax.jdo.annotations.Element;
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
@@ -36,7 +40,11 @@ public class BidirectionalChildListJDO implements BidirectionalChildJDO {
   @Persistent
   private HasOneToManyListJDO parent;
 
-  @Persistent
+  @Persistent(mappedBy = "parent")
+  @Element(dependent = "true")
+  private List<BidirectionalGrandchildListJDO> bidirGrandChildren =
+      new ArrayList<BidirectionalGrandchildListJDO>();
+
   private String childVal;
 
   public String getId() {
@@ -57,5 +65,13 @@ public class BidirectionalChildListJDO implements BidirectionalChildJDO {
 
   public void setChildVal(String childVal) {
     this.childVal = childVal;
+  }
+
+  public List<BidirectionalGrandchildListJDO> getBidirGrandChildren() {
+    return bidirGrandChildren;
+  }
+
+  public void setBidirGrandChildren(List<BidirectionalGrandchildListJDO> bidirGrandChildren) {
+    this.bidirGrandChildren = bidirGrandChildren;
   }
 }

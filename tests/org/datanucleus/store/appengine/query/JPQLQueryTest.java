@@ -33,10 +33,11 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JPATestCase;
+import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.test.BidirectionalChildListJPA;
+import org.datanucleus.test.BidirectionalGrandchildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasBytesJPA;
@@ -695,12 +696,8 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
     q.setParameter("b", bookEntity.getKey());
-    try {
-      q.getResultList();
-      fail("expected JPAException");
-    } catch (PersistenceException e) {
-      // good
-    }
+
+    assertTrue(q.getResultList().isEmpty());
   }
 
   public void testFilterByChildObject_ValueWithoutId() {
@@ -747,6 +744,29 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
   }
 
+  public void testFilterByParentObjectWhereParentIsAChild() {
+    Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity childEntity = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(childEntity);
+    Entity grandChildEntity1 =
+        new Entity(BidirectionalGrandchildListJPA.class.getSimpleName(), childEntity.getKey());
+    ldth.ds.put(grandChildEntity1);
+    Entity grandChildEntity2 =
+        new Entity(BidirectionalGrandchildListJPA.class.getSimpleName(), childEntity.getKey());
+    ldth.ds.put(grandChildEntity2);
+
+    BidirectionalChildListJPA child =
+        em.find(BidirectionalChildListJPA.class, KeyFactory.keyToString(childEntity.getKey()));
+    Query q = em.createQuery(
+        "select from " + BidirectionalGrandchildListJPA.class.getName() + " where parent = :p");
+    q.setParameter("p", child);
+    @SuppressWarnings("unchecked")
+    List<BidirectionalGrandchildListJPA> result = (List<BidirectionalGrandchildListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(grandChildEntity1.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(grandChildEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
   public void testFilterByParentId() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
@@ -1253,7 +1273,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryCacheDisabled() {
     ObjectManager om = ((EntityManagerImpl) em).getObjectManager();
-    JDOQLQuery q = new JDOQLQuery(om, "select from " + Book.class.getName());
+    JPQLQuery q = new JPQLQuery(om, "select from " + Book.class.getName());
     assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
   }
 

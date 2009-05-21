@@ -34,10 +34,11 @@ import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JDOTestCase;
+import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.test.BidirectionalChildListJDO;
+import org.datanucleus.test.BidirectionalGrandchildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
@@ -65,6 +66,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
 import java.util.List;
@@ -816,12 +818,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
-    try {
-      q.execute(flightEntity.getKey());
-      fail("expected JDOException");
-    } catch (JDOException e) {
-      // good
-    }
+    assertTrue(((Collection)q.execute(flightEntity.getKey())).isEmpty());
   }
 
   public void testFilterByChildObject_ValueWithoutId() {
@@ -859,6 +856,29 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, result.size());
     assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentObjectWhereParentIsAChild() {
+    Entity parentEntity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity childEntity = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(childEntity);
+    Entity grandChildEntity1 =
+        new Entity(BidirectionalGrandchildListJDO.class.getSimpleName(), childEntity.getKey());
+    ldth.ds.put(grandChildEntity1);
+    Entity grandChildEntity2 =
+        new Entity(BidirectionalGrandchildListJDO.class.getSimpleName(), childEntity.getKey());
+    ldth.ds.put(grandChildEntity2);
+
+    BidirectionalChildListJDO child =
+        pm.getObjectById(BidirectionalChildListJDO.class, KeyFactory.keyToString(childEntity.getKey()));
+    Query q = pm.newQuery(
+        "select from " + BidirectionalGrandchildListJDO.class.getName()
+        + " where parent == p parameters " + BidirectionalChildListJDO.class.getName() + " p");
+    List<BidirectionalGrandchildListJDO> result = (List<BidirectionalGrandchildListJDO>) q.execute(child);
+    assertEquals(2, result.size());
+    assertEquals(grandChildEntity1.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(grandChildEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
   }
 
   public void testFilterByMultiValueProperty() {
