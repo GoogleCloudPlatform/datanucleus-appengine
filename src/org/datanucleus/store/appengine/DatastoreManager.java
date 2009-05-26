@@ -468,7 +468,15 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public DatastoreTable getDatastoreClass(String className, ClassLoaderResolver clr) {
     try {
-      return (DatastoreTable) super.getDatastoreClass(className, clr);
+      // We see the occasional race condition when multiple threads concurrently
+      // perform an operation using a persistence-capable class for which DataNucleus
+      // has not yet generated the meta-data.  The result is usually
+      // AbstractMemberMetaData objects with the same column listed twice in the meta-data.
+      // Locking at this level is a bit more coarse-grained than I'd like but once the
+      // meta-data has been built this will return super fast so it shouldn't be an issue.
+      synchronized(this) {
+        return (DatastoreTable) super.getDatastoreClass(className, clr);
+      }
     } catch (NoTableManagedException e) {
       // Our parent class throws this when the class isn't PersistenceCapable.
       // The error message is mis-leading so we'll swallow the exception and
