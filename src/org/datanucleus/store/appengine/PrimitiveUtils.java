@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.store.appengine.Utils.Function;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -125,73 +126,73 @@ final class PrimitiveUtils {
    * transforms a List of that type to a primitive array of that type.
    */
   public static final
-  Map<Class<?>, Function<List<?>, Object>> LIST_TO_PRIMITIVE_ARRAY_FUNC_MAP =
+  Map<Class<?>, Function<Collection<?>, Object>> COLLECTION_TO_PRIMITIVE_ARRAY_FUNC_MAP =
       buildListToPrimitiveArrayFuncMap();
 
-  private static Map<Class<?>, Function<List<?>, Object>> buildListToPrimitiveArrayFuncMap() {
-    Map<Class<?>, Function<List<?>, Object>> map =
-        new HashMap<Class<?>, Function<List<?>, Object>>();
+  private static Map<Class<?>, Function<Collection<?>, Object>> buildListToPrimitiveArrayFuncMap() {
+    Map<Class<?>, Function<Collection<?>, Object>> map =
+        new HashMap<Class<?>, Function<Collection<?>, Object>>();
     map.put(
         Integer.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
+          public Object apply(Collection<?> list) {
             return Ints.toArray((List<Integer>) list);
           }
         });
     map.put(
         Short.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toShortArray((List<Short>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toShortArray((Collection<Short>) list);
           }
         });
     map.put(
         Long.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return Longs.toArray((List<Long>) list);
+          public Object apply(Collection<?> list) {
+            return Longs.toArray((Collection<Long>) list);
           }
         });
     map.put(
         Character.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toCharArray((List<Character>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toCharArray((Collection<Character>) list);
           }
         });
     map.put(
         Float.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toFloatArray((List<Float>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toFloatArray((Collection<Float>) list);
           }
         });
     map.put(
         Double.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toDoubleArray((List<Double>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toDoubleArray((Collection<Double>) list);
           }
         });
     map.put(
-        Boolean.TYPE, new Function<List<?>, Object>() {
+        Boolean.TYPE, new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toBooleanArray((List<Boolean>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toBooleanArray((Collection<Boolean>) list);
           }
         });
     map.put(
         Byte.TYPE,
-        new Function<List<?>, Object>() {
+        new Function<Collection<?>, Object>() {
           @SuppressWarnings("unchecked")
-          public Object apply(List<?> list) {
-            return PrimitiveArrays.toByteArray((List<Byte>) list);
+          public Object apply(Collection<?> list) {
+            return PrimitiveArrays.toByteArray((Collection<Byte>) list);
           }
       });
     return map;

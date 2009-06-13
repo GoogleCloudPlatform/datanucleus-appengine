@@ -180,6 +180,41 @@ public class JPAUpdateTest extends JPATestCase {
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
+  public void testUpdateCollection_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJPA pojo = new HasMultiValuePropsJPA();
+    List<Integer> list = Utils.newArrayList(2, 3);
+    pojo.setIntColl(list);
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
+    pojo.getIntColl().add(4);
+    commitTxn();
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
+  }
+
+  public void testUpdateCollection_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJPA pojo = new HasMultiValuePropsJPA();
+    List<Integer> list = Utils.newArrayList(2, 3);
+    pojo.setIntColl(list);
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    pojo = em.find(HasMultiValuePropsJPA.class, pojo.getId());
+    list = Utils.newArrayList(2, 3, 4);
+    pojo.setIntColl(list);
+    commitTxn();
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
+  }
+
   public void testUpdateArrayList_Add() throws EntityNotFoundException {
     HasMultiValuePropsJPA pojo = new HasMultiValuePropsJPA();
     ArrayList<String> list = Utils.newArrayList("a", "b");

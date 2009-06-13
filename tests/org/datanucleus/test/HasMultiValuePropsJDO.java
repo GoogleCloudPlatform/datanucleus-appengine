@@ -18,6 +18,7 @@ package org.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -46,6 +47,9 @@ public class HasMultiValuePropsJDO {
 
   @Persistent(defaultFetchGroup = "true")
   List<String> strList;
+
+  @Persistent(defaultFetchGroup = "true")
+  Collection<Integer> intColl;
 
   @Persistent
   List<Key> keyList;
@@ -157,5 +161,13 @@ public class HasMultiValuePropsJDO {
 
   public void setStrLinkedHashSet(LinkedHashSet<String> strLinkedHashSet) {
     this.strLinkedHashSet = strLinkedHashSet;
+  }
+
+  public Collection<Integer> getIntColl() {
+    return intColl;
+  }
+
+  public void setIntColl(Collection<Integer> intColl) {
+    this.intColl = intColl;
   }
 }

@@ -348,14 +348,14 @@ class TypeConversionUtils {
     }
     @SuppressWarnings("unchecked")
     List<Object> datastoreList = (List<Object>) value;
-    if (pojoPropertyIsList(ammd)) {
-      @SuppressWarnings("unchecked")
-      Class<? extends List> listType = ammd.getType();
-      value = convertDatastoreListToPojoList(datastoreList, memberType, listType, conversionFunc);
-    } else if (pojoPropertyIsSet(ammd)) {
+    if (pojoPropertyIsSet(ammd)) {
       @SuppressWarnings("unchecked")
       Class<? extends Set> setType = ammd.getType();
       value = convertDatastoreListToPojoSet(datastoreList, memberType, setType, conversionFunc);
+    } else if (pojoPropertyIsCollection(ammd)) {
+      @SuppressWarnings("unchecked")
+      Class<? extends Collection> listType = ammd.getType();
+      value = convertDatastoreListToPojoCollection(datastoreList, memberType, listType, conversionFunc);
     }
     return wrap(ownerSM, ammd, value);
   }
@@ -407,31 +407,31 @@ class TypeConversionUtils {
     }
   }
 
-  private List<Object> newList(Class<? extends List> listType) {
-    List<Object> listToReturn;
-    if (listType.isInterface()) {
-      listToReturn = Utils.newArrayList();
+  private Collection<Object> newCollection(Class<? extends Collection> collType) {
+    Collection<Object> collToReturn;
+    if (collType.isInterface()) {
+      collToReturn = Utils.newArrayList();
     } else {
       try {
-        listToReturn = (List<Object>) listType.newInstance();
+        collToReturn = (Collection<Object>) collType.newInstance();
       } catch (InstantiationException e) {
-        throw new NucleusException("Cannot instantiate List of type " + listType.getName(), e);
+        throw new NucleusException("Cannot instantiate Collection of type " + collType.getName(), e);
       } catch (IllegalAccessException e) {
-        throw new NucleusException("Cannot instantiate List of type " + listType.getName(), e);
+        throw new NucleusException("Cannot instantiate Collection of type " + collType.getName(), e);
       }
     }
-    return listToReturn;
+    return collToReturn;
   }
 
-  List<Object> convertDatastoreListToPojoList(List<Object> datastoreList, Class<?> pojoType,
-      Class<? extends List> listType) {
+  Collection<Object> convertDatastoreListToPojoCollection(List<Object> datastoreList, Class<?> pojoType,
+      Class<? extends Collection> collType) {
     Function<Object, Object> func = DATASTORE_TO_POJO_TYPE_FUNC.get(pojoType);
-    return convertDatastoreListToPojoList(datastoreList, pojoType, listType, func);
+    return convertDatastoreListToPojoCollection(datastoreList, pojoType, collType, func);
   }
 
-  List<Object> convertDatastoreListToPojoList(List<Object> datastoreList, Class<?> pojoType,
-      Class<? extends List> listType, Function<Object, Object> func) {
-    List<Object> listToReturn = newList(listType);
+  Collection<Object> convertDatastoreListToPojoCollection(List<Object> datastoreList, Class<?> pojoType,
+      Class<? extends Collection> collType, Function<Object, Object> func) {
+    Collection<Object> listToReturn = newCollection(collType);
     if (datastoreList == null) {
       return listToReturn;
     }
@@ -443,7 +443,7 @@ class TypeConversionUtils {
       datastoreList = new ArrayList<Object>(
           Arrays.asList(convertStringListToEnumArray(datastoreList, enumClass)));
     }
-    if (listType.isAssignableFrom(datastoreList.getClass())) {
+    if (collType.isAssignableFrom(datastoreList.getClass())) {
       return datastoreList;
     }
     listToReturn.addAll(datastoreList);
@@ -470,8 +470,8 @@ class TypeConversionUtils {
 
   Set<Object> convertDatastoreListToPojoSet(List<Object> datastoreList, Class<?> pojoType,
       Class<? extends Set> setType, Function<Object, Object> conversionFunc) {
-    List<?> convertedList =
-        convertDatastoreListToPojoList(datastoreList, pojoType, ArrayList.class, conversionFunc);
+    Collection<?> convertedList =
+        convertDatastoreListToPojoCollection(datastoreList, pojoType, ArrayList.class, conversionFunc);
     Set<Object> setToReturn = newSet(setType);
     setToReturn.addAll(convertedList);
     return setToReturn;
@@ -482,14 +482,15 @@ class TypeConversionUtils {
    * Object[].
    */
   Object convertDatastoreListToPojoArray(List<Object> datastoreList, Class<?> pojoType) {
-    datastoreList = convertDatastoreListToPojoList(datastoreList, pojoType, ArrayList.class);
+    Collection<Object> datastoreColl =
+        convertDatastoreListToPojoCollection(datastoreList, pojoType, ArrayList.class);
     // We need to see whether we're converting to a primitive array or an
     // array that extends Object[].
     if (pojoType.isPrimitive()) {
-      return PrimitiveUtils.LIST_TO_PRIMITIVE_ARRAY_FUNC_MAP.get(pojoType).apply(datastoreList);
+      return PrimitiveUtils.COLLECTION_TO_PRIMITIVE_ARRAY_FUNC_MAP.get(pojoType).apply(datastoreColl);
     }
-    Object[] array = (Object[]) Array.newInstance(pojoType, datastoreList.size());
-    return datastoreList.toArray(array);
+    Object[] array = (Object[]) Array.newInstance(pojoType, datastoreColl.size());
+    return datastoreColl.toArray(array);
   }
 
   private Object[] convertStringListToEnumArray(List<?> datastoreList, Class<Enum> pojoType) {
@@ -538,12 +539,12 @@ class TypeConversionUtils {
     return cmd instanceof CollectionMetaData;
   }
 
-  private boolean pojoPropertyIsList(AbstractMemberMetaData ammd) {
-    return List.class.isAssignableFrom(ammd.getType());
-  }
-
   private boolean pojoPropertyIsSet(AbstractMemberMetaData ammd) {
     return Set.class.isAssignableFrom(ammd.getType());
+  }
+
+  private boolean pojoPropertyIsCollection(AbstractMemberMetaData ammd) {
+    return Collection.class.isAssignableFrom(ammd.getType());
   }
 
   private boolean pojoPropertyIsArray(AbstractMemberMetaData ammd) {

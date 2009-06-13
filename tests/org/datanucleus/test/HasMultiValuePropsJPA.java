@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.test;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.LinkedList;
@@ -39,6 +40,8 @@ public class HasMultiValuePropsJPA {
   private Long id;
 
   List<String> strList;
+
+  Collection<Integer> intColl;
 
   List<String> keyList;
 
@@ -134,5 +137,13 @@ public class HasMultiValuePropsJPA {
 
   public void setStrLinkedHashSet(LinkedHashSet<String> strLinkedHashSet) {
     this.strLinkedHashSet = strLinkedHashSet;
+  }
+
+  public Collection<Integer> getIntColl() {
+    return intColl;
+  }
+
+  public void setIntColl(Collection<Integer> intColl) {
+    this.intColl = intColl;
   }
 }

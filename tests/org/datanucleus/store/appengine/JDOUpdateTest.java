@@ -356,6 +356,41 @@ public class JDOUpdateTest extends JDOTestCase {
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
+  public void testUpdateCollection_Add() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    List<Integer> list = Utils.newArrayList(2, 3);
+    pojo.setIntColl(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    pojo.getIntColl().add(4);
+    commitTxn();
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
+  }
+
+  public void testUpdateCollection_Reset() throws EntityNotFoundException {
+    HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
+    List<Integer> list = Utils.newArrayList(2, 3);
+    pojo.setIntColl(list);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
+    list = Utils.newArrayList(2, 3, 4);
+    pojo.setIntColl(list);
+    commitTxn();
+    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
+  }
+
   public void testUpdateArrayList_Add() throws EntityNotFoundException {
     HasMultiValuePropsJDO pojo = new HasMultiValuePropsJDO();
     ArrayList<String> list = Utils.newArrayList("a", "b");
