@@ -67,6 +67,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(Date.class, pojo.getDate().getClass());
     em.close();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     em = emf.createEntityManager();
@@ -102,6 +103,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
     em.close();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(Date.class, pojo.getDate().getClass());
     em = emf.createEntityManager();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
 

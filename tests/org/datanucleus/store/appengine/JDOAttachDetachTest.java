@@ -66,6 +66,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     pm.makePersistent(pojo);
     commitTxn();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(Date.class, pojo.getDate().getClass());
     pm.close();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     pm = pmf.getPersistenceManager();
@@ -100,6 +101,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
     pm.close();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(Date.class, pojo.getDate().getClass());
     pm = pmf.getPersistenceManager();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
 
