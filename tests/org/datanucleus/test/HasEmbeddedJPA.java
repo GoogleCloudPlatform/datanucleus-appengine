@@ -17,7 +17,9 @@
 
 package org.datanucleus.test;
 
+import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
+import javax.persistence.Column;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -35,8 +37,11 @@ public class HasEmbeddedJPA {
   private Long id;
 
   @Embedded
-  @AttributeOverrides({})
   private EmbeddableJPA embeddable;
+
+  @Embedded
+  @AttributeOverrides({@AttributeOverride(name="embeddedString", column=@Column(name="EMBEDDEDSTRING"))})
+  private EmbeddableJPA embeddable2;
 
   public Long getId() {
     return id;
@@ -48,5 +53,13 @@ public class HasEmbeddedJPA {
 
   public void setEmbeddable(EmbeddableJPA embeddable) {
     this.embeddable = embeddable;
+  }
+
+  public EmbeddableJPA getEmbeddable2() {
+    return embeddable2;
+  }
+
+  public void setEmbeddable2(EmbeddableJPA embeddable2) {
+    this.embeddable2 = embeddable2;
   }
 }

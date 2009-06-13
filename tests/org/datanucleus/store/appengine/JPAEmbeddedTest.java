@@ -34,16 +34,21 @@ public class JPAEmbeddedTest extends JPATestCase {
     EmbeddableJPA embedded = new EmbeddableJPA();
     embedded.setEmbeddedString("yar");
     pojo.setEmbeddable(embedded);
+    embedded = new EmbeddableJPA();
+    embedded.setEmbeddedString("yar2");
+    pojo.setEmbeddable2(embedded);
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    //assertEquals(1, countForClass(HasEmbeddedJPA.class));
+    assertEquals(1, countForClass(HasEmbeddedJPA.class));
     Entity e = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertEquals("yar", e.getProperty("embeddedString"));
+    assertEquals("yar2", e.getProperty("EMBEDDEDSTRING"));
     beginTxn();
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());
     assertNotNull(pojo.getEmbeddable());
     assertEquals("yar", pojo.getEmbeddable().getEmbeddedString());
+    assertEquals("yar2", pojo.getEmbeddable2().getEmbeddedString());
     commitTxn();
   }
 
@@ -56,6 +61,7 @@ public class JPAEmbeddedTest extends JPATestCase {
     beginTxn();
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());
     assertNotNull(pojo.getEmbeddable());
+    assertNotNull(pojo.getEmbeddable2());
     commitTxn();
   }
 
@@ -67,18 +73,26 @@ public class JPAEmbeddedTest extends JPATestCase {
 
     EmbeddableJPA embeddable = new EmbeddableJPA();
     embeddable.setEmbeddedString("yar");
+    EmbeddableJPA embeddable2 = new EmbeddableJPA();
+    embeddable2.setEmbeddedString("yar2");
     beginTxn();
     pojo.setEmbeddable(embeddable);
+    pojo.setEmbeddable2(embeddable2);
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());
     assertNotNull(pojo.getEmbeddable());
     assertNull(pojo.getEmbeddable().getEmbeddedString());
+    assertNotNull(pojo.getEmbeddable2());
+    assertNull(pojo.getEmbeddable2().getEmbeddedString());
     pojo.setEmbeddable(embeddable);
+    pojo.setEmbeddable2(embeddable2);
     commitTxn();
 
     beginTxn();
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());
     assertNotNull(pojo.getEmbeddable());
     assertEquals("yar", pojo.getEmbeddable().getEmbeddedString());
+    assertNotNull(pojo.getEmbeddable2());
+    assertEquals("yar2", pojo.getEmbeddable2().getEmbeddedString());
     commitTxn();
   }
 }

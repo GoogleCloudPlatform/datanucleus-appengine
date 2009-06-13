@@ -21,9 +21,11 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
+import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.plugin.PluginManager;
+import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
@@ -32,6 +34,7 @@ import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.AbstractMappingManager;
 import org.datanucleus.store.mapped.mapping.DatastoreMappingFactory;
+import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedMapping;
 
@@ -283,7 +286,34 @@ class DatastoreMappingManager extends AbstractMappingManager {
       // this change enables us to have relations where the pk of the child is of type
       // Key, and that's a good thing.
       return KeyMapping.class;
+    } else if (mappingClass.equals(EmbeddedPCMapping.class)) {
+      // As of DataNuc 1.1.3, Embedded fields in JPA don't have their
+      // EmbeddedMetaData set.  Our embedded field logic requires this,
+      // so in order to preserve this invariant we instantiate our own
+      // subclass of EmbeddedPCMapping that always has EmbeddedMetaData
+      // set.
+      return DatastoreEmbeddedPCMapping.class;
     }
     return mappingClass;
+  }
+
+  /**
+   * An extension of {@link EmbeddedPCMapping} that always has its
+   * EmbeddedMetaData set.
+   */
+  public static final class DatastoreEmbeddedPCMapping extends EmbeddedPCMapping {
+
+    @Override
+    public void initialize(DatastoreAdapter dba, AbstractMemberMetaData fmd,
+                           DatastoreContainerObject container, ClassLoaderResolver clr) {
+      if (fmd.getEmbeddedMetaData() == null) {
+        EmbeddedMetaData embmd = new EmbeddedMetaData();
+        embmd.setOwnerMember(fmd.getName());
+        fmd.setEmbeddedMetaData(embmd);
+        embmd.populate(clr, null);
+        embmd.initialise(clr);
+      }
+      super.initialize(dba, fmd, container, clr);
+    }
   }
 }

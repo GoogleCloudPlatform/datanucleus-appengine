@@ -735,7 +735,7 @@ public class DatastoreFieldManager implements FieldManager {
           if (Enum.class.isAssignableFrom(ammd.getType())) {
             value = ((Enum) value).name();
           }
-          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, getMetaData(fieldNumber));
+          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
         }
       }
       if (ammd.getEmbeddedMetaData() != null) {
