@@ -37,6 +37,7 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJPA;
+import org.datanucleus.test.BidirectionalChildLongPkListJPA;
 import org.datanucleus.test.BidirectionalGrandchildListJPA;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
@@ -721,12 +722,10 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByParentObject() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity
-        bidirEntity =
+    Entity bidirEntity =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(bidirEntity);
-    Entity
-        bidirEntity2 =
+    Entity bidirEntity2 =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(bidirEntity2);
 
@@ -739,6 +738,52 @@ public class JPQLQueryTest extends JPATestCase {
     q.setParameter("p", parent);
     @SuppressWarnings("unchecked")
     List<BidirectionalChildListJPA> result = (List<BidirectionalChildListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentLongObjectId() {
+    Entity parentEntity = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity =
+        new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 =
+        new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyLongPkListJPA parent =
+        em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = em.createQuery("SELECT FROM " +
+                             BidirectionalChildLongPkListJPA.class.getName() + " WHERE parent = :p");
+
+    q.setParameter("p", parent.getId());
+    @SuppressWarnings("unchecked")
+    List<BidirectionalChildLongPkListJPA> result = (List<BidirectionalChildLongPkListJPA>) q.getResultList();
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentIntObjectId() {
+    Entity parentEntity = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity =
+        new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 =
+        new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyLongPkListJPA parent =
+        em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = em.createQuery("SELECT FROM " +
+                             BidirectionalChildLongPkListJPA.class.getName() + " WHERE parent = :p");
+
+    q.setParameter("p", parent.getId().intValue());
+    @SuppressWarnings("unchecked")
+    List<BidirectionalChildLongPkListJPA> result = (List<BidirectionalChildLongPkListJPA>) q.getResultList();
     assertEquals(2, result.size());
     assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));

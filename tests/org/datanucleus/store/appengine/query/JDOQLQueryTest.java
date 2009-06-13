@@ -38,6 +38,7 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.BidirectionalChildListJDO;
+import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
@@ -858,6 +859,46 @@ public class JDOQLQueryTest extends JDOTestCase {
         "select from " + BidirectionalChildListJDO.class.getName()
         + " where parent == p parameters " + HasOneToManyListJDO.class.getName() + " p");
     List<BidirectionalChildListJDO> result = (List<BidirectionalChildListJDO>) q.execute(parent);
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentLongObjectId() {
+    Entity parentEntity = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyLongPkListJDO parent =
+        pm.getObjectById(HasOneToManyLongPkListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = pm.newQuery(
+        "select from " + BidirectionalChildLongPkListJDO.class.getName()
+        + " where parent == p parameters long p");
+    List<BidirectionalChildLongPkListJDO> result =
+        (List<BidirectionalChildLongPkListJDO>) q.execute(parent.getId());
+    assertEquals(2, result.size());
+    assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
+    assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
+  }
+
+  public void testFilterByParentIntObjectId() {
+    Entity parentEntity = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
+    ldth.ds.put(parentEntity);
+    Entity bidirEntity = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity);
+    Entity bidirEntity2 = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
+    ldth.ds.put(bidirEntity2);
+
+    HasOneToManyLongPkListJDO parent =
+        pm.getObjectById(HasOneToManyLongPkListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
+    Query q = pm.newQuery(
+        "select from " + BidirectionalChildLongPkListJDO.class.getName()
+        + " where parent == p parameters int p");
+    List<BidirectionalChildLongPkListJDO> result =
+        (List<BidirectionalChildLongPkListJDO>) q.execute(parent.getId().intValue());
     assertEquals(2, result.size());
     assertEquals(bidirEntity.getKey(), KeyFactory.stringToKey(result.get(0).getId()));
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));

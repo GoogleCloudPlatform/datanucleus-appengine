@@ -835,6 +835,9 @@ public class DatastoreQuery implements Serializable {
       // This is a bit odd, but just to be nice we let users
       // provide the id itself rather than the object containing the id.
       jdoPrimaryKey = value;
+    } else if (value instanceof Long || value instanceof Integer) {
+      String kind = EntityUtils.determineKind(acmd, getObjectManager());
+      jdoPrimaryKey = KeyFactory.createKey(kind, ((Number) value).longValue());
     } else if (value == null) {
       jdoPrimaryKey = null;
     } else {
