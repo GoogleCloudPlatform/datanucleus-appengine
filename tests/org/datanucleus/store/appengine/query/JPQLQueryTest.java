@@ -1872,6 +1872,64 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
   }
 
+  public void testSetFirstResultAfterSetParameter() {
+    Entity e = Book.newBookEntity("author", "12345", "y");
+    ldth.ds.put(e);
+    e = Book.newBookEntity("author", "12345", "y");
+    ldth.ds.put(e);
+
+    Query query = em.createQuery("SELECT b FROM " + Book.class.getName() + " b WHERE b.title = :title");
+    query.setParameter("title", "y");
+    query.setFirstResult(1);
+    Book b = (Book) query.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
+  }
+
+  public void testSetMaxResultsAfterSetParameter() {
+    Entity e = Book.newBookEntity("author", "12345", "y");
+    ldth.ds.put(e);
+    Entity e2 = Book.newBookEntity("author", "12345", "y");
+    ldth.ds.put(e2);
+
+    Query query = em.createQuery("SELECT b FROM " + Book.class.getName() + " b WHERE b.title = :title");
+    query.setParameter("title", "y");
+    query.setMaxResults(1);
+    Book b = (Book) query.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
+  }
+
+  public void testSetFirstResultAfterSetPCParameter() {
+    Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
+    Key key = ldth.ds.put(e);
+    e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
+    ldth.ds.put(e);
+    e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
+    ldth.ds.put(e);
+    HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
+    Query q = em.createQuery(
+        "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
+    q.setParameter("p", parent);
+    q.setFirstResult(1);
+    HasOneToOneParentJPA child = (HasOneToOneParentJPA) q.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(child.getId()));
+  }
+
+  public void testSetMaxResultsAfterSetPCParameter() {
+    Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
+    Key key = ldth.ds.put(e);
+    Entity child1 = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
+    ldth.ds.put(child1);
+    Entity child2 = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
+    ldth.ds.put(child2);
+    HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
+    Query q = em.createQuery(
+        "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
+    q.setParameter("p", parent);
+    q.setMaxResults(1);
+    HasOneToOneParentJPA child = (HasOneToOneParentJPA) q.getSingleResult();
+    assertEquals(child1.getKey(), KeyFactory.stringToKey(child.getId()));
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }

@@ -20,7 +20,6 @@ package org.datanucleus.test;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
-import javax.persistence.Enumerated;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -37,7 +36,6 @@ public class HasEmbeddedJPA {
 
   @Embedded
   @AttributeOverrides({})
-  @Enumerated
   private EmbeddableJPA embeddable;
 
   public Long getId() {
