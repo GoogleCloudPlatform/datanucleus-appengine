@@ -30,6 +30,12 @@ import javax.persistence.PersistenceException;
  */
 public class DatastoreEntityManager extends EntityManagerImpl {
 
+  /**
+   * Used to provide access to the entity being merged.  See the comment on
+   * {@link #merge(Object)} for more information.
+   */
+  private static final ThreadLocal<Object> MERGE_ENTITY = new ThreadLocal<Object>();
+
   public DatastoreEntityManager(EntityManagerFactory emf, PersistenceManagerFactory pmf,
       PersistenceContextType contextType) {
     super(emf, pmf, contextType);
@@ -48,4 +54,32 @@ public class DatastoreEntityManager extends EntityManagerImpl {
     return super.find(cls, key);
   }
 
+  /**
+   * Sigh.  When you have a unidirectional OneToMany on a parent object
+   * and you add a new child to a detached instance of the parent,
+   * DataNucleus first adds the child without the parent and then
+   * issues an update to add the parent key.  This doesn't work for App Engine
+   * since we can only handle one write per entity.  We need to know
+   * what the object's parent is when the object is first inserted.
+   * In order to provide this information we set the Entity being merged
+   * (the parent) in a ThreadLocal so that we can pull it out later.
+   * This doesn't work when you have children being
+   * added multiple levels down, but it's a temporary fix that should
+   * hold until we can support multiple writes.  Users will get a "parent switch"
+   * exception in this scenario so even though it's broken, it doesn't result
+   * in data corruption.
+   */
+  @Override
+  public Object merge(Object entity) {
+    MERGE_ENTITY.set(entity);
+    try {
+      return super.merge(entity);
+    } finally {
+      MERGE_ENTITY.remove();
+    }
+  }
+
+  public static Object getMergingEntity() {
+    return MERGE_ENTITY.get();
+  }
 }

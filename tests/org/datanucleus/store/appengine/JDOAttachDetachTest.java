@@ -24,6 +24,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.DetachableJDO;
 import org.datanucleus.test.DetachableWithMultiValuePropsJDO;
+import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasOneToManyListJDO;
 
 import java.io.ByteArrayInputStream;
@@ -147,7 +148,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals(Utils.newArrayList("c", "d", "e"), e.getProperty("strList"));
   }
 
-  public void testSerializeWithOneToMany_AddChildToDetached() throws Exception {
+  public void testSerializeWithOneToMany_AddBidirectionalChildToDetached() throws Exception {
     pm.setDetachAllOnCommit(true);
     beginTxn();
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
@@ -164,13 +165,39 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals("yar", pojo.getVal());
     assertEquals(1, pojo.getBidirChildren().size());
     BidirectionalChildListJDO bidir2 = new BidirectionalChildListJDO();
-    bidir.setChildVal("yar3");
+    bidir2.setChildVal("yar3");
     pojo.addBidirChild(bidir2);
     bidir2.setParent(pojo);
     beginTxn();
     pojo = pm.makePersistent(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
+  }
+
+  public void testSerializeWithOneToMany_AddUnidirectionalChildToDetached() throws Exception {
+    pm.setDetachAllOnCommit(true);
+    beginTxn();
+    HasOneToManyListJDO pojo = new HasOneToManyListJDO();
+    pojo.setVal("yar");
+    Flight flight = new Flight();
+    flight.setName("harry");
+    pojo.addFlight(flight);
+    pm.makePersistent(pojo);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+
+    pojo = toBytesAndBack(pojo);
+    assertEquals("yar", pojo.getVal());
+    assertEquals(1, pojo.getFlights().size());
+    Flight flight2 = new Flight();
+    flight2.setName("not harry");
+    pojo.addFlight(flight2);
+    beginTxn();
+    pojo = pm.makePersistent(pojo);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(flight2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
 

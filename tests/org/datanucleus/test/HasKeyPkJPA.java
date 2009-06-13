@@ -20,7 +20,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.jpa.annotations.Extension;
 
-import javax.jdo.annotations.Persistent;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -66,7 +65,6 @@ public class HasKeyPkJPA {
     this.id = id;
   }
 
-  @Persistent
   public String getStr() {
     return str;
   }

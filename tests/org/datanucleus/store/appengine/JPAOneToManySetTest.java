@@ -24,7 +24,6 @@ import org.datanucleus.test.HasOneToManyKeyPkSetJPA;
 import org.datanucleus.test.HasOneToManyLongPkSetJPA;
 import org.datanucleus.test.HasOneToManySetJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
-import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -52,9 +51,6 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   }
   public void testUpdate_ClearOutChildren() throws EntityNotFoundException {
     testUpdate_ClearOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
-  }
-  public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyWithOrderByJPA.class);
   }
   public void testFind() throws EntityNotFoundException {
     testFind(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class);

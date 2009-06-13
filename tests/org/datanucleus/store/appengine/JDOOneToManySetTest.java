@@ -21,7 +21,6 @@ import org.datanucleus.test.BidirectionalChildLongPkSetJDO;
 import org.datanucleus.test.BidirectionalChildSetJDO;
 import org.datanucleus.test.BidirectionalChildSetUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
-import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 import org.datanucleus.test.HasOneToManyLongPkSetJDO;
 import org.datanucleus.test.HasOneToManySetJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
@@ -65,10 +64,6 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     HasOneToManySetJDO pojo = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidir = new BidirectionalChildSetJDO();
     testUpdate_ClearOutChildren(pojo, bidir);
-  }
-
-  public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class);
   }
 
   public void testFind() throws EntityNotFoundException {

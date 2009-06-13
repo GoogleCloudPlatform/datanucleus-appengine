@@ -202,7 +202,7 @@ class DatastoreRelationFieldManager {
     Key childKey = childKeyOrString instanceof Key
                    ? (Key) childKeyOrString : KeyFactory.stringToKey((String) childKeyOrString);
 
-    Key parentKey = getParentPrimaryKeyAsKey(apiAdapter, parentSM);
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentSM);
 
     if (childKey.getParent() == null) {
       throw new NucleusUserException(
@@ -216,27 +216,6 @@ class DatastoreRelationFieldManager {
          + "parent of " + childKey + " but the entity identified by "
          + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
          + "be established or changed once an object has been persisted.").setFatal();
-    }
-  }
-
-  private static Key getParentPrimaryKeyAsKey(ApiAdapter apiAdapter, StateManager parentSM) {
-    Object parentPrimaryKey =
-        apiAdapter.getTargetKeyForSingleFieldIdentity(parentSM.getInternalObjectId());
-
-    // TODO(maxr): Consolidate this logic in a single location.
-    // Also, we should be able to look at the meta data to see if we have
-    // an encoded or unencoded String.
-    String kind =
-        EntityUtils.determineKind(parentSM.getClassMetaData(), parentSM.getObjectManager());
-    if (parentPrimaryKey instanceof Key) {
-      return (Key) parentPrimaryKey;
-    } else if (parentPrimaryKey instanceof Long) {
-      return KeyFactory.createKey(kind, (Long) parentPrimaryKey);
-    }
-    try {
-      return KeyFactory.stringToKey((String) parentPrimaryKey);
-    } catch (IllegalArgumentException iae) {
-      return KeyFactory.createKey(kind, (String) parentPrimaryKey);
     }
   }
 

@@ -27,6 +27,7 @@ import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJDO;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
+import org.datanucleus.test.HasMultipleBidirChildrenJDO;
 import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJDO;
 import org.datanucleus.test.HasOneToManyKeyPkListJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
@@ -380,6 +381,25 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
+  public void testMultipleBidirChildren() {
+    HasMultipleBidirChildrenJDO pojo = new HasMultipleBidirChildrenJDO();
+
+    HasMultipleBidirChildrenJDO.BidirChild1 c1 = new HasMultipleBidirChildrenJDO.BidirChild1();
+    HasMultipleBidirChildrenJDO.BidirChild2 c2 = new HasMultipleBidirChildrenJDO.BidirChild2();
+
+    pojo.getChild1().add(c1);
+    pojo.getChild2().add(c2);
+
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = pm.getObjectById(HasMultipleBidirChildrenJDO.class, pojo.getId());
+    assertEquals(1, pojo.getChild1().size());
+    assertEquals(1, pojo.getChild2().size());
+    commitTxn();
   }
 
   @Override

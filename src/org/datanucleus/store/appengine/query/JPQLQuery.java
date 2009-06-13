@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine.query;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.store.query.AbstractJPQLQuery;
+import org.datanucleus.store.query.QueryInvalidParametersException;
 
 import java.util.List;
 import java.util.Map;
@@ -81,18 +82,6 @@ public class JPQLQuery extends AbstractJPQLQuery {
     return datastoreQuery;
   }
 
-  /**
-   * TODO(maxr): Remove this once DataNucleus core is fixed.
-   * @see DatastoreQuery#QUERY_CACHE_PROPERTY
-   */
-  @Override
-  public Boolean getBooleanExtensionProperty(String name) {
-    if (name.equals(DatastoreQuery.QUERY_CACHE_PROPERTY)) {
-      return false;
-    }
-    return super.getBooleanExtensionProperty(name);
-  }
-
   @Override
   public void setUnique(boolean unique) {
     // Workaround a DataNucleus bug.
@@ -101,5 +90,24 @@ public class JPQLQuery extends AbstractJPQLQuery {
     // discarding the compiled query discards the parameter values as well and
     // we have no way of getting them back.
     this.unique = unique;
+  }
+
+  @Override
+  protected void checkParameterTypesAgainstCompilation(Map parameterValues) {
+    // Disabled as part of our DataNuc 1.1.3 upgrade so that we can be 
+    // continue to allow multi-value properties and implicit conversions.
+
+    // TODO(maxr) Re-enable the checks that don't break multi-value filters
+    // and implicit conversions.
+  }
+
+  @Override
+  protected void applyImplicitParameterValueToCompilation(String name, Object value) {
+    try {
+      super.applyImplicitParameterValueToCompilation(name, value);
+    } catch (QueryInvalidParametersException e) {
+      // swallow this exception - need to disable the type checking so we can
+      // be friendly about implicit conversions
+    }
   }
 }

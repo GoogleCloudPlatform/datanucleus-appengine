@@ -17,8 +17,11 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Key;
 
+import org.datanucleus.ManagedConnection;
+import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
@@ -80,11 +83,36 @@ class KeyRegistry {
     }
   }
 
+  void registerKey(Object childValue, Key key) {
+    parentKeyMap.put(childValue, key);  
+  }
+
   Key getRegisteredKey(Object object) {
     return parentKeyMap.get(object);
   }
 
   void clear() {
     parentKeyMap.clear();
+  }
+
+  /**
+   * Get the {@link KeyRegistry} associated with the current datasource
+   * connection.  There's a little bit of fancy footwork involved here
+   * because, by default, asking the storeManager for a connection will
+   * allocate a transactional connection if no connection has already been
+   * established.  That's acceptable behavior if the datasource has not been
+   * configured to allow writes outside of transactions, but if the datsaource
+   * _has_ been configured to allow writes outside of transactions,
+   * establishing a transaction is not the right thing to do.  So, we set
+   * a property on the currently active transaction (the datanucleus
+   * transaction, not the datastore transaction) to indicate that if a
+   * connection gets allocated, don't establish a datastore transaction.
+   * Note that even if nontransactional writes are enabled, if there
+   * is already a connection available then setting the property is a no-op.
+   */
+  static KeyRegistry getKeyRegistry(ObjectManager om) {
+    StoreManager storeManager = om.getStoreManager();
+    ManagedConnection mconn = storeManager.getConnection(om);
+    return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 }

@@ -60,6 +60,7 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import java.util.Collection;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -91,9 +92,10 @@ public class DatastoreTable implements DatastoreClass {
 
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
+   * Supports fast lookup but also preserves order.
    */
   private final Map<AbstractMemberMetaData, JavaTypeMapping> fieldMappingsMap =
-      Utils.newHashMap();
+      new LinkedHashMap<AbstractMemberMetaData, JavaTypeMapping>();
 
   /**
    * All the properties in the table.  Even though the datastore is schemaless,

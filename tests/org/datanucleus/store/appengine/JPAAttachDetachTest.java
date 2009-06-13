@@ -22,9 +22,12 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.BidirectionalChildListJPA;
+import org.datanucleus.test.Book;
 import org.datanucleus.test.DetachableJPA;
 import org.datanucleus.test.DetachableWithMultiValuePropsJDO;
+import org.datanucleus.test.HasGrandchildJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
+import org.datanucleus.test.HasOneToManySetJPA;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -146,7 +149,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     assertEquals(Utils.newArrayList("c", "d", "e"), e.getProperty("strList"));
   }
 
-  public void testSerializeWithOneToMany_AddChildToDetached() throws Exception {
+  public void testSerializeWithOneToMany_AddChildToBidirectionalDetached() throws Exception {
     beginTxn();
     HasOneToManyListJPA pojo = new HasOneToManyListJPA();
     pojo.setVal("yar");
@@ -171,6 +174,65 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo = em.merge(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
+  }
+
+  public void testSerializeWithOneToMany_AddChildToUnidirectionalDetached() throws Exception {
+    beginTxn();
+    HasOneToManyListJPA pojo = new HasOneToManyListJPA();
+    pojo.setVal("yar");
+    Book b = new Book();
+    b.setAuthor("harry");
+    pojo.getBooks().add(b);
+    em.persist(pojo);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+
+    pojo = toBytesAndBack(pojo);
+    assertEquals("yar", pojo.getVal());
+    assertEquals(1, pojo.getBooks().size());
+    Book b2 = new Book();
+    b2.setAuthor("yar3");
+    pojo.getBooks().add(b2);
+    // Don't set the parent - this ref won't get updated when we call
+    // merge and we'll get an exception.
+//    bidir2.setParent(pojo);
+    beginTxn();
+    pojo = em.merge(pojo);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
+  }
+
+  public void testSerializeWithOneToMany_AddGrandchildToUnidirectionalDetached() throws Exception {
+    beginTxn();
+    HasGrandchildJPA hasGrandchild = new HasGrandchildJPA();
+    HasOneToManySetJPA pojo = new HasOneToManySetJPA();
+    hasGrandchild.getYar().add(pojo);
+    pojo.setVal("yar");
+    Book b = new Book();
+    b.setAuthor("harry");
+    pojo.getBooks().add(b);
+    em.persist(hasGrandchild);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+
+    hasGrandchild = toBytesAndBack(hasGrandchild);
+    pojo = hasGrandchild.getYar().iterator().next();
+    assertEquals("yar", pojo.getVal());
+    assertEquals(1, pojo.getBooks().size());
+    Book b2 = new Book();
+    b2.setAuthor("yar3");
+    pojo.getBooks().add(b2);
+    // Don't set the parent - this ref won't get updated when we call
+    // merge and we'll get an exception.
+//    bidir2.setParent(pojo);
+    beginTxn();
+    hasGrandchild = em.merge(hasGrandchild);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
 

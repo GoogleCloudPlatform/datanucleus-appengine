@@ -39,7 +39,6 @@ import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsPkName;
 import org.datanucleus.test.IllegalMappingsJPA.PkNameOnNonStringField;
 import org.datanucleus.test.IllegalMappingsJPA.PkNameWithUnencodedStringPrimaryKey;
 
-import javax.jdo.spi.PersistenceCapable;
 import javax.persistence.PersistenceException;
 
 /**
@@ -177,21 +176,16 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testPkMarkedAsAncestor() {
     PkMarkedAsAncestor pojo = new PkMarkedAsAncestor();
-    // There is a datanuc bug with the jpa Extensions annotation and the runtime
-    // enhancer.
-    // When the bug is fixed this test will fail.  We should remove
-    // the next line and uncomment the rest of the test.
-    assertFalse(pojo instanceof PersistenceCapable);
-//    beginTxn();
-//    em.persist(pojo);
-//    try {
-//      commitTxn();
-//      fail("expected exception");
-//    } catch (PersistenceException e) {
-//      // good
-//      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-//      rollbackTxn();
-//    }
+    beginTxn();
+    em.persist(pojo);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
   }
 
   public void testPkMarkedAsPkId() {

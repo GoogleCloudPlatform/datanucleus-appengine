@@ -19,7 +19,6 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
@@ -41,7 +40,6 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
-import javax.jdo.JDOFatalUserException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -473,7 +471,7 @@ public class JPAOneToOneTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where id = :key");
-    q.setParameter("key", pojoEntity.getKey());
+    q.setParameter("key", KeyFactory.keyToString(pojoEntity.getKey()));
     beginTxn();
     @SuppressWarnings("unchecked")
     List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
@@ -732,7 +730,7 @@ public class JPAOneToOneTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOFatalUserException e) {
+    } catch (PersistenceException e) {
       // good
     }
 
@@ -755,7 +753,7 @@ public class JPAOneToOneTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOFatalUserException e) {
+    } catch (PersistenceException e) {
       // good
     }
 
@@ -794,10 +792,6 @@ public class JPAOneToOneTest extends JPATestCase {
     b.setIsbn("22333");
     b.setTitle("yam");
     return b;
-  }
-
-  private int countForClass(Class<?> clazz) {
-    return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
   }
 
   private void assertCountsInDatastore(int expectedParent, int expectedChildren) {

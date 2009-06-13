@@ -32,4 +32,8 @@ limitations under the License.
         <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
             datastore="appengine"/>
     </extension>
+    <extension point="org.datanucleus.store_connectionfactory">
+        <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="false"
+            datastore="appengine"/>
+    </extension>
 </plugin>

@@ -15,11 +15,18 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.Query;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.mapped.scostore.FKSetStore;
+
+import java.util.Collections;
+import java.util.Iterator;
 
 /**
  * Datastore-specific implementation of an {@link FKSetStore}.
@@ -43,6 +50,67 @@ public class DatastoreFKSetStore extends FKSetStore {
     // someone isn't trying to modify the parent FK
     DatastoreRelationFieldManager.checkForParentSwitch(element, sm);
     // fk is already set and sets are unindexed so there's nothing else to do
+    return true;
+  }
+
+  public Iterator iterator(StateManager ownerSM) {
+    ObjectManager om = ownerSM.getObjectManager();
+    ApiAdapter apiAdapter = om.getApiAdapter();
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerSM);
+    return ((DatastoreAbstractSetStoreSpecialization) specialization).getChildren(
+        parentKey,
+        Collections.<Query.FilterPredicate>emptyList(),
+        Collections.<Query.SortPredicate>emptyList(), this, om).iterator();
+  }
+
+  /**
+   * More extreme misfortune.  When a child is removed from a bidirectional
+   * one to many, DataNuc sets the parent field to null.  FKSetStore.remove()
+   * sees that the parent has changed and declines to delete the child.
+   * We want to force the delete of the child, so we have this fairly
+   * nasty override that calls the super() implementation first.  If
+   * this implementation declines to perform the delete (as evidenced by
+   * a 'false' return value) we then duplicate _some_ of the logic to
+   * try and force the delete to happen.  This is really brittle.
+   */
+  @Override
+  public boolean remove(StateManager ownerSM, Object element, int size, boolean allowDependentField) {
+    boolean result = super.remove(ownerSM, element, size,allowDependentField);
+    if (result) {
+      return result;
+    }
+    if (element == null) {
+      return false;
+    }
+    if (!validateElementForReading(ownerSM, element)) {
+      return false;
+    }
+
+    ObjectManager om = ownerSM.getObjectManager();
+    StateManager elementSM = om.findStateManager(element);
+    if (om.getApiAdapter().isDetached(element)) // User passed in detached object to collection.remove()!
+    {
+      // Find an attached equivalent of this detached object (DON'T attach the object itself)
+      element = om.findObject(om.getApiAdapter().getIdForObject(element), true, false,
+                        element.getClass().getName());
+    }
+    if (om.getApiAdapter().isPersistable(element) && om.getApiAdapter().isDeleted(element)) {
+      // Element is waiting to be deleted so flush it (it has the FK)
+      elementSM.flush();
+    } else {
+      // Element not yet marked for deletion so go through the normal process
+      om.deleteObjectInternal(element);
+    }
+    return true;
+  }
+
+  /**
+   * For an FKSet (owned), removing the child should always delete the child.
+   * This is necessary because there's no way to "null out" the parent key on child
+   * because keys are immutable.
+   */
+  @Override
+  protected boolean checkRemovalOfElementShouldDelete(StateManager ownerSM) {
     return true;
   }
 }

@@ -35,6 +35,7 @@ import org.datanucleus.store.schema.StoreSchemaHandler;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 
 /**
  * Adapter for the App Engine datastore.
@@ -169,7 +170,7 @@ class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter 
   }
 
   public QueryExpression newQueryStatement(DatastoreContainerObject table, DatastoreIdentifier rangeVar, ClassLoaderResolver clr) {
-    return new DatastoreQueryExpression((DatastoreTable) table, clr);
+    return null;
   }
 
   public NumericExpression toNumericExpression(CharacterExpression expr) {
@@ -237,5 +238,8 @@ class DatastoreAdapter implements org.datanucleus.store.mapped.DatastoreAdapter 
 
   public ScalarExpression concatOperator(ScalarExpression operand1, ScalarExpression operand2) {
     return null;
+  }
+
+  public void setProperties(Map<String, Object> props) {
   }
 }

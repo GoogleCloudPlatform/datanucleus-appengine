@@ -29,12 +29,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.store.appengine.query.DatastoreQuery;
-import org.datanucleus.store.mapped.DatastoreContainerObject;
-import org.datanucleus.store.mapped.DatastoreIdentifier;
-import org.datanucleus.store.mapped.expression.QueryExpression;
-import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.query.DiscriminatorIteratorStatement;
-import org.datanucleus.store.mapped.query.UnionIteratorStatement;
 import org.datanucleus.store.mapped.scostore.BaseElementContainerStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.util.Localiser;
@@ -43,7 +37,6 @@ import org.datanucleus.util.NucleusLogger;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 
 /**
  * Datastore-specific extension to
@@ -130,48 +123,6 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       }
     }
     return count;
-  }
-
-  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
-      Class[] cls, boolean includeSubclasses, boolean selectDiscriminator) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Discriminators not supported.");
-  }
-
-  public DiscriminatorIteratorStatement newDiscriminatorIteratorStatement(ClassLoaderResolver clr,
-      Class[] cls, boolean b, boolean b1, boolean allowsNull,
-      DatastoreContainerObject containerTable, JavaTypeMapping elementMapping,
-      DatastoreIdentifier elmIdentifier) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Discriminators not supported.");
-  }
-
-  public UnionIteratorStatement newUnionIteratorStatement(ClassLoaderResolver clr,
-      Class candidateType, boolean includeSubclasses, Class sourceType,
-      JavaTypeMapping sourceMapping, DatastoreContainerObject sourceTable, boolean sourceJoin,
-      Boolean withMetadata, boolean joinToExcludeTargetSubclasses, boolean allowsNull) {
-    return new DatastoreUnionIteratorStatement(clr, candidateType, includeSubclasses, storeMgr,
-                                               sourceType, sourceMapping, sourceTable, sourceJoin,
-                                               withMetadata, joinToExcludeTargetSubclasses,
-                                               allowsNull);
-  }
-
-  ListIterator listIterator(
-      QueryExpression stmt, ObjectManager om,StateManager ownerSM, ElementContainerStore ecs) {
-    // for now we're just going to perform a kind + ancestor query using the owning
-    // object
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    Entity parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);
-    if (parentEntity == null) {
-      handler.locateObject(ownerSM);
-      parentEntity = handler.getAssociatedEntityForCurrentTransaction(ownerSM);
-    }
-    DatastoreQueryExpression dqe = (DatastoreQueryExpression) stmt;
-    return getChildren(
-        parentEntity.getKey(),
-        dqe.getFilterPredicates(),
-        dqe.getSortPredicates(),
-        ecs, om).listIterator();
   }
 
   protected Key extractElementKey(ObjectManager om, Object element) {

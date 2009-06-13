@@ -41,6 +41,8 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.jdo.JDOFatalUserException;
+import javax.jdo.JDOHelper;
+import javax.jdo.ObjectState;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -206,7 +208,12 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
     Key hasKeyPk1Key = pojo.getHasKeyPks().iterator().next().getKey();
-    pojo.addBidirChildAtPosition(bidir2, 0);
+    try {
+      pojo.addBidirChildAtPosition(bidir2, 0);
+      fail("http://www.jpox.org/servlet/jira/browse/NUCCORE-j312 must have been fixed");
+    } catch (IndexOutOfBoundsException ioobe) {
+      // good
+    }
 
     Flight f2 = newFlight();
     f2.setName("another name");
@@ -325,6 +332,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     beginTxn();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    assertEquals(ObjectState.PERSISTENT_CLEAN, JDOHelper.getObjectState(pojo));
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
     Key hasKeyPk1Key = pojo.getHasKeyPks().iterator().next().getKey();

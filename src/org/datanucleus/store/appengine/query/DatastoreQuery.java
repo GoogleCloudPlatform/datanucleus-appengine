@@ -108,7 +108,6 @@ public class DatastoreQuery implements Serializable {
 
   static final Set<Expression.Operator> UNSUPPORTED_OPERATORS =
       Utils.newHashSet((Expression.Operator) Expression.OP_ADD,
-          (Expression.Operator) Expression.OP_BETWEEN,
           (Expression.Operator) Expression.OP_COM,
           (Expression.Operator) Expression.OP_CONCAT,
           (Expression.Operator) Expression.OP_DIV,
@@ -124,21 +123,6 @@ public class DatastoreQuery implements Serializable {
 
   private static final
   Map<Expression.Operator, Query.FilterOperator> DATANUCLEUS_OP_TO_APPENGINE_OP = buildNewOpMap();
-
-  /**
-   * The DataNucleus query cache has a pretty nasty bug where it caches the symbol table along with
-   * the compiled query.  The query cache uses weak references so it doesn't always happen, but if
-   * you get a cache hit and your param values are different from the param values in the cached
-   * symbol table, your query will execute with old param values and return incorrect results.
-   * There is a property you can set to disable query caching, except there's a bug in {@link
-   * org.datanucleus.store.query.Query#getBooleanExtensionProperty(String)} that prevents us from
-   * using it.  The bug is that if you set the property to false the method returns {@code null},
-   * and the caller of this method interprets {@code null} to mean "not set" and so uses the default
-   * value for the property, which is {@code true}.  So, our solution is to intercept all calls to
-   * this method and make sure we always return {@code false} when the call is asking about the
-   * query cache.
-   */
-  static final String QUERY_CACHE_PROPERTY = "datanucleus.query.cached";
 
   private static Map<Expression.Operator, Query.FilterOperator> buildNewOpMap() {
     Map<Expression.Operator, Query.FilterOperator> map =
@@ -615,12 +599,17 @@ public class DatastoreQuery implements Serializable {
       addExpression(expr.getRight(), qd);
     } else if (expr instanceof InvokeExpression) {
       InvokeExpression invocation = ((InvokeExpression) expr);
-      if (invocation.getOperation().equals("contains") && expr.getLeft() instanceof PrimaryExpression &&
-          (invocation.getParameters().size() == 1)) {
-        PrimaryExpression left = (PrimaryExpression) expr.getLeft();
-        Expression param = (Expression) invocation.getParameters().get(0);
+      if (invocation.getOperation().equals("contains") && invocation.getArguments().size() == 1) {
+        Expression param = (Expression) invocation.getArguments().get(0);
         param.bind();
-        addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
+        if (expr.getLeft() instanceof PrimaryExpression) {
+          PrimaryExpression left = (PrimaryExpression) expr.getLeft();
+          addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
+        } else if (expr.getLeft() instanceof ParameterExpression &&
+                   param instanceof PrimaryExpression) {
+          ParameterExpression pe = (ParameterExpression) expr.getLeft();
+          addLeftPrimaryExpression((PrimaryExpression) param, Expression.OP_EQ, pe, qd);
+        }
       } else {
         throw newUnsupportedQueryMethodException(invocation);
       }
@@ -652,11 +641,13 @@ public class DatastoreQuery implements Serializable {
       value = ((Literal) right).getLiteral();
     } else if (right instanceof ParameterExpression) {
       ParameterExpression paramExpr = (ParameterExpression) right;
-      if (paramExpr.getPosition() != -1 && qd.parameters != null) {
+      if (paramExpr.getPosition() != -1 &&
+          qd.parameters != null &&
+          qd.parameters.get(paramExpr.getPosition()) != null) {
         // implicit param
         value = qd.parameters.get(paramExpr.getPosition());
       } else {
-        value = right.getSymbol().getValue();
+        value = qd.parameters.get(paramExpr.getSymbol().getQualifiedName());
       }
     } else if (right instanceof DyadicExpression) {
       // In general we don't support nested dyadic expressions
@@ -678,7 +669,7 @@ public class DatastoreQuery implements Serializable {
       }
     } else if (right instanceof InvokeExpression) {
       // We don't support any InvokeExpressions right now but we can at least
-      // give a beter error.
+      // give a better error.
       throw newUnsupportedQueryMethodException((InvokeExpression) right);
     } else {
       throw new UnsupportedDatastoreFeatureException(
@@ -759,6 +750,8 @@ public class DatastoreQuery implements Serializable {
       param = new ShortBlob(PrimitiveArrays.toByteArray(Arrays.asList((Byte[]) param)));
     } else if (param instanceof BigDecimal) {
       param = ((BigDecimal) param).doubleValue();
+    } else if (param instanceof Character) {
+      param = param.toString();
     }
     return param;
   }

@@ -88,18 +88,22 @@ public class JDOQLQueryTest extends JDOTestCase {
   private static final List<FilterPredicate> NO_FILTERS = Collections.emptyList();
 
   private static final FilterPredicate ORIGIN_EQ_2 =
+      new FilterPredicate("origin", FilterOperator.EQUAL, 2);
+  private static final FilterPredicate ORIGIN_EQ_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.EQUAL, 2L);
   private static final FilterPredicate ORIGIN_EQ_2STR =
       new FilterPredicate("origin", FilterOperator.EQUAL, "2");
   private static final FilterPredicate DEST_EQ_4 =
+      new FilterPredicate("dest", FilterOperator.EQUAL, 4);
+  private static final FilterPredicate DEST_EQ_4_LITERAL =
       new FilterPredicate("dest", FilterOperator.EQUAL, 4L);
-  private static final FilterPredicate ORIG_GT_2 =
+  private static final FilterPredicate ORIG_GT_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.GREATER_THAN, 2L);
-  private static final FilterPredicate ORIG_GTE_2 =
+  private static final FilterPredicate ORIG_GTE_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.GREATER_THAN_OR_EQUAL, 2L);
-  private static final FilterPredicate DEST_LT_4 =
+  private static final FilterPredicate DEST_LT_4_LITERAL =
       new FilterPredicate("dest", FilterOperator.LESS_THAN, 4L);
-  private static final FilterPredicate DEST_LTE_4 =
+  private static final FilterPredicate DEST_LTE_4_LITERAL =
       new FilterPredicate("dest", FilterOperator.LESS_THAN_OR_EQUAL, 4L);
   private static final SortPredicate ORIG_ASC =
       new SortPredicate("origin", SortDirection.ASCENDING);
@@ -150,7 +154,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByOrm(Flight.class, "origin instanceof " + Flight.class.getName(),
         Expression.OP_IS, unsupportedOps);
     assertEquals(Utils.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
-        Expression.OP_BETWEEN, Expression.OP_ISNOT), unsupportedOps);
+        Expression.OP_ISNOT), unsupportedOps);
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
     // We need to have it return BadRequest instead of NeedIndex for that to
@@ -164,21 +168,21 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testSupportedFilters() {
     assertQuerySupported(Flight.class, "", NO_FILTERS, NO_SORTS);
-    assertQuerySupported(Flight.class, "origin == 2", Utils.newArrayList(ORIGIN_EQ_2), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin == 2", Utils.newArrayList(ORIGIN_EQ_2_LITERAL), NO_SORTS);
     assertQuerySupported(
         Flight.class, "origin == \"2\"", Utils.newArrayList(ORIGIN_EQ_2STR), NO_SORTS);
-    assertQuerySupported(Flight.class, "(origin == 2)", Utils.newArrayList(ORIGIN_EQ_2), NO_SORTS);
-    assertQuerySupported(Flight.class, "origin == 2 && dest == 4", Utils.newArrayList(ORIGIN_EQ_2,
-        DEST_EQ_4), NO_SORTS);
-    assertQuerySupported(Flight.class, "(origin == 2 && dest == 4)", Utils.newArrayList(ORIGIN_EQ_2,
-        DEST_EQ_4), NO_SORTS);
+    assertQuerySupported(Flight.class, "(origin == 2)", Utils.newArrayList(ORIGIN_EQ_2_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin == 2 && dest == 4", Utils.newArrayList(ORIGIN_EQ_2_LITERAL,
+        DEST_EQ_4_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "(origin == 2 && dest == 4)", Utils.newArrayList(ORIGIN_EQ_2_LITERAL,
+        DEST_EQ_4_LITERAL), NO_SORTS);
     assertQuerySupported(Flight.class, "(origin == 2) && (dest == 4)", Utils.newArrayList(
-        ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS);
+        ORIGIN_EQ_2_LITERAL, DEST_EQ_4_LITERAL), NO_SORTS);
 
-    assertQuerySupported(Flight.class, "origin > 2", Utils.newArrayList(ORIG_GT_2), NO_SORTS);
-    assertQuerySupported(Flight.class, "origin >= 2", Utils.newArrayList(ORIG_GTE_2), NO_SORTS);
-    assertQuerySupported(Flight.class, "dest < 4", Utils.newArrayList(DEST_LT_4), NO_SORTS);
-    assertQuerySupported(Flight.class, "dest <= 4", Utils.newArrayList(DEST_LTE_4), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin > 2", Utils.newArrayList(ORIG_GT_2_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin >= 2", Utils.newArrayList(ORIG_GTE_2_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "dest < 4", Utils.newArrayList(DEST_LT_4_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "dest <= 4", Utils.newArrayList(DEST_LTE_4_LITERAL), NO_SORTS);
 
     assertQuerySupported("select from " + Flight.class.getName() + " order by origin asc",
         NO_FILTERS, Utils.newArrayList(ORIG_ASC));
@@ -189,7 +193,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     assertQuerySupported("select from " + Flight.class.getName()
         + " where origin == 2 && dest == 4 order by origin asc, dest desc",
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), Utils.newArrayList(ORIG_ASC, DESC_DESC));
+        Utils.newArrayList(ORIGIN_EQ_2_LITERAL, DEST_EQ_4_LITERAL), Utils.newArrayList(ORIG_ASC, DESC_DESC));
   }
 
   public void testBindVariables() {
@@ -201,18 +205,18 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
     assertQuerySupported(queryStr + "parameters int two, int four",
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, 2L, 4L);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, 2, 4);
     assertQuerySupportedWithExplicitParams(queryStr,
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, "int two, int four", 2L, 4L);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, "int two, int four", 2, 4);
 
     queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
     String orderStr = "order by origin asc, dest desc";
     assertQuerySupported(queryStr + "parameters int two, int four " + orderStr,
         Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
-        Utils.newArrayList(ORIG_ASC, DESC_DESC), 2L, 4L);
+        Utils.newArrayList(ORIG_ASC, DESC_DESC), 2, 4);
     assertQuerySupportedWithExplicitParams(queryStr + orderStr,
         Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
-        Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2L, 4L);
+        Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2, 4);
   }
 
   public void test2Equals2OrderBy() {
@@ -497,7 +501,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(e);
 
     Query q = pm.newQuery(
-        "select from " + HasKeyPkJDO.class.getName() + " where key == mykey parameters String mykey");
+        "select from " + HasKeyPkJDO.class.getName() +
+        " where key == mykey parameters " + Key.class.getName() + " mykey");
     @SuppressWarnings("unchecked")
     List<HasKeyPkJDO> result = (List<HasKeyPkJDO>) q.execute(e.getKey());
     assertEquals(1, result.size());
@@ -996,7 +1001,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       pm.newQuery(
           "select from " + Flight.class.getName() + " where origin.first == \"max\"").execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
     }
   }
@@ -1166,7 +1171,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(newFlightEntity("1", "yam", "bam", -1, 2));
 
     Query q = pm.newQuery(
-        "select from " + Flight.class.getName() + " where you == p parameters String p");
+        "select from " + Flight.class.getName() + " where you == p parameters int p");
     @SuppressWarnings("unchecked")
     List<Flight> results = (List<Flight>) q.execute(-1);
     assertEquals(1, results.size());
@@ -1387,7 +1392,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testQueryCacheDisabled() {
     ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
     JDOQLQuery q = new JDOQLQuery(om, "select from " + Flight.class.getName());
-    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
+    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached", true));
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
@@ -1405,7 +1410,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
     ldth.ds.put(e);
     Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1");
-    q.declareParameters(String.class.getName() + " p1");
+    q.declareParameters(HasEnumJDO.MyEnum.class.getName() + " p1");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1);
     assertEquals(1, result.size());
   }
@@ -1445,7 +1450,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
     ldth.ds.put(e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where shortBlob == p1");
-    q.declareParameters(String.class.getName() + " p1");
+    q.declareParameters(ShortBlob.class.getName() + " p1");
     List<HasBytesJDO> result =
         (List<HasBytesJDO>) q.execute(new ShortBlob("short blob".getBytes()));
     assertEquals(1, result.size());
@@ -1457,7 +1462,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     e.setProperty("primBytes", new ShortBlob("short blob".getBytes()));
     ldth.ds.put(e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where primBytes == p1");
-    q.declareParameters(String.class.getName() + " p1");
+    q.declareParameters("byte[] p1");
     List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute("short blob".getBytes());
     assertEquals(1, result.size());
   }
@@ -1468,7 +1473,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     e.setProperty("bytes", new ShortBlob("short blob".getBytes()));
     ldth.ds.put(e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where bytes == p1");
-    q.declareParameters(String.class.getName() + " p1");
+    q.declareParameters("Byte[] p1");
     List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute(
         PrimitiveArrays.asList("short blob".getBytes()).toArray(new Byte[0]));
     assertEquals(1, result.size());
@@ -1787,7 +1792,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (JDOFatalUserException e) {
+    } catch (JDOUserException e) {
       // good
     }
   }
@@ -1934,6 +1939,18 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
       // good
     }
+  }
+
+  public void testQueryWithSingleCharacterLiteral() {
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name == 'y'");
+    List<Flight> result = (List<Flight>) q.execute();
+    assertTrue(result.isEmpty());
+
+    Entity e = Flight.newFlightEntity("y", "bos", "mia", 23, 24);
+    ldth.ds.put(e);
+    q.setUnique(true);
+    Flight f = (Flight) q.execute();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(f.getId()));
   }
 
   private void assertQueryUnsupportedByOrm(

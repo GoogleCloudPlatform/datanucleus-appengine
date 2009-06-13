@@ -43,11 +43,11 @@ import org.datanucleus.store.mapped.FetchStatement;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.StatementMappingForClass;
+import org.datanucleus.store.mapped.StatementClassMapping;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.scostore.FKArrayStoreSpecialization;
-import org.datanucleus.store.mapped.scostore.FKListStoreSpecialization;
+import org.datanucleus.store.mapped.scostore.FKArrayStore;
+import org.datanucleus.store.mapped.scostore.FKListStore;
 import org.datanucleus.store.mapped.scostore.FKMapStore;
 import org.datanucleus.store.mapped.scostore.FKSetStore;
 import org.datanucleus.store.mapped.scostore.JoinArrayStore;
@@ -135,6 +135,13 @@ public class DatastoreManager extends MappedStoreManager {
       conf.setProperty(
           DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
     }
+    /*
+     * The DataNucleus query cache has a pretty nasty bug where it caches the symbol table along with
+     * the compiled query.  The query cache uses weak references so it doesn't always happen, but if
+     * you get a cache hit and your param values are different from the param values in the cached
+     * symbol table, your query will execute with old param values and return incorrect results.
+     */
+    conf.setProperty("datanucleus.query.cached", false);
     return omfContext;
   }
 
@@ -254,17 +261,6 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   @Override
-  public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
-      StatementMappingForClass resultMappings) {
-    ObjectManager om = sm.getObjectManager();
-    Class<?> cls = om.getClassLoaderResolver().classForName(sm.getClassMetaData().getFullClassName());
-    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj);
-    // Need to provide this to the field manager in the form of the pk
-    // of the type: Key, Long, encoded String, or unencoded String
-    return new KeyOnlyFieldManager(internalKey);
-  }
-
-  @Override
   public Object getResultValueAtPosition(Object key, JavaTypeMapping mapping, int position) {
     // this is the key, and we're only using this for keys, so just return it.
     return key;
@@ -280,24 +276,48 @@ public class DatastoreManager extends MappedStoreManager {
     return false;
   }
 
-  @Override
+  public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
+                                                         StatementClassMapping resultMappings) {
+    ObjectManager om = sm.getObjectManager();
+    Class<?> cls = om.getClassLoaderResolver().classForName(sm.getClassMetaData().getFullClassName());
+    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj);
+    // Need to provide this to the field manager in the form of the pk
+    // of the type: Key, Long, encoded String, or unencoded String
+    return new KeyOnlyFieldManager(internalKey);
+  }
+
   public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
-      StatementMappingForClass stmtMappings, boolean checkNonNullable) {
-    // TODO(maxr)
+                                                            StatementClassMapping stmtMappings,
+                                                            boolean checkNonNullable) {
     return null;
   }
 
-  @Override
   public ResultObjectFactory newResultObjectFactory(DatastoreClass table,
-      AbstractClassMetaData acmd, StatementMappingForClass mappingDefinition, boolean ignoreCache,
-      boolean discriminator, FetchPlan fetchPlan, Class persistentClass) {
-    // TODO(maxr)
+                                                    AbstractClassMetaData acmd,
+                                                    StatementClassMapping mappingDefinition,
+                                                    boolean ignoreCache, boolean discriminator,
+                                                    FetchPlan fetchPlan, Class persistentClass) {
     return null;
   }
 
-  @Override
-  protected FKListStoreSpecialization newFKListStoreSpecialization(ClassLoaderResolver clr) {
-    return new DatastoreFKListStoreSpecialization(LOCALISER, clr, this);
+  protected FKArrayStore newFKArrayStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    throw new UnsupportedOperationException("FK Arrays not supported.");
+  }
+
+  protected FKListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    return new DatastoreFKListStore(ammd, this, clr);
+  }
+
+  protected JoinArrayStore newJoinArrayStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
+                                             DatastoreContainerObject arrayTable) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Arrays not supported.");
+  }
+
+  protected JoinMapStore newJoinMapStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
+                                         DatastoreContainerObject mapTable) {
+    // TODO(maxr)
+    throw new UnsupportedOperationException("Join Maps not supported.");
   }
 
   @Override
@@ -306,30 +326,9 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   @Override
-  protected FKArrayStoreSpecialization newFKArrayStoreSpecialization(ClassLoaderResolver clr) {
-    // Disabled for v1.0
-    throw new UnsupportedOperationException("FK Arrays not supported.");
-//    return new DatastoreFKArrayStoreSpecialization(LOCALISER, clr, this);
-  }
-
-  @Override
   protected FKMapStore newFKMapStore(AbstractMemberMetaData clr, ClassLoaderResolver amd) {
     // TODO(maxr)
     throw new UnsupportedOperationException("FK Maps not supported.");
-  }
-
-  @Override
-  protected JoinArrayStore newJoinArrayStore(DatastoreContainerObject arrayTable,
-      ClassLoaderResolver clr) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Arrays not supported.");
-  }
-
-  @Override
-  protected JoinMapStore newJoinMapStore(DatastoreContainerObject mapTable,
-      ClassLoaderResolver clr) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Maps not supported.");
   }
 
   @Override

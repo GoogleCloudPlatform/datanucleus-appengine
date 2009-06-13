@@ -25,7 +25,6 @@ import org.datanucleus.test.Book;
 
 import java.util.ConcurrentModificationException;
 
-import javax.jdo.JDOException;
 import javax.persistence.PersistenceException;
 import javax.persistence.RollbackException;
 
@@ -266,8 +265,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException e) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException e) {
       assertTrue(e.getCause() instanceof NucleusDataStoreException);
       assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
     }
@@ -286,8 +284,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException ex) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException ex) {
       assertTrue(ex.getCause() instanceof NucleusDataStoreException);
       assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
     }
@@ -317,8 +314,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException ex) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException ex) {
       assertTrue(ex.getCause() instanceof NucleusDataStoreException);
       assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
     }
@@ -359,8 +355,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException ex) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException ex) {
       assertTrue(ex.getCause() instanceof NucleusDataStoreException);
       assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
     }
@@ -402,8 +397,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException ex) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException ex) {
       assertTrue(ex.getCause() instanceof NucleusDataStoreException);
       assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
     }
@@ -433,8 +427,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOException ex) {
-      // ouch, datanuc bug.  test will fail when fixed
+    } catch (PersistenceException ex) {
       assertTrue(ex.getCause() instanceof NucleusDataStoreException);
       assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
     }

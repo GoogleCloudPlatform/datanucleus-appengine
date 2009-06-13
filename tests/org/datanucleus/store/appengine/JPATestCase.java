@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Query;
+
 import junit.framework.TestCase;
 
 import javax.persistence.EntityManager;
@@ -106,4 +108,9 @@ public class JPATestCase extends TestCase {
     emf = Persistence.createEntityManagerFactory(name.name());
     em = emf.createEntityManager();
   }
+
+  int countForClass(Class<?> clazz) {
+    return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
+  }
+  
 }

@@ -21,6 +21,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
+import org.datanucleus.StateManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -343,5 +345,26 @@ public final class EntityUtils {
     ManagedConnection mconn = om.getStoreManager().getConnection(om);
     return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
   }
+
+  public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, StateManager sm) {
+    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
+
+    // TODO(maxr): Consolidate this logic in a single location.
+    // Also, we should be able to look at the meta data to see if we have
+    // an encoded or unencoded String.
+    String kind =
+        EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
+    if (primaryKey instanceof Key) {
+      return (Key) primaryKey;
+    } else if (primaryKey instanceof Long) {
+      return KeyFactory.createKey(kind, (Long) primaryKey);
+    }
+    try {
+      return KeyFactory.stringToKey((String) primaryKey);
+    } catch (IllegalArgumentException iae) {
+      return KeyFactory.createKey(kind, (String) primaryKey);
+    }
+  }
+
 
 }

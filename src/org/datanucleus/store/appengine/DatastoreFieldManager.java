@@ -22,7 +22,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
@@ -33,6 +32,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
+import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
@@ -540,7 +540,7 @@ public class DatastoreFieldManager implements FieldManager {
     if (parentKey == null) {
       StateManager sm = getStateManager();
       // Mechanism 1
-      parentKey = getKeyRegistry().getRegisteredKey(sm.getObject());
+      parentKey = KeyRegistry.getKeyRegistry(getObjectManager()).getRegisteredKey(sm.getObject());
       if (parentKey == null) {
         // Mechanism 2
         parentKey = getParentKeyFromExternalFKMappings(sm);
@@ -548,6 +548,12 @@ public class DatastoreFieldManager implements FieldManager {
       if (parentKey == null) {
         // Mechanism 3
         parentKey = getParentKeyFromParentField(sm);
+      }
+      if (parentKey == null) {
+        Object mergeEntity = DatastoreEntityManager.getMergingEntity();
+        if (mergeEntity != null) {
+          parentKey = getParentKeyFromMergeEntity(mergeEntity);
+        }
       }
       if (parentKey != null) {
         recreateEntityWithParent(parentKey);
@@ -558,6 +564,14 @@ public class DatastoreFieldManager implements FieldManager {
           ? parentKey : KeyFactory.keyToString(parentKey);
     }
     return null;
+  }
+
+  private Key getParentKeyFromMergeEntity(Object mergeEntity) {
+    StateManager sm = getObjectManager().findStateManager(mergeEntity);
+    if (sm == null) {
+      return null;
+    }
+    return EntityUtils.getPrimaryKeyAsKey(getObjectManager().getApiAdapter(), sm);
   }
 
   private Key getKeyForObject(Object pc) {
@@ -593,27 +607,6 @@ public class DatastoreFieldManager implements FieldManager {
       }
     }
     return null;
-  }
-
-  /**
-   * Get the {@link KeyRegistry} associated with the current datasource
-   * connection.  There's a little bit of fancy footwork involved here
-   * because, by default, asking the storeManager for a connection will
-   * allocate a transactional connection if no connection has already been
-   * established.  That's acceptable behavior if the datasource has not been
-   * configured to allow writes outside of transactions, but if the datsaource
-   * _has_ been configured to allow writes outside of transactions,
-   * establishing a transaction is not the right thing to do.  So, we set
-   * a property on the currently active transaction (the datanucleus
-   * transaction, not the datastore transaction) to indicate that if a
-   * connection gets allocated, don't establish a datastore transaction.
-   * Note that even if nontransactional writes are enabled, if there
-   * is already a connection available then setting the property is a no-op.
-   */
-  private KeyRegistry getKeyRegistry() {
-    ObjectManager om = getObjectManager();
-    ManagedConnection mconn = storeManager.getConnection(om);
-    return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 
   void recreateEntityWithParent(Key parentKey) {
@@ -767,7 +760,7 @@ public class DatastoreFieldManager implements FieldManager {
    * @see DatastoreRelationFieldManager#storeRelations
    */
   void storeRelations() {
-    relationFieldManager.storeRelations(getKeyRegistry());
+    relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getObjectManager()));
   }
 
   ClassLoaderResolver getClassLoaderResolver() {

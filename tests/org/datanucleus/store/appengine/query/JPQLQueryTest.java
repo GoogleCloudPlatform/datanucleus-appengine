@@ -155,8 +155,8 @@ public class JPQLQueryTest extends JPATestCase {
                                 unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "title % author = 'foo'", Expression.OP_MOD,
                                 unsupportedOps);
-    assertQueryUnsupportedByOrm(baseQuery + "title LIKE 'foo%'", Expression.OP_LIKE,
-                                unsupportedOps);
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title LIKE 'foo%'");
+
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
     // We need to have it return BadRequest instead of NeedIndex for that to
@@ -168,7 +168,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(
         new HashSet<Expression.Operator>(Arrays.asList(Expression.OP_CONCAT, Expression.OP_COM,
                                                        Expression.OP_NEG, Expression.OP_IS,
-                                                       Expression.OP_BETWEEN,
+                                                       Expression.OP_LIKE,
                                                        Expression.OP_ISNOT)), unsupportedOps);
   }
 
@@ -852,6 +852,41 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(0, result3.size());
   }
 
+  public void testFilterByMultiValueProperty_MemberOf() {
+    Entity entity = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+                       Utils.newArrayList(KeyFactory.createKey("be", "bo"),
+                                          KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where strList MEMBER OF :p1 AND strList MEMBER OF :p2");
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "3");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "4");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result2 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result2.size());
+
+    q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where keyList MEMBER OF :p1 AND keyList MEMBER OF :p2");
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be2"));
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result3 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result3.size());
+  }
+
   public void testFilterByEmbeddedField() {
     Entity entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max");
@@ -1249,11 +1284,13 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = newBook("the title", "jimmy", "12345", 2004);
     ldth.ds.put(e1);
     ldth.ds.put(e2);
-    // letting this go through intentionally
-    // we may want to circle back and lock this down but for now it's really
-    // not a big deal
     Query q = em.createQuery("select count(doesnotexist) from " + Book.class.getName());
-    assertEquals(2, q.getSingleResult());
+    try {
+      q.getSingleResult();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
   }
 
   public void testCountQueryWithOffsetFails() {
@@ -1274,7 +1311,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testQueryCacheDisabled() {
     ObjectManager om = ((EntityManagerImpl) em).getObjectManager();
     JPQLQuery q = new JPQLQuery(om, "select from " + Book.class.getName());
-    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached"));
+    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached", true));
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
@@ -1618,15 +1655,12 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testNamedQuery() {
-    // need to persist an instance to force the metadata to load.
-    // TODO(maxr) Remove this when we upgrade to DataNuc 1.1.2
-    Book b = new Book();
-    b.setTitle("yam");
-    beginTxn();
-    em.persist(b);
-    commitTxn();
     Query q = em.createNamedQuery("namedQuery");
-    assertEquals(b, q.getResultList().get(0));
+    assertTrue(q.getResultList().isEmpty());
+    Entity e = Book.newBookEntity("author", "12345", "yam");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
   }
 
   public void testRestrictFetchedFields_UnknownField() {
@@ -1809,6 +1843,35 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testQueryWithEntityShortName() {
+    Query q = em.createQuery("select b from bookalias b where title = 'yam'");
+    assertTrue(q.getResultList().isEmpty());
+
+    Book b = new Book();
+    b.setTitle("yam");
+    beginTxn();
+    em.persist(b);
+    commitTxn();
+
+    assertEquals(b, q.getResultList().get(0));
+
+    q = em.createQuery("select from bookalias where title = 'yam'");
+    assertEquals(b, q.getResultList().get(0));
+
+    q = em.createQuery("select from bookalias b where b.title = 'yam'");
+    assertEquals(b, q.getResultList().get(0));
+  }
+
+  public void testQueryWithSingleCharacterLiteral() {
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title = 'y'");
+    assertTrue(q.getResultList().isEmpty());
+
+    Entity e = Book.newBookEntity("author", "12345", "y");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }
@@ -1861,6 +1924,16 @@ public class JPQLQueryTest extends JPATestCase {
                                            Set<Expression.Operator> unsupportedOps) {
     assertQueryUnsupportedByOrm(query, unsupportedOp);
     unsupportedOps.remove(unsupportedOp);
+  }
+
+  private void assertQueryRequiresUnsupportedDatastoreFeature(String query) {
+    Query q = em.createQuery(query);
+    try {
+      q.getResultList();
+      fail("expected UnsupportedDatastoreFeatureException for query <" + query + ">");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // Good.
+    }
   }
 
   private void assertQuerySupported(String query, List<FilterPredicate> addedFilters,

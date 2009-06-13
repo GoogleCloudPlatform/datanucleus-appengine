@@ -20,6 +20,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.jpa.annotations.Extension;
 
+import java.io.Serializable;
+
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
@@ -30,9 +32,9 @@ import javax.persistence.NamedQuery;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@Entity
+@Entity(name = "bookalias")
 @NamedQuery(name="namedQuery", query = "SELECT from org.datanucleus.test.Book where title = 'yam'")
-public class Book {
+public class Book implements Serializable {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")

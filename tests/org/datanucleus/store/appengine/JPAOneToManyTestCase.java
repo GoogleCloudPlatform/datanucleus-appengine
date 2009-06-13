@@ -20,7 +20,6 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
@@ -38,7 +37,6 @@ import org.easymock.EasyMock;
 
 import java.util.List;
 
-import javax.jdo.JDOFatalUserException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -436,7 +434,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + pojoClass.getName() + " where id = :key");
-    q.setParameter("key", pojoEntity.getKey());
+    q.setParameter("key", KeyFactory.keyToString(pojoEntity.getKey()));
     beginTxn();
     @SuppressWarnings("unchecked")
     List<HasOneToManyJPA> result = (List<HasOneToManyJPA>) q.getResultList();
@@ -674,7 +672,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOFatalUserException e) {
+    } catch (PersistenceException e) {
       // good
     }
 
@@ -696,7 +694,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     try {
       em.close();
       fail("expected exception");
-    } catch (JDOFatalUserException e) {
+    } catch (PersistenceException e) {
       // good
     }
 
@@ -803,10 +801,6 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  int countForClass(Class<?> clazz) {
-    return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
-  }
-
   void assertCountsInDatastore(Class<? extends HasOneToManyJPA> pojoClass,
                                Class<? extends BidirectionalChildJPA> bidirClass,
                                int expectedParent, int expectedChildren) {
@@ -823,5 +817,4 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     b.setTitle("yam");
     return b;
   }
-
 }

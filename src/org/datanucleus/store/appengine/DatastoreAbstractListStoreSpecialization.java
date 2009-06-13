@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
@@ -30,18 +31,14 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
-import org.datanucleus.store.mapped.expression.QueryExpression;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.scostore.AbstractListStore;
 import org.datanucleus.store.mapped.scostore.AbstractListStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
-import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.Localiser;
 
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Set;
 
 /**
@@ -57,12 +54,22 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     super(localiser, clr, storeMgr);
   }
 
-  public int indexOf(StateManager sm, Object element, ElementContainerStore ecs) {
-    // TODO(maxr) Only seems to be called when useCache on the List
-    // is false, but it's true in all my tests and it looks like you
-    // need to set datanucleus-specific properties to get it to be false.
-    // See SCOUtils#useContainerCache.  We'll take care of this later.
-    throw new UnsupportedOperationException();
+  public int indexOf(StateManager parentSm, Object element, ElementContainerStore ecs) {
+    StateManager elementSm = parentSm.getObjectManager().findStateManager(element);
+    Key elementKey = EntityUtils.getPrimaryKeyAsKey(elementSm.getObjectManager().getApiAdapter(), elementSm);
+    if (elementKey == null) {
+      throw new NucleusUserException("Collection element does not have a primary key.");
+    } else if (elementKey.getParent() == null) {
+      throw new NucleusUserException("Collection element primary key does not have a parent.");
+    }
+
+    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
+    try {
+      Entity e = service.get(elementKey);
+      return extractIndexProperty(e, ecs, elementSm.getObjectManager());
+    } catch (EntityNotFoundException enfe) {
+      throw new NucleusDataStoreException("Could not determine index of entity.", enfe);
+    }
   }
 
   public int lastIndexOf(StateManager sm, Object element, ElementContainerStore ecs) {
@@ -133,22 +140,6 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
       throw new NucleusDataStoreException("Null index value");
     }
     return indexVal.intValue();
-  }
-
-  public ListIterator listIterator(QueryExpression stmt, boolean useUpdateLock, ObjectManager om,
-      StateManager ownerSM, ResultObjectFactory rof,
-      AbstractListStore als) {
-    return listIterator(stmt, om, ownerSM, als);
-  }
-
-  public List internalGetRange(ObjectManager om, boolean useUpdateLock, QueryExpression stmt,
-                               ResultObjectFactory getROF, ElementContainerStore ecs) {
-    DatastoreQueryExpression dqe = (DatastoreQueryExpression) stmt;
-    Key parentKey = dqe.getParentKey();
-    if (parentKey == null) {
-      throw new UnsupportedOperationException("Could not extract parent key from query expression.");
-    }
-    return getChildren(parentKey, dqe.getFilterPredicates(), dqe.getSortPredicates(), ecs, om);
   }
 
   public int[] internalShift(StateManager ownerSM, ManagedConnection conn, boolean batched,

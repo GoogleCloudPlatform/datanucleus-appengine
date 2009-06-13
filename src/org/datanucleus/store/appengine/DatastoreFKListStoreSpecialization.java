@@ -39,6 +39,13 @@ import org.datanucleus.util.Localiser;
 class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpecialization
     implements FKListStoreSpecialization {
 
+  private final ThreadLocal<Boolean> removing = new ThreadLocal<Boolean>() {
+    @Override
+    protected Boolean initialValue() {
+      return false;
+    }
+  };
+
   DatastoreFKListStoreSpecialization(Localiser localiser, ClassLoaderResolver clr,
       DatastoreManager storeMgr) {
     super(localiser, clr, storeMgr);
@@ -76,7 +83,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
     return obj;
   }
 
-  public boolean updateElementFk(StateManager sm, Object element, Object owner, int index,
+  public boolean updateElementFk(StateManager sm, Object element, Object parent, int index,
       ObjectManager om, ElementContainerStore ecs) {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
@@ -96,6 +103,12 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
     if (entity != null) {
       elementSm.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
       elementSm.setAssociatedValue(ecs.getOrderMapping(), index);
+      if (entity.getParent() == null) {
+        StateManager parentSm = om.findStateManager(parent);
+        // need to register the proper parent for this entity
+        Key parentKey = EntityUtils.getPrimaryKeyAsKey(om.getApiAdapter(), parentSm);
+        KeyRegistry.getKeyRegistry(om).registerKey(element, parentKey);
+      }
       handler.insertObject(elementSm);
     }
     return true;
@@ -108,6 +121,9 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
 
   public void removeAt(StateManager sm, int index, int size, boolean nullify,
       FKListStore fkListStore) {
+    if (removing.get()) {
+      return;
+    }
     if (nullify) {
       // we don't support unowned relationships yet
       throw new UnsupportedOperationException(
@@ -118,7 +134,14 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
       Object element = fkListStore.get(sm, index);
       StateManager elementStateManager = om.findStateManager(element);
       DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-      handler.deleteObject(elementStateManager);
+      // the delete call can end up cascading back here, so set a thread-local
+      // to make sure we don't do it more than once
+      removing.set(true);
+      try {
+        handler.deleteObject(elementStateManager);
+      } finally {
+        removing.set(false);
+      }
       if (fkListStore.getOrderMapping() != null) {
         // now, if there is an order mapping, we need to shift
         // everyone down

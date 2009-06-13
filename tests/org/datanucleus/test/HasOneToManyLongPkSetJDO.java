@@ -17,9 +17,7 @@ package org.datanucleus.test;
 
 import org.datanucleus.store.appengine.Utils;
 
-import java.util.ArrayList;
 import java.util.Collection;
-import java.util.List;
 import java.util.Set;
 
 import javax.jdo.annotations.Element;
@@ -44,8 +42,7 @@ public class HasOneToManyLongPkSetJDO implements HasOneToManyLongPkJDO {
 
   @Persistent(mappedBy = "parent")
   @Element(dependent = "true")
-  private
-  List<BidirectionalChildLongPkSetJDO> bidirChildren = new ArrayList<BidirectionalChildLongPkSetJDO>();
+  private Set<BidirectionalChildLongPkSetJDO> bidirChildren = Utils.newHashSet();
 
   public void addFlight(Flight flight) {
     flights.add(flight);
@@ -64,6 +61,6 @@ public class HasOneToManyLongPkSetJDO implements HasOneToManyLongPkJDO {
   }
 
   public Collection<BidirectionalChildLongPkJDO> getBidirChildren() {
-    return (List) bidirChildren;
+    return (Set) bidirChildren;
   }
 }
