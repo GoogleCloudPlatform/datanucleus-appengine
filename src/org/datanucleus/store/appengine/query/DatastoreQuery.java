@@ -29,6 +29,8 @@ import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
+import org.datanucleus.ManagedConnection;
+import org.datanucleus.ManagedConnectionResourceListener;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
@@ -59,7 +61,6 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -169,11 +170,10 @@ public class DatastoreQuery implements Serializable {
   public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
 
-    final ObjectManager om = getObjectManager();
-    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-    final ClassLoaderResolver clr = om.getClassLoaderResolver();
-    final AbstractClassMetaData acmd =
-        getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+    ObjectManager om = getObjectManager();
+    DatastoreManager storeMgr = getStoreManager();
+    ClassLoaderResolver clr = om.getClassLoaderResolver();
+    AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     if (acmd == null) {
       throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
           + ".  Perhaps you need to run the enhancer on this class?").setFatal();
@@ -249,7 +249,30 @@ public class DatastoreQuery implements Serializable {
 
   private List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer) {
-    return new StreamingQueryResult(query, new RuntimeExceptionWrappingIterable(entities), resultTransformer);
+    final StreamingQueryResult qr = new StreamingQueryResult(
+        query, new RuntimeExceptionWrappingIterable(entities), resultTransformer);
+    // We only need the connection so we can get a callback when the connection is
+    // flushed.
+    final ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());
+    try {
+      ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
+        public void managedConnectionPreClose() {}
+        public void managedConnectionPostClose() {}
+        public void managedConnectionFlushed() {
+          // Disconnect the query from this ManagedConnection (read in unread rows etc)
+          qr.disconnect();
+        }
+
+        public void resourcePostClose() {
+          mconn.removeListener(this);
+        }
+      };
+      mconn.addListener(listener);
+      qr.addConnectionListener(listener);
+      return qr;
+    } finally {
+      mconn.release();
+    }
   }
 
   /**
@@ -525,7 +548,11 @@ public class DatastoreQuery implements Serializable {
   }
 
   IdentifierFactory getIdentifierFactory() {
-    return ((MappedStoreManager)getObjectManager().getStoreManager()).getIdentifierFactory();
+    return getStoreManager().getIdentifierFactory();
+  }
+
+  private DatastoreManager getStoreManager() {
+    return (DatastoreManager) getObjectManager().getStoreManager();
   }
 
   /**
@@ -776,7 +803,6 @@ public class DatastoreQuery implements Serializable {
   }
 
   private JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd) {
-    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
     ClassLoaderResolver clr = getObjectManager().getClassLoaderResolver();
     AbstractClassMetaData acmd = qd.acmd;
     JavaTypeMapping mapping = null;
@@ -784,7 +810,7 @@ public class DatastoreQuery implements Serializable {
     for (String tuple : tuples) {
       DatastoreTable table = qd.tableMap.get(acmd.getFullClassName());
       if (table == null) {
-        table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
+        table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
         qd.tableMap.put(acmd.getFullClassName(), table);
       }
       // deepest mapping we have so far

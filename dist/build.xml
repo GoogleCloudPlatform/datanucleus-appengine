@@ -3,8 +3,8 @@
 
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="1"/>
-  <property name="version.rc" value=".RC2"/>
+  <property name="version.point" value="2"/>
+  <property name="version.rc" value=".RC1"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -101,7 +101,7 @@
   <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">
     <delete dir="testresults"/>
     <mkdir dir="testresults"/>
-    <junit printsummary="yes" fork="yes">
+    <junit printsummary="yes" fork="yes" haltonerror="yes" haltonfailure="yes">
       <classpath>
         <path refid="appengine.plugin.test.compile.deps"/>
         <pathelement location="${compile.tests.dest.dir}"/>

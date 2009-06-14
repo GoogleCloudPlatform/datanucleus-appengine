@@ -69,6 +69,7 @@ import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
@@ -119,7 +120,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    if (pm.currentTransaction().isActive()) {
+    if (!pm.isClosed() && pm.currentTransaction().isActive()) {
       commitTxn();
     }
     super.tearDown();
@@ -1992,6 +1993,23 @@ public class JDOQLQueryTest extends JDOTestCase {
     q.setUnique(true);
     Flight f = (Flight) q.execute();
     assertEquals(e.getKey(), KeyFactory.stringToKey(f.getId()));
+  }
+
+  public void testAccessResultsAfterClose() {
+    for (int i = 0; i < 3; i++) {
+      Entity e = Flight.newFlightEntity("this", "bos", "mia", 24, 25);
+      ldth.ds.put(e);
+    }
+    Query q = pm.newQuery("select from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Flight> results = (List<Flight>) q.execute();
+    Iterator<Flight> iter = results.iterator();
+    iter.next();
+    commitTxn();
+    pm.close();
+    Flight f = iter.next();
+    f.getDest();
+    iter.next();
   }
 
   private void assertQueryUnsupportedByOrm(

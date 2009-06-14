@@ -69,6 +69,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -1975,6 +1976,24 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(child1.getKey(), KeyFactory.stringToKey(child.getId()));
   }
 
+  public void testAccessResultsAfterClose() {
+    for (int i = 0; i < 3; i++) {
+      Entity e = Book.newBookEntity("this", "that", "the other");
+      ldth.ds.put(e);
+    }
+    beginTxn();
+    Query q = em.createQuery("select from " + Book.class.getName());
+    List<Book> results = q.getResultList();
+    Iterator<Book> iter = results.iterator();
+    iter.next();
+    commitTxn();
+    em.close();
+    Book b = iter.next();
+    b.getIsbn();
+    b.getAuthor();
+    iter.next();
+  }
+  
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }

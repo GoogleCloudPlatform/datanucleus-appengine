@@ -17,16 +17,20 @@ package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
 
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.Query;
+import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
+
+import javax.jdo.JDOUserException;
 
 /**
  * An {@link AbstractQueryResult} implementation that streams results, converting
@@ -57,6 +61,8 @@ class StreamingQueryResult extends AbstractQueryResult {
    */
   private final ArrayList<Object> resolvedPojos = Utils.newArrayList();
 
+  private boolean loadResultsAtCommit = true;
+
   /**
    * Constructs a StreamingQueryResult
    *
@@ -70,11 +76,28 @@ class StreamingQueryResult extends AbstractQueryResult {
     super(query);
     this.lazyEntityIterator = lazyEntities.iterator();
     this.entityToPojoFunc = entityToPojoFunc;
+    // Process any supported extensions
+    String ext = (String) query.getExtension("datanucleus.query.loadResultsAtCommit");
+    if (ext != null) {
+      loadResultsAtCommit = Boolean.valueOf(ext);
+    }
   }
 
   @Override
   protected void closingConnection() {
-    // If you close the connection before all results are returned, that's fine.
+    // mostly copied from ForwardQueryResult in the rdbms plugin
+    if (loadResultsAtCommit && isOpen()) {
+      try {
+        // If we are still open, force consumption of the rest of the results
+        size();
+      } catch (NucleusUserException jpue) {
+        // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
+        NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + jpue.getMessage());
+      } catch (JDOUserException ue) {
+        // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
+        NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + ue.getMessage());
+      }
+    }
   }
 
   @Override
@@ -152,6 +175,7 @@ class StreamingQueryResult extends AbstractQueryResult {
     }
     return resolvedPojos.size();
   }
+
 
   /**
    * {@link AbstractListIterator implementation that uses the Iterator
