@@ -19,21 +19,43 @@ import com.google.appengine.api.datastore.Entity;
 
 import junit.framework.TestCase;
 
+import org.datanucleus.ObjectManager;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
+import org.datanucleus.store.query.AbstractJavaQuery;
+import org.datanucleus.store.query.Query;
+import org.easymock.EasyMock;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.ListIterator;
+import java.util.Map;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class StreamingQueryResultTest extends TestCase {
 
+  private Query dummyQuery() {
+    ObjectManager om = EasyMock.createNiceMock(ObjectManager.class);
+    EasyMock.replay(om);
+    return new AbstractJavaQuery(om) {
+      public String getSingleStringQuery() {
+        return null;
+      }
+
+      protected void compileInternal(boolean forExecute, Map parameterValues) { }
+
+      protected Object performExecute(Map parameters) {
+        return null;
+      }
+    };
+  }
+
   public void testEquality() {
-    StreamingQueryResult sqr1 = new StreamingQueryResult(null, Collections.<Entity>emptyList(), null);
-    StreamingQueryResult sqr2 = new StreamingQueryResult(null, Collections.<Entity>emptyList(), null);
+    Query query = dummyQuery();
+    StreamingQueryResult sqr1 = new StreamingQueryResult(query, Collections.<Entity>emptyList(), null);
+    StreamingQueryResult sqr2 = new StreamingQueryResult(query, Collections.<Entity>emptyList(), null);
     assertTrue(sqr1.equals(sqr1));
     assertFalse(sqr1.equals(sqr2));
   }
@@ -79,27 +101,29 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testSize_FreshIterator() {
+    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     assertEquals(0, sqr.size());
     assertEquals(0, iterable.nextCount);
 
     Entity e = null;
     iterable = new CountingIterable(Utils.newArrayList(e));
-    sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     assertEquals(1, sqr.size());
     assertEquals(1, iterable.nextCount);
 
     iterable = new CountingIterable(Utils.newArrayList(e, e));
-    sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     assertEquals(2, sqr.size());
     assertEquals(2, iterable.nextCount);
   }
 
   public void testSize_PartiallyConsumedIterator() {
+    Query query = dummyQuery();
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e, e));
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     sqr.resolveNext();
     assertEquals(1, iterable.nextCount);
     assertEquals(3, sqr.size());
@@ -107,9 +131,10 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testSize_ExhaustedIterator() {
+    Query query = dummyQuery();
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e));
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     sqr.resolveNext();
     sqr.resolveNext();
     assertEquals(2, iterable.nextCount);
@@ -118,8 +143,9 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testGet_FreshIterator() {
+    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     try {
       sqr.get(0);
       fail("expected index out of bounds exception");
@@ -131,7 +157,7 @@ public class StreamingQueryResultTest extends TestCase {
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     iterable = new CountingIterable(Utils.newArrayList(e1, e2));
-    sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     assertEquals(e1, sqr.get(0));
     assertEquals(1, iterable.nextCount);
     assertEquals(e2, sqr.get(1));
@@ -147,10 +173,11 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testGet_PartiallyConsumedIterator() {
+    Query query = dummyQuery();
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     sqr.resolveNext();
     assertEquals(1, iterable.nextCount);
     assertEquals(e1, sqr.get(0));
@@ -168,10 +195,11 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testGet_ExhaustedIterator() {
+    Query query = dummyQuery();
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     sqr.resolveNext();
     sqr.resolveNext();
     assertEquals(2, iterable.nextCount);
@@ -192,8 +220,9 @@ public class StreamingQueryResultTest extends TestCase {
   // This implicitly tests the iterator() method as well since iterator() just
   // delegates to listIterator()
   public void testListIterator() {
+    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     assertFalse(sqr.listIterator().hasNext());
 
     Entity e1 = new Entity("yar1");
@@ -201,7 +230,7 @@ public class StreamingQueryResultTest extends TestCase {
     Entity e3 = new Entity("yar3");
     Entity e4 = new Entity("yar4");
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2, e3, e4));
-    sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
 
     ListIterator listIter = sqr.listIterator();
     assertTrue(listIter.hasNext());
@@ -268,7 +297,7 @@ public class StreamingQueryResultTest extends TestCase {
     assertFalse(listIter.hasNext());
 
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    sqr = new StreamingQueryResult(null, iterable, NULL_FUNC);
+    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
     listIter = sqr.listIterator();
     assertTrue(listIter.hasNext());
     assertEquals(e1, listIter.next());

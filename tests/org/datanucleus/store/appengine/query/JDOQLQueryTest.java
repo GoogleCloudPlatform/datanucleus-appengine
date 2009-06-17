@@ -1856,13 +1856,54 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, origins2.size());
     assertEquals("bos", origins2.get(0));
     assertEquals("lax", origins2.get(1));
+  }
 
-    q = pm.newQuery("select id from " + Flight.class.getName());
+  public void testRestrictFetchedFields_OneIdField() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
+    ldth.ds.put(e2);
+
+    Query q = pm.newQuery("select id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<String> ids = (List<String>) q.execute();
     assertEquals(2, ids.size());
     assertEquals(KeyFactory.keyToString(e1.getKey()), ids.get(0));
     assertEquals(KeyFactory.keyToString(e2.getKey()), ids.get(1));
+    Flight f = pm.getObjectById(Flight.class, e1.getKey());
+    assertEquals("jimmy", f.getName());
+    f.setName("not jimmy");
+    commitTxn();
+    beginTxn();
+    f = pm.getObjectById(Flight.class, e1.getKey());
+    assertEquals("not jimmy", f.getName());
+    commitTxn();
+  }
+
+  public void testRestrictFetchedFields_TwoIdFields() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
+    ldth.ds.put(e2);
+
+    Query q = pm.newQuery("select id, id from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> ids = (List<Object[]>) q.execute();
+    assertEquals(2, ids.size());
+    assertEquals(2, ids.get(0).length);
+    assertEquals(2, ids.get(1).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), ids.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), ids.get(0)[1]);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), ids.get(1)[0]);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), ids.get(1)[1]);
+    Flight f = pm.getObjectById(Flight.class, e1.getKey());
+    assertEquals("jimmy", f.getName());
+    f.setName("not jimmy");
+    commitTxn();
+    beginTxn();
+    f = pm.getObjectById(Flight.class, e1.getKey());
+    assertEquals("not jimmy", f.getName());
+    commitTxn();
   }
 
   public void testRestrictFetchedFields_TwoFields() {
@@ -1888,6 +1929,56 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, results2.get(0).length);
     assertEquals("lax", results2.get(1)[0]);
     assertNull(results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_TwoFields_IdIsFirst() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select id, dest from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[0]);
+    assertEquals("mia", results.get(0)[1]);
+
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.execute();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[0]);
+    assertEquals("mia", results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[0]);
+    assertNull(results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_TwoFields_IdIsSecond() {
+    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
+    ldth.ds.put(e1);
+    Query q = pm.newQuery("select origin, id from " + Flight.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.execute();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals("bos", results.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
+
+    Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.execute();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals("bos", results2.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals("lax", results2.get(1)[0]);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[1]);
   }
 
   public void testRestrictFetchedFields_OneToOne() {
@@ -2010,6 +2101,12 @@ public class JDOQLQueryTest extends JDOTestCase {
     Flight f = iter.next();
     f.getDest();
     iter.next();
+  }
+
+  public void testParamReferencedTwice() {
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name == p && origin == p");
+    q.declareParameters("String p");
+    q.execute("23");
   }
 
   private void assertQueryUnsupportedByOrm(

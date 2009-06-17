@@ -1736,13 +1736,31 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(2, titles2.size());
     assertEquals("the title", titles2.get(0));
     assertEquals("the other title", titles2.get(1));
+  }
 
-    q = em.createQuery("select id from " + Book.class.getName());
+  public void testRestrictyFetcheFields_OneIdField() {
+    Entity e1 = Book.newBookEntity("author", "12345", "the title");
+    ldth.ds.put(e1);
+
+    Entity e2 = Book.newBookEntity("another author", "123456", "the other title");
+    ldth.ds.put(e2);
+
+    beginTxn();
+    Query q = em.createQuery("select id from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<String> ids = (List<String>) q.getResultList();
     assertEquals(2, ids.size());
     assertEquals(KeyFactory.keyToString(e1.getKey()), ids.get(0));
     assertEquals(KeyFactory.keyToString(e2.getKey()), ids.get(1));
+
+    Book b = em.find(Book.class, e1.getKey());
+    assertEquals("author", b.getAuthor());
+    b.setAuthor("not author");
+    commitTxn();
+    beginTxn();
+    b = em.find(Book.class, e1.getKey());
+    assertEquals("not author", b.getAuthor());
+    commitTxn();
   }
 
   public void testRestrictFetchedFields_TwoFields() {
@@ -1768,6 +1786,81 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(2, results2.get(0).length);
     assertEquals("another author", results2.get(1)[0]);
     assertNull(results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_TwoIdFields() {
+    Entity e1 = Book.newBookEntity("author", "12345", "the title");
+    ldth.ds.put(e1);
+    Query q = em.createQuery("select id, id from " + Book.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
+
+    Entity e2 = Book.newBookEntity("another author", null, "the other title");
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.getResultList();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[0]);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_TwoIdFields_IdIsFirst() {
+    Entity e1 = Book.newBookEntity("author", "12345", "the title");
+    ldth.ds.put(e1);
+    Query q = em.createQuery("select id, author from " + Book.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[0]);
+    assertEquals("author", results.get(0)[1]);
+
+    Entity e2 = Book.newBookEntity("another author", null, "the other title");
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.getResultList();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[0]);
+    assertEquals("author", results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[0]);
+    assertEquals("another author", results2.get(1)[1]);
+  }
+
+  public void testRestrictFetchedFields_TwoIdFields_IdIsSecond() {
+    Entity e1 = Book.newBookEntity("author", "12345", "the title");
+    ldth.ds.put(e1);
+    Query q = em.createQuery("select author, id from " + Book.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Object[]> results = (List<Object[]>) q.getResultList();
+    assertEquals(1, results.size());
+    assertEquals(2, results.get(0).length);
+    assertEquals("author", results.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
+
+    Entity e2 = Book.newBookEntity("another author", null, "the other title");
+    ldth.ds.put(e2);
+
+    @SuppressWarnings("unchecked")
+    List<Object[]> results2 = (List<Object[]>) q.getResultList();
+    assertEquals(2, results2.size());
+    assertEquals(2, results2.get(0).length);
+    assertEquals("author", results2.get(0)[0]);
+    assertEquals(KeyFactory.keyToString(e1.getKey()), results2.get(0)[1]);
+    assertEquals(2, results2.get(0).length);
+    assertEquals("another author", results2.get(1)[0]);
+    assertEquals(KeyFactory.keyToString(e2.getKey()), results2.get(1)[1]);
   }
 
   public void testRestrictFetchedFields_OneToOne() {

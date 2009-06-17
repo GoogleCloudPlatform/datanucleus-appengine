@@ -147,6 +147,15 @@ public class DatastoreQuery implements Serializable {
   private transient Query latestDatastoreQuery;
 
   /**
+   * The different types of datastore query results that we support.
+   */
+  private enum ResultType {
+    ENTITY, // return entities
+    COUNT,  // return the count
+    KEYS_ONLY // return just the keys
+  }
+
+  /**
    * Constructs a new Datastore query based on a Datanucleus query.
    *
    * @param query The Datanucleus query to be translated into a Datastore query.
@@ -205,9 +214,12 @@ public class DatastoreQuery implements Serializable {
       latestDatastoreQuery = qd.datastoreQuery;
       PreparedQuery preparedQuery = ds.prepare(qd.datastoreQuery);
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-      if (qd.isCountQuery) {
+      if (qd.resultType == ResultType.COUNT) {
         return fulfillCountQuery(preparedQuery, opts);
       } else {
+        if (qd.resultType == ResultType.KEYS_ONLY) {
+          qd.datastoreQuery.setKeysOnly();
+        }
         return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer);
       }
     }
@@ -217,7 +229,7 @@ public class DatastoreQuery implements Serializable {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     Collection<Entity> entities = ds.get(innerTxn, qd.batchGetKeys).values();
-    if (qd.isCountQuery) {
+    if (qd.resultType == ResultType.COUNT) {
       return Collections.singletonList(entities.size());
     }
     return newStreamingQueryResultForEntities(entities, qd.resultTransformer);
@@ -319,8 +331,8 @@ public class DatastoreQuery implements Serializable {
     return opts;
   }
 
-  private Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, final DatastoreManager storeMgr) {
+  private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
+      ClassLoaderResolver clr, DatastoreManager storeMgr) {
     return entityToPojo(entity, acmd, clr, storeMgr, getObjectManager(), query.getIgnoreCache());
   }
 
@@ -364,6 +376,33 @@ public class DatastoreQuery implements Serializable {
     return pojo;
   }
 
+  /**
+   * Converts the provided entity to its pojo primary key representation.
+   *
+   * @param entity The entity to convert
+   * @param acmd The meta data for the pojo class
+   * @param clr The classloader resolver
+   * @param storeMgr The store manager
+   * @param om The object manager
+   * @return The pojo that corresponds to the id of the provided entity.
+   */
+  private static Object entityToPojoPrimaryKey(final Entity entity, final AbstractClassMetaData acmd,
+      ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om) {
+    storeMgr.validateMetaDataForClass(acmd, clr);
+    FieldValues fv = new FieldValues() {
+      public void fetchFields(StateManager sm) {
+        sm.replaceFields(
+            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+      }
+      public void fetchNonLoadedFields(StateManager sm) {
+      }
+      public FetchPlan getFetchPlanForLoading() {
+        return null;
+      }
+    };
+    return om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, false, true);
+  }
+
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, DatastoreTable table,
                              final ClassLoaderResolver clr) {
@@ -390,14 +429,23 @@ public class DatastoreQuery implements Serializable {
     }
 
     List<Integer> projectionFieldNums = Utils.newArrayList();
-    boolean isCountQuery = validateResultExpression(compilation, acmd, projectionFieldNums);
+    ResultType resultType = validateResultExpression(compilation, acmd, projectionFieldNums);
     // TODO(maxr): Add checks for subqueries and anything else we don't allow
     String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-    Function<Entity, Object> resultTransformer = new Function<Entity, Object>() {
-      public Object apply(Entity from) {
-        return entityToPojo(from, acmd, clr, getDatastoreManager());
-      }
-    };
+    Function<Entity, Object> resultTransformer;
+    if (resultType == ResultType.KEYS_ONLY) {
+      resultTransformer = new Function<Entity, Object>() {
+        public Object apply(Entity from) {
+          return entityToPojoPrimaryKey(from, acmd, clr, getDatastoreManager(), getObjectManager());
+        }
+      };
+    } else {
+      resultTransformer = new Function<Entity, Object>() {
+        public Object apply(Entity from) {
+          return entityToPojo(from, acmd, clr, getDatastoreManager());
+        }
+      };
+    }
 
     if (!projectionFieldNums.isEmpty()) {
       // Wrap the entityToPojo function with a function that will apply the
@@ -405,7 +453,7 @@ public class DatastoreQuery implements Serializable {
       resultTransformer = newProjectionResultTransformer(projectionFieldNums, resultTransformer);
     }
     return new QueryData(
-        parameters, acmd, table, compilation, new Query(kind), isCountQuery, resultTransformer);
+        parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer);
   }
 
   /**
@@ -415,11 +463,11 @@ public class DatastoreQuery implements Serializable {
    * position of any fields that have been explicitly selected in the result
    * expression.
    *
-   * @return {@code true} if this is a count query, {@code false} otherwise
+   * @return The ResultType
    */
-  private boolean validateResultExpression(
+  private ResultType validateResultExpression(
       QueryCompilation compilation, AbstractClassMetaData acmd, List<Integer> projectionFieldNums) {
-    boolean isCountQuery = false;
+    ResultType resultType = null;
     if (compilation.getExprResult() != null) {
       // the only expression results we support are count() and PrimaryExpression
       for (Expression resultExpr : compilation.getExprResult()) {
@@ -431,11 +479,14 @@ public class DatastoreQuery implements Serializable {
           } else if (!projectionFieldNums.isEmpty()) {
             throw newAggregateAndRowResultsException();
           } else {
-            isCountQuery = true;
+            resultType = ResultType.COUNT;
           }
         } else if (resultExpr instanceof PrimaryExpression) {
-          if (isCountQuery) {
+          if (resultType == ResultType.COUNT) {
             throw newAggregateAndRowResultsException();            
+          }
+          if (resultType == null) {
+            resultType = ResultType.KEYS_ONLY;
           }
           PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
           if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
@@ -449,15 +500,20 @@ public class DatastoreQuery implements Serializable {
                   "Selecting fields of embedded classes is not yet supported");
             }
             projectionFieldNums.add(ammd.getAbsoluteFieldNumber());
+            if (!ammd.isPrimaryKey()) {
+              // A single non-pk field locks the result type on entity
+              resultType = ResultType.ENTITY;
+            }
           }
         } else {
+          // We don't support any other result expressions
           Expression.Operator operator =
               new Expression.Operator(resultExpr.getClass().getName(), 0);
           throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
         }
       }
     }
-    return isCountQuery;
+    return resultType;
   }
 
   private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {
@@ -573,20 +629,20 @@ public class DatastoreQuery implements Serializable {
     private final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
     private final QueryCompilation compilation;
     private final Query datastoreQuery;
-    private final boolean isCountQuery;
+    private final ResultType resultType;
     private final Function<Entity, Object> resultTransformer;
     private Set<Key> batchGetKeys;
 
     private QueryData(
         Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
-        QueryCompilation compilation, Query datastoreQuery, boolean isCountQuery,
+        QueryCompilation compilation, Query datastoreQuery, ResultType resultType,
         Function<Entity, Object> resultTransformer) {
       this.parameters = parameters;
       this.acmd = acmd;
       this.tableMap.put(acmd.getFullClassName(), table);
       this.compilation = compilation;
       this.datastoreQuery = datastoreQuery;
-      this.isCountQuery = isCountQuery;
+      this.resultType = resultType;
       this.resultTransformer = resultTransformer;
     }
   }
