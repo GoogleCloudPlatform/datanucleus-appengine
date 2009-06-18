@@ -39,6 +39,7 @@ import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
+import java.lang.reflect.Field;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -662,9 +663,36 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
+  private static final Field PROPERTY_MAP_FIELD;
+  static {
+    try {
+      PROPERTY_MAP_FIELD = Entity.class.getDeclaredField("propertyMap");
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+    PROPERTY_MAP_FIELD.setAccessible(true);
+  }
+
+  // TODO(maxr) Get rid of this once we have a formal way of figuring out
+  // which properties are indexed and which are unindexed.
+  private static Map<String, Object> getPropertyMap(Entity entity) {
+    try {
+      return (Map<String, Object>) PROPERTY_MAP_FIELD.get(entity);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // TODO(maxr) Rewrite once Entity.setPropertiesFrom() is available.
   static void copyProperties(Entity src, Entity dest) {
-    for (Map.Entry<String, Object> entry : src.getProperties().entrySet()) {
-      dest.setProperty(entry.getKey(), entry.getValue());
+    for (Map.Entry<String, Object> entry : getPropertyMap(src).entrySet()) {
+      // barf
+      if (entry.getValue() != null &&
+          entry.getValue().getClass().getName().equals("com.google.appengine.api.datastore.Entity$UnindexedValue")) {
+        dest.setUnindexedProperty(entry.getKey(), src.getProperty(entry.getKey()));
+      } else {
+        dest.setProperty(entry.getKey(), entry.getValue());
+      }
     }
   }
 
@@ -683,6 +711,10 @@ public class DatastoreFieldManager implements FieldManager {
       parentMemberMetaData = getMetaData(fieldNumber);
     }
     return result;
+  }
+
+  private boolean isUnindexedProperty(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.UNINDEXED_PROPERTY);
   }
 
   public void storeShortField(int fieldNumber, short value) {
@@ -747,7 +779,12 @@ public class DatastoreFieldManager implements FieldManager {
         // unwrap SCO values so that the datastore api doesn't
         // honk on unknown types
         value = unwrapSCOField(fieldNumber, value);
-        datastoreEntity.setProperty(getPropertyName(fieldNumber), value);
+        String propName = getPropertyName(fieldNumber);
+        if (isUnindexedProperty(ammd)) {
+          datastoreEntity.setUnindexedProperty(propName, value);
+        } else {
+          datastoreEntity.setProperty(propName, value);
+        }
       }
     }
   }

@@ -102,6 +102,11 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String PK_ID = EXTENSION_PREFIX + "pk-id";
 
   /**
+   * The name of the annotation extension that marks a field as unindexed
+   */
+  public static final String UNINDEXED_PROPERTY = EXTENSION_PREFIX + "unindexed";
+
+  /**
    * Construct a DatsatoreManager
    *
    * @param clr The ClassLoaderResolver

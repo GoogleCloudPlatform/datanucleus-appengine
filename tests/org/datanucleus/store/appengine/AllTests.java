@@ -89,6 +89,8 @@ public class AllTests {
     suite.addTestSuite(JDOSubclassTest.class);
     suite.addTestSuite(JPASubclassTest.class);
     suite.addTestSuite(JPALobTest.class);
+    suite.addTestSuite(JDOUnindexedPropertiesTest.class);
+    suite.addTestSuite(JPAUnindexedPropertiesTest.class);
     return suite;
   }
 }
