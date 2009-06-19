@@ -32,7 +32,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
-import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
+import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
@@ -517,7 +517,7 @@ public class DatastoreFieldManager implements FieldManager {
 
   /**
    * Currently all relationships are parent-child.  If a datastore entity
-   * doesn't have a parent there are 3 places we can look for one.
+   * doesn't have a parent there are 4 places we can look for one.
    * 1)  It's possible that a pojo in the cascade chain registered itself as
    * the parent.
    * 2)  It's possible that the pojo has an external foreign key mapping
@@ -527,6 +527,9 @@ public class DatastoreFieldManager implements FieldManager {
    * not an external foreign key mapping but is labeled as a "parent
    * provider" (this is an app engine orm term).  In this case, as with
    * #2, we can use the key of that field as the parent.
+   * 4) It's possible that we have attached a unidirectional child to a
+   * detached parent in JPA.  In this case we consult the
+   * {@link DatastoreJPACallbackHandler} to see if we can find a parent.
    *
    * It _should_ be possible to get rid of at least one of these
    * mechanisms, most likely the first.
@@ -551,9 +554,10 @@ public class DatastoreFieldManager implements FieldManager {
         parentKey = getParentKeyFromParentField(sm);
       }
       if (parentKey == null) {
-        Object mergeEntity = DatastoreEntityManager.getMergingEntity();
-        if (mergeEntity != null) {
-          parentKey = getParentKeyFromMergeEntity(mergeEntity);
+        // Mechanism 4
+        Object parentPojo = DatastoreJPACallbackHandler.getAttachingParent(sm.getObject());
+        if (parentPojo != null) {
+          parentKey = getKeyFromParentPojo(parentPojo);
         }
       }
       if (parentKey != null) {
@@ -567,7 +571,7 @@ public class DatastoreFieldManager implements FieldManager {
     return null;
   }
 
-  private Key getParentKeyFromMergeEntity(Object mergeEntity) {
+  private Key getKeyFromParentPojo(Object mergeEntity) {
     StateManager sm = getObjectManager().findStateManager(mergeEntity);
     if (sm == null) {
       return null;

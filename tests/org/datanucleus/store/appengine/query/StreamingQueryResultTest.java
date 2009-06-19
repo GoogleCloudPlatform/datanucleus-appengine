@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Entity;
 import junit.framework.TestCase;
 
 import org.datanucleus.ObjectManager;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -38,7 +39,10 @@ public class StreamingQueryResultTest extends TestCase {
 
   private Query dummyQuery() {
     ObjectManager om = EasyMock.createNiceMock(ObjectManager.class);
+    ApiAdapter apiAdapter = EasyMock.createNiceMock(ApiAdapter.class);
+    EasyMock.expect(om.getApiAdapter()).andReturn(apiAdapter).anyTimes();
     EasyMock.replay(om);
+    EasyMock.replay(apiAdapter);
     return new AbstractJavaQuery(om) {
       public String getSingleStringQuery() {
         return null;

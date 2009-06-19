@@ -208,12 +208,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
     Key hasKeyPk1Key = pojo.getHasKeyPks().iterator().next().getKey();
-    try {
-      pojo.addBidirChildAtPosition(bidir2, 0);
-      fail("http://www.jpox.org/servlet/jira/browse/NUCCORE-j312 must have been fixed");
-    } catch (IndexOutOfBoundsException ioobe) {
-      // good
-    }
+    pojo.addBidirChildAtPosition(bidir2, 0);
 
     Flight f2 = newFlight();
     f2.setName("another name");

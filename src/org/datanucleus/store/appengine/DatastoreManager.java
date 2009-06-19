@@ -30,6 +30,8 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
+import org.datanucleus.plugin.PluginManager;
+import org.datanucleus.plugin.PluginRegistry;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
@@ -58,6 +60,7 @@ import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.NucleusLogger;
 
+import java.lang.reflect.Field;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -112,7 +115,8 @@ public class DatastoreManager extends MappedStoreManager {
    * @param clr The ClassLoaderResolver
    * @param omfContext The OMFContext
    */
-  public DatastoreManager(ClassLoaderResolver clr, OMFContext omfContext) {
+  public DatastoreManager(ClassLoaderResolver clr, OMFContext omfContext)
+      throws NoSuchFieldException, IllegalAccessException {
     // Make sure we add required property values before we invoke
     // out parent's constructor.
     super("appengine", clr, addDefaultPropertyValues(omfContext));
@@ -127,7 +131,18 @@ public class DatastoreManager extends MappedStoreManager {
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(omfContext);
+    setCustomPluginManager();
     logConfiguration();
+  }
+
+  private void setCustomPluginManager() throws NoSuchFieldException, IllegalAccessException {
+    // Replaces the configured plugin registry with our own implementation.
+    // Reflection is required because there's no public mutator for this field.
+    PluginManager pluginMgr = omfContext.getPluginManager();
+    Field registryField = PluginManager.class.getDeclaredField("registry");
+    registryField.setAccessible(true);
+    registryField.set(
+        pluginMgr, new DatastorePluginRegistry((PluginRegistry) registryField.get(pluginMgr)));
   }
 
   private static OMFContext addDefaultPropertyValues(OMFContext omfContext) {
@@ -240,6 +255,8 @@ public class DatastoreManager extends MappedStoreManager {
     Set<String> opts = new HashSet<String>();
     opts.add("TransactionIsolationLevel.read-committed");
     opts.add("BackedSCO");
+    opts.add("ApplicationIdentity");
+    opts.add("OptimisticTransaction");
     return opts;
   }
 
