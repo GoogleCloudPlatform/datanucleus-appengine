@@ -36,6 +36,7 @@ import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.WriteBlocker;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.BidirectionalChildLongPkListJPA;
 import org.datanucleus.test.BidirectionalGrandchildListJPA;
@@ -105,6 +106,21 @@ public class JPQLQueryTest extends JPATestCase {
   SortPredicate
       ISBN_DESC =
       new SortPredicate("isbn", SortDirection.DESCENDING);
+
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    WriteBlocker.installNoWritesDatastoreService();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    try {
+      super.tearDown();
+    } finally {
+      WriteBlocker.uninstallNoWritesDatastoreService();
+    }
+  }
 
   @Override
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
@@ -896,6 +912,12 @@ public class JPQLQueryTest extends JPATestCase {
     @SuppressWarnings("unchecked")
     List<HasMultiValuePropsJPA> result3 = (List<HasMultiValuePropsJPA>) q.getResultList();
     assertEquals(0, result3.size());
+  }
+
+  public void testNoPutsAfterLoadingMultiValueProperty() throws NoSuchMethodException {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFilterByMultiValueProperty();
+    em.close();
   }
 
   public void testFilterByMultiValueProperty_MemberOf() {

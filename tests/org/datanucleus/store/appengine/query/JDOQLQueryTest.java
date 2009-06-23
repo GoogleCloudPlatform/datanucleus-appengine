@@ -37,6 +37,7 @@ import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.store.appengine.WriteBlocker;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
@@ -115,6 +116,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    WriteBlocker.installNoWritesDatastoreService();
     beginTxn();
   }
 
@@ -123,7 +125,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     if (!pm.isClosed() && pm.currentTransaction().isActive()) {
       commitTxn();
     }
-    super.tearDown();
+    try {
+      super.tearDown();
+    } finally {
+      WriteBlocker.uninstallNoWritesDatastoreService();
+    }
   }
 
   public void testUnsupportedFilters() {
@@ -951,6 +957,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, result.size());
     result = (List<HasMultiValuePropsJDO>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be2"));
     assertEquals(0, result.size());
+  }
+
+  public void testNoPutsAfterLoadingMultiValueProperty() throws NoSuchMethodException {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFilterByMultiValueProperty();
+    pm.close();
   }
 
   public void testFilterByMultiValueProperty_ContainsWithParam() {

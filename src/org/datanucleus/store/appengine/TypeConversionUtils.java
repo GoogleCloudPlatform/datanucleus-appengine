@@ -383,7 +383,7 @@ class TypeConversionUtils {
     // Wrap the provided value in a state-manager aware object.  This allows
     // us to detect changes to Lists, Sets, etc.
     return SCOUtils.newSCOInstance(
-        ownerSM, ammd, ammd.getType(), value.getClass(), value, true, true, true);
+        ownerSM, ammd, ammd.getType(), value.getClass(), value, false, false, true);
   }
 
   /**

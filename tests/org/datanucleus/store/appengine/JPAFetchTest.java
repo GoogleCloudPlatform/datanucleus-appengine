@@ -28,6 +28,21 @@ import org.datanucleus.test.HasMultiValuePropsJPA;
 public class JPAFetchTest extends JPATestCase {
 
   @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    WriteBlocker.installNoWritesDatastoreService();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    try {
+      super.tearDown();
+    } finally {
+      WriteBlocker.uninstallNoWritesDatastoreService();
+    }
+  }
+
+  @Override
   protected EntityManagerFactoryName getEntityManagerFactoryName() {
     return EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
   }
@@ -121,6 +136,7 @@ public class JPAFetchTest extends JPATestCase {
     String keyStr = KeyFactory.keyToString(key);
     assertNull(em.find(Book.class, keyStr));
   }
+
   public void testFetchSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));
@@ -128,6 +144,11 @@ public class JPAFetchTest extends JPATestCase {
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSet());
+  }
+
+  public void testFetchSetNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchSet();
   }
 
   public void testFetchArrayList() {
@@ -138,6 +159,26 @@ public class JPAFetchTest extends JPATestCase {
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrArrayList());
   }
+
+  public void testFetchArrayListNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchArrayList();
+  }
+
+  public void testFetchList() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrList());
+  }
+
+  public void testFetchListNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchList();
+  }
+
   public void testFetchLinkedList() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
@@ -145,6 +186,11 @@ public class JPAFetchTest extends JPATestCase {
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newLinkedList("a", "b", "c"), pojo.getStrLinkedList());
+  }
+
+  public void testFetchLinkedListNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchLinkedList();
   }
 
   public void testFetchHashSet() {
@@ -155,12 +201,65 @@ public class JPAFetchTest extends JPATestCase {
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrHashSet());
   }
+
+  public void testFetchHashSetNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchHashSet();
+  }
+
+  public void testFetchLinkedHashSet() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strLinkedHashSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrLinkedHashSet());
+  }
+
+  public void testFetchLinkedHashSetNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchLinkedHashSet();
+  }
+
+  public void testFetchSortedSet() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("strSortedSet", Utils.newArrayList("c", "b", "a"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSortedSet());
+  }
+
+  public void testFetchSortedSetNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchSortedSet();
+  }
+
   public void testFetchTreeSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
-    e.setProperty("strTreeSet", Utils.newArrayList("a", "b", "c"));
+    e.setProperty("strTreeSet", Utils.newArrayList("c", "b", "a"));
     ldth.ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
+  }
+
+  public void testFetchTreeSetNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchTreeSet();
+  }
+
+  public void testFetchCollection() {
+    Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    e.setProperty("intColl", Utils.newArrayList(2, 3, 4));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList(2, 3, 4), pojo.getIntColl());
+  }
+
+  public void testFetchCollectionNonTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    testFetchCollection();
   }
 }

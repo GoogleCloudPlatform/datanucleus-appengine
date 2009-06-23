@@ -142,7 +142,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     // reattach to the pm - this turns our regular list field into a managed
     // list field
     pojo = pm.makePersistent(pojo);
-    assertEquals(ObjectState.PERSISTENT_DIRTY, JDOHelper.getObjectState(pojo));
+    assertEquals(ObjectState.PERSISTENT_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.getStrList().add("e");
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.createKey(DetachableWithMultiValuePropsJDO.class.getSimpleName(), pojo.getId()));

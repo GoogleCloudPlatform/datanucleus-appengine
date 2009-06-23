@@ -40,6 +40,7 @@ public class JDOFetchTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    WriteBlocker.installNoWritesDatastoreService();
     beginTxn();
   }
 
@@ -48,7 +49,11 @@ public class JDOFetchTest extends JDOTestCase {
     if (pm.currentTransaction().isActive()) {
       commitTxn();
     }
-    super.tearDown();
+    try {
+      super.tearDown();
+    } finally {
+      WriteBlocker.uninstallNoWritesDatastoreService();
+    }
   }
 
   public void testSimpleFetch_Id() {
@@ -251,6 +256,12 @@ public class JDOFetchTest extends JDOTestCase {
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSet());
   }
 
+  public void testFetchSetNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchSet();
+  }
+
   public void testFetchArrayList() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strArrayList", Utils.newArrayList("a", "b", "c"));
@@ -259,6 +270,28 @@ public class JDOFetchTest extends JDOTestCase {
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
     assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrArrayList());
   }
+
+  public void testFetchArrayListNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchArrayList();
+  }
+
+  public void testFetchList() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrList());
+  }
+
+  public void testFetchListNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchList();
+  }
+
   public void testFetchLinkedList() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
@@ -266,6 +299,12 @@ public class JDOFetchTest extends JDOTestCase {
 
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
     assertEquals(Utils.newLinkedList("a", "b", "c"), pojo.getStrLinkedList());
+  }
+
+  public void testFetchLinkedListNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchLinkedList();
   }
 
   public void testFetchHashSet() {
@@ -276,13 +315,71 @@ public class JDOFetchTest extends JDOTestCase {
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrHashSet());
   }
+
+  public void testFetchHashSetNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchHashSet();
+  }
+
+  public void testFetchLinkedHashSet() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strLinkedHashSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrLinkedHashSet());
+  }
+
+  public void testFetchLinkedHashSetNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchLinkedHashSet();
+  }
+
+  public void testFetchSortedSet() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("strSortedSet", Utils.newArrayList("a", "b", "c"));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSortedSet());
+  }
+
+  public void testFetchSortedSetNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchSortedSet();
+  }
+
   public void testFetchTreeSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
-    e.setProperty("strTreeSet", Utils.newArrayList("a", "b", "c"));
+    e.setProperty("strTreeSet", Utils.newArrayList("c", "b", "a"));
     ldth.ds.put(e);
 
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
     assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
+  }
+
+  public void testFetchTreeSetNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchTreeSet();
+  }
+
+  public void testFetchCollection() {
+    Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    e.setProperty("intColl", Utils.newArrayList(2, 3, 4));
+    ldth.ds.put(e);
+
+    HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());
+    assertEquals(Utils.newArrayList(2, 3, 4), pojo.getIntColl());
+  }
+
+  public void testFetchCollectionNonTxn() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testFetchCollection();
   }
 
   public void testNumberTooLarge() {
