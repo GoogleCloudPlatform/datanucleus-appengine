@@ -155,4 +155,8 @@ public class HasOneToManyListJDO implements HasOneToManyJDO, Serializable {
   public void removeBidirChildren(Collection<BidirectionalChildJDO> bidirChildren) {
     this.bidirChildren.removeAll(bidirChildren);
   }
+
+  public void setBidirChildren(Collection<BidirectionalChildJDO> childList) {
+    this.bidirChildren = (List) childList;
+  }
 }

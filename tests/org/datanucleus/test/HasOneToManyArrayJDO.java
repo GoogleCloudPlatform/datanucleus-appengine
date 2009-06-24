@@ -22,7 +22,6 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
-import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -198,4 +197,7 @@ public class HasOneToManyArrayJDO implements HasOneToManyJDO {
     throw new UnsupportedOperationException();
   }
 
+  public void setBidirChildren(Collection<BidirectionalChildJDO> childList) {
+    throw new UnsupportedOperationException();
+  }
 }

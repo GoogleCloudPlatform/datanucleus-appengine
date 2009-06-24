@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 
+import org.datanucleus.test.BidirectionalChildJDO;
 import org.datanucleus.test.BidirectionalChildLongPkSetJDO;
 import org.datanucleus.test.BidirectionalChildSetJDO;
 import org.datanucleus.test.BidirectionalChildSetUnencodedStringPkJDO;
@@ -24,6 +25,8 @@ import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
 import org.datanucleus.test.HasOneToManyLongPkSetJDO;
 import org.datanucleus.test.HasOneToManySetJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
+
+import java.util.Collection;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -126,6 +129,12 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
 
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+  }
+
+  public void testReplaceBidirColl() {
+    Collection<BidirectionalChildJDO> childSet = Utils.<BidirectionalChildJDO>newHashSet(
+        new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
+    testReplaceBidirColl(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), childSet);
   }
 
   @Override

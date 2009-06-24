@@ -37,7 +37,9 @@ import org.datanucleus.test.HasOneToManyUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
 import org.easymock.EasyMock;
 
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
 import java.util.List;
 
 import javax.jdo.JDOFatalUserException;
@@ -1184,6 +1186,32 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
+
+  void testReplaceBidirColl(HasOneToManyJDO parent,
+                            BidirectionalChildJDO bidir1,
+                            Collection<BidirectionalChildJDO> newColl) {
+    bidir1.setParent(parent);
+    parent.addBidirChild(bidir1);
+
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+    String childKey = bidir1.getId();
+    beginTxn();
+    parent = pm.getObjectById(parent.getClass(), KeyFactory.stringToKey(parent.getId()));
+    parent.setBidirChildren(newColl);
+    commitTxn();
+
+    beginTxn();
+    parent = pm.getObjectById(parent.getClass(), KeyFactory.stringToKey(parent.getId()));
+    assertEquals(2, parent.getBidirChildren().size());
+    Iterator<BidirectionalChildJDO> childIter = parent.getBidirChildren().iterator();
+    assertFalse(childKey.equals(childIter.next().getId()));
+    assertFalse(childKey.equals(childIter.next().getId()));
+    commitTxn();
+    assertEquals(2, countForClass(newColl.iterator().next().getClass()));
+  }
+
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {

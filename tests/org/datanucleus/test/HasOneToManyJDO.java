@@ -49,4 +49,6 @@ public interface HasOneToManyJDO extends Serializable {
   void addAtPosition(int i, BidirectionalChildJDO bidir);
   void addAtPosition(int i, Flight f);
   void addAtPosition(int i, HasKeyPkJDO hasKeyPk);
+
+  void setBidirChildren(Collection<BidirectionalChildJDO> childList);
 }

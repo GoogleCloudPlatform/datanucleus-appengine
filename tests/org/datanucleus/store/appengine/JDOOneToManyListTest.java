@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
+import org.datanucleus.test.BidirectionalChildJDO;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalChildStringPkListJDO;
@@ -36,6 +37,8 @@ import org.datanucleus.test.HasOneToManyLongPkListJDO;
 import org.datanucleus.test.HasOneToManyStringPkListJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJDO;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJDO;
+
+import java.util.Collection;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -400,6 +403,12 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals(1, pojo.getChild1().size());
     assertEquals(1, pojo.getChild2().size());
     commitTxn();
+  }
+
+  public void testReplaceBidirColl() {
+    Collection<BidirectionalChildJDO> childList = Utils.<BidirectionalChildJDO>newArrayList(
+        new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
+    testReplaceBidirColl(new HasOneToManyListJDO(), new BidirectionalChildListJDO(), childList);
   }
 
   @Override
