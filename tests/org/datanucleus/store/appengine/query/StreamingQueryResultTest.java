@@ -21,6 +21,7 @@ import junit.framework.TestCase;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.store.appengine.DatastoreTestHelper;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -36,6 +37,21 @@ import java.util.Map;
  * @author Max Ross <maxr@google.com>
  */
 public class StreamingQueryResultTest extends TestCase {
+
+  protected DatastoreTestHelper ldth;
+
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    ldth = new DatastoreTestHelper();
+    ldth.setUp();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    ldth.tearDown(false);
+    super.tearDown();
+  }
 
   private Query dummyQuery() {
     ObjectManager om = EasyMock.createNiceMock(ObjectManager.class);

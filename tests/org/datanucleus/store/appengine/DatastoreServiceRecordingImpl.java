@@ -135,4 +135,9 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
     recorder.prepare(query);
     return delegate.prepare(query);
   }
+
+  public PreparedQuery prepare(Transaction transaction, Query query) {
+    recorder.prepare(transaction, query);
+    return delegate.prepare(transaction, query);
+  }
 }

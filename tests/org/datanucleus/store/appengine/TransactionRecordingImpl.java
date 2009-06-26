@@ -44,4 +44,9 @@ class TransactionRecordingImpl implements Transaction {
     recorder.getId();
     return delegate.getId();
   }
+
+  public boolean isActive() {
+    recorder.isActive();
+    return delegate.isActive();
+  }
 }

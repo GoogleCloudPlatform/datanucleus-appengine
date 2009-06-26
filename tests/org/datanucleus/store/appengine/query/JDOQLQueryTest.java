@@ -45,6 +45,7 @@ import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
 import org.datanucleus.test.HasEnumJDO;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
@@ -1357,14 +1358,30 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(KeyFactory.stringToKey(f1.getId()), e1.getKey());
   }
 
+  public void testSize() {
+    for (int i = 0; i < 10; i++) {
+      Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+      ldth.ds.put(e);
+    }
+    Query q = pm.newQuery(Flight.class);
+    @SuppressWarnings("unchecked")
+    List<Flight> results = (List<Flight>) q.execute();
+    assertEquals(10, results.size());
+  }
+
   public void testDatastoreFailureWhileIterating() {
+    // Need to have enough data to ensure a Next call
+    for (int i = 0; i < 21; i++) {
+      Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+      ldth.ds.put(e);
+    }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
-          int count = 0;
+          boolean exploded = false;
           protected void doIntercept(String methodName) {
-            count++;
-            if (count == 4) {
-              throw new DatastoreFailureException("boom");
+            if (!exploded && methodName.equals("Next")) {
+              exploded = true;
+              throw new DatastoreFailureException("boom: " + methodName);
             }
           }
         };
@@ -1372,10 +1389,6 @@ public class JDOQLQueryTest extends JDOTestCase {
         new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
 
-    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
     Query q = pm.newQuery(Flight.class);
     @SuppressWarnings("unchecked")
     List<Flight> results = (List<Flight>) q.execute();
@@ -1879,6 +1892,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ldth.ds.put(e1);
+    commitTxn();
+    beginTxn();
     Query q = pm.newQuery("select origin from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<String> origins = (List<String>) q.execute();
@@ -1887,7 +1902,8 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
     ldth.ds.put(e2);
-
+    commitTxn();
+    beginTxn();
     @SuppressWarnings("unchecked")
     List<String> origins2 = (List<String>) q.execute();
     assertEquals(2, origins2.size());
@@ -1956,6 +1972,8 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
     ldth.ds.put(e2);
+    commitTxn();
+    beginTxn();
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.execute();
@@ -1971,6 +1989,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testRestrictFetchedFields_TwoFields_IdIsFirst() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ldth.ds.put(e1);
+    commitTxn();
+    beginTxn();
     Query q = pm.newQuery("select id, dest from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();
@@ -1981,6 +2001,8 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
     ldth.ds.put(e2);
+    commitTxn();
+    beginTxn();
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.execute();
@@ -1996,6 +2018,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testRestrictFetchedFields_TwoFields_IdIsSecond() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ldth.ds.put(e1);
+    commitTxn();
+    beginTxn();
     Query q = pm.newQuery("select origin, id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();
@@ -2006,6 +2030,8 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
     ldth.ds.put(e2);
+    commitTxn();
+    beginTxn();
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.execute();
@@ -2118,6 +2144,8 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Entity e = Flight.newFlightEntity("y", "bos", "mia", 23, 24);
     ldth.ds.put(e);
+    commitTxn();
+    beginTxn();
     q.setUnique(true);
     Flight f = (Flight) q.execute();
     assertEquals(e.getKey(), KeyFactory.stringToKey(f.getId()));
@@ -2206,6 +2234,25 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     List<Flight> flights3 = (List<Flight>) q.execute("za");
     assertTrue(flights3.isEmpty());
+  }
+
+  public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName());
+    ldth.ds.put(e2);
+
+    // Not used, but associates the txn with the flight's entity group
+    Flight f = pm.getObjectById(Flight.class, e1.getKey());
+
+    Query q = pm.newQuery(
+        "select from " + HasKeyAncestorKeyPkJDO.class.getName() + " where ancestorKey == :p");
+    try {
+      q.execute(KeyFactory.createKey("yar", 33L));
+      fail("expected iae");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
   }
 
   private void assertQueryUnsupportedByOrm(

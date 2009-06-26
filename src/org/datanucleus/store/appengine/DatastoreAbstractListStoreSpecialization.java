@@ -121,7 +121,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
     int[] indices = new int[keys.size()];
     int index = 0;
-    for (Entity e : service.prepare(q).asIterable()) {
+    for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       if (keySet.contains(e.getKey())) {
         indices[index++] = extractIndexProperty(e, ecs, sm.getObjectManager());
       }
@@ -165,7 +165,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     String indexProp = entity.getProperties().keySet().iterator().next();
     q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN_OR_EQUAL, oldIndex);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    for (Entity shiftMe : service.prepare(q).asIterable()) {
+    for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       Long pos = (Long) shiftMe.getProperty(indexProp);
       shiftMe.setProperty(indexProp, pos + amount);
       handler.put(om, shiftMe);

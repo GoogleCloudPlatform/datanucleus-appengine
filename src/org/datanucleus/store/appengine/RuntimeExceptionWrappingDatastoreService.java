@@ -193,6 +193,16 @@ public class RuntimeExceptionWrappingDatastoreService implements DatastoreServic
     }
   }
 
+  public PreparedQuery prepare(Transaction transaction, Query query) {
+    try {
+      return inner.prepare(transaction, query);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
   public Transaction beginTransaction() {
     try {
       return inner.beginTransaction();

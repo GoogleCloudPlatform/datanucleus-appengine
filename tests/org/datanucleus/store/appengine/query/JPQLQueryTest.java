@@ -45,6 +45,7 @@ import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasBytesJPA;
 import org.datanucleus.test.HasDoubleJPA;
 import org.datanucleus.test.HasEnumJPA;
+import org.datanucleus.test.HasKeyAncestorStringPkJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasMultiValuePropsJPA;
@@ -1268,14 +1269,18 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testDatastoreFailureWhileIterating() {
+    // Need to have enough data to ensure a Next call
+    for (int i = 0; i < 21; i++) {
+      Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
+      ldth.ds.put(bookEntity);
+    }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
-          int count = 0;
-
+          boolean exploded = false;
           protected void doIntercept(String methodName) {
-            count++;
-            if (count == 3) {
-              throw new DatastoreFailureException("boom");
+            if (!exploded && methodName.equals("Next")) {
+              exploded = true;
+              throw new DatastoreFailureException("boom: " + methodName);
             }
           }
         };
@@ -1283,12 +1288,9 @@ public class JPQLQueryTest extends JPATestCase {
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
     ApiProxy.setDelegate(dd);
-    Entity bookEntity = newBook("Bar Book", "Joe Blow", "67890");
-    ldth.ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where id = :key");
-    q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
+        "select from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     try {
@@ -2108,7 +2110,27 @@ public class JPQLQueryTest extends JPATestCase {
     b.getAuthor();
     iter.next();
   }
-  
+
+  public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
+    Entity e1 = Book.newBookEntity("this", "that", "the other");
+    ldth.ds.put(e1);
+    Entity e2 = new Entity(HasKeyAncestorStringPkJPA.class.getSimpleName());
+    ldth.ds.put(e2);
+
+    // Not used, but associates the txn with the book's entity group
+    Book b = em.find(Book.class, e1.getKey());
+    Query q = em.createQuery(
+        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
+    q.setParameter("p", KeyFactory.createKey("yar", 33L));
+    try {
+      q.getResultList();
+      fail("expected iae");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }

@@ -159,7 +159,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         orderMapping.setObject(om, entity, new int[] {1}, index);
         String indexProp = entity.getProperties().keySet().iterator().next();
         q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN, index);
-        for (Entity shiftMe : service.prepare(q).asIterable()) {
+        for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
           Long pos = (Long) shiftMe.getProperty(indexProp);
           shiftMe.setProperty(indexProp, pos - 1);
           handler.put(om, shiftMe);

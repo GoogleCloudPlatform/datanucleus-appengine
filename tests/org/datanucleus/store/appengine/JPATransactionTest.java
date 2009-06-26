@@ -95,6 +95,7 @@ public class JPATransactionTest extends TestCase {
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
+    EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -128,6 +129,7 @@ public class JPATransactionTest extends TestCase {
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
+    EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 

@@ -20,6 +20,8 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.apphosting.api.ApiProxy;
 
+import java.util.Map;
+
 /**
  * A test helper that sets up a datastore service that can be used in tests.
  *
@@ -55,15 +57,11 @@ public class DatastoreTestHelper {
     }
 
     public String getRequestNamespace() {
-      throw new UnsupportedOperationException();
+      return "";
     }
 
-    public String getDefaultNamespace() {
-      throw new UnsupportedOperationException();
-    }
-
-    public void setDefaultNamespace(String s) {
-      throw new UnsupportedOperationException();
+    public Map<String, Object> getAttributes() {
+      return Utils.newHashMap();
     }
   };
 
