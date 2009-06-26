@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.jpa.annotations.Extension;
 
+import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -31,9 +32,8 @@ import javax.persistence.Id;
 @Entity
 public class HasKeyPkJPA {
 
-  // This doesn't actually work - JPA doesn't support non-pk fields
-  // of arbitrary types.
   @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
+  @Basic
   private Key ancestorId;
 
   @Id

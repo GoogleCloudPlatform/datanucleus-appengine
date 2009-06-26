@@ -74,6 +74,7 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.jdo.Extent;
@@ -2239,8 +2240,6 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
     ldth.ds.put(e1);
-    Entity e2 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName());
-    ldth.ds.put(e2);
 
     // Not used, but associates the txn with the flight's entity group
     Flight f = pm.getObjectById(Flight.class, e1.getKey());
@@ -2253,6 +2252,18 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (JDOFatalUserException e) {
       // good
     }
+    Map<String, Object> extensions = Utils.newHashMap();
+    extensions.put("gae.exclude-query-from-txn", false);
+    q.setExtensions(extensions);
+    try {
+      q.execute(KeyFactory.createKey("yar", 33L));
+      fail("expected iae");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+    extensions.put("gae.exclude-query-from-txn", true);
+    q.setExtensions(extensions);
+    q.execute(KeyFactory.createKey("yar", 33L));
   }
 
   private void assertQueryUnsupportedByOrm(

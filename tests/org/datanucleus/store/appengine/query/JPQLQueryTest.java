@@ -2112,22 +2112,32 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
+    switchDatasource(EntityManagerFactoryName.transactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("this", "that", "the other");
     ldth.ds.put(e1);
-    Entity e2 = new Entity(HasKeyAncestorStringPkJPA.class.getSimpleName());
-    ldth.ds.put(e2);
 
+    beginTxn();
     // Not used, but associates the txn with the book's entity group
     Book b = em.find(Book.class, e1.getKey());
     Query q = em.createQuery(
         "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
-    q.setParameter("p", KeyFactory.createKey("yar", 33L));
+    q.setParameter("p", KeyFactory.keyToString(KeyFactory.createKey("yar", 33L)));
     try {
       q.getResultList();
       fail("expected iae");
     } catch (PersistenceException e) {
       // good
     }
+
+    q.setHint("gae.exclude-query-from-txn", false);
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+    q.setHint("gae.exclude-query-from-txn", true);
+    q.getResultList();
   }
 
 

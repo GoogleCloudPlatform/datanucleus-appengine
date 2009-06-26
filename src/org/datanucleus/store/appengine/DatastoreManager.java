@@ -110,6 +110,12 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String UNINDEXED_PROPERTY = EXTENSION_PREFIX + "unindexed";
 
   /**
+   * The name of the extension that indicates the query should be excluded from
+   * the current transaction.
+   */
+  public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
+
+  /**
    * Construct a DatsatoreManager
    *
    * @param clr The ClassLoaderResolver

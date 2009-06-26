@@ -212,9 +212,15 @@ public class DatastoreQuery implements Serializable {
       return fulfillBatchGetQuery(ds, qd);
     } else {
       latestDatastoreQuery = qd.datastoreQuery;
-      // If this is an ancestor query, execute it in the current transaction
-      Transaction txn =
-          qd.datastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
+      Transaction txn = null;
+      Map extensions = query.getExtensions();
+      // give users a chance to opt-out of having their query execute in a txn
+      if (extensions == null ||
+          !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
+          !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
+        // If this is an ancestor query, execute it in the current transaction
+        txn = qd.datastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
+      }
       PreparedQuery preparedQuery = ds.prepare(txn, qd.datastoreQuery);
       FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
       if (qd.resultType == ResultType.COUNT) {
