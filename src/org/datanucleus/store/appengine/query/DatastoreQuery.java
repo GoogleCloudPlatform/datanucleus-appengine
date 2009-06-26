@@ -683,16 +683,9 @@ public class DatastoreQuery implements Serializable {
     } else if (expr instanceof InvokeExpression) {
       InvokeExpression invocation = ((InvokeExpression) expr);
       if (invocation.getOperation().equals("contains") && invocation.getArguments().size() == 1) {
-        Expression param = (Expression) invocation.getArguments().get(0);
-        param.bind();
-        if (expr.getLeft() instanceof PrimaryExpression) {
-          PrimaryExpression left = (PrimaryExpression) expr.getLeft();
-          addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
-        } else if (expr.getLeft() instanceof ParameterExpression &&
-                   param instanceof PrimaryExpression) {
-          ParameterExpression pe = (ParameterExpression) expr.getLeft();
-          addLeftPrimaryExpression((PrimaryExpression) param, Expression.OP_EQ, pe, qd);
-        }
+        handleContainsOperation(invocation, expr, qd);
+      } else if (invocation.getOperation().equals("startsWith") && invocation.getArguments().size() == 1) {
+        handleStartsWithOperation(invocation, expr, qd);
       } else {
         throw newUnsupportedQueryMethodException(invocation);
       }
@@ -703,11 +696,80 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
+  /**
+   * We fulfill startsWith by adding a >= filter for the method argument and a
+   * < filter for the method argument translated into an upper limit for the
+   * scan.
+   */
+  private void handleStartsWithOperation(InvokeExpression invocation, Expression expr,
+                                         QueryData qd) {
+    Expression param = (Expression) invocation.getArguments().get(0);
+    param.bind();
+    if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
+      PrimaryExpression left = (PrimaryExpression) expr.getLeft();
+      addLeftPrimaryExpression(left, Expression.OP_GTEQ, param, qd);
+      param = getUpperLimitForStartsWithStr((String) ((Literal)param).getLiteral());
+      addLeftPrimaryExpression(left, Expression.OP_LT, param, qd);
+    } else if (expr.getLeft() instanceof PrimaryExpression &&
+               param instanceof ParameterExpression) {
+      PrimaryExpression primaryExpression = (PrimaryExpression) expr.getLeft();
+      ParameterExpression parameterExpression = (ParameterExpression) param;
+      addLeftPrimaryExpression(primaryExpression, Expression.OP_GTEQ, parameterExpression, qd);
+      Object parameterValue = getParameterValue(qd, parameterExpression);
+      param = getUpperLimitForStartsWithStr((String) parameterValue);
+      addLeftPrimaryExpression(primaryExpression, Expression.OP_LT, param, qd);
+    } else {
+      // We don't know what this is.
+      throw newUnsupportedQueryMethodException(invocation);
+    }
+  }
+
+  private void handleContainsOperation(InvokeExpression invocation, Expression expr, QueryData qd) {
+    Expression param = (Expression) invocation.getArguments().get(0);
+    param.bind();
+    if (expr.getLeft() instanceof PrimaryExpression) {
+      PrimaryExpression left = (PrimaryExpression) expr.getLeft();
+      addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
+    } else if (expr.getLeft() instanceof ParameterExpression &&
+               param instanceof PrimaryExpression) {
+      ParameterExpression pe = (ParameterExpression) expr.getLeft();
+      addLeftPrimaryExpression((PrimaryExpression) param, Expression.OP_EQ, pe, qd);
+    } else {
+      throw newUnsupportedQueryMethodException(invocation);
+    }
+  }
+
+  /**
+   * Converts a string like "ya" to "yb", but does so at the byte level to
+   * model the actual behavior of the datastore.
+   */
+  private Literal getUpperLimitForStartsWithStr(String val) {
+    byte[] bytes = val.getBytes();
+    for (int i = bytes.length - 1; i >= 0; i--) {
+      byte[] endKey = new byte[i + 1];
+      System.arraycopy(bytes, 0, endKey, 0, i + 1);
+      if (++endKey[i] != 0) {
+        return new Literal(new String(endKey));
+      }
+    }
+    return null;
+  }
+
   private UnsupportedDatastoreFeatureException newUnsupportedQueryMethodException(
       InvokeExpression invocation) {
     throw new UnsupportedDatastoreFeatureException(
         "Unsupported method <" + invocation.getOperation() + "> while parsing expression: " + invocation,
         query.getSingleStringQuery());
+  }
+
+  private Object getParameterValue(QueryData qd, ParameterExpression pe) {
+    if (pe.getPosition() != -1 &&
+        qd.parameters != null &&
+        qd.parameters.get(pe.getPosition()) != null) {
+      // implicit param
+      return qd.parameters.get(pe.getPosition());
+    }
+    return qd.parameters.get(pe.getSymbol().getQualifiedName());
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
@@ -723,15 +785,7 @@ public class DatastoreQuery implements Serializable {
     } else if (right instanceof Literal) {
       value = ((Literal) right).getLiteral();
     } else if (right instanceof ParameterExpression) {
-      ParameterExpression paramExpr = (ParameterExpression) right;
-      if (paramExpr.getPosition() != -1 &&
-          qd.parameters != null &&
-          qd.parameters.get(paramExpr.getPosition()) != null) {
-        // implicit param
-        value = qd.parameters.get(paramExpr.getPosition());
-      } else {
-        value = qd.parameters.get(paramExpr.getSymbol().getQualifiedName());
-      }
+      value = getParameterValue(qd, (ParameterExpression) right);
     } else if (right instanceof DyadicExpression) {
       // In general we don't support nested dyadic expressions
       // but we special case negation:

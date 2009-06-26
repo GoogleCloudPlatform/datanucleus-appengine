@@ -991,6 +991,30 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(0, result.size());
   }
 
+  public void testFilterByMultiValueProperty_ContainsWithImplicitParam() {
+    Entity entity = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+        Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + HasMultiValuePropsJDO.class.getName()
+        + " where strList.contains(:p)");
+    List<HasMultiValuePropsJDO> result = (List<HasMultiValuePropsJDO>) q.execute("1");
+    assertEquals(1, result.size());
+    result = (List<HasMultiValuePropsJDO>) q.execute("4");
+    assertEquals(0, result.size());
+
+    q = pm.newQuery(
+        "select from " + HasMultiValuePropsJDO.class.getName()
+        + " where keyList.contains(:p1) && keyList.contains(:p2)");
+    result = (List<HasMultiValuePropsJDO>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    result = (List<HasMultiValuePropsJDO>) q.execute(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be2"));
+    assertEquals(0, result.size());
+  }
+
   public void testFilterByMultiValueProperty_ContainsWithLiteralString() {
     Entity entity = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
@@ -2120,6 +2144,68 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name == p && origin == p");
     q.declareParameters("String p");
     q.execute("23");
+  }
+
+  public void testStartsWith_Literal() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ldth.ds.put(e3);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(\"y\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(2, flights.size());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(\"ya\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights2 = (List<Flight>) q.execute();
+    assertEquals(1, flights2.size());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(\"za\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights3 = (List<Flight>) q.execute();
+    assertTrue(flights3.isEmpty());
+  }
+
+  public void testStartsWith_Param() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ldth.ds.put(e3);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(p)");
+    q.declareParameters("String p");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute("y");
+    assertEquals(2, flights.size());
+
+    List<Flight> flights2 = (List<Flight>) q.execute("ya");
+    assertEquals(1, flights2.size());
+
+    List<Flight> flights3 = (List<Flight>) q.execute("za");
+    assertTrue(flights3.isEmpty());
+  }
+
+  public void testStartsWith_ImplicitParam() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ldth.ds.put(e3);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(:p)");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute("y");
+    assertEquals(2, flights.size());
+
+    List<Flight> flights2 = (List<Flight>) q.execute("ya");
+    assertEquals(1, flights2.size());
+
+    List<Flight> flights3 = (List<Flight>) q.execute("za");
+    assertTrue(flights3.isEmpty());
   }
 
   private void assertQueryUnsupportedByOrm(
