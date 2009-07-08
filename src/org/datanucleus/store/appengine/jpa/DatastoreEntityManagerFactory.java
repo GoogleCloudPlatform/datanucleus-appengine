@@ -19,7 +19,6 @@ import org.datanucleus.jpa.EntityManagerFactoryImpl;
 import org.datanucleus.jpa.PersistenceProviderImpl;
 import org.datanucleus.store.appengine.ConcurrentHashMapHelper;
 import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.XmlHacks;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -44,11 +43,6 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
    */
   private static final ConcurrentHashMap<String, AtomicInteger> NUM_INSTANCES_PER_PERSISTENCE_UNIT =
       new ConcurrentHashMap<String, AtomicInteger>();
-
-  static {
-    // see XmlHacks for an explanation
-    XmlHacks.installCustomDocumentBuilderFactory();
-  }
 
   /**
    * System property that enables users to disable the emf warning.  Useful for situations

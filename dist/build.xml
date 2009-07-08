@@ -21,7 +21,7 @@
   <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}/lib"/>
 
   <path id="appengine.plugin.compile.deps">
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.4.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.4-gae.jar"/>
     <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.4.jar"/>
     <pathelement location="${orm.lib.dir}/jdo2-api-2.3-ea.jar"/>
     <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.1.1.jar"/>

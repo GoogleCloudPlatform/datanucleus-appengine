@@ -19,7 +19,6 @@ import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.store.appengine.ConcurrentHashMapHelper;
 import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.XmlHacks;
 
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -67,11 +66,6 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
       + "to create a duplicate PersistenceManagerFactory (such as for a unittest suite), set the "
       + DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY + " system property to avoid this error.";
 
-
-  static {
-    // see XmlHacks for an explanation
-    XmlHacks.installCustomDocumentBuilderFactory();    
-  }
 
   public DatastoreJDOPersistenceManagerFactory(Map props) {
     super(props);
