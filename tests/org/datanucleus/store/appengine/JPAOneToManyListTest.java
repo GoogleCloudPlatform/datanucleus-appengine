@@ -27,6 +27,8 @@ import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.BidirectionalChildStringPkListJPA;
 import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJPA;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.HasChildWithSeparateNameFieldJPA;
+import org.datanucleus.test.HasEncodedStringPkSeparateNameFieldJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJPA;
 import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJPA;
@@ -576,4 +578,17 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
 
+  public void testDeleteChildWithSeparateNameField() {
+    HasChildWithSeparateNameFieldJPA parent = new HasChildWithSeparateNameFieldJPA();
+    HasEncodedStringPkSeparateNameFieldJPA child = new HasEncodedStringPkSeparateNameFieldJPA();
+    child.setName("the name");
+    parent.getChildren().add(child);
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+    beginTxn();
+    parent = em.find(HasChildWithSeparateNameFieldJPA.class, parent.getId());
+    em.remove(parent);
+    commitTxn();
+  }
 }

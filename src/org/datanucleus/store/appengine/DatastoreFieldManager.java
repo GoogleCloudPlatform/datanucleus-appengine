@@ -459,7 +459,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
     Key key = null;
     if (value != null) {
-      key = KeyFactory.createKey(datastoreEntity.getKind(), value);
+      key = KeyFactory.createKey(datastoreEntity.getParent(), datastoreEntity.getKind(), value);
     }
     storeKeyPK(key);
   }
@@ -639,7 +639,8 @@ public class DatastoreFieldManager implements FieldManager {
           throw new NucleusUserException(
               "Attempt was made to modify the primary key of an object of type "
               + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + ".  Primary keys are immutable.").setFatal();
+              + "key " + datastoreEntity.getKey() + "  Primary keys are immutable.  "
+              + "(New value: " + key).setFatal();
         }
       }
     } else if (key != null) {

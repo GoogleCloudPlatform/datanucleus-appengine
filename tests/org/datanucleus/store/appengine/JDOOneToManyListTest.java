@@ -26,6 +26,8 @@ import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalChildStringPkListJDO;
 import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJDO;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasChildWithSeparateNameFieldJDO;
+import org.datanucleus.test.HasEncodedStringPkSeparateNameFieldJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkOneToManyBidirChildrenJDO;
 import org.datanucleus.test.HasMultipleBidirChildrenJDO;
@@ -409,6 +411,20 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     Collection<BidirectionalChildJDO> childList = Utils.<BidirectionalChildJDO>newArrayList(
         new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
     testReplaceBidirColl(new HasOneToManyListJDO(), new BidirectionalChildListJDO(), childList);
+  }
+
+  public void testDeleteChildWithSeparateNameField() {
+    HasChildWithSeparateNameFieldJDO parent = new HasChildWithSeparateNameFieldJDO();
+    HasEncodedStringPkSeparateNameFieldJDO child = new HasEncodedStringPkSeparateNameFieldJDO();
+    child.setName("the name");
+    parent.getChildren().add(child);
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+    beginTxn();
+    parent = pm.getObjectById(HasChildWithSeparateNameFieldJDO.class, parent.getId());
+    pm.deletePersistent(parent);
+    commitTxn();
   }
 
   @Override
