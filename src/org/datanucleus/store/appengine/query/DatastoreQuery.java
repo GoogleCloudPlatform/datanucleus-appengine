@@ -778,7 +778,7 @@ public class DatastoreQuery implements Serializable {
       // implicit param
       return qd.parameters.get(pe.getPosition());
     }
-    return qd.parameters.get(pe.getSymbol().getQualifiedName());
+    return qd.parameters.get(pe.getId());
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,

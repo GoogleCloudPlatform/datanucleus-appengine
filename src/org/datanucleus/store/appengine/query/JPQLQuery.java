@@ -110,4 +110,17 @@ public class JPQLQuery extends AbstractJPQLQuery {
       // be friendly about implicit conversions
     }
   }
+
+  /**
+   * Some weirdness in the superclass implementation of this method.
+   * We're intercepting to preserve existing behavior.
+   */
+  @Override
+  public void setRange(long fromIncl, long toExcl) {
+    if (toExcl < 0) {
+      super.setRange(fromIncl, Long.MAX_VALUE);
+    } else {
+      super.setRange(fromIncl, toExcl);
+    }
+  }
 }
