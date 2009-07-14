@@ -695,6 +695,8 @@ public class DatastoreQuery implements Serializable {
         handleContainsOperation(invocation, expr, qd);
       } else if (invocation.getOperation().equals("startsWith") && invocation.getArguments().size() == 1) {
         handleStartsWithOperation(invocation, expr, qd);
+      } else if (invocation.getOperation().equals("matches") && invocation.getArguments().size() == 1) {
+        handleMatchesOperation(invocation, expr, qd);
       } else {
         throw newUnsupportedQueryMethodException(invocation);
       }
@@ -703,6 +705,49 @@ public class DatastoreQuery implements Serializable {
           "Unexpected expression type while parsing query: "
               + expr.getClass().getName(), query.getSingleStringQuery());
     }
+  }
+
+  private void handleMatchesOperation(InvokeExpression invocation, Expression expr,
+                                      QueryData qd) {
+    Expression param = (Expression) invocation.getArguments().get(0);
+    if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
+      String matchesExpr = getPrefixFromMatchesExpression(((Literal) param).getLiteral());
+      addPrefix((PrimaryExpression) expr.getLeft(), new Literal(matchesExpr), matchesExpr, qd);
+    } else if (expr.getLeft() instanceof PrimaryExpression &&
+               param instanceof ParameterExpression) {
+      ParameterExpression parameterExpression = (ParameterExpression) param;
+      Object parameterValue = getParameterValue(qd, parameterExpression);
+      String matchesExpr = getPrefixFromMatchesExpression(parameterValue);
+      addPrefix((PrimaryExpression) expr.getLeft(), new Literal(matchesExpr), matchesExpr, qd);
+    } else {
+      // We don't know what this is.
+      throw newUnsupportedQueryMethodException(invocation);
+    }
+  }
+
+  private String getPrefixFromMatchesExpression(Object matchesExprObj) {
+    if (matchesExprObj instanceof Character) {
+      matchesExprObj = matchesExprObj.toString();
+    }
+    if (!(matchesExprObj instanceof String)) {
+      throw new NucleusUserException(
+          "Prefix matching only supported on strings (received a "
+          + matchesExprObj.getClass().getName() + ").").setFatal();
+    }
+    String matchesExpr = (String) matchesExprObj;
+    int wildcardIndex = matchesExpr.indexOf('%');
+    if (wildcardIndex != matchesExpr.length() - 1) {
+      throw new UnsupportedDatastoreFeatureException(
+          "Wildcard must appear at the end of the expression string (only prefix matches are supported)",
+          query.getSingleStringQuery());
+    }
+    return matchesExpr.substring(0, wildcardIndex);
+  }
+
+  private void addPrefix(PrimaryExpression left, Expression right, String prefix, QueryData qd) {
+    addLeftPrimaryExpression(left, Expression.OP_GTEQ, right, qd);
+    Expression param = getUpperLimitForStartsWithStr(prefix);
+    addLeftPrimaryExpression(left, Expression.OP_LT, param, qd);
   }
 
   /**
@@ -715,18 +760,11 @@ public class DatastoreQuery implements Serializable {
     Expression param = (Expression) invocation.getArguments().get(0);
     param.bind();
     if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
-      PrimaryExpression left = (PrimaryExpression) expr.getLeft();
-      addLeftPrimaryExpression(left, Expression.OP_GTEQ, param, qd);
-      param = getUpperLimitForStartsWithStr((String) ((Literal)param).getLiteral());
-      addLeftPrimaryExpression(left, Expression.OP_LT, param, qd);
+      addPrefix((PrimaryExpression) expr.getLeft(), param, (String) ((Literal) param).getLiteral(), qd);
     } else if (expr.getLeft() instanceof PrimaryExpression &&
                param instanceof ParameterExpression) {
-      PrimaryExpression primaryExpression = (PrimaryExpression) expr.getLeft();
-      ParameterExpression parameterExpression = (ParameterExpression) param;
-      addLeftPrimaryExpression(primaryExpression, Expression.OP_GTEQ, parameterExpression, qd);
-      Object parameterValue = getParameterValue(qd, parameterExpression);
-      param = getUpperLimitForStartsWithStr((String) parameterValue);
-      addLeftPrimaryExpression(primaryExpression, Expression.OP_LT, param, qd);
+      Object parameterValue = getParameterValue(qd, (ParameterExpression) param);
+      addPrefix((PrimaryExpression) expr.getLeft(), param, (String) parameterValue, qd);
     } else {
       // We don't know what this is.
       throw newUnsupportedQueryMethodException(invocation);

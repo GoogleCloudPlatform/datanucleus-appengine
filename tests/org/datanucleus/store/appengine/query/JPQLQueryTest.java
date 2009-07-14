@@ -174,7 +174,7 @@ public class JPQLQueryTest extends JPATestCase {
                                 unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "title % author = 'foo'", Expression.OP_MOD,
                                 unsupportedOps);
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title LIKE 'foo%'");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title LIKE '%foo'");
 
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
@@ -2140,6 +2140,178 @@ public class JPQLQueryTest extends JPATestCase {
     q.getResultList();
   }
 
+  public void testLikeQuery_Literal() {
+    Entity e1 = Book.newBookEntity("this", "that", "xxxx");
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("this", "that", "y");
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("this", "that", "yb");
+    ldth.ds.put(e3);
+    Entity e4 = Book.newBookEntity("this", "that", "z");
+    ldth.ds.put(e4);
+
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%'");
+    @SuppressWarnings("unchecked")
+    List<Book> result = q.getResultList();
+
+    assertEquals(2, result.size());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), result.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), result.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'z%'");
+    @SuppressWarnings("unchecked")
+    List<Book> result2 = q.getResultList();
+
+    assertEquals(1, result2.size());
+    assertEquals(KeyFactory.keyToString(e4.getKey()), result2.get(0).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'za%'");
+    @SuppressWarnings("unchecked")
+    List<Book> result3 = q.getResultList();
+    assertTrue(result3.isEmpty());
+  }
+
+  public void testLikeQuery_Param() {
+    Entity e1 = Book.newBookEntity("this", "that", "xxxx");
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("this", "that", "y");
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("this", "that", "yb");
+    ldth.ds.put(e3);
+    Entity e4 = Book.newBookEntity("this", "that", "z");
+    ldth.ds.put(e4);
+
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
+    q.setParameter("p", "y%");
+
+    @SuppressWarnings("unchecked")
+    List<Book> result = q.getResultList();
+
+    assertEquals(2, result.size());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), result.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), result.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'z%'");
+    q.setParameter("p", "y%");
+    @SuppressWarnings("unchecked")
+    List<Book> result2 = q.getResultList();
+
+    assertEquals(1, result2.size());
+    assertEquals(KeyFactory.keyToString(e4.getKey()), result2.get(0).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'za%'");
+    q.setParameter("p", "y%");
+    @SuppressWarnings("unchecked")
+    List<Book> result3 = q.getResultList();
+    assertTrue(result3.isEmpty());
+  }
+
+  public void testLikeQuery_InvalidLiteral() {
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE '%y'");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%y'");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y'");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%' and author LIKE 'z%'");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException pe) {
+      // good
+    }
+  }
+
+  public void testLikeQuery_InvalidParameter() {
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
+    q.setParameter("p", "%y");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q.setParameter("p", "y%y");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q.setParameter("p", "y");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q.setParameter("p", 23);
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException pe) {
+      // good
+    }
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p and author LIKE :q");
+    q.setParameter("p", "y%");
+    q.setParameter("q", "y%");
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (PersistenceException pe) {
+      // good
+    }
+  }
+
+  public void testLikeQuery_Literal_CustomEscapeChar() {
+    Entity e1 = Book.newBookEntity("this", "that", "xxxx");
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("this", "that", "%");
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("this", "that", "%a");
+    ldth.ds.put(e3);
+    Entity e4 = Book.newBookEntity("this", "that", "z");
+    ldth.ds.put(e4);
+
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE '%^' ESCAPE '^'");
+    try {
+      q.getResultList();
+      fail("DataNucleus must now be parsing 'ESCAPE'.  Hooray!");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException uefe) {
+      // Not good, but correct because DataNuc doesn't handle ESCAPE yet.
+    }
+
+//    assertEquals(2, result.size());
+//    assertEquals(KeyFactory.keyToString(e2.getKey()), result.get(0).getId());
+//    assertEquals(KeyFactory.keyToString(e3.getKey()), result.get(1).getId());
+//
+//    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'a^' ESCAPE '^'");
+//    @SuppressWarnings("unchecked")
+//    List<Book> result3 = q.getResultList();
+//    assertTrue(result3.isEmpty());
+  }
 
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
