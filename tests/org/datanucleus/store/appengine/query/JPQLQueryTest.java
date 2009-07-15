@@ -2313,6 +2313,26 @@ public class JPQLQueryTest extends JPATestCase {
 //    assertTrue(result3.isEmpty());
   }
 
+  public void testUpdateQueryFails() {
+    Query q = em.createQuery("update " + Book.class.getName() + " set author = 'yar'");
+    try {
+      q.executeUpdate();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testDeleteQueryFails() {
+    Query q = em.createQuery("delete from " + Book.class.getName() + " where author = 'yar'");
+    try {
+      q.executeUpdate();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }

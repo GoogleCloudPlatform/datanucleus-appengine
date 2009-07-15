@@ -415,6 +415,10 @@ public class DatastoreQuery implements Serializable {
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, DatastoreTable table,
                              final ClassLoaderResolver clr) {
+    if (query.getType() != org.datanucleus.store.query.Query.SELECT) {
+      throw new NucleusUserException("Only select statements are supported.").setFatal();
+    }
+
     if (query.getCandidateClass() == null) {
       throw new NucleusUserException(
           "Candidate class could not be found: " + query.getSingleStringQuery()).setFatal();
