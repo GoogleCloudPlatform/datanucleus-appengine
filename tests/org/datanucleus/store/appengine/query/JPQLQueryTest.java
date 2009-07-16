@@ -2333,6 +2333,19 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testNullAncestorParam() {
+    Query q = em.createQuery(
+        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
+    q.setParameter("p", null);
+    try {
+      q.getResultList();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
+      // good
+    }
+  }
+
+
   private static Entity newBook(String title, String author, String isbn) {
     return newBook(title, author, isbn, 2000);
   }

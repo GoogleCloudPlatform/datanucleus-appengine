@@ -2266,6 +2266,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     q.execute(KeyFactory.createKey("yar", 33L));
   }
 
+  public void testNullAncestorParam() {
+    Query q = pm.newQuery(HasKeyAncestorStringPkJDO.class);
+    q.setFilter("ancestorKey == :p");
+    try {
+      q.execute(null);
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
+      // good
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {

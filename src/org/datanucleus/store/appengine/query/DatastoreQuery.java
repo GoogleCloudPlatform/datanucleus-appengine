@@ -1139,6 +1139,12 @@ public class DatastoreQuery implements Serializable {
           + "datastore only supports parent queries using the equality operator.",
           query.getSingleStringQuery());
     }
+
+    if (key == null) {
+      throw new UnsupportedDatastoreFeatureException(
+          "Received a null parent parameter.  The datastore does not support querying for null parents.",
+          query.getSingleStringQuery());
+    }
     qd.datastoreQuery.setAncestor(key);
   }
 
