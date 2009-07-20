@@ -55,6 +55,7 @@ public class AllTests {
     suite.addTestSuite(JDOAncestorTest.class);
     suite.addTestSuite(JPAAncestorTest.class);
     suite.addTestSuite(JDOTableAndColumnTest.class);
+    suite.addTestSuite(JPATableAndColumnTest.class);
     suite.addTestSuite(JPAOneToOneTest.class);
     suite.addTestSuite(JDOOneToOneTest.class);
     suite.addTestSuite(JPAImplicitEntityGroupTest.class);
