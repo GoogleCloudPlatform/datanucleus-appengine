@@ -25,6 +25,7 @@ import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapD
 import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 import java.util.ConcurrentModificationException;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -83,10 +84,12 @@ public class DatastoreTransaction {
     return txn;
   }
 
-  void addPutEntity(Entity entity) {
-    // Make a copy in case someone changes
-    // the provided entity after we add it to our cache.
-    putEntities.put(entity.getKey(), makeCopy(entity));
+  void addPutEntities(List<Entity> entities) {
+    for (Entity entity : entities) {
+      // Make a copy in case someone changes
+      // the provided entity after we add it to our cache.
+      putEntities.put(entity.getKey(), makeCopy(entity));
+    }
   }
 
   private Entity makeCopy(Entity entity) {

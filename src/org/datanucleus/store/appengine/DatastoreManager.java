@@ -115,6 +115,8 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
+  private final BatchManager batchManager = new BatchManager();
+
   /**
    * Construct a DatsatoreManager
    *
@@ -371,6 +373,10 @@ public class DatastoreManager extends MappedStoreManager {
       DatastoreContainerObject table) {
     // TODO(maxr)
     throw new UnsupportedOperationException("Join Sets not supported.");
+  }
+
+  public BatchManager getBatchManager() {
+    return batchManager;
   }
 
   /**

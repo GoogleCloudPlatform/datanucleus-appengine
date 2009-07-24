@@ -19,7 +19,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * Helper methods for manipulating a {@link ConcurrentHashMapHelper}.
+ * Helper methods for manipulating a {@link ConcurrentHashMap}.
  *
  * @author Max Ross <maxr@google.com>
  */

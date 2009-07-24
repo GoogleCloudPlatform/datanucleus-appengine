@@ -42,6 +42,10 @@ public class HasOneToManyListJDO implements HasOneToManyJDO, Serializable {
   @Persistent
   private String val;
 
+  public void setId(String id) {
+    this.id = id;
+  }
+
   public String getId() {
     return id;
   }

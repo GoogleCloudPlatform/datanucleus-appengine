@@ -264,24 +264,5 @@ public class JDOInsertionTest extends JDOTestCase {
       rollbackTxn();
     }
   }
-
-  public void testMakePersistentAll() {
-    switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    Flight f1 = new Flight();
-    f1.setOrigin("BOS");
-    f1.setDest("MIA");
-    f1.setMe(2);
-    f1.setYou(4);
-    f1.setName("Harold");
-
-    Flight f2 = new Flight();
-    f2.setOrigin("BOS");
-    f2.setDest("MIA");
-    f2.setMe(2);
-    f2.setYou(4);
-    f2.setName("Harold");
-
-    pm.makePersistentAll(f1, f2);
-  }
 }
 

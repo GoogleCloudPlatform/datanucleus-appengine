@@ -94,6 +94,8 @@ public class AllTests {
     suite.addTestSuite(JDOUnindexedPropertiesTest.class);
     suite.addTestSuite(JPAUnindexedPropertiesTest.class);
     suite.addTestSuite(DatastoreJPACallbackHandlerTest.class);
+    suite.addTestSuite(JDOBatchInsertionTest.class);
+    suite.addTestSuite(BatchManager.class);
     return suite;
   }
 }

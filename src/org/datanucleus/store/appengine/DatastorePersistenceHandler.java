@@ -37,6 +37,8 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.NucleusLogger;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -90,42 +92,88 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     return entity;
   }
 
+  private void put(List<PutState> putStateList) {
+    if (putStateList.isEmpty()) {
+      return;
+    }
+    DatastoreTransaction txn = null;
+    ObjectManager om = null;
+    List<Entity> entityList = Utils.newArrayList();
+    for (PutState putState : putStateList) {
+      if (txn == null) {
+        txn = EntityUtils.getCurrentTransaction(putState.sm.getObjectManager());
+      }
+      if (om == null) {
+        om = putState.sm.getObjectManager();
+      }
+      entityList.add(putState.entity);
+    }
+    put(om, entityList);
+    for (PutState putState : putStateList) {
+      setAssociatedEntity(putState.sm, txn, putState.entity);
+    }
+  }
+
   private void put(StateManager sm, Entity entity) {
     DatastoreTransaction txn = put(sm.getObjectManager(), entity);
     setAssociatedEntity(sm, txn, entity);
   }
 
   DatastoreTransaction put(ObjectManager om, Entity entity) {
-    if (NucleusLogger.DATASTORE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE.debug("Putting entity of kind " + entity.getKind() +
-                                    " with key " + entity.getKey());
-      for (Map.Entry<String, Object> entry : entity.getProperties().entrySet()) {
-        NucleusLogger.DATASTORE.debug("  " + entry.getKey() + " : " + entry.getValue());
+    return put(om, Collections.singletonList(entity));
+  }
+
+  private DatastoreTransaction put(ObjectManager om, List<Entity> entities) {
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
+    List<Entity> putMe = Utils.newArrayList();
+    for (Entity entity : entities) {
+      if (NucleusLogger.DATASTORE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE.debug("Putting entity of kind " + entity.getKind() +
+                                      " with key " + entity.getKey());
+        for (Map.Entry<String, Object> entry : entity.getProperties().entrySet()) {
+          NucleusLogger.DATASTORE.debug("  " + entry.getKey() + " : " + entry.getValue());
+        }
+      }
+      if (txn == null) {
+        putMe.add(entity);
+      } else {
+        if (txn.getDeletedKeys().contains(entity.getKey())) {
+          // entity was already deleted - just skip it
+          // I'm a bit worried about swallowing user errors but we'll
+          // see what bubbles up when we launch.  In theory we could
+          // keep the entity that the user was deleting along with the key
+          // and check to see if they changed anything between the
+          // delete and the put.
+        } else {
+          Entity previouslyPut = txn.getPutEntities().get(entity.getKey());
+          // It's ok to put if we haven't put this entity before or we have
+          // and something has changed.  The reason we want to reput if something has
+          // changed is that this will generate a datastore error, and we want users
+          // to get this error because it means they have done something wrong.
+
+          // TODO(maxr) Throw this exception ourselves with lots of good error detail.
+          if (previouslyPut == null || !previouslyPut.getProperties().equals(entity.getProperties())) {
+            putMe.add(entity);
+          }
+        }
       }
     }
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
-    if (txn == null) {
-      datastoreService.put(entity);
-    } else if (txn.getDeletedKeys().contains(entity.getKey())) {
-      // entity was already deleted - just skip it
-      // I'm a bit worried about swallowing user errors but we'll
-      // see what bubbles up when we launch.  In theory we could
-      // keep the entity that the user was deleting along with the key
-      // and check to see if they changed anything between the
-      // delete and the put.
-    } else {
-      Entity previouslyPut = txn.getPutEntities().get(entity.getKey());
-      // It's ok to put if we haven't put this entity before or we have
-      // and something has changed.  The reason we want to reput if something has
-      // changed is that this will generate a datastore error, and we want users
-      // to get this error because it means they have done something wrong.
-
-      // TODO(maxr) Throw this exception ourselves with lots of good error detail.
-      if (previouslyPut == null || !previouslyPut.getProperties().equals(entity.getProperties()))
-        datastoreService.put(txn.getInnerTxn(), entity);
-        txn.addPutEntity(entity);
+    if (!putMe.isEmpty()) {
+      if (txn == null) {
+        if (putMe.size() == 1) {
+          datastoreService.put(putMe.get(0));
+        } else {
+          datastoreService.put(putMe);
+        }
+      } else {
+        if (putMe.size() == 1) {
+          datastoreService.put(txn.getInnerTxn(), putMe.get(0));
+        } else {
+          datastoreService.put(txn.getInnerTxn(), putMe);
+        }
+        txn.addPutEntities(putMe);
+      }
     }
-
     return txn;
   }
 
@@ -158,15 +206,95 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   private static final Object INSERTION_TOKEN = new Object();
 
   public void insertObject(StateManager sm) {
-    if (sm.getAssociatedValue(INSERTION_TOKEN) != null) {
-      // already inserting the pc associated with this state manager
+    // If we're in the middle of a batch operation just register
+    // the statemanager that needs the insertion
+    if (storeMgr.getBatchManager().isBatchOperation()) {
+      storeMgr.getBatchManager().addInsertion(sm);
       return;
     }
-    // set the token so if we recurse down to the same state manager we know
-    // we're already inserting
-    sm.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
-    storeMgr.validateMetaDataForClass(sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
+    insertObjects(Collections.singletonList(sm));
+  }
+
+  /**
+   * If we're inserting multiple objects we want to use the low-level batch put
+   * mechanism.  This method pre-processes all the state managers, gathering
+   * up all the info needed to do the put, does the put for all the state
+   * managers at once, and then does post processing on all the state managers.
+   */
+  void insertObjects(List<StateManager> stateManagersToInsert) {
     try {
+      List<PutState> putStateList = insertPreProcess(stateManagersToInsert);
+      // Save the parent entities first so we can have a key to use as a parent
+      // on owned child entities.
+      put(putStateList);
+
+      insertPostProcess(putStateList);
+    } finally {
+      for (StateManager sm : stateManagersToInsert) {
+        sm.setAssociatedValue(INSERTION_TOKEN, null);
+      }
+    }
+  }
+
+  private void insertPostProcess(List<PutState> putStateList) {
+    // Post-processing for all puts
+    for (PutState putState : putStateList) {
+      // Set the generated key back on the pojo.  If the pk field is a Key just
+      // set it on the field directly.  If the pk field is a String, convert the Key
+      // to a String.  If the pk field is anything else, we've got a problem.
+      // Assumes we only have a single pk member position
+      Class<?> pkType =
+          putState.acmd.getMetaDataForManagedMemberAtAbsolutePosition(
+              putState.acmd.getPKMemberPositions()[0]).getType();
+
+      Object newObjectId;
+      if (pkType.equals(Key.class)) {
+        newObjectId = putState.entity.getKey();
+      } else if (pkType.equals(String.class)) {
+        if (DatastoreManager.hasEncodedPKField(putState.acmd)) {
+          newObjectId = KeyFactory.keyToString(putState.entity.getKey());
+        } else {
+          newObjectId = putState.entity.getKey().getName();
+        }
+      } else if (pkType.equals(Long.class)) {
+        newObjectId = putState.entity.getKey().getId();
+      } else {
+        throw new IllegalStateException(
+            "Primary key for type " + putState.sm.getClassMetaData().getName()
+                + " is of unexpected type " + pkType.getName()
+                + " (must be String, Long, or " + Key.class.getName() + ")");
+      }
+      putState.sm.setPostStoreNewObjectId(newObjectId);
+      if (putState.assignedParentPk != null) {
+        // we automatically assigned a parent to the entity so make sure
+        // that makes it back on to the pojo
+        setPostStoreNewParent(
+            putState.sm, putState.fieldMgr.getParentMemberMetaData(), putState.assignedParentPk);
+      }
+      Integer pkIdPos = putState.fieldMgr.getPkIdPos();
+      if (pkIdPos != null) {
+        setPostStorePkId(putState.sm, pkIdPos, putState.entity);
+      }
+      putState.fieldMgr.storeRelations();
+
+      if (storeMgr.getRuntimeManager() != null) {
+        storeMgr.getRuntimeManager().incrementInsertCount();
+      }
+    }
+  }
+
+  private List<PutState> insertPreProcess(List<StateManager> stateManagersToInsert) {
+    List<PutState> putStateList = Utils.newArrayList();
+    for (StateManager sm : stateManagersToInsert) {
+      if (sm.getAssociatedValue(INSERTION_TOKEN) != null) {
+        // already inserting the pc associated with this state manager
+        continue;
+      }
+      // set the token so if we recurse down to the same state manager we know
+      // we're already inserting
+      sm.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
+      storeMgr.validateMetaDataForClass(
+          sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver());
       // Make sure writes are permitted
       storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
@@ -185,58 +313,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         // signal to downstream writers that they should
         // insert this entity when they are invoked
         sm.setAssociatedValue(ENTITY_WRITE_DELAYED, entity);
+        continue;
       } else {
         handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT, "updating");
-
-        // TODO(earmbrust): Allow for non-transactional read/write.
-
-        // Save the parent entity first so we can have a key to use as a parent
-        // on owned child entities.
-        put(sm, entity);
-
-        // Set the generated key back on the pojo.  If the pk field is a Key just
-        // set it on the field directly.  If the pk field is a String, convert the Key
-        // to a String.  If the pk field is anything else, we've got a problem.
-        // Assumes we only have a single pk member position
-        Class<?> pkType =
-            acmd.getMetaDataForManagedMemberAtAbsolutePosition(acmd.getPKMemberPositions()[0]).getType();
-
-        Object newObjectId;
-        if (pkType.equals(Key.class)) {
-          newObjectId = entity.getKey();
-        } else if (pkType.equals(String.class)) {
-          if (storeMgr.hasEncodedPKField(acmd)) {
-            newObjectId = KeyFactory.keyToString(entity.getKey());
-          } else {
-            newObjectId = entity.getKey().getName();
-          }
-        } else if (pkType.equals(Long.class)) {
-          newObjectId = entity.getKey().getId();
-        } else {
-          throw new IllegalStateException(
-              "Primary key for type " + sm.getClassMetaData().getName()
-                  + " is of unexpected type " + pkType.getName()
-                  + " (must be String, Long, or " + Key.class.getName() + ")");
-        }
-        sm.setPostStoreNewObjectId(newObjectId);
-        if (assignedParentPk != null) {
-          // we automatically assigned a parent to the entity so make sure
-          // that makes it back on to the pojo
-          setPostStoreNewParent(sm, fieldMgr.getParentMemberMetaData(), assignedParentPk);
-        }
-        Integer pkIdPos = fieldMgr.getPkIdPos(); 
-        if (pkIdPos != null) {
-          setPostStorePkId(sm, pkIdPos, entity);
-        }
-        fieldMgr.storeRelations();
-
-        if (storeMgr.getRuntimeManager() != null) {
-          storeMgr.getRuntimeManager().incrementInsertCount();
-        }
       }
-    } finally {
-      sm.setAssociatedValue(INSERTION_TOKEN, null);
+      // Add the state for this put to the list.
+      putStateList.add(new PutState(sm, fieldMgr, acmd, assignedParentPk, entity));
     }
+    return putStateList;
   }
 
   private void setPostStorePkId(StateManager sm, int fieldNumber, Entity entity) {
@@ -468,5 +552,26 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void close() {
+  }
+
+  /**
+   * All the information needed to perform a put on an Entity.
+   */
+  private static final class PutState {
+    private final StateManager sm;
+    private final DatastoreFieldManager fieldMgr;
+    private final AbstractClassMetaData acmd;
+    private final Object assignedParentPk;
+    private final Entity entity;
+
+    private PutState(StateManager sm,
+          DatastoreFieldManager fieldMgr, AbstractClassMetaData acmd, Object assignedParentPk,
+          Entity entity) {
+      this.sm = sm;
+      this.fieldMgr = fieldMgr;
+      this.acmd = acmd;
+      this.assignedParentPk = assignedParentPk;
+      this.entity = entity;
+    }
   }
 }

@@ -20,7 +20,12 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.store.appengine.BatchManager;
+import org.datanucleus.store.appengine.DatastoreManager;
+import org.datanucleus.store.appengine.DatastorePersistenceHandler;
 import org.datanucleus.store.appengine.EntityUtils;
+
+import java.util.Collection;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
@@ -62,5 +67,25 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
       }
     }
     return super.getObjectById(cls, key);
+  }
+
+  private BatchManager getBatchManager() {
+    DatastoreManager dm = (DatastoreManager) getObjectManager().getStoreManager();
+    return dm.getBatchManager();
+  }
+
+  /**
+   * We override this so we can execute a batch put at the datastore level.
+   */
+  @Override
+  public Collection makePersistentAll(Collection pcs) {
+    BatchManager batchMgr = getBatchManager();
+    batchMgr.startBatchOperation();
+    try {
+      return super.makePersistentAll(pcs);
+    } finally {
+      batchMgr.finishBatchOperation(
+          (DatastorePersistenceHandler) getObjectManager().getStoreManager().getPersistenceHandler());
+    }
   }
 }
