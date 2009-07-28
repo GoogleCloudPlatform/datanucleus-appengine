@@ -744,7 +744,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private void storeParentField(int fieldNumber, Object value) {
+  void storeParentField(int fieldNumber, Object value) {
     if (fieldIsOfTypeKey(fieldNumber)) {
       storeParentKeyPK((Key) value);
     } else {

@@ -35,7 +35,7 @@ import java.util.List;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOBatchInsertionTest extends JDOTestCase {
+public class JDOBatchInsertTest extends JDOTestCase {
 
   private BatchPutRecorder batchPutRecorder;
 

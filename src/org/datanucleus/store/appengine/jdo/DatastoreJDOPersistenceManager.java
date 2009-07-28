@@ -20,6 +20,8 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.store.appengine.BatchDeleteManager;
+import org.datanucleus.store.appengine.BatchInsertManager;
 import org.datanucleus.store.appengine.BatchManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
@@ -69,23 +71,60 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
     return super.getObjectById(cls, key);
   }
 
-  private BatchManager getBatchManager() {
+  private BatchInsertManager getBatchInsertManager() {
     DatastoreManager dm = (DatastoreManager) getObjectManager().getStoreManager();
-    return dm.getBatchManager();
+    return dm.getBatchInsertManager();
+  }
+
+  private BatchDeleteManager getBatchDeleteManager() {
+    DatastoreManager dm = (DatastoreManager) getObjectManager().getStoreManager();
+    return dm.getBatchDeleteManager();
   }
 
   /**
    * We override this so we can execute a batch put at the datastore level.
    */
   @Override
-  public Collection makePersistentAll(Collection pcs) {
-    BatchManager batchMgr = getBatchManager();
-    batchMgr.startBatchOperation();
-    try {
-      return super.makePersistentAll(pcs);
-    } finally {
-      batchMgr.finishBatchOperation(
-          (DatastorePersistenceHandler) getObjectManager().getStoreManager().getPersistenceHandler());
+  public Collection makePersistentAll(final Collection pcs) {
+    return new BatchManagerWrapper().call(getBatchInsertManager(), new Callable<Collection>() {
+      public Collection call() {
+        return DatastoreJDOPersistenceManager.super.makePersistentAll(pcs);
+      }
+    });
+  }
+
+  /**
+   * We override this so we can execute a batch delete at the datastore level.
+   */
+  @Override
+  public void deletePersistentAll(final Collection pcs) {
+    new BatchManagerWrapper().call(getBatchDeleteManager(), new Callable<Void>() {
+      public Void call() {
+        DatastoreJDOPersistenceManager.super.deletePersistentAll(pcs);
+        return null;
+      }
+    });
+  }
+
+  /**
+   * Invokes the provided {@link Callable} in {@link BatchManager} operations.
+   */
+  private final class BatchManagerWrapper {
+    private <T> T call(BatchManager batchMgr, Callable<T> callable) {
+      batchMgr.start();
+      try {
+        return callable.call();
+      } finally {
+        batchMgr.finish(
+            (DatastorePersistenceHandler) getObjectManager().getStoreManager().getPersistenceHandler());
+      }
     }
+  }
+
+  /**
+   * Our version doesn't throw Exception.  yuh.
+   */
+  private interface Callable<T> {
+    T call();
   }
 }

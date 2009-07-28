@@ -26,13 +26,23 @@ import java.util.List;
  */
 public class BatchManagerTest extends JDOTestCase {
 
+  private static class MyBatchManager extends BatchManager<Object> {
+
+    String getOperation() {
+      return "test";
+    }
+
+    void processBatchState(DatastorePersistenceHandler handler, List<Object> batchStateList) {
+    }
+  }
+
   public void testLegalWorkflow_NoOps() {
-    BatchManager bm = new BatchManager();
-    assertFalse(bm.isBatchOperation());
-    bm.startBatchOperation();
-    assertTrue(bm.isBatchOperation());
-    bm.finishBatchOperation(null);
-    assertFalse(bm.isBatchOperation());
+    BatchManager bm = new MyBatchManager();
+    assertFalse(bm.batchOperationInProgress());
+    bm.start();
+    assertTrue(bm.batchOperationInProgress());
+    bm.finish(null);
+    assertFalse(bm.batchOperationInProgress());
   }
 
   private StateManager newStateManagerMock() {
@@ -40,50 +50,51 @@ public class BatchManagerTest extends JDOTestCase {
   }
 
   public void testLegalWorkflow() throws IllegalAccessException, NoSuchFieldException {
-    BatchManager bm = new BatchManager();
-    assertFalse(bm.isBatchOperation());
-    bm.startBatchOperation();
-    assertTrue(bm.isBatchOperation());
+    final List<?> providedBatchStateList = Utils.newArrayList();
+    BatchManager<Object> bm = new MyBatchManager() {
+      @Override
+      void processBatchState(DatastorePersistenceHandler handler, List batchStateList) {
+        providedBatchStateList.addAll(batchStateList);
+      }
+    };
+    assertFalse(bm.batchOperationInProgress());
+    bm.start();
+    assertTrue(bm.batchOperationInProgress());
     final StateManager sm1 = newStateManagerMock();
     final StateManager sm2 = newStateManagerMock();
-    bm.addInsertion(sm1);
-    bm.addInsertion(sm2);
+    bm.add(sm1);
+    bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
             jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getOMFContext());
-    bm.finishBatchOperation(new DatastorePersistenceHandler(dm) {
-      @Override
-      void insertObjects(List<StateManager> sms) {
-        assertEquals(Utils.newArrayList(sm1, sm2), sms);
-      }
-    });
-    assertFalse(bm.isBatchOperation());
+    bm.finish(new DatastorePersistenceHandler(dm));
+    assertEquals(Utils.newArrayList(sm1, sm2), providedBatchStateList);
+    assertFalse(bm.batchOperationInProgress());
   }
 
   public void testLegalWorkflowWithException() throws IllegalAccessException, NoSuchFieldException {
-    BatchManager bm = new BatchManager();
-    assertFalse(bm.isBatchOperation());
-    bm.startBatchOperation();
-    assertTrue(bm.isBatchOperation());
+    BatchManager<Object> bm = new MyBatchManager() {
+      @Override
+      void processBatchState(DatastorePersistenceHandler handler, List batchStateList) {
+        throw new RuntimeException("yar");
+      }
+    };
+    assertFalse(bm.batchOperationInProgress());
+    bm.start();
+    assertTrue(bm.batchOperationInProgress());
     final StateManager sm1 = newStateManagerMock();
     final StateManager sm2 = newStateManagerMock();
-    bm.addInsertion(sm1);
-    bm.addInsertion(sm2);
+    bm.add(sm1);
+    bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
             jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getOMFContext());
     try {
-      bm.finishBatchOperation(new DatastorePersistenceHandler(dm) {
-        @Override
-        void insertObjects(List<StateManager> sms) {
-          assertEquals(Utils.newArrayList(sm1, sm2), sms);
-          throw new RuntimeException("yar");
-        }
-      });
+      bm.finish(new DatastorePersistenceHandler(dm));
       fail("expected rte");
     } catch (RuntimeException rte) {
       // good
     }
-    assertFalse(bm.isBatchOperation());
+    assertFalse(bm.batchOperationInProgress());
   }
 }

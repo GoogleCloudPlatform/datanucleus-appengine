@@ -15,49 +15,50 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.StateManager;
-
 import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Manages batch puts and deletes that are initiated via standard JDO and JPA
+ * Manages batch operations that are initiated via standard JDO and JPA
  * calls.
  *
  * @author Max Ross <maxr@google.com>
  */
-public class BatchManager {
+public abstract class BatchManager<T> {
 
   /**
    * We don't support nested batch operations.
    */
-  private final ThreadLocal<List<StateManager>> callbacks = new ThreadLocal<List<StateManager>>();
+  private final ThreadLocal<List<T>> batchStateList = new ThreadLocal<List<T>>();
 
-  boolean isBatchOperation() {
-    return callbacks.get() != null;
+  boolean batchOperationInProgress() {
+    return batchStateList.get() != null;
   }
 
-  public void startBatchOperation() {
-    if (isBatchOperation()) {
-      throw new IllegalStateException("Batch operation already running.");
+  public void start() {
+    if (batchOperationInProgress()) {
+      throw new IllegalStateException("Batch " + getOperation() + " already running.");
     }
-    callbacks.set(new ArrayList<StateManager>());
+    batchStateList.set(new ArrayList<T>());
   }
   
-  public void finishBatchOperation(DatastorePersistenceHandler handler) {
-    if (!isBatchOperation()) {
-      throw new IllegalStateException("Batch operation not running.");
+  public void finish(DatastorePersistenceHandler handler) {
+    if (!batchOperationInProgress()) {
+      throw new IllegalStateException("Batch " + getOperation() + " not running.");
     }
-    List<StateManager> runMe = callbacks.get();
+    List<T> processMe = batchStateList.get();
     // We want to make sure the callbacks are emptied out no matter what
     // happens when we try to insert.
-    callbacks.remove();
-    if (!runMe.isEmpty()) {
-      handler.insertObjects(runMe);
+    batchStateList.remove();
+    if (!processMe.isEmpty()) {
+      processBatchState(handler, processMe);
     }
   }
 
-  void addInsertion(StateManager sm) {
-    callbacks.get().add(sm);
+  void add(T batchState) {
+    batchStateList.get().add(batchState);
   }
+
+  abstract String getOperation();
+  abstract void processBatchState(DatastorePersistenceHandler handler, List<T> batchStateList);
 }

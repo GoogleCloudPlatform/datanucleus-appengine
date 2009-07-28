@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
@@ -166,10 +167,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
           datastoreService.put(putMe);
         }
       } else {
+        Transaction innerTxn = txn.getInnerTxn();
         if (putMe.size() == 1) {
-          datastoreService.put(txn.getInnerTxn(), putMe.get(0));
+          datastoreService.put(innerTxn, putMe.get(0));
         } else {
-          datastoreService.put(txn.getInnerTxn(), putMe);
+          datastoreService.put(innerTxn, putMe);
         }
         txn.addPutEntities(putMe);
       }
@@ -177,13 +179,21 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     return txn;
   }
 
-  private void delete(ObjectManager om, Key key) {
-    NucleusLogger.DATASTORE.debug("Deleting entity of kind " + key.getKind() + " with key " + key);
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
+  void delete(DatastoreTransaction txn, List<Key> keys) {
+    NucleusLogger.DATASTORE.debug("Deleting entities with keys " + keys);
     if (txn == null) {
-      datastoreService.delete(key);
+      if (keys.size() == 1) {
+        datastoreService.delete(keys.get(0));
+      } else {
+        datastoreService.delete(keys);
+      }
     } else {
-      datastoreService.delete(txn.getInnerTxn(), key);
+      Transaction innerTxn = txn.getInnerTxn();
+      if (keys.size() == 1) {
+        datastoreService.delete(innerTxn, keys.get(0));
+      } else {
+        datastoreService.delete(innerTxn, keys);
+      }
     }
   }
 
@@ -208,8 +218,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   public void insertObject(StateManager sm) {
     // If we're in the middle of a batch operation just register
     // the statemanager that needs the insertion
-    if (storeMgr.getBatchManager().isBatchOperation()) {
-      storeMgr.getBatchManager().addInsertion(sm);
+    if (storeMgr.getBatchInsertManager().batchOperationInProgress()) {
+      storeMgr.getBatchInsertManager().add(sm);
       return;
     }
     insertObjects(Collections.singletonList(sm));
@@ -523,14 +533,22 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     req.execute(sm, entity);
 
     // now delete ourselves
-    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity);
+    DatastoreFieldManager fieldMgr = new DatastoreDeleteFieldManager(sm, storeMgr, entity);
     AbstractClassMetaData acmd = sm.getClassMetaData();
     // stay away from the pk fields - this method sets fields to null and that's
     // not allowed for pks
     sm.provideFields(acmd.getNonPKMemberPositions(), fieldMgr);
 
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.NO_INCREMENT, "deleting");
-    delete(sm.getObjectManager(), getPkAsKey(sm));
+    Key keyToDelete = getPkAsKey(sm);
+    // If we're in the middle of a batch operation just register
+    // the statemanager that needs the delete
+    BatchDeleteManager bdm = storeMgr.getBatchDeleteManager();
+    if (bdm.batchOperationInProgress()) {
+      bdm.add(new BatchDeleteManager.BatchDeleteState(txn, keyToDelete));
+      return;
+    }
+    delete(txn, Collections.singletonList(keyToDelete));
   }
 
   public void locateObject(StateManager sm) {
