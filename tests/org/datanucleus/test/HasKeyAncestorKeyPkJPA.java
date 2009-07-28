@@ -15,59 +15,42 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
-import java.util.Date;
-import java.util.List;
+import com.google.appengine.api.datastore.Key;
 
+import org.datanucleus.jpa.annotations.Extension;
+
+import javax.persistence.Basic;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Lob;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 @Entity
-public class HasLob {
-
+public class HasKeyAncestorKeyPkJPA {
   @Id
-  @GeneratedValue(strategy= GenerationType.IDENTITY)
-  private Long id;
+  @GeneratedValue(strategy=GenerationType.IDENTITY)
+  private Key key;
 
-  @Lob
-  private String bigString;
+  @Basic
+  @Extension(vendorName="datanucleus", key="gae.parent-pk", value="true")
+  private Key ancestorKey;
 
-  @Lob
-  private byte[] bigByteArray;
-
-  @Lob
-  private List<Date> dateList;
-
-  public Long getId() {
-    return id;
+  public Key getKey() {
+    return key;
   }
 
-  public String getBigString() {
-    return bigString;
+  public void setKey(Key key) {
+    this.key = key;
   }
 
-  public void setBigString(String bigString) {
-    this.bigString = bigString;
+  public Key getAncestorKey() {
+    return ancestorKey;
   }
 
-  public byte[] getBigByteArray() {
-    return bigByteArray;
-  }
-
-  public void setBigByteArray(byte[] bigByteArray) {
-    this.bigByteArray = bigByteArray;
-  }
-
-  public List<Date> getDateList() {
-    return dateList;
-  }
-
-  public void setDateList(List<Date> dateList) {
-    this.dateList = dateList;
+  public void setAncestorKey(Key ancestorKey) {
+    this.ancestorKey = ancestorKey;
   }
 }

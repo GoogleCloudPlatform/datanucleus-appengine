@@ -22,6 +22,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.test.Book;
+import org.datanucleus.test.HasKeyAncestorKeyPkJPA;
 import org.datanucleus.test.HasKeyAncestorStringPkJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasStringAncestorKeyPkJPA;
@@ -175,6 +176,53 @@ public class JPAAncestorTest extends JPATestCase {
     Key keyToSet =
         new Entity(HasKeyAncestorStringPkJPA.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();
     hk1.setKey(KeyFactory.keyToString(keyToSet));
+    hk1.setAncestorKey(keyToSet);
+    beginTxn();
+    em.persist(hk1);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+  }
+
+  public void testInsertWithKeyPkAndKeyAncestor_IdGen() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
+    hk1.setAncestorKey(e.getKey());
+    beginTxn();
+    em.persist(hk1);
+    commitTxn();
+
+    Entity reloaded = ldth.ds.get(hk1.getKey());
+    assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
+  }
+
+  public void testInsertWithKeyPkAndKeyAncestor_NamedKey() throws EntityNotFoundException {
+    Entity e = new Entity("yam");
+    ldth.ds.put(e);
+    HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
+    Key keyToSet =
+        new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), "yar", e.getKey()).getKey();
+    hk1.setKey(keyToSet);
+    beginTxn();
+    em.persist(hk1);
+    commitTxn();
+    Key key = hk1.getKey();
+    assertEquals(e.getKey(), hk1.getAncestorKey());
+    Entity reloaded = ldth.ds.get(key);
+    assertEquals(e.getKey(), reloaded.getKey().getParent());
+  }
+
+  public void testInsertWithKeyPkAndKeyAncestor_SetAncestorAndPk() throws EntityNotFoundException {
+    Entity parentEntity = new Entity("yam");
+    ldth.ds.put(parentEntity);
+    HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
+    Key keyToSet =
+        new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();
+    hk1.setKey(keyToSet);
     hk1.setAncestorKey(keyToSet);
     beginTxn();
     em.persist(hk1);
