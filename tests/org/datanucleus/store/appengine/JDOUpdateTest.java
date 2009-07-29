@@ -689,11 +689,12 @@ public class JDOUpdateTest extends JDOTestCase {
     beginTxn();
     p = pm.getObjectById(Person.class, p.getId());
     p.getName().setLast("not jam");
+    p.getName().setFirst("not jimmy");
     commitTxn();
 
     Entity entity = ldth.ds.get(TestUtils.createKey(p, p.getId()));
     assertNotNull(entity);
-    assertEquals("jimmy", entity.getProperty("first"));
+    assertEquals("not jimmy", entity.getProperty("first"));
     assertEquals("not jam", entity.getProperty("last"));
     assertEquals("anotherjimmy", entity.getProperty("anotherFirst"));
     assertEquals("anotherjam", entity.getProperty("anotherLast"));

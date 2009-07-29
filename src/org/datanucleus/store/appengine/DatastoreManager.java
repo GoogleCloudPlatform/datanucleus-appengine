@@ -164,6 +164,12 @@ public class DatastoreManager extends MappedStoreManager {
       conf.setProperty(
           DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
     }
+    // We'd like to respect the user's selection here, but the default value is 1.
+    // This is problematic for us in the situation where, for example, an embedded object
+    // gets updated more than once in a txn because we end up putting the same
+    // entity twice.
+    // TODO(maxr) Remove this once we support multiple puts
+    conf.setProperty("datanucleus.datastoreTransactionFlushLimit", Integer.MAX_VALUE);
     /*
      * The DataNucleus query cache has a pretty nasty bug where it caches the symbol table along with
      * the compiled query.  The query cache uses weak references so it doesn't always happen, but if

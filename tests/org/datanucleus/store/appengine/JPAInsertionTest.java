@@ -93,8 +93,6 @@ public class JPAInsertionTest extends JPATestCase {
     assertNull(hk.getAncestorId());
   }
 
-
-
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJPA hk = new HasKeyPkJPA();
     hk.setId(KeyFactory.createKey(HasKeyPkJPA.class.getSimpleName(), "name"));
@@ -104,5 +102,15 @@ public class JPAInsertionTest extends JPATestCase {
 
     assertNotNull(hk.getId());
     assertEquals("name", hk.getId().getName());
+  }
+
+  public void testInsertWithFlushBeforeCommit() {
+    Book b1 = new Book();
+    beginTxn();
+    em.persist(b1);
+    assertNull(b1.getId());
+    em.flush();
+    assertNotNull(b1.getId());
+    commitTxn();
   }
 }
