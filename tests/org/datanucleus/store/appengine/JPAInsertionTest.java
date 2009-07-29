@@ -35,6 +35,7 @@ public class JPAInsertionTest extends JPATestCase {
     assertNull(b1.getId());
     beginTxn();
     em.persist(b1);
+    assertNull(b1.getId());
     commitTxn();
     assertNotNull(b1.getId());
     Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));

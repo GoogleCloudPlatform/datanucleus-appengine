@@ -46,7 +46,7 @@ public class BatchDeleteManager extends BatchManager<BatchDeleteManager.BatchDel
     List<Key> keyList = Utils.newArrayList();
     for (BatchDeleteState bds : batchDeleteStateList) {
       if (bds.txn != txn) {
-        // throw an exception
+        throw new IllegalStateException("Batch delete cannot involve multiple txns.");
       }
       keyList.add(bds.key);
     }

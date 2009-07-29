@@ -21,8 +21,8 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.store.appengine.BatchDeleteManager;
-import org.datanucleus.store.appengine.BatchInsertManager;
 import org.datanucleus.store.appengine.BatchManager;
+import org.datanucleus.store.appengine.BatchPutManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
 import org.datanucleus.store.appengine.EntityUtils;
@@ -71,9 +71,9 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
     return super.getObjectById(cls, key);
   }
 
-  private BatchInsertManager getBatchInsertManager() {
+  private BatchPutManager getBatchPutManager() {
     DatastoreManager dm = (DatastoreManager) getObjectManager().getStoreManager();
-    return dm.getBatchInsertManager();
+    return dm.getBatchPutManager();
   }
 
   private BatchDeleteManager getBatchDeleteManager() {
@@ -83,10 +83,17 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
 
   /**
    * We override this so we can execute a batch put at the datastore level.
+   * The batch put will only execute for Transient pcs.  Making this work
+   * for updates is too tricky because an update can be triggered by many
+   * different events: committing a txn, closing a persistence manager,
+   * modifying a field value, etc.  Ideally we could capture all mutations
+   * and then divide them up intelligently at time of commit/pm.close(), but
+   * this would probably violate a lot of assumptions around when the mutations
+   * are actually executed.
    */
   @Override
   public Collection makePersistentAll(final Collection pcs) {
-    return new BatchManagerWrapper().call(getBatchInsertManager(), new Callable<Collection>() {
+    return new BatchManagerWrapper().call(getBatchPutManager(), new Callable<Collection>() {
       public Collection call() {
         return DatastoreJDOPersistenceManager.super.makePersistentAll(pcs);
       }

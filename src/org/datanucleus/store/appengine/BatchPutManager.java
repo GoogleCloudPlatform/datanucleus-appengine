@@ -25,7 +25,7 @@ import java.util.List;
  *
  * @author Max Ross <maxr@google.com>
  */
-public class BatchInsertManager extends BatchManager<StateManager> {
+public class BatchPutManager extends BatchManager<StateManager> {
 
   String getOperation() {
     return "insert";

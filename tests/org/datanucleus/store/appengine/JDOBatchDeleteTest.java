@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -26,19 +25,14 @@ import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOBatchDeleteTest extends JDOTestCase {
-
-  private BatchDeleteRecorder batchDeleteRecorder;
+public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   private static Entity newFlightEntity() {
     return Flight.newFlightEntity("Harold", "BOS", "MIA", 4, 2);
@@ -56,37 +50,14 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     return e;
   }
 
-  private static final class BatchDeleteRecorder implements InvocationHandler {
-
-    private final DatastoreService delegate;
-    private int batchDeletes = 0;
-
-    public BatchDeleteRecorder(DatastoreService delegate) {
-      this.delegate = delegate;
-    }
-
-    public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
-      if (method.getName().equals("delete") && 
+  BatchRecorder newBatchRecorder() {
+    return new BatchRecorder() {
+      boolean isBatchMethod(Method method) {
+        return method.getName().equals("delete") && 
           (method.getParameterTypes().length == 1 && Iterable.class.isAssignableFrom(method.getParameterTypes()[0])) ||
-          (method.getParameterTypes().length == 2 && Iterable.class.isAssignableFrom(method.getParameterTypes()[1]))) {
-        batchDeletes++;
+          (method.getParameterTypes().length == 2 && Iterable.class.isAssignableFrom(method.getParameterTypes()[1]));
       }
-      try {
-        return method.invoke(delegate, objects);
-      } catch (InvocationTargetException ite) {
-        throw ite.getTargetException();
-      }
-    }
-  }
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    batchDeleteRecorder = new BatchDeleteRecorder(DatastoreServiceFactoryInternal.getDatastoreService());
-    DatastoreService recordBatchPuts = (DatastoreService)
-        Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {DatastoreService.class},
-                               batchDeleteRecorder);
-    DatastoreServiceFactoryInternal.setDatastoreService(recordBatchPuts);
+    };
   }
 
   public void testDeletePersistentAll_NoTxn() {
@@ -97,7 +68,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     Flight f2 = pm.getObjectById(Flight.class, k2);
     pm.deletePersistentAll(f1, f2);
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
 
     Key k3 = ldth.ds.put(newFlightEntity());
     Key k4 = ldth.ds.put(newFlightEntity());
@@ -105,7 +76,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     Flight f4 = pm.getObjectById(Flight.class, k4);
     pm.deletePersistentAll(Utils.newArrayList(f3, f4));
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(2, batchDeleteRecorder.batchDeletes);
+    assertEquals(2, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_OneEntity_NoTxn() {
@@ -114,13 +85,13 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     Flight f1 = pm.getObjectById(Flight.class, k1);
     pm.deletePersistentAll(f1);
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
 
     Key k2 = ldth.ds.put(newFlightEntity());
     Flight f2 = pm.getObjectById(Flight.class, k2);
     pm.deletePersistentAll(Utils.newArrayList(f2));
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_Txn_MultipleEntityGroups() {
@@ -144,7 +115,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     assertEquals(2, countForClass(Flight.class));
     // We don't get to the batch delete because we blow up
     // before we get there.
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
 
     Key k3 = ldth.ds.put(newFlightEntity());
     Key k4 = ldth.ds.put(newFlightEntity());
@@ -162,7 +133,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
       // good
     }
     assertEquals(4, countForClass(Flight.class));
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_Txn_OneEntityGroup() {
@@ -176,7 +147,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     pm.deletePersistentAll(child1, child2);
     commitTxn();
     assertEquals(0, countForClass(HasKeyAncestorKeyPkJDO.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_OneEntity_Txn() {
@@ -187,7 +158,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     pm.deletePersistentAll(f1);
     commitTxn();
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
 
     Key k2 = ldth.ds.put(newFlightEntity());
     beginTxn();
@@ -195,7 +166,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     pm.deletePersistentAll(Utils.newArrayList(f2));
     commitTxn();
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(0, batchDeleteRecorder.batchDeletes);
+    assertEquals(0, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToOne_NoTxn() {
@@ -209,7 +180,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     pm.deletePersistentAll(parent1, parent2);
     assertEquals(0, countForClass(HasOneToOneJDO.class));
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
 
@@ -234,7 +205,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     }
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToOne_OneEntityGroup_Txn() {
@@ -251,7 +222,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     commitTxn();
     assertEquals(0, countForClass(HasOneToOneJDO.class));
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_NoTxn() {
@@ -280,7 +251,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     assertEquals(0, countForClass(HasOneToManyListJDO.class));
     assertEquals(0, countForClass(Flight.class));
     assertEquals(0, countForClass(BidirectionalChildListJDO.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_MultipleEntityGroups_Txn() {
@@ -318,7 +289,7 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     assertEquals(2, countForClass(HasOneToManyListJDO.class));
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_OneEntityGroup_Txn() {
@@ -349,6 +320,6 @@ public class JDOBatchDeleteTest extends JDOTestCase {
     assertEquals(0, countForClass(HasOneToManyListJDO.class));
     assertEquals(0, countForClass(Flight.class));
     assertEquals(0, countForClass(BidirectionalChildListJDO.class));
-    assertEquals(1, batchDeleteRecorder.batchDeletes);
+    assertEquals(1, batchRecorder.batchOps);
   }
 }

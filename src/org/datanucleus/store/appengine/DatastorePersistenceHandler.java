@@ -218,8 +218,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   public void insertObject(StateManager sm) {
     // If we're in the middle of a batch operation just register
     // the statemanager that needs the insertion
-    if (storeMgr.getBatchInsertManager().batchOperationInProgress()) {
-      storeMgr.getBatchInsertManager().add(sm);
+    if (storeMgr.getBatchPutManager().batchOperationInProgress()) {
+      storeMgr.getBatchPutManager().add(sm);
       return;
     }
     insertObjects(Collections.singletonList(sm));

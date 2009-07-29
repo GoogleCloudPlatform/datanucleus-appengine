@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
@@ -26,18 +25,16 @@ import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.util.List;
+
+import javax.jdo.JDOHelper;
+import javax.jdo.ObjectState;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOBatchInsertTest extends JDOTestCase {
-
-  private BatchPutRecorder batchPutRecorder;
+public class JDOBatchInsertTest extends JDOBatchTestCase {
 
   private static Flight newFlight() {
     Flight f1 = new Flight();
@@ -50,34 +47,12 @@ public class JDOBatchInsertTest extends JDOTestCase {
     return f1;
   }
 
-  private static final class BatchPutRecorder implements InvocationHandler {
-
-    private final DatastoreService delegate;
-    private int batchPuts = 0;
-
-    public BatchPutRecorder(DatastoreService delegate) {
-      this.delegate = delegate;
-    }
-
-    public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
-      if (method.getName().equals("put") && List.class.isAssignableFrom(method.getReturnType())) {
-        batchPuts++;
+  BatchRecorder newBatchRecorder() {
+    return new BatchRecorder() {
+      boolean isBatchMethod(Method method) {
+        return method.getName().equals("put") && List.class.isAssignableFrom(method.getReturnType());
       }
-      try {
-        return method.invoke(delegate, objects);
-      } catch (InvocationTargetException ite) {
-        throw ite.getTargetException();
-      }
-    }
-  }
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    batchPutRecorder = new BatchPutRecorder(DatastoreServiceFactoryInternal.getDatastoreService());
-    DatastoreService recordBatchPuts = (DatastoreService)
-        Proxy.newProxyInstance(getClass().getClassLoader(), new Class[] {DatastoreService.class}, batchPutRecorder);
-    DatastoreServiceFactoryInternal.setDatastoreService(recordBatchPuts);
+    };
   }
 
   public void testMakePersistentAll_NoTxn() {
@@ -86,13 +61,13 @@ public class JDOBatchInsertTest extends JDOTestCase {
     Flight f2 = newFlight();
     pm.makePersistentAll(f1, f2);
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
 
     Flight f3 = newFlight();
     Flight f4 = newFlight();
     pm.makePersistentAll(Utils.newArrayList(f3, f4));
     assertEquals(4, countForClass(Flight.class));
-    assertEquals(2, batchPutRecorder.batchPuts);
+    assertEquals(2, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_OneEntity_NoTxn() {
@@ -100,12 +75,12 @@ public class JDOBatchInsertTest extends JDOTestCase {
     Flight f1 = newFlight();
     pm.makePersistentAll(f1);
     assertEquals(1, countForClass(Flight.class));
-    assertEquals(0, batchPutRecorder.batchPuts);
+    assertEquals(0, batchRecorder.batchOps);
 
     Flight f2 = newFlight();
     pm.makePersistentAll(Utils.newArrayList(f2));
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(0, batchPutRecorder.batchPuts);
+    assertEquals(0, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_Txn_MultipleEntityGroups() {
@@ -121,7 +96,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
     }
     rollbackTxn();
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
 
     Flight f3 = newFlight();
     Flight f4 = newFlight();
@@ -133,7 +108,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
       // good
     }
     assertEquals(0, countForClass(Flight.class));
-    assertEquals(2, batchPutRecorder.batchPuts);
+    assertEquals(2, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_Txn_OneEntityGroup() {
@@ -147,7 +122,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
     pm.makePersistentAll(pojo1, pojo2);
     commitTxn();
     assertEquals(2, countForClass(HasKeyAncestorKeyPkJDO.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_OneEntity_Txn() {
@@ -157,14 +132,14 @@ public class JDOBatchInsertTest extends JDOTestCase {
     pm.makePersistentAll(f1);
     commitTxn();
     assertEquals(1, countForClass(Flight.class));
-    assertEquals(0, batchPutRecorder.batchPuts);
+    assertEquals(0, batchRecorder.batchOps);
 
     Flight f2 = newFlight();
     beginTxn();
     pm.makePersistentAll(Utils.newArrayList(f2));
     commitTxn();
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(0, batchPutRecorder.batchPuts);
+    assertEquals(0, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToOne_NoTxn() {
@@ -178,7 +153,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
     pm.makePersistentAll(parent1, parent2);
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToOne_MultipleEntityGroups_Txn() {
@@ -213,7 +188,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
     commitTxn();
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToMany_NoTxn() {
@@ -240,7 +215,7 @@ public class JDOBatchInsertTest extends JDOTestCase {
     assertEquals(2, countForClass(HasOneToManyListJDO.class));
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToMany_MultipleEntityGroups_Txn() {
@@ -300,6 +275,25 @@ public class JDOBatchInsertTest extends JDOTestCase {
     assertEquals(2, countForClass(HasOneToManyListJDO.class));
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
-    assertEquals(1, batchPutRecorder.batchPuts);
+    assertEquals(1, batchRecorder.batchOps);
+  }
+
+  public void testCombineInsertAndUpdate_NoTxn() {
+    switchDatasource(JDOTestCase.PersistenceManagerFactoryName.nontransactional);
+    Flight f1 = newFlight();
+    pm.makePersistent(f1);
+    f1 = pm.detachCopy(f1);
+    assertEquals(1, countForClass(Flight.class));
+    assertEquals(0, batchRecorder.batchOps);
+    pm.close();
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(f1));
+    f1.setName("jimmy");
+    pm = pmf.getPersistenceManager();
+    Flight f2 = new Flight();
+    Flight f3 = new Flight();
+    pm.makePersistentAll(f1, f2, f3);
+    pm.close();
+    assertEquals(3, countForClass(Flight.class));
+    assertEquals(1, batchRecorder.batchOps);
   }
 }
