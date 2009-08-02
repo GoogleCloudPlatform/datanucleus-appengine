@@ -17,6 +17,7 @@ package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.ShortBlob;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Set;
 
@@ -54,6 +55,9 @@ public class HasBytesJDO {
 
   @Persistent
   private Set<Byte> byteSet;
+
+  @Persistent
+  private Collection<Byte> byteCollection;
 
   @Persistent
   private ShortBlob shortBlob;
@@ -168,5 +172,13 @@ public class HasBytesJDO {
 
   public void setSerializedByteSet(Set<Byte> serializedByteSet) {
     this.serializedByteSet = serializedByteSet;
+  }
+
+  public Collection<Byte> getByteCollection() {
+    return byteCollection;
+  }
+
+  public void setByteCollection(Collection<Byte> byteCollection) {
+    this.byteCollection = byteCollection;
   }
 }

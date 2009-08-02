@@ -57,10 +57,12 @@ import org.datanucleus.store.mapped.scostore.JoinListStore;
 import org.datanucleus.store.mapped.scostore.JoinMapStore;
 import org.datanucleus.store.mapped.scostore.JoinSetStore;
 import org.datanucleus.store.query.ResultObjectFactory;
+import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.NucleusLogger;
 
 import java.lang.reflect.Field;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -141,7 +143,21 @@ public class DatastoreManager extends MappedStoreManager {
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(omfContext);
     setCustomPluginManager();
+    addTypeManagerMappings();
     logConfiguration();
+  }
+
+  private void addTypeManagerMappings() throws NoSuchFieldException, IllegalAccessException {
+    Field javaTypes = TypeManager.class.getDeclaredField("javaTypes");
+    javaTypes.setAccessible(true);
+    @SuppressWarnings("unchecked")
+    Map<String, Object> map = (Map<String, Object>) javaTypes.get(omfContext.getTypeManager());
+    Object arrayListValue = map.get(ArrayList.class.getName());
+    // Arrays$ArrayList is an inner class that is used for the results of
+    // Arrays.asList().  We want the same sco behavior for instances of
+    // this class so they end up with the same sco implementation
+    // that gets used for ArrayList.
+    map.put("java.util.Arrays$ArrayList", arrayListValue);
   }
 
   private void setCustomPluginManager() throws NoSuchFieldException, IllegalAccessException {

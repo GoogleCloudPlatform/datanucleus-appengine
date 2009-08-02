@@ -41,6 +41,7 @@ public class JDOBytesTest extends JDOTestCase {
     pojo.setBytes(PrimitiveArrays.asList("bytes".getBytes()).toArray(new Byte[5]));
     pojo.setByteList(PrimitiveArrays.asList("byte list".getBytes()));
     pojo.setByteSet(new HashSet<Byte>(PrimitiveArrays.asList("byte set".getBytes())));
+    pojo.setByteCollection(PrimitiveArrays.asList("byte collection".getBytes()));
     pojo.setOnePrimByte(Integer.valueOf(1).byteValue());
     pojo.setOneByte(Integer.valueOf(2).byteValue());
     pojo.setShortBlob(new ShortBlob("short blob".getBytes()));
@@ -60,6 +61,7 @@ public class JDOBytesTest extends JDOTestCase {
     assertEquals(new HashSet<Byte>(PrimitiveArrays.asList("byte set".getBytes())),
                  new HashSet<Byte>(PrimitiveArrays.asList(
                      ((ShortBlob) e.getProperty("byteSet")).getBytes())));
+    assertEquals(new ShortBlob("byte collection".getBytes()), e.getProperty("byteCollection"));
     assertEquals(1L, e.getProperty("onePrimByte"));
     assertEquals(2L, e.getProperty("oneByte"));
     assertEquals(new ShortBlob("short blob".getBytes()), e.getProperty("shortBlob"));
@@ -77,6 +79,7 @@ public class JDOBytesTest extends JDOTestCase {
     e.setProperty("bytes", new ShortBlob("bytes".getBytes()));
     e.setProperty("byteList", new ShortBlob("byte list".getBytes()));
     e.setProperty("byteSet", new ShortBlob("byte set".getBytes()));
+    e.setProperty("byteCollection", new ShortBlob("byte collection".getBytes()));
     e.setProperty("onePrimByte", 1L);
     e.setProperty("oneByte", 2L);
     e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
@@ -93,6 +96,7 @@ public class JDOBytesTest extends JDOTestCase {
     assertEquals(PrimitiveArrays.asList("bytes".getBytes()), Arrays.asList(pojo.getBytes()));
     assertEquals(PrimitiveArrays.asList("byte list".getBytes()), pojo.getByteList());
     assertEquals(new HashSet<Byte>(PrimitiveArrays.asList("byte set".getBytes())), pojo.getByteSet());
+    assertEquals(PrimitiveArrays.asList("byte collection".getBytes()), pojo.getByteCollection());
     assertEquals(Integer.valueOf(1).byteValue(), pojo.getOnePrimByte());
     assertEquals(Integer.valueOf(2).byteValue(), pojo.getOneByte().byteValue());
     assertEquals(new ShortBlob("short blob".getBytes()), pojo.getShortBlob());

@@ -97,6 +97,7 @@ public class AllTests {
     suite.addTestSuite(JDOBatchInsertTest.class);
     suite.addTestSuite(JDOBatchDeleteTest.class);
     suite.addTestSuite(BatchManager.class);
+    suite.addTestSuite(DatastoreManager.class);
     return suite;
   }
 }
