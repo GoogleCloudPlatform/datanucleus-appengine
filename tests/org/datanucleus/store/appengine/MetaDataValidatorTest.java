@@ -29,14 +29,22 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_NoConfig() {
     setIgnorableMetaDataBehavior(null);
-    MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getOMFContext().getMetaDataManager();
-    MetaDataValidator mdv = new MetaDataValidator(null, mdm, null) {
+    OMFContext omfContext = ((JDOPersistenceManagerFactory)pmf).getOMFContext();
+    MetaDataManager mdm = omfContext.getMetaDataManager();
+    final String[] loggedMsg = {null};
+    AbstractClassMetaData acmd =
+        mdm.getMetaDataForClass(Flight.class, omfContext.getClassLoaderResolver(getClass().getClassLoader()));
+    MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
       @Override
       void warn(String msg) {
-        fail("shouldn't have been called");
+        loggedMsg[0] = msg;
       }
     };
-    mdv.handleIgnorableMapping(null, "main msg", "warning only msg");
+    AbstractMemberMetaData ammd = acmd.getManagedMembers()[0];
+    mdv.handleIgnorableMapping(ammd, "main msg", "warning only msg");
+    assertTrue(loggedMsg[0].contains("main msg"));
+    assertTrue(loggedMsg[0].contains("warning only msg"));
+    assertTrue(loggedMsg[0].contains(MetaDataValidator.ADJUST_WARNING_MSG));
   }
 
   public void testIgnorableMapping_NoneConfig() {

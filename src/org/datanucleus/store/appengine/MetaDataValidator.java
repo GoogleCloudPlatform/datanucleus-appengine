@@ -61,9 +61,9 @@ public class MetaDataValidator {
     WARN, // Log a warning.
     ERROR;// Throw an exception.
 
-    private static IgnorableMetaDataBehavior nullSafeValueOf(String val) {
+    private static IgnorableMetaDataBehavior valueOf(String val, IgnorableMetaDataBehavior returnIfNull) {
       if (val == null) {
-        return NONE;
+        return returnIfNull;
       }
       return valueOf(val);
     }
@@ -212,9 +212,9 @@ public class MetaDataValidator {
   }
 
   private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {
-    return IgnorableMetaDataBehavior.nullSafeValueOf(
+    return IgnorableMetaDataBehavior.valueOf(
         metaDataManager.getOMFContext().getPersistenceConfiguration()
-            .getStringProperty(IGNORABLE_META_DATA_BEHAVIOR_PROPERTY));
+            .getStringProperty(IGNORABLE_META_DATA_BEHAVIOR_PROPERTY), IgnorableMetaDataBehavior.WARN);
   }
 
   void handleIgnorableMapping(AbstractMemberMetaData ammd, String msg, String warningOnlyMsg) {
