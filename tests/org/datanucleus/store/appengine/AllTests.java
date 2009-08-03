@@ -96,8 +96,8 @@ public class AllTests {
     suite.addTestSuite(DatastoreJPACallbackHandlerTest.class);
     suite.addTestSuite(JDOBatchInsertTest.class);
     suite.addTestSuite(JDOBatchDeleteTest.class);
-    suite.addTestSuite(BatchManager.class);
-    suite.addTestSuite(DatastoreManager.class);
+    suite.addTestSuite(BatchManagerTest.class);
+    suite.addTestSuite(DatastoreManagerTest.class);
     return suite;
   }
 }
