@@ -204,15 +204,26 @@ public class MetaDataValidator {
       checkForIllegalChildField(ammd);
     }
 
-    // Look for "eager" relationships.  Not supported but not necessarily an error
-    // since we can always fall back to "lazy."
-    if (ammd.isDefaultFetchGroup() && ammd.getRelationType(clr) != Relation.NONE) {
-      // We have separate error messages for JPA vs JDO because eagerness is configured
-      // differently between the two.
-      String msg = isJPA() ?
-                   "The datastore does not support joins and therefore cannot honor requests to eagerly load child objects." : 
-                   "The datastore does not support joins and therefore cannot honor requests to place child objects in the default fetch group.";
-      handleIgnorableMapping(ammd, msg, "The field will be fetched lazily on first access.");
+    if (ammd.getRelationType(clr) != Relation.NONE) {
+      // Look for "eager" relationships.  Not supported but not necessarily an error
+      // since we can always fall back to "lazy."
+      if (ammd.isDefaultFetchGroup()) {
+        // We have separate error messages for JPA vs JDO because eagerness is configured
+        // differently between the two.
+        String msg = isJPA() ?
+                     "The datastore does not support joins and therefore cannot honor requests to eagerly load child objects." :
+                     "The datastore does not support joins and therefore cannot honor requests to place child objects in the default fetch group.";
+        handleIgnorableMapping(ammd, msg, "The field will be fetched lazily on first access.");
+      }
+
+      // We don't support many-to-many at all
+      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd, "Many-to-many is not currently supported in App Engine.  As a workaround, "
+                        + "consider maintaining a List<Key> on both sides of the relationship.  "
+                        + "See http://code.google.com/appengine/docs/java/datastore/relationships.html#Unowned_Relationships "
+                        + "for more information.");
+      }
     }
   }
 

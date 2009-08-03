@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import com.google.appengine.api.datastore.Key;
+
 import org.datanucleus.jpa.annotations.Extension;
 import org.datanucleus.jpa.annotations.Extensions;
 
@@ -27,6 +29,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
@@ -313,5 +316,25 @@ public class IllegalMappingsJPA {
 
     @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
     private Long illegal;
+  }
+
+  @Entity
+  public static class ManyToMany1 {
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Key id;
+
+    @ManyToMany(mappedBy = "manyToMany")
+    private List<ManyToMany2> manyToMany;
+  }
+
+  @Entity
+  public static class ManyToMany2 {
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    private Key id;
+
+    @ManyToMany
+    private List<ManyToMany1> manyToMany;
   }
 }

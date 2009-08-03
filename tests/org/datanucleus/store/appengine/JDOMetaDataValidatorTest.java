@@ -30,6 +30,8 @@ import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.LongParent;
+import org.datanucleus.test.IllegalMappingsJDO.ManyToMany1;
+import org.datanucleus.test.IllegalMappingsJDO.ManyToMany2;
 import org.datanucleus.test.IllegalMappingsJDO.MultipleAncestors;
 import org.datanucleus.test.IllegalMappingsJDO.OneToManyParentWithRootOnlyLongBiChild;
 import org.datanucleus.test.IllegalMappingsJDO.OneToManyParentWithRootOnlyLongUniChild;
@@ -231,6 +233,11 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
 
   public void testUniqueConstraints() {
     assertMetaDataException(new HasUniqueConstraints());
+  }
+
+  public void testManyToMany() {
+    assertMetaDataException(new ManyToMany1());
+    assertMetaDataException(new ManyToMany2());
   }
 
   public void testIsJPA() {

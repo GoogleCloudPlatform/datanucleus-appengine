@@ -27,6 +27,8 @@ import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJPA.LongParent;
+import org.datanucleus.test.IllegalMappingsJPA.ManyToMany1;
+import org.datanucleus.test.IllegalMappingsJPA.ManyToMany2;
 import org.datanucleus.test.IllegalMappingsJPA.MultipleAncestors;
 import org.datanucleus.test.IllegalMappingsJPA.OneToManyParentWithRootOnlyLongBiChild;
 import org.datanucleus.test.IllegalMappingsJPA.OneToManyParentWithRootOnlyLongUniChild;
@@ -189,6 +191,11 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   public void testUniqueConstraints() {
     assertMetaDataException(new HasUniqueConstraint());
+  }
+
+  public void testManyToMany() {
+    assertMetaDataException(new ManyToMany1());
+    assertMetaDataException(new ManyToMany2());
   }
 
   private void assertMetaDataException(Object pojo) {

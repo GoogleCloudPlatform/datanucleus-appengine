@@ -347,4 +347,24 @@ public class IllegalMappingsJDO {
     @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
     private Long illegal;
   }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class ManyToMany1 {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent(mappedBy = "manyToMany")
+    private List<ManyToMany2> manyToMany;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class ManyToMany2 {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent(mappedBy = "manyToMany")
+    private List<ManyToMany1> manyToMany;
+  }
 }
