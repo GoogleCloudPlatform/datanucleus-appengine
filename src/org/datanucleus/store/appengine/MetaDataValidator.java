@@ -106,8 +106,17 @@ public class MetaDataValidator {
         "Performing appengine-specific metadata validation for " + acmd.getFullClassName());
     AbstractMemberMetaData pkMemberMetaData = validatePrimaryKey();
     validateFields(pkMemberMetaData);
+    validateClass();
     NucleusLogger.METADATA.info(
         "Finished performing appengine-specific metadata validation for " + acmd.getFullClassName());
+  }
+
+  private void validateClass() {
+    // Look for uniqueness constraints.  Not supported but not necessarily an error
+    if (acmd.getUniqueMetaData() != null && acmd.getUniqueMetaData().length > 0) {
+      handleIgnorableMapping("The datastore does not support uniqueness constraints.", 
+                             "The constraint definition will be ignored.");
+    }
   }
 
   private void validateFields(AbstractMemberMetaData pkMemberMetaData) {
@@ -217,14 +226,27 @@ public class MetaDataValidator {
             .getStringProperty(IGNORABLE_META_DATA_BEHAVIOR_PROPERTY), IgnorableMetaDataBehavior.WARN);
   }
 
+  void handleIgnorableMapping(String msg, String warningOnlyMsg) {
+    handleIgnorableMapping(null, msg, warningOnlyMsg);
+  }
+
   void handleIgnorableMapping(AbstractMemberMetaData ammd, String msg, String warningOnlyMsg) {
     switch (getIgnorableMetaDataBehavior()) {
       case WARN:
-        warn(String.format(
-            "Meta-data warning for %s.%s: %s  %s  %s",
-            acmd.getFullClassName(), ammd.getName(), msg, warningOnlyMsg, ADJUST_WARNING_MSG));
+        if (ammd == null) {
+          warn(String.format(
+              "Meta-data warning for %s: %s  %s  %s",
+              acmd.getFullClassName(), msg, warningOnlyMsg, ADJUST_WARNING_MSG));          
+        } else {
+          warn(String.format(
+              "Meta-data warning for %s.%s: %s  %s  %s",
+              acmd.getFullClassName(), ammd.getName(), msg, warningOnlyMsg, ADJUST_WARNING_MSG));
+        }
         break;
       case ERROR:
+        if (ammd == null) {
+          throw new DatastoreMetaDataException(acmd, msg);
+        }
         throw new DatastoreMetaDataException(acmd, ammd, msg);
       // We swallow both null and NONE
     }

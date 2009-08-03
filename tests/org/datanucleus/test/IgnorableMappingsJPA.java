@@ -25,6 +25,8 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.Table;
+import javax.persistence.UniqueConstraint;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -50,4 +52,15 @@ public class IgnorableMappingsJPA {
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private HasKeyPkJPA child;
   }
+
+  @Entity
+  @Table(uniqueConstraints = @UniqueConstraint(columnNames = "f1"))
+  public static class HasUniqueConstraint {
+    @Id
+    @GeneratedValue(strategy=GenerationType.IDENTITY)
+    public Long id;
+
+    private String f1;
+  }
+
 }

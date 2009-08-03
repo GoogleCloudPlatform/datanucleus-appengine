@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
+import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
@@ -53,354 +54,144 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   public void testStringAncestorPlusNameOnlyPK() {
     HasUnencodedStringPkWithStringAncestor pojo = new HasUnencodedStringPkWithStringAncestor();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringAncestorPlusLongPK() {
     HasLongPkWithStringAncestor pojo = new HasLongPkWithStringAncestor();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultiplePKNameFields() {
     HasMultiplePkNameFields pojo = new HasMultiplePkNameFields();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultiplePKIdFields() {
     HasMultiplePkIdFields pojo = new HasMultiplePkIdFields();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultipleAncestors() {
     MultipleAncestors pojo = new MultipleAncestors();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testEncodedPkOnNonPrimaryKeyField() {
     EncodedPkOnNonPrimaryKeyField pojo = new EncodedPkOnNonPrimaryKeyField();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testEncodedPkOnNonStringPrimaryKeyField() {
     EncodedPkOnNonStringPrimaryKeyField pojo = new EncodedPkOnNonStringPrimaryKeyField();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkNameOnNonStringField() {
     PkNameOnNonStringField pojo = new PkNameOnNonStringField();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkIdOnNonLongField() {
     PkIdOnNonLongField pojo = new PkIdOnNonLongField();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsAncestor() {
     PkMarkedAsAncestor pojo = new PkMarkedAsAncestor();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsPkId() {
     PkMarkedAsPkId pojo = new PkMarkedAsPkId();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsPkName() {
     PkMarkedAsPkName pojo = new PkMarkedAsPkName();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkIdWithUnencodedStringPrimaryKey() {
     PkIdWithUnencodedStringPrimaryKey pojo = new PkIdWithUnencodedStringPrimaryKey();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkNameWithUnencodedStringPrimaryKey() {
     PkNameWithUnencodedStringPrimaryKey pojo = new PkNameWithUnencodedStringPrimaryKey();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongUniChild pojo = new OneToManyParentWithRootOnlyLongUniChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongBiChild pojo = new OneToManyParentWithRootOnlyLongBiChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringUniChild pojo = new OneToManyParentWithRootOnlyStringUniChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringBiChild pojo = new OneToManyParentWithRootOnlyStringBiChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongUniChild pojo = new OneToOneParentWithRootOnlyLongUniChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongBiChild pojo = new OneToOneParentWithRootOnlyLongBiChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringUniChild pojo = new OneToOneParentWithRootOnlyStringUniChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringBiChild pojo = new OneToOneParentWithRootOnlyStringBiChild();
     pojo.id = "yar";
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
   public void testAncestorOfIllegalType_Long() {
     LongParent pojo = new LongParent();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testOneToManyWithEagerlyFetchedChildList() {
-    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
     OneToManyParentWithEagerlyFetchedChildList pojo = new OneToManyParentWithEagerlyFetchedChildList();
-    beginTxn();
-    em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testOneToManyWithEagerlyFetchedChild() {
-    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
     OneToManyParentWithEagerlyFetchedChild pojo = new OneToManyParentWithEagerlyFetchedChild();
+    assertMetaDataException(pojo);
+  }
+
+  public void testUniqueConstraints() {
+    assertMetaDataException(new HasUniqueConstraint());
+  }
+
+  private void assertMetaDataException(Object pojo) {
     beginTxn();
     em.persist(pojo);
     try {
@@ -417,11 +208,5 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     MetaDataManager mdm = ((DatastoreEntityManager) em).getObjectManager().getOMFContext().getMetaDataManager();
     MetaDataValidator mdv = new MetaDataValidator(null, mdm, null);
     assertTrue(mdv.isJPA());
-  }
-
-  private void setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior val) {
-    DatastoreEntityManager dem = (DatastoreEntityManager) em;
-    dem.getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
-        "datanucleus.appengine.ignorableMetaDataBehavior", val.name());
   }
 }

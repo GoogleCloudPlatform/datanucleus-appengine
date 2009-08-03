@@ -23,6 +23,8 @@ import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Unique;
+import javax.jdo.annotations.Uniques;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -48,5 +50,27 @@ public class IgnorableMappingsJDO {
 
     @Persistent(dependent = "true", defaultFetchGroup = "true")
     private HasKeyPkJDO child;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Unique(name = "blar", members = {"f1"})
+  public static class HasUniqueConstraint {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    public Long id;
+
+    @Persistent
+    public String f1;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Uniques({@Unique(name = "blar", members = {"f1"})})
+  public static class HasUniqueConstraints {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    public Long id;
+
+    @Persistent
+    public String f1;
   }
 }

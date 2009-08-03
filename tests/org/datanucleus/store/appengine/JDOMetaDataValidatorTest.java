@@ -17,6 +17,8 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
+import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraints;
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
@@ -56,284 +58,116 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
   public void testKeyAncestorPlusNameOnlyPK() {
     HasUnencodedStringPkWithKeyAncestor pojo = new HasUnencodedStringPkWithKeyAncestor();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringAncestorPlusNameOnlyPK() {
     HasUnencodedStringPkWithStringAncestor pojo = new HasUnencodedStringPkWithStringAncestor();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testKeyAncestorPlusLongPK() {
     HasLongPkWithKeyAncestor pojo = new HasLongPkWithKeyAncestor();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringAncestorPlusLongPK() {
     HasLongPkWithStringAncestor pojo = new HasLongPkWithStringAncestor();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultiplePKNameFields() {
     HasMultiplePkNameFields pojo = new HasMultiplePkNameFields();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultiplePKIdFields() {
     HasMultiplePkIdFields pojo = new HasMultiplePkIdFields();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testMultipleAncestors() {
     MultipleAncestors pojo = new MultipleAncestors();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testEncodedPkOnNonPrimaryKeyField() {
     EncodedPkOnNonPrimaryKeyField pojo = new EncodedPkOnNonPrimaryKeyField();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testEncodedPkOnNonStringPrimaryKeyField() {
     EncodedPkOnNonStringPrimaryKeyField pojo = new EncodedPkOnNonStringPrimaryKeyField();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkNameOnNonStringField() {
     PkNameOnNonStringField pojo = new PkNameOnNonStringField();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkIdOnNonLongField() {
     PkIdOnNonLongField pojo = new PkIdOnNonLongField();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsAncestor() {
     PkMarkedAsAncestor pojo = new PkMarkedAsAncestor();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsPkId() {
     PkMarkedAsPkId pojo = new PkMarkedAsPkId();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkMarkedAsPkName() {
     PkMarkedAsPkName pojo = new PkMarkedAsPkName();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkIdWithUnencodedStringPrimaryKey() {
     PkIdWithUnencodedStringPrimaryKey pojo = new PkIdWithUnencodedStringPrimaryKey();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testPkNameWithUnencodedStringPrimaryKey() {
     PkNameWithUnencodedStringPrimaryKey pojo = new PkNameWithUnencodedStringPrimaryKey();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongUniChild pojo = new OneToManyParentWithRootOnlyLongUniChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyLongBiChild pojo = new OneToManyParentWithRootOnlyLongBiChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithUnidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringUniChild pojo = new OneToManyParentWithRootOnlyStringUniChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithBidirectionalOneToManyChild() {
     OneToManyParentWithRootOnlyStringBiChild pojo = new OneToManyParentWithRootOnlyStringBiChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongUniChild pojo = new OneToOneParentWithRootOnlyLongUniChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testLongPkWithUnidirectionalOneToOneChild_Fetch() {
@@ -364,84 +198,39 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
   public void testLongPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyLongBiChild pojo = new OneToOneParentWithRootOnlyLongBiChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithUnidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringUniChild pojo = new OneToOneParentWithRootOnlyStringUniChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testStringPkWithBidirectionalOneToOneChild() {
     OneToOneParentWithRootOnlyStringBiChild pojo = new OneToOneParentWithRootOnlyStringBiChild();
     pojo.id = "yar";
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(pojo);
   }
 
   public void testAncestorOfIllegalType() {
-    LongParent pojo = new LongParent();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(new LongParent());
   }
 
   public void testOneToManyWithEagerlyFetchedChildList() {
-    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
-    OneToManyParentWithEagerlyFetchedChildList pojo = new OneToManyParentWithEagerlyFetchedChildList();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(new OneToManyParentWithEagerlyFetchedChildList());
   }
 
   public void testOneToManyWithEagerlyFetchedChild() {
-    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
-    OneToManyParentWithEagerlyFetchedChild pojo = new OneToManyParentWithEagerlyFetchedChild();
-    beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
-      rollbackTxn();
-    }
+    assertMetaDataException(new OneToManyParentWithEagerlyFetchedChild());
+  }
+
+  public void testUniqueConstraint() {
+    assertMetaDataException(new HasUniqueConstraint());
+  }
+
+  public void testUniqueConstraints() {
+    assertMetaDataException(new HasUniqueConstraints());
   }
 
   public void testIsJPA() {
@@ -450,8 +239,15 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     assertFalse(mdv.isJPA());
   }
 
-  private void setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior val) {
-    ((JDOPersistenceManagerFactory)pmf).getOMFContext().getPersistenceConfiguration().setProperty(
-        "datanucleus.appengine.ignorableMetaDataBehavior", val.name());
+  private void assertMetaDataException(Object pojo) {
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
   }
 }
