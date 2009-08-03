@@ -75,9 +75,10 @@ public class AllTests {
     suite.addTestSuite(TypeConversionUtilsTest.class);
     suite.addTestSuite(JDOMakeTransientTest.class);
     suite.addTestSuite(JDOPrimaryKeyTest.class);
-    suite.addTestSuite(JDOMetaDataValidatorTest.class);
     suite.addTestSuite(JPAPrimaryKeyTest.class);
+    suite.addTestSuite(JDOMetaDataValidatorTest.class);
     suite.addTestSuite(JPAMetaDataValidatorTest.class);
+    suite.addTestSuite(MetaDataValidatorTest.class);
     suite.addTestSuite(EntityUtilsTest.class);
     suite.addTestSuite(JDOBytesTest.class);
     suite.addTestSuite(JPABytesTest.class);

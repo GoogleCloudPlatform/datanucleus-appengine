@@ -18,6 +18,7 @@ package org.datanucleus.test;
 import org.datanucleus.jpa.annotations.Extension;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -33,7 +34,7 @@ public class HasOneToOneLongPkParentJPA {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  @OneToOne(mappedBy = "hasParent")
+  @OneToOne(mappedBy = "hasParent", fetch = FetchType.LAZY)
   private HasOneToOneLongPkJPA parent;
 
   private String str;

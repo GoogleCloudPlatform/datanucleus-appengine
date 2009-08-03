@@ -15,6 +15,10 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
+import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonStringPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithKeyAncestor;
@@ -41,7 +45,7 @@ import org.datanucleus.test.IllegalMappingsJDO.PkMarkedAsPkName;
 import org.datanucleus.test.IllegalMappingsJDO.PkNameOnNonStringField;
 import org.datanucleus.test.IllegalMappingsJDO.PkNameWithUnencodedStringPrimaryKey;
 
-import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
 
 /**
@@ -56,7 +60,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -70,7 +74,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -83,7 +87,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -96,7 +100,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -109,7 +113,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -122,7 +126,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -135,7 +139,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -149,7 +153,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -162,7 +166,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -175,7 +179,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -188,7 +192,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -201,7 +205,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -214,7 +218,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -227,7 +231,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -241,7 +245,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -255,7 +259,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -269,7 +273,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -283,7 +287,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -297,7 +301,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -311,7 +315,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -325,7 +329,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -337,7 +341,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.getObjectById(OneToOneParentWithRootOnlyLongUniChild.class, "yar");
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -350,7 +354,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
       Query q = pm.newQuery(OneToOneParentWithRootOnlyLongUniChild.class);
       q.execute();
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -364,7 +368,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -378,7 +382,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -392,7 +396,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
@@ -405,10 +409,49 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     try {
       pm.makePersistent(pojo);
       fail("expected exception");
-    } catch (JDOUserException e) {
+    } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
     }
+  }
+
+  public void testOneToManyWithEagerlyFetchedChildList() {
+    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
+    OneToManyParentWithEagerlyFetchedChildList pojo = new OneToManyParentWithEagerlyFetchedChildList();
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testOneToManyWithEagerlyFetchedChild() {
+    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
+    OneToManyParentWithEagerlyFetchedChild pojo = new OneToManyParentWithEagerlyFetchedChild();
+    beginTxn();
+    try {
+      pm.makePersistent(pojo);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testIsJPA() {
+    MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getOMFContext().getMetaDataManager();
+    MetaDataValidator mdv = new MetaDataValidator(null, mdm, null);
+    assertFalse(mdv.isJPA());
+  }
+
+  private void setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior val) {
+    ((JDOPersistenceManagerFactory)pmf).getOMFContext().getPersistenceConfiguration().setProperty(
+        "datanucleus.appengine.ignorableMetaDataBehavior", val.name());
   }
 }

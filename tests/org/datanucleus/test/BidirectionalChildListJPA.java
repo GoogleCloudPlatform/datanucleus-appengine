@@ -22,6 +22,7 @@ import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -38,11 +39,11 @@ public class BidirectionalChildListJPA implements BidirectionalChildJPA {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   private HasOneToManyListJPA parent;
 
   @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
-  private List<BidirectionalGrandchildListJPA> bidirGrandchildre = Utils.newArrayList();
+  private List<BidirectionalGrandchildListJPA> bidirGrandchildren = Utils.newArrayList();
 
   private String childVal;
 

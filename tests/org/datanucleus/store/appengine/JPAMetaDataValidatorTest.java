@@ -15,6 +15,10 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
+import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
+import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJPA.HasLongPkWithStringAncestor;
@@ -377,5 +381,47 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
       assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
     }
+  }
+
+  public void testOneToManyWithEagerlyFetchedChildList() {
+    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
+    OneToManyParentWithEagerlyFetchedChildList pojo = new OneToManyParentWithEagerlyFetchedChildList();
+    beginTxn();
+    em.persist(pojo);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testOneToManyWithEagerlyFetchedChild() {
+    setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR);
+    OneToManyParentWithEagerlyFetchedChild pojo = new OneToManyParentWithEagerlyFetchedChild();
+    beginTxn();
+    em.persist(pojo);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      rollbackTxn();
+    }
+  }
+
+  public void testIsJPA() {
+    MetaDataManager mdm = ((DatastoreEntityManager) em).getObjectManager().getOMFContext().getMetaDataManager();
+    MetaDataValidator mdv = new MetaDataValidator(null, mdm, null);
+    assertTrue(mdv.isJPA());
+  }
+
+  private void setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior val) {
+    DatastoreEntityManager dem = (DatastoreEntityManager) em;
+    dem.getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
+        "datanucleus.appengine.ignorableMetaDataBehavior", val.name());
   }
 }

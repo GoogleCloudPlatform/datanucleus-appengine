@@ -18,6 +18,7 @@ package org.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -32,7 +33,7 @@ public class HasOneToOneLongPkParentKeyPkJPA {
   @GeneratedValue(strategy=GenerationType.IDENTITY)
   private Key id;
 
-  @OneToOne(mappedBy = "hasParentKeyPK")
+  @OneToOne(mappedBy = "hasParentKeyPK", fetch = FetchType.LAZY)
   private HasOneToOneLongPkJPA parent;
 
   private String str;

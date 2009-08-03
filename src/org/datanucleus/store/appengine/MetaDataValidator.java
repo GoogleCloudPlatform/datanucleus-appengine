@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Key;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.jpa.JPAAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
@@ -52,11 +53,47 @@ public class MetaDataValidator {
           DatastoreManager.PK_ID,
           DatastoreManager.PK_NAME);
 
+  /**
+   * Defines the various actions we can take when we encounter ignorable meta-data.
+   */
+  enum IgnorableMetaDataBehavior {
+    NONE, // Do nothing at all.
+    WARN, // Log a warning.
+    ERROR;// Throw an exception.
+
+    private static IgnorableMetaDataBehavior nullSafeValueOf(String val) {
+      if (val == null) {
+        return NONE;
+      }
+      return valueOf(val);
+    }
+  }
+
+  /**
+   * Config property that determines the action we take when we encounter
+   * ignorable meta-data.
+   */
+  private static final String
+      IGNORABLE_META_DATA_BEHAVIOR_PROPERTY = "datanucleus.appengine.ignorableMetaDataBehavior";
+
+  /**
+   * This message is appended to every ignorable meta-data warning so users
+   * know they can configure it.
+   */
+  static final String ADJUST_WARNING_MSG =
+      String.format("You can modify this warning by setting the %s property in your config.  "
+                    + "A value of %s will silence the warning.  "
+                    + "A value of %s will turn the warning into an exception.",
+                    IGNORABLE_META_DATA_BEHAVIOR_PROPERTY,
+                    IgnorableMetaDataBehavior.NONE,
+                    IgnorableMetaDataBehavior.ERROR);
+
   private final AbstractClassMetaData acmd;
   private final MetaDataManager metaDataManager;
   private final ClassLoaderResolver clr;
 
   private boolean noParentAllowed = false;
+
   public MetaDataValidator(
       AbstractClassMetaData acmd, MetaDataManager metaDataManager, ClassLoaderResolver clr) {
     this.acmd = acmd;
@@ -68,93 +105,134 @@ public class MetaDataValidator {
     NucleusLogger.METADATA.info(
         "Performing appengine-specific metadata validation for " + acmd.getFullClassName());
     AbstractMemberMetaData pkMemberMetaData = validatePrimaryKey();
-    validateExtensions(acmd, pkMemberMetaData);
+    validateFields(pkMemberMetaData);
     NucleusLogger.METADATA.info(
         "Finished performing appengine-specific metadata validation for " + acmd.getFullClassName());
   }
 
-  private void validateExtensions(
-      AbstractClassMetaData acmd, AbstractMemberMetaData pkMemberMetaData) {
+  private void validateFields(AbstractMemberMetaData pkMemberMetaData) {
     Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
     Class<?> pkClass = pkMemberMetaData.getType();
 
     for (AbstractMemberMetaData ammd : acmd.getManagedMembers()) {
-      // can only have one field with this extension
-      for (String extension : ONE_OR_ZERO_EXTENSIONS) {
-        if (ammd.hasExtension(extension)) {
-          if (!foundOneOrZeroExtensions.add(extension)) {
-            throw new DatastoreMetaDataException(acmd, ammd,
-                "Cannot have more than one field with the \"" + extension
-                + "\" extension.");
-          }
-        }
-      }
+      validateField(pkMemberMetaData, pkClass, foundOneOrZeroExtensions, ammd);
+    }
+  }
 
-      // encoded-pk must be on a String pk field
-      if (ammd.hasExtension(DatastoreManager.ENCODED_PK)) {
-        if (!ammd.isPrimaryKey() || !ammd.getType().equals(String.class)) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd,
-              "A field with the \"" + DatastoreManager.ENCODED_PK + "\" extension can only be "
-              + "applied to a String primary key.");
+  private void validateField(AbstractMemberMetaData pkMemberMetaData,
+                             Class<?> pkClass, Set<String> foundOneOrZeroExtensions,
+                             AbstractMemberMetaData ammd) {
+    // can only have one field with this extension
+    for (String extension : ONE_OR_ZERO_EXTENSIONS) {
+      if (ammd.hasExtension(extension)) {
+        if (!foundOneOrZeroExtensions.add(extension)) {
+          throw new DatastoreMetaDataException(acmd, ammd,
+              "Cannot have more than one field with the \"" + extension
+              + "\" extension.");
         }
-      }
-
-      if (ammd.hasExtension(DatastoreManager.PK_NAME)) {
-        if (!ammd.getType().equals(String.class)) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd,
-              "\"" + DatastoreManager.PK_NAME + "\" can only be applied to a String field.");
-        }
-      }
-      if (ammd.hasExtension(DatastoreManager.PK_ID)) {
-        if (!ammd.getType().equals(Long.class)) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd,
-              "\"" + DatastoreManager.PK_ID + "\" can only be applied to a Long field.");
-        }
-      }
-
-      if (ammd.hasExtension(DatastoreManager.PARENT_PK)) {
-        if (noParentAllowed) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd, "Cannot have a " + pkClass.getName() + " primary key and a parent pk field.");
-        }
-        if (!ammd.getType().equals(String.class) && !ammd.getType().equals(Key.class)) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd, "Parent pk must be of type String or " + Key.class.getName() + ".");
-        }
-        // JPA doesn't actually support Key members that aren't primary keys,
-        // but we can't check for that here because it just gets dropped from
-        // the metadata altogether.
-      }
-
-      for (String extension : NOT_PRIMARY_KEY_EXTENSIONS) {
-        if (ammd.hasExtension(extension) && ammd.isPrimaryKey()) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd,
-              "A field with the \"" + extension + "\" extension must not be the primary key.");
-        }
-      }
-
-      // pk-name and pk-id only supported in conjunction with an encoded string
-      for (String extension : REQUIRES_ENCODED_STRING_PK_EXTENSIONS) {
-        if (ammd.hasExtension(extension)) {
-          if (!pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
-            // we've already verified that encoded-pk is on a a String pk field
-            // so we don't need to check the type of the pk here.
-            throw new DatastoreMetaDataException(
-                acmd, ammd,
-                "A field with the \"" + extension + "\" extension can only be used in conjunction "
-                + "with an encoded String primary key..");
-          }
-        }
-      }
-
-      if (noParentAllowed) {
-        checkForIllegalChildField(ammd);
       }
     }
+
+    // encoded-pk must be on a String pk field
+    if (ammd.hasExtension(DatastoreManager.ENCODED_PK)) {
+      if (!ammd.isPrimaryKey() || !ammd.getType().equals(String.class)) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "A field with the \"" + DatastoreManager.ENCODED_PK + "\" extension can only be "
+            + "applied to a String primary key.");
+      }
+    }
+
+    if (ammd.hasExtension(DatastoreManager.PK_NAME)) {
+      if (!ammd.getType().equals(String.class)) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "\"" + DatastoreManager.PK_NAME + "\" can only be applied to a String field.");
+      }
+    }
+    if (ammd.hasExtension(DatastoreManager.PK_ID)) {
+      if (!ammd.getType().equals(Long.class)) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "\"" + DatastoreManager.PK_ID + "\" can only be applied to a Long field.");
+      }
+    }
+
+    if (ammd.hasExtension(DatastoreManager.PARENT_PK)) {
+      if (noParentAllowed) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd, "Cannot have a " + pkClass.getName() + " primary key and a parent pk field.");
+      }
+      if (!ammd.getType().equals(String.class) && !ammd.getType().equals(Key.class)) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd, "Parent pk must be of type String or " + Key.class.getName() + ".");
+      }
+    }
+
+    for (String extension : NOT_PRIMARY_KEY_EXTENSIONS) {
+      if (ammd.hasExtension(extension) && ammd.isPrimaryKey()) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "A field with the \"" + extension + "\" extension must not be the primary key.");
+      }
+    }
+
+    // pk-name and pk-id only supported in conjunction with an encoded string
+    for (String extension : REQUIRES_ENCODED_STRING_PK_EXTENSIONS) {
+      if (ammd.hasExtension(extension)) {
+        if (!pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
+          // we've already verified that encoded-pk is on a a String pk field
+          // so we don't need to check the type of the pk here.
+          throw new DatastoreMetaDataException(
+              acmd, ammd,
+              "A field with the \"" + extension + "\" extension can only be used in conjunction "
+              + "with an encoded String primary key..");
+        }
+      }
+    }
+
+    if (noParentAllowed) {
+      checkForIllegalChildField(ammd);
+    }
+
+    // Look for "eager" relationships.  Not supported but not necessarily an error
+    // since we can always fall back to "lazy."
+    if (ammd.isDefaultFetchGroup() && ammd.getRelationType(clr) != Relation.NONE) {
+      // We have separate error messages for JPA vs JDO because eagerness is configured
+      // differently between the two.
+      String msg = isJPA() ?
+                   "The datastore does not support joins and therefore cannot honor requests to eagerly load child objects." : 
+                   "The datastore does not support joins and therefore cannot honor requests to place child objects in the default fetch group.";
+      handleIgnorableMapping(ammd, msg, "The field will be fetched lazily on first access.");
+    }
+  }
+
+  boolean isJPA() {
+    return JPAAdapter.class.isAssignableFrom(metaDataManager.getOMFContext().getApiAdapter().getClass());
+  }
+
+  private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {
+    return IgnorableMetaDataBehavior.nullSafeValueOf(
+        metaDataManager.getOMFContext().getPersistenceConfiguration()
+            .getStringProperty(IGNORABLE_META_DATA_BEHAVIOR_PROPERTY));
+  }
+
+  void handleIgnorableMapping(AbstractMemberMetaData ammd, String msg, String warningOnlyMsg) {
+    switch (getIgnorableMetaDataBehavior()) {
+      case WARN:
+        warn(String.format(
+            "Meta-data warning for %s.%s: %s  %s  %s",
+            acmd.getFullClassName(), ammd.getName(), msg, warningOnlyMsg, ADJUST_WARNING_MSG));
+        break;
+      case ERROR:
+        throw new DatastoreMetaDataException(acmd, ammd, msg);
+      // We swallow both null and NONE
+    }
+  }
+
+  // broken out for testing
+  void warn(String msg) {
+    NucleusLogger.METADATA.warn(msg);
   }
 
   private void checkForIllegalChildField(AbstractMemberMetaData ammd) {
@@ -239,6 +317,12 @@ public class MetaDataValidator {
     private DatastoreMetaDataException(
         AbstractClassMetaData acmd, AbstractMemberMetaData ammd, String msg) {
       super(String.format(MSG_FORMAT, acmd.getFullClassName(), ammd.getName(), msg));
+    }
+
+    @Override
+    public boolean isFatal() {
+      // Always fatal
+      return true;
     }
   }
 }

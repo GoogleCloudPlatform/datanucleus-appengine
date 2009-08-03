@@ -19,6 +19,7 @@ import org.datanucleus.jpa.annotations.Extension;
 import org.datanucleus.store.appengine.TestUtils;
 
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -34,7 +35,7 @@ public class BidirectionalChildSetJPA implements BidirectionalChildJPA {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  @ManyToOne
+  @ManyToOne(fetch = FetchType.LAZY)
   private HasOneToManySetJPA parent;
 
   private String childVal;

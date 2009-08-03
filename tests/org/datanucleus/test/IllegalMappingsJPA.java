@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -200,7 +201,7 @@ public class IllegalMappingsJPA {
     public String id;
 
     @OneToMany(cascade = CascadeType.ALL)
-    private List<HasLongPkJDO> uniChildren = new ArrayList<HasLongPkJDO>();
+    private List<HasLongPkJPA> uniChildren = new ArrayList<HasLongPkJPA>();
   }
 
   @Entity
@@ -218,7 +219,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.LAZY)
     private OneToManyParentWithRootOnlyLongBiChild parent;
   }
 
@@ -228,7 +229,7 @@ public class IllegalMappingsJPA {
     public String id;
 
     @OneToMany(cascade = CascadeType.ALL)
-    private List<HasUnencodedStringPkJDO> uniChildren = new ArrayList<HasUnencodedStringPkJDO>();
+    private List<HasUnencodedStringPkJPA> uniChildren = new ArrayList<HasUnencodedStringPkJPA>();
   }
 
   @Entity
@@ -245,7 +246,7 @@ public class IllegalMappingsJPA {
     @Id
     private String id;
 
-    @ManyToOne
+    @ManyToOne(fetch = FetchType.EAGER)
     private OneToManyParentWithRootOnlyStringBiChild parent;
   }
 
@@ -254,8 +255,8 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    private HasLongPkJDO uniChild;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private HasLongPkJPA uniChild;
   }
 
   @Entity
@@ -263,7 +264,7 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private RootOnlyLongBiOneToOneChild biChild;
   }
 
@@ -273,7 +274,7 @@ public class IllegalMappingsJPA {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private OneToOneParentWithRootOnlyLongBiChild parent;
   }
 
@@ -282,8 +283,8 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @OneToOne(cascade = CascadeType.ALL)
-    private HasUnencodedStringPkJDO uniChild;
+    @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+    private HasUnencodedStringPkJPA uniChild;
   }
 
   @Entity
@@ -291,7 +292,7 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @OneToOne
+    @OneToOne(fetch = FetchType.LAZY)
     private RootOnlyStringBiOneToOneChild biChild;
   }
 
@@ -300,7 +301,7 @@ public class IllegalMappingsJPA {
     @Id
     private String id;
 
-    @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL)
+    @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private OneToOneParentWithRootOnlyStringBiChild parent;
   }
 

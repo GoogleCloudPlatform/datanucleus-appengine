@@ -17,8 +17,7 @@ package org.datanucleus.test;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
@@ -32,19 +31,19 @@ public class HasOneToOneStringPkJPA {
   @Id
   private String id;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "book_id")
   private Book book;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "haskeypk_id")
   private HasKeyPkJPA hasKeyPK;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "hasparent_id")
   private HasOneToOneStringPkParentJPA hasParent;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "hasparentkeypk_id")
   private HasOneToOneStringPkParentKeyPkJPA hasParentKeyPK;
 

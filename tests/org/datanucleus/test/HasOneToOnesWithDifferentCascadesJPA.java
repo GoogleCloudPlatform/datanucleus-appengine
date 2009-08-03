@@ -19,6 +19,7 @@ import org.datanucleus.jpa.annotations.Extension;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
+import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
@@ -36,19 +37,19 @@ public class HasOneToOnesWithDifferentCascadesJPA {
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")
   private String id;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascadeall")
   private HasStringAncestorStringPkJPA cascadeAllChild;
 
-  @OneToOne(cascade = CascadeType.ALL)
+  @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascadeallwithkeyancestor")
   private HasKeyAncestorStringPkJPA cascadeAllChildWithKeyAncestor;
 
-  @OneToOne(cascade = CascadeType.PERSIST)
+  @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascadepersist")
   private HasStringAncestorStringPkJPA cascadePersistChild;
 
-  @OneToOne(cascade = CascadeType.REMOVE)
+  @OneToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascaderemove")
   private HasStringAncestorStringPkJPA cascadeRemoveChild;
 

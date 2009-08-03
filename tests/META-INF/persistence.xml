@@ -23,6 +23,7 @@ limitations under the License.
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
+            <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         </properties>
     </persistence-unit>
 
@@ -33,6 +34,7 @@ limitations under the License.
             <property name="datanucleus.NontransactionalWrite" value="true"/>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
+            <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         </properties>
     </persistence-unit>
 
@@ -42,6 +44,7 @@ limitations under the License.
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
+            <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         </properties>
     </persistence-unit>
 
@@ -53,6 +56,7 @@ limitations under the License.
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
+            <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         </properties>
     </persistence-unit>
 

@@ -17,8 +17,7 @@ package org.datanucleus.test;
 
 import javax.persistence.CascadeType;
 import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
+import javax.persistence.FetchType;
 import javax.persistence.Id;
 import javax.persistence.JoinColumn;
 import javax.persistence.OneToOne;
@@ -31,7 +30,7 @@ public class HasOneToOneWithNonDeletingCascadeJPA {
   @Id
   private String id;
 
-  @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH})
+  @OneToOne(cascade = {CascadeType.MERGE, CascadeType.PERSIST, CascadeType.REFRESH}, fetch = FetchType.LAZY)
   @JoinColumn(name = "book_id")
   private Book book;
 
