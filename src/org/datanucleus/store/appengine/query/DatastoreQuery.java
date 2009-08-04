@@ -255,8 +255,8 @@ public class DatastoreQuery implements Serializable {
     Set<Key> keysToDelete = qd.batchGetKeys;
     Map extensions = query.getExtensions();
     if (extensions != null &&
-        extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY) &&
-        (Boolean)extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY)) {
+        extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY) &&
+        (Boolean)extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
       Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
       keysToDelete = getResult.keySet();
     }

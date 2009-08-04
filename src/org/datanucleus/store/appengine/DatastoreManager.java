@@ -131,8 +131,8 @@ public class DatastoreManager extends MappedStoreManager {
    * we'll just execute a batch delete directly and use the number of entities
    * we were asked to delete as the return value.
    */
-  public static final String SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY =
-      EXTENSION_PREFIX + "slow-but-more-accurate-batch-delete-query";
+  public static final String SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY =
+      EXTENSION_PREFIX + "slow-but-more-accurate-jpql-delete-query";
 
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();

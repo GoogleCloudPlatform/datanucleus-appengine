@@ -21,6 +21,7 @@ import junit.framework.TestSuite;
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactoryTest;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactoryTest;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandlerTest;
+import org.datanucleus.store.appengine.query.JDOQLDeleteTest;
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
 import org.datanucleus.store.appengine.query.JPQLDeleteTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
@@ -101,6 +102,7 @@ public class AllTests {
     suite.addTestSuite(BatchManagerTest.class);
     suite.addTestSuite(DatastoreManagerTest.class);
     suite.addTestSuite(JPQLDeleteTest.class);
+    suite.addTestSuite(JDOQLDeleteTest.class);
     return suite;
   }
 }

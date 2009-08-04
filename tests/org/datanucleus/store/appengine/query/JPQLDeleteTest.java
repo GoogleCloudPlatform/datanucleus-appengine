@@ -25,6 +25,7 @@ import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyAncestorKeyPkJPA;
+import org.datanucleus.test.HasOneToManyListJPA;
 
 import javax.persistence.Query;
 
@@ -153,7 +154,7 @@ public class JPQLDeleteTest extends JPATestCase {
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
-    q.setHint(DatastoreManager.SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY, true);
+    q.setHint(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY, true);
     q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
     assertEquals(2, q.executeUpdate());
     assertEquals(1, countForClass(Book.class));
@@ -175,5 +176,22 @@ public class JPQLDeleteTest extends JPATestCase {
     assertEquals(3, countForClass(Book.class));
     commitTxn();
     assertEquals(1, countForClass(Book.class));
+  }
+
+  public void testDeleteDoesNotCascade() {
+    HasOneToManyListJPA parent = new HasOneToManyListJPA();
+    Book b = new Book();
+    b.setAuthor("author");
+    parent.getBooks().add(b);
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+    assertEquals(1, countForClass(Book.class));
+    assertEquals(1, countForClass(HasOneToManyListJPA.class));
+    beginTxn();
+    Query q = em.createQuery("delete from " + HasOneToManyListJPA.class.getName());
+    assertEquals(1, q.executeUpdate());
+    assertEquals(1, countForClass(Book.class));
+    assertEquals(0, countForClass(HasOneToManyListJPA.class));
   }
 }
