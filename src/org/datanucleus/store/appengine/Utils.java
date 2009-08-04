@@ -56,7 +56,7 @@ public class Utils {
     return new TreeSet<T>(Arrays.asList(elements));
   }
 
-  public static <F, T> List<T> transform(Collection<F> from, Function<? super F, ? extends T> func) {
+  public static <F, T> List<T> transform(Iterable<F> from, Function<? super F, ? extends T> func) {
     List<T> to = new ArrayList<T>();
     for (F fromElement : from) {
       to.add(func.apply(fromElement));

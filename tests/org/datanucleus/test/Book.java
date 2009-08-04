@@ -145,6 +145,16 @@ public class Book implements Serializable {
     return newBookEntity(parent, null, author, isbn, title, 2000);
   }
 
+  public static com.google.appengine.api.datastore.Entity newBookEntity(
+      String author, String isbn, String title, int firstPublished) {
+    return newBookEntity(null, null, author, isbn, title, firstPublished);
+  }
+
+  public static com.google.appengine.api.datastore.Entity newBookEntity(
+      Key parent, String author, String isbn, String title, int firstPublished) {
+    return newBookEntity(parent, null, author, isbn, title, firstPublished);
+  }
+
   @Override
   public boolean equals(Object o) {
     if (this == o) {

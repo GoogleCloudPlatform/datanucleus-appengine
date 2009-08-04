@@ -19,7 +19,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 
-import java.util.List;
 import java.util.Map;
 
 
@@ -70,7 +69,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    * {@inheritDoc}
    */
   @Override
-  protected List<?> performExecute(Map parameters) {
+  protected Object performExecute(Map parameters) {
     @SuppressWarnings("unchecked")
     Map<String, ?> params = parameters;
     if (range != null && !range.equals("")) {

@@ -19,7 +19,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.store.query.AbstractJPQLQuery;
 import org.datanucleus.store.query.QueryInvalidParametersException;
 
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -71,7 +70,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
    * {@inheritDoc}
    */
   @Override
-  protected List<?> performExecute(Map parameters) {
+  protected Object performExecute(Map parameters) {
     @SuppressWarnings("unchecked")
     Map<String, ?> params = parameters;
     return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);

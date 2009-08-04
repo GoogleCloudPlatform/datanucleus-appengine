@@ -117,6 +117,23 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
+  /**
+   * The name of the extension that indicates the return value of the batch
+   * delete query should be as accurate as possible at the expense of
+   * fulfilling the query less efficiently. If this extension is set and
+   * {@code true}, the query will be fulfilled by first fetching the entities
+   * and then deleting those that are returned.  This involves an additional
+   * roundtrip to the datastore but allows us to return a more accurate count
+   * of the number of records that were deleted (we say more accurate as
+   * opposed to accurate because it's possible that entity was deleted in
+   * between the fetch and the delete and we wouldn't have any way of knowing).
+   * If this extension is not set or is set with a value of {@code false},
+   * we'll just execute a batch delete directly and use the number of entities
+   * we were asked to delete as the return value.
+   */
+  public static final String SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY =
+      EXTENSION_PREFIX + "slow-but-more-accurate-batch-delete-query";
+
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
 

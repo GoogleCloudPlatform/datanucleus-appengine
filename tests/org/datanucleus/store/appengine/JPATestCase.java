@@ -109,7 +109,7 @@ public class JPATestCase extends TestCase {
     em = emf.createEntityManager();
   }
 
-  int countForClass(Class<?> clazz) {
+  public int countForClass(Class<?> clazz) {
     return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
   }
   

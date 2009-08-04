@@ -146,6 +146,10 @@ public class DatastoreQuery implements Serializable {
    */
   private transient Query latestDatastoreQuery;
 
+  private boolean isBulkDelete() {
+    return query.getType() == org.datanucleus.store.query.Query.BULK_DELETE;
+  }
+
   /**
    * The different types of datastore query results that we support.
    */
@@ -176,9 +180,8 @@ public class DatastoreQuery implements Serializable {
    *
    * @return The result of executing the query.
    */
-  public List<?> performExecute(Localiser localiser, QueryCompilation compilation,
+  public Object performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
-
     ObjectManager om = getObjectManager();
     DatastoreManager storeMgr = getStoreManager();
     ClassLoaderResolver clr = om.getClassLoaderResolver();
@@ -226,22 +229,46 @@ public class DatastoreQuery implements Serializable {
       if (qd.resultType == ResultType.COUNT) {
         return fulfillCountQuery(preparedQuery, opts);
       } else {
-        if (qd.resultType == ResultType.KEYS_ONLY) {
+        if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
           qd.datastoreQuery.setKeysOnly();
         }
-        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer);
+        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, txn, ds);
       }
     }
   }
 
-  private List<?> fulfillBatchGetQuery(DatastoreService ds, QueryData qd) {
+  private Object fulfillBatchGetQuery(DatastoreService ds, QueryData qd) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
-    Collection<Entity> entities = ds.get(innerTxn, qd.batchGetKeys).values();
-    if (qd.resultType == ResultType.COUNT) {
-      return Collections.singletonList(entities.size());
+    if (isBulkDelete()) {
+      return fulfillBatchDeleteQuery(innerTxn, ds, qd);
+    } else {
+      Collection<Entity> entities = ds.get(innerTxn, qd.batchGetKeys).values();
+      if (qd.resultType == ResultType.COUNT) {
+        return Collections.singletonList(entities.size());
+      }
+      return newStreamingQueryResultForEntities(entities, qd.resultTransformer);
     }
-    return newStreamingQueryResultForEntities(entities, qd.resultTransformer);
+  }
+
+  private long fulfillBatchDeleteQuery(Transaction innerTxn, DatastoreService ds, QueryData qd) {
+    Set<Key> keysToDelete = qd.batchGetKeys;
+    Map extensions = query.getExtensions();
+    if (extensions != null &&
+        extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY) &&
+        (Boolean)extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_BATCH_DELETE_QUERY)) {
+      Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
+      keysToDelete = getResult.keySet();
+    }
+    // The datastore doesn't give any indication of how many entities were
+    // actually deleted, so by default we just return the number of keys
+    // that we were asked to delete.  If the "slow-but-more-accurate" extension
+    // is set for the query we'll first fetch the entities identified by the
+    // keys and then delete whatever is returned.  This is more accurate but
+    // not guaranteed accurate, since if we're executing without a txn,
+    // something could get deleted in between the fetch and the delete.
+    ds.delete(innerTxn, keysToDelete);
+    return (long) keysToDelete.size();
   }
 
   private List<Integer> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
@@ -257,15 +284,30 @@ public class DatastoreQuery implements Serializable {
     return Collections.singletonList(preparedQuery.countEntities());
   }
 
-  private List<?> fulfillEntityQuery(
-      PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer) {
+  private Object fulfillEntityQuery(
+      PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer,
+      Transaction txn, DatastoreService ds) {
     Iterable<Entity> entities;
     if (opts != null) {
       entities = preparedQuery.asIterable(opts);
     } else {
       entities = preparedQuery.asIterable();
     }
+
+    if (isBulkDelete()) {
+      return deleteEntityQueryResult(entities, ds, txn);
+    }
     return newStreamingQueryResultForEntities(entities, resultTransformer);
+  }
+
+  private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds,
+                                           Transaction txn) {
+    List<Key> keysToDelete = Utils.newArrayList();
+    for (Entity e : entities) {
+      keysToDelete.add(e.getKey());
+    }
+    ds.delete(txn, keysToDelete);
+    return (long) keysToDelete.size();
   }
 
   private List<?> newStreamingQueryResultForEntities(
@@ -415,8 +457,8 @@ public class DatastoreQuery implements Serializable {
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, DatastoreTable table,
                              final ClassLoaderResolver clr) {
-    if (query.getType() != org.datanucleus.store.query.Query.SELECT) {
-      throw new NucleusUserException("Only select statements are supported.").setFatal();
+    if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
+      throw new NucleusUserException("Only select and delete statements are supported.").setFatal();
     }
 
     if (query.getCandidateClass() == null) {

@@ -22,6 +22,7 @@ import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactory
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactoryTest;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandlerTest;
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
+import org.datanucleus.store.appengine.query.JPQLDeleteTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
 import org.datanucleus.store.appengine.query.StreamingQueryResultTest;
 
@@ -99,6 +100,7 @@ public class AllTests {
     suite.addTestSuite(JDOBatchDeleteTest.class);
     suite.addTestSuite(BatchManagerTest.class);
     suite.addTestSuite(DatastoreManagerTest.class);
+    suite.addTestSuite(JPQLDeleteTest.class);
     return suite;
   }
 }
