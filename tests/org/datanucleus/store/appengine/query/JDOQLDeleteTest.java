@@ -26,6 +26,7 @@ import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
 
+import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 
 /**
@@ -33,7 +34,24 @@ import javax.jdo.Query;
  */
 public class JDOQLDeleteTest extends JDOTestCase {
 
-  public void testDelete_Txn() {
+  public void testDelete_Txn_MultipleEntityGroups() {
+
+    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
+    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
+
+    Query q = pm.newQuery(Flight.class);
+    beginTxn();
+    try {
+      q.deletePersistentAll();
+      fail("expected exception");
+    } catch (JDOUserException e) {  // datanuc bug, should be throwing a fatal exception
+      // good - can't delete books from multiple entity groups in a txn
+    }
+    rollbackTxn();
+    assertEquals(2, countForClass(Flight.class));
+  }
+
+  public void testDelete_Txn_OneEntityGroup() {
 
     Key parentKey = KeyFactory.createKey("yar", 23);
     ldth.ds.put(Flight.newFlightEntity(parentKey, null, "jimmy", "bos", "mia", 23, 24, 25));

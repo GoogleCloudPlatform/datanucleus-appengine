@@ -29,12 +29,15 @@ import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryNa
 import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_allowed;
 import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.easymock.EasyMock;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
+import javax.persistence.Query;
 
 /**
  * Verifies jpa txn behavior across the following variables:
@@ -264,6 +267,145 @@ public class JPATransactionTest extends TestCase {
 
     emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_not_allowed.name());
     testReadPermutationWithoutExpectedDatastoreTxn(emf, NO_EXPLICIT_DEMARCATION);
+    emf.close();
+  }
+
+  private interface QueryRunner {
+    void runQuery(EntityManager em);
+    boolean isAncestor();
+  }
+
+  private void testQueryPermutationWithoutExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation,
+      QueryRunner queryRunner) throws EntityNotFoundException {
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
+    }
+    EasyMock.expect(mockDatastoreService.prepare(
+        (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),
+        EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    javax.persistence.EntityTransaction txn = em.getTransaction();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      queryRunner.runQuery(em);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testQueryPermutationWithExpectedDatastoreTxn(
+      EntityManager em, boolean explicitDemarcation,
+      QueryRunner queryRunner) throws EntityNotFoundException {
+
+    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    }
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.prepare(
+          EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
+          EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    } else {
+      EasyMock.expect(mockDatastoreService.prepare(
+          (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),
+          EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    }
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
+    EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    mockTxn.commit();
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    javax.persistence.EntityTransaction txn = em.getTransaction();
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      queryRunner.runQuery(em);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private static final QueryRunner ANCESTOR = new QueryRunner() {
+    public void runQuery(EntityManager em) {
+      Query q = em.createQuery("SELECT FROM " + HasKeyAncestorKeyPkJDO.class.getName() + " WHERE ancestorKey = :p");
+      q.setParameter("p", KeyFactory.createKey("yar", 23));
+      q.getResultList();
+    }
+
+    public boolean isAncestor() {
+      return true;
+    }
+  };
+
+  private static final QueryRunner NON_ANCESTOR = new QueryRunner() {
+    public void runQuery(EntityManager em) {
+      Query q = em.createQuery("SELECT FROM " + Flight.class.getName());
+      q.getResultList();
+    }
+
+    public boolean isAncestor() {
+      return false;
+    }
+  };
+
+  public void testQueriesWithDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testQueryPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    em.close();
+    emf.close();
+    emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_not_allowed.name());
+    em = emf.createEntityManager();
+    testQueryPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    em.close();
+    emf.close();
+  }
+
+  public void testQueriesWithoutDatastoreTxn() throws Exception {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, ANCESTOR);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_not_allowed.name());
+    em = emf.createEntityManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, ANCESTOR);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_ds_non_transactional_ops_not_allowed.name());
+    em = emf.createEntityManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    em.close();
+    emf.close();
+
+    emf = getEntityManagerFactory(nontransactional_ds_non_transactional_ops_allowed.name());
+    em = emf.createEntityManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, NON_ANCESTOR);
+    em.close();
     emf.close();
   }
 }

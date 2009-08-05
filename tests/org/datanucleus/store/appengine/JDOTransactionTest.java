@@ -26,11 +26,13 @@ import junit.framework.TestCase;
 import org.datanucleus.jdo.exceptions.TransactionNotReadableException;
 import org.datanucleus.jdo.exceptions.TransactionNotWritableException;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.easymock.EasyMock;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
+import javax.jdo.Query;
 import javax.jdo.Transaction;
 
 /**
@@ -281,6 +283,78 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.reset(mockDatastoreService, mockTxn);
   }
 
+  private interface QueryRunner {
+    void runQuery(PersistenceManager pm);
+    boolean isAncestor();
+  }
+
+  private void testQueryPermutationWithoutExpectedDatastoreTxn(
+      PersistenceManager pm, boolean explicitDemarcation,
+      boolean nonTransactionalRead, QueryRunner queryRunner) throws EntityNotFoundException {
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
+    }
+    EasyMock.expect(mockDatastoreService.prepare(
+        (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),
+        EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    Transaction txn = pm.currentTransaction();
+    txn.setNontransactionalRead(nonTransactionalRead);
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      queryRunner.runQuery(pm);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+  private void testQueryPermutationWithExpectedDatastoreTxn(
+      PersistenceManager pm, boolean explicitDemarcation,
+      boolean nonTransactionalRead, QueryRunner queryRunner) throws EntityNotFoundException {
+
+    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    }
+    if (queryRunner.isAncestor()) {
+      EasyMock.expect(mockDatastoreService.prepare(
+          EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
+          EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    } else {
+      EasyMock.expect(mockDatastoreService.prepare(
+          (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),
+          EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+    }
+    EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
+    EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    mockTxn.commit();
+    EasyMock.replay(mockDatastoreService, mockTxn);
+
+    Transaction txn = pm.currentTransaction();
+    txn.setNontransactionalRead(nonTransactionalRead);
+    if (explicitDemarcation) {
+      txn.begin();
+    }
+    try {
+      queryRunner.runQuery(pm);
+    } finally {
+      if (explicitDemarcation) {
+        txn.commit();
+      }
+    }
+
+    EasyMock.verify(mockDatastoreService, mockTxn);
+    EasyMock.reset(mockDatastoreService, mockTxn);
+  }
+
+
   private void testIllegalWritePermutation(
       PersistenceManager pm, boolean explicitDemarcation, boolean nonTransactionalWrite) {
 
@@ -489,4 +563,59 @@ public class JDOTransactionTest extends TestCase {
     pmf.close();
   }
 
+  private static final QueryRunner ANCESTOR = new QueryRunner() {
+    public void runQuery(PersistenceManager pm) {
+      Query q = pm.newQuery(HasKeyAncestorKeyPkJDO.class, "ancestorKey == :p");
+      q.execute(KeyFactory.createKey("yar", 23));
+    }
+
+    public boolean isAncestor() {
+      return true;
+    }
+  };
+
+  private static final QueryRunner NON_ANCESTOR = new QueryRunner() {
+    public void runQuery(PersistenceManager pm) {
+      Query q = pm.newQuery(Flight.class);
+      q.execute();
+    }
+
+    public boolean isAncestor() {
+      return false;
+    }
+  };
+
+  public void testQueriesWithDatastoreTxn() throws Exception {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    PersistenceManager pm = pmf.getPersistenceManager();
+    testQueryPermutationWithExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, ANCESTOR);
+    testQueryPermutationWithExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED, ANCESTOR);
+    testQueryPermutationWithExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, NON_ANCESTOR);
+    testQueryPermutationWithExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED, NON_ANCESTOR);
+    pm.close();
+    pmf.close();
+  }
+
+  public void testQueriesWithoutDatastoreTxn() throws Exception {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    PersistenceManager pm = pmf.getPersistenceManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, ANCESTOR);
+    pm.close();
+    pmf.close();
+
+    pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.nontransactional.name());
+    pm = pmf.getPersistenceManager();
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, NON_ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, EXPLICIT_DEMARCATION, NON_TXN_OP_NOT_ALLOWED, NON_ANCESTOR);
+    testQueryPermutationWithoutExpectedDatastoreTxn(pm, NO_EXPLICIT_DEMARCATION, NON_TXN_OP_ALLOWED, NON_ANCESTOR);
+
+    pm.close();
+    pmf.close();
+  }
 }

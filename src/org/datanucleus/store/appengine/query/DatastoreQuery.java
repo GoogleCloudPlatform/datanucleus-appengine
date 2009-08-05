@@ -210,34 +210,40 @@ public class DatastoreQuery implements Serializable {
     addFilters(qd);
     addSorts(qd);
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
-
-    if (qd.batchGetKeys != null) {
-      return fulfillBatchGetQuery(ds, qd);
-    } else {
-      latestDatastoreQuery = qd.datastoreQuery;
-      Transaction txn = null;
-      Map extensions = query.getExtensions();
-      // give users a chance to opt-out of having their query execute in a txn
-      if (extensions == null ||
-          !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
-          !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
-        // If this is an ancestor query, execute it in the current transaction
-        txn = qd.datastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
-      }
-      PreparedQuery preparedQuery = ds.prepare(txn, qd.datastoreQuery);
-      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-      if (qd.resultType == ResultType.COUNT) {
-        return fulfillCountQuery(preparedQuery, opts);
+    // Txns don't get started until you allocate a connection, so allocate a
+    // connection before we do anything that might require a txn.
+    ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());
+    try {
+      if (qd.batchGetKeys != null) {
+        return fulfillBatchGetQuery(ds, qd, mconn);
       } else {
-        if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-          qd.datastoreQuery.setKeysOnly();
+        latestDatastoreQuery = qd.datastoreQuery;
+        Transaction txn = null;
+        Map extensions = query.getExtensions();
+        // give users a chance to opt-out of having their query execute in a txn
+        if (extensions == null ||
+            !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
+            !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
+          // If this is an ancestor query, execute it in the current transaction
+          txn = qd.datastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
         }
-        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, txn, ds);
+        PreparedQuery preparedQuery = ds.prepare(txn, qd.datastoreQuery);
+        FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+        if (qd.resultType == ResultType.COUNT) {
+          return fulfillCountQuery(preparedQuery, opts);
+        } else {
+          if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
+            qd.datastoreQuery.setKeysOnly();
+          }
+          return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, ds, mconn);
+        }
       }
+    } finally {
+      mconn.release();
     }
   }
 
-  private Object fulfillBatchGetQuery(DatastoreService ds, QueryData qd) {
+  private Object fulfillBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     if (isBulkDelete()) {
@@ -247,7 +253,7 @@ public class DatastoreQuery implements Serializable {
       if (qd.resultType == ResultType.COUNT) {
         return Collections.singletonList(entities.size());
       }
-      return newStreamingQueryResultForEntities(entities, qd.resultTransformer);
+      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn);
     }
   }
 
@@ -286,7 +292,7 @@ public class DatastoreQuery implements Serializable {
 
   private Object fulfillEntityQuery(
       PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer,
-      Transaction txn, DatastoreService ds) {
+      DatastoreService ds, ManagedConnection mconn) {
     Iterable<Entity> entities;
     if (opts != null) {
       entities = preparedQuery.asIterable(opts);
@@ -295,47 +301,41 @@ public class DatastoreQuery implements Serializable {
     }
 
     if (isBulkDelete()) {
-      return deleteEntityQueryResult(entities, ds, txn);
+      return deleteEntityQueryResult(entities, ds);
     }
-    return newStreamingQueryResultForEntities(entities, resultTransformer);
+    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn);
   }
 
-  private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds,
-                                           Transaction txn) {
+  private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds) {
     List<Key> keysToDelete = Utils.newArrayList();
     for (Entity e : entities) {
       keysToDelete.add(e.getKey());
     }
-    ds.delete(txn, keysToDelete);
+    ds.delete(ds.getCurrentTransaction(null), keysToDelete);
     return (long) keysToDelete.size();
   }
 
   private List<?> newStreamingQueryResultForEntities(
-      Iterable<Entity> entities, final Function<Entity, Object> resultTransformer) {
+      Iterable<Entity> entities, final Function<Entity, Object> resultTransformer, final ManagedConnection mconn) {
     final StreamingQueryResult qr = new StreamingQueryResult(
         query, new RuntimeExceptionWrappingIterable(entities), resultTransformer);
-    // We only need the connection so we can get a callback when the connection is
+    // Add a listener to the connection so we can get a callback when the connection is
     // flushed.
-    final ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());
-    try {
-      ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
-        public void managedConnectionPreClose() {}
-        public void managedConnectionPostClose() {}
-        public void managedConnectionFlushed() {
-          // Disconnect the query from this ManagedConnection (read in unread rows etc)
-          qr.disconnect();
-        }
+    ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
+      public void managedConnectionPreClose() {}
+      public void managedConnectionPostClose() {}
+      public void managedConnectionFlushed() {
+        // Disconnect the query from this ManagedConnection (read in unread rows etc)
+        qr.disconnect();
+      }
 
-        public void resourcePostClose() {
-          mconn.removeListener(this);
-        }
-      };
-      mconn.addListener(listener);
-      qr.addConnectionListener(listener);
-      return qr;
-    } finally {
-      mconn.release();
-    }
+      public void resourcePostClose() {
+        mconn.removeListener(this);
+      }
+    };
+    mconn.addListener(listener);
+    qr.addConnectionListener(listener);
+    return qr;
   }
 
   /**

@@ -27,6 +27,7 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyAncestorKeyPkJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 
+import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
 /**
@@ -34,20 +35,36 @@ import javax.persistence.Query;
  */
 public class JPQLDeleteTest extends JPATestCase {
 
-  public void testDelete_Txn() {
+  public void testDelete_Txn_MultipleEntityGroups() {
     ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
     ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
     Query q = em.createQuery("DELETE FROM " + Book.class.getName());
     beginTxn();
-    assertEquals(2, q.executeUpdate());
-    assertEquals(
-        "Looks like http://code.google.com/p/datanucleus-appengine/issues/detail?id=105 was fixed.",
-        0, countForClass(Book.class));
-    // uncomment when the above issue is resolved
-//    assertEquals(2, countForClass(Book.class));
-    commitTxn();
-    assertEquals(0, countForClass(Book.class));
+    try {
+      q.executeUpdate();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good - can't delete books from multiple entity groups in a txn
+    }
+    rollbackTxn();
+    assertEquals(2, countForClass(Book.class));
+  }
+
+  public void testDelete_Txn_OneEntityGroup() {
+    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
+    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
+
+    Query q = em.createQuery("DELETE FROM " + Book.class.getName());
+    beginTxn();
+    try {
+      q.executeUpdate();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good - can't delete books from multiple entity groups in a txn
+    }
+    rollbackTxn();
+    assertEquals(2, countForClass(Book.class));
   }
 
   public void testDelete_NoTxn() {
@@ -89,27 +106,7 @@ public class JPQLDeleteTest extends JPATestCase {
     beginTxn();
     assertEquals(2, q.executeUpdate());
     rollbackTxn();
-    // wrong!
-    assertEquals(
-        "Looks like http://code.google.com/p/datanucleus-appengine/issues/detail?id=105 was fixed.",
-        0, countForClass(HasKeyAncestorKeyPkJPA.class));
-
-    // remove the rest of the test once the above bug is fixed
-    pojo1 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
-    pojo2 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
-
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
-    beginTxn();
-    try {
-      ldth.ds.get(parentKey);
-      fail("expected enfe");
-    } catch (EntityNotFoundException enfe) {
-      // we're just doing the get to associate the txn with this entity group
-    }
-    assertEquals(2, q.executeUpdate());
-    rollbackTxn();
-    assertEquals(0, countForClass(HasKeyAncestorKeyPkJPA.class));
+    assertEquals(2, countForClass(HasKeyAncestorKeyPkJPA.class));
   }
 
   public void testDeleteAncestorQuery_NoTxn() {
@@ -191,6 +188,9 @@ public class JPQLDeleteTest extends JPATestCase {
     beginTxn();
     Query q = em.createQuery("delete from " + HasOneToManyListJPA.class.getName());
     assertEquals(1, q.executeUpdate());
+    assertEquals(1, countForClass(Book.class));
+    assertEquals(1, countForClass(HasOneToManyListJPA.class));
+    commitTxn();
     assertEquals(1, countForClass(Book.class));
     assertEquals(0, countForClass(HasOneToManyListJPA.class));
   }
