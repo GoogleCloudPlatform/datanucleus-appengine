@@ -49,18 +49,14 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
   }
 
-  public void testLongPk_UserProvided() {
+  public void testLongPk_UserProvided() throws EntityNotFoundException {
     HasLongPkJPA pojo = new HasLongPkJPA();
     pojo.setId(33L);
     beginTxn();
     em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      rollbackTxn();
-    }
+    commitTxn();
+    // the fact that this doesn't throw an exception is the test
+    ldth.ds.get(KeyFactory.createKey(HasLongPkJPA.class.getSimpleName(), 33));
   }
 
   public void testUnencodedStringPk() throws EntityNotFoundException {
@@ -164,6 +160,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
 
   public void testEncodedStringPk_SeparateIdField() throws EntityNotFoundException {
     HasEncodedStringPkSeparateIdFieldJPA pojo = new HasEncodedStringPkSeparateIdFieldJPA();
+    pojo.setId(34L);
     beginTxn();
     em.persist(pojo);
     commitTxn();
@@ -171,29 +168,26 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     assertNotNull(pojo.getId());
     assertNotNull(pojo.getKey());
     Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
-    Long id = e.getKey().getId();
+    long id = e.getKey().getId();
+    assertEquals(34L, id);
     pojo = em.find(HasEncodedStringPkSeparateIdFieldJPA.class, e.getKey().getId());
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     em.find(HasEncodedStringPkSeparateIdFieldJPA.class, e.getKey());
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     em.find(HasEncodedStringPkSeparateIdFieldJPA.class, KeyFactory.keyToString(e.getKey()));
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     commitTxn();
 
   }
 
-  public void testUserCannotSetIdWithKeyPk() {
+  public void testKeyPk_UserProvidedId() throws EntityNotFoundException {
     HasKeyPkJPA pojo = new HasKeyPkJPA();
     pojo.setId(TestUtils.createKey(pojo, 34));
     beginTxn();
     em.persist(pojo);
-    try {
-      commitTxn();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      rollbackTxn();
-    }
+    commitTxn();
+    // the fact that this doesn't throw an exception is the test
+    ldth.ds.get(KeyFactory.createKey(HasKeyPkJPA.class.getSimpleName(), 34));
   }
 
   public void testCannotChangeLongPk() {

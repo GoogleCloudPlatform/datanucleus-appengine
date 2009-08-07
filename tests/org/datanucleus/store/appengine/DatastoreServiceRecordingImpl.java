@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
@@ -139,5 +140,15 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
   public PreparedQuery prepare(Transaction transaction, Query query) {
     recorder.prepare(transaction, query);
     return delegate.prepare(transaction, query);
+  }
+
+  public KeyRange allocateIds(String kind, long num) {
+    recorder.allocateIds(kind, num);
+    return delegate.allocateIds(kind, num);
+  }
+
+  public KeyRange allocateIds(Key parent, String kind, long num) {
+    recorder.allocateIds(parent, kind, num);
+    return delegate.allocateIds(parent, kind, num);
   }
 }

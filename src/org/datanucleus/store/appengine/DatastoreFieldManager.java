@@ -644,25 +644,15 @@ public class DatastoreFieldManager implements FieldManager {
         }
       }
     } else if (key != null) {
-      if (key.getName() == null) {
-        // This means an id was provided to an incomplete Key,
-        // and that means the user is trying to set the id manually, which
-        // we don't support.
-        throw new NucleusUserException(
-            "Attempt was made to manually set the id component of a Key primary key.  If you want "
-            + "to control the value of the primary key, set the name component instead.").setFatal();
-      }
       Entity old = datastoreEntity;
-      if (key.getParent() == null) {
-        datastoreEntity = new Entity(old.getKind(), key.getName());
-      } else {
+      if (key.getParent() != null) {
         if (keyAlreadySet) {
           // can't provide a key and a parent - one or the other
           throw new NucleusUserException(PARENT_ALREADY_SET).setFatal();
         }
         parentAlreadySet = true;
-        datastoreEntity = new Entity(old.getKind(), key.getName(), key.getParent());
       }
+      datastoreEntity = new Entity(key);
       copyProperties(old, datastoreEntity);
       keyAlreadySet = true;
     }

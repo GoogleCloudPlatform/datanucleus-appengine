@@ -18,6 +18,7 @@ package org.datanucleus.store.appengine;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
 import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
+import org.datanucleus.test.IgnorableMappingsJPA;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
@@ -196,6 +197,10 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   public void testManyToMany() {
     assertMetaDataException(new ManyToMany1());
     assertMetaDataException(new ManyToMany2());
+  }
+
+  public void testInitialSequenceValue() {
+    assertMetaDataException(new IgnorableMappingsJPA.HasInitialSequenceValue());
   }
 
   private void assertMetaDataException(Object pojo) {

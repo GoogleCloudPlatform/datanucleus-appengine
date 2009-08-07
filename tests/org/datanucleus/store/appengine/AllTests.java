@@ -103,6 +103,7 @@ public class AllTests {
     suite.addTestSuite(DatastoreManagerTest.class);
     suite.addTestSuite(JPQLDeleteTest.class);
     suite.addTestSuite(JDOQLDeleteTest.class);
+    suite.addTestSuite(JPASequenceTest.class);
     return suite;
   }
 }

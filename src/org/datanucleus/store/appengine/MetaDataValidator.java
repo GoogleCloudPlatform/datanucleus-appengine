@@ -24,6 +24,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.Set;
@@ -223,6 +224,15 @@ public class MetaDataValidator {
                         + "consider maintaining a List<Key> on both sides of the relationship.  "
                         + "See http://code.google.com/appengine/docs/java/datastore/relationships.html#Unowned_Relationships "
                         + "for more information.");
+      }
+    }
+
+    if (ammd.getValueGeneratorName() != null) {
+      SequenceMetaData sequenceMetaData = metaDataManager.getMetaDataForSequence(clr, ammd.getValueGeneratorName());
+      if (sequenceMetaData != null && sequenceMetaData.getInitialValue() != 1) {
+        handleIgnorableMapping(
+            ammd, "The datastore does not support the configuration of initial sequence values.",
+            "The first value for this sequence will be 1.");
       }
     }
   }

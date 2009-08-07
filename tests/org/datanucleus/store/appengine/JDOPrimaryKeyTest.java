@@ -49,17 +49,14 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
   }
 
-  public void testLongPk_UserProvided() {
+  public void testLongPk_UserProvided() throws EntityNotFoundException {
     HasLongPkJDO pojo = new HasLongPkJDO();
     pojo.setId(33L);
     beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      rollbackTxn();
-    }
+    pm.makePersistent(pojo);
+    commitTxn();
+    // the fact that this doesn't throw an exception is the test
+    ldth.ds.get(KeyFactory.createKey(HasLongPkJDO.class.getSimpleName(), 33));
   }
 
   public void testUnencodedStringPk() throws EntityNotFoundException {
@@ -161,6 +158,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
 
   public void testEncodedStringPk_SeparateIdField() throws EntityNotFoundException {
     HasEncodedStringPkSeparateIdFieldJDO pojo = new HasEncodedStringPkSeparateIdFieldJDO();
+    pojo.setId(34L);
     beginTxn();
     pm.makePersistent(pojo);
     assertNotNull(pojo.getId());
@@ -169,29 +167,26 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     assertNotNull(pojo.getId());
     assertNotNull(pojo.getKey());
     Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
-    Long id = e.getKey().getId();
+    long id = e.getKey().getId();
+    assertEquals(34L, id);
     pojo = pm.getObjectById(HasEncodedStringPkSeparateIdFieldJDO.class, e.getKey().getId());
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     pm.getObjectById(HasEncodedStringPkSeparateIdFieldJDO.class, e.getKey());
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     pm.getObjectById(HasEncodedStringPkSeparateIdFieldJDO.class, KeyFactory.keyToString(e.getKey()));
-    assertEquals(id, pojo.getId());
+    assertEquals(id, pojo.getId().longValue());
     commitTxn();
 
   }
 
-  public void testUserCannotSetIdWithKeyPk() {
+  public void testKeyPk_UserProvidedId() throws EntityNotFoundException {
     HasKeyPkJDO pojo = new HasKeyPkJDO();
     pojo.setKey(TestUtils.createKey(pojo, 34));
     beginTxn();
-    try {
-      pm.makePersistent(pojo);
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      System.out.println(e);
-      rollbackTxn();
-    }
+    pm.makePersistent(pojo);
+    commitTxn();
+    // the fact that this doesn't throw an exception is the test
+    ldth.ds.get(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), 34));
   }
 
   public void testCannotChangeLongPk() {

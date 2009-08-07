@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
@@ -241,5 +242,25 @@ public class RuntimeExceptionWrappingDatastoreService implements DatastoreServic
     } catch (DatastoreFailureException e) {
       throw wrapDatastoreFailureException(e);
     }      
+  }
+
+  public KeyRange allocateIds(String kind, long num) {
+    try {
+      return inner.allocateIds(kind, num);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
+  public KeyRange allocateIds(Key parent, String kind, long num) {
+    try {
+      return inner.allocateIds(parent, kind, num);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
   }
 }

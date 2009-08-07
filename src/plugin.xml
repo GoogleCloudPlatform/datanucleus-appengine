@@ -36,4 +36,7 @@ limitations under the License.
         <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="false"
             datastore="appengine"/>
     </extension>
+    <extension point="org.datanucleus.store_valuegenerator">
+        <valuegenerator name="sequence" class-name="org.datanucleus.store.appengine.valuegenerator.SequenceGenerator" datastore="appengine"/>
+    </extension>
 </plugin>

@@ -25,6 +25,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.persistence.UniqueConstraint;
 
@@ -61,6 +62,14 @@ public class IgnorableMappingsJPA {
     public Long id;
 
     private String f1;
+  }
+
+  @Entity
+  public static class HasInitialSequenceValue {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar")
+    @SequenceGenerator(name = "yar", initialValue = 5)
+    private Long id;
   }
 
 }

@@ -748,6 +748,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     Flight f1 = new Flight();
     HasOneToOneJDO pojo = new HasOneToOneJDO();
     pm.makePersistent(f1);
+    f1 = pm.detachCopy(f1);
     pm.close();
     pm = pmf.getPersistenceManager();
     pojo.setFlight(f1);
