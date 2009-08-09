@@ -1,18 +1,18 @@
 /**********************************************************************
-Copyright (c) 2009 Google Inc.
+ Copyright (c) 2009 Google Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
+ Licensed under the Apache License, Version 2.0 (the "License");
+ you may not use this file except in compliance with the License.
+ You may obtain a copy of the License at
 
-http://www.apache.org/licenses/LICENSE-2.0
+ http://www.apache.org/licenses/LICENSE-2.0
 
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-**********************************************************************/
+ Unless required by applicable law or agreed to in writing, software
+ distributed under the License is distributed on an "AS IS" BASIS,
+ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ See the License for the specific language governing permissions and
+ limitations under the License.
+ **********************************************************************/
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
@@ -20,16 +20,18 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.KeyRange;
 
-import org.datanucleus.test.SequenceExamplesJPA.HasSequence;
-import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithNoSequenceName;
-import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithSequenceGenerator;
+import org.datanucleus.test.SequenceExamplesJDO.HasSequence;
+import org.datanucleus.test.SequenceExamplesJDO.HasSequenceWithNoSequenceName;
+import org.datanucleus.test.SequenceExamplesJDO.HasSequenceWithSequenceGenerator;
 
 import java.util.List;
+
+import javax.jdo.datastore.Sequence;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JPASequenceTest extends JPATestCase {
+public class JDOSequenceTest extends JDOTestCase {
 
   private final List<String> sequenceNames = Utils.newArrayList();
   private final List<Long> sequenceBatchSizes = Utils.newArrayList();
@@ -52,15 +54,17 @@ public class JPASequenceTest extends JPATestCase {
   protected void tearDown() throws Exception {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     sequenceNames.clear();
+    sequenceBatchSizes.clear();
     super.tearDown();
   }
+
 
   public void testSimpleInsert() throws EntityNotFoundException {
     String kind = getKind(HasSequence.class);
     HasSequence pojo = new HasSequence();
     pojo.setVal("yar1");
     beginTxn();
-    em.persist(pojo);
+    pm.makePersistent(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
     assertEquals("yar1", e.getProperty("val"));
@@ -68,7 +72,7 @@ public class JPASequenceTest extends JPATestCase {
     HasSequence pojo2 = new HasSequence();
     pojo2.setVal("yar2");
     beginTxn();
-    em.persist(pojo2);
+    pm.makePersistent(pojo2);
     commitTxn();
     e = ldth.ds.get(KeyFactory.createKey(kind, pojo2.getId()));
     assertEquals("yar2", e.getProperty("val"));
@@ -82,7 +86,7 @@ public class JPASequenceTest extends JPATestCase {
     HasSequenceWithSequenceGenerator pojo = new HasSequenceWithSequenceGenerator();
     pojo.setVal("yar1");
     beginTxn();
-    em.persist(pojo);
+    pm.makePersistent(pojo);
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
     assertEquals("yar1", e.getProperty("val"));
@@ -92,16 +96,34 @@ public class JPASequenceTest extends JPATestCase {
 
   public void testInsertWithSequenceGenerator_NoSequenceName() throws EntityNotFoundException {
     String kind = getKind(HasSequenceWithNoSequenceName.class);
-    KeyRange keyRange = ldth.ds.allocateIds(kind, 5);
     HasSequenceWithNoSequenceName pojo = new HasSequenceWithNoSequenceName();
     beginTxn();
-    em.persist(pojo);
+    pm.makePersistent(pojo);
     commitTxn();
     ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
-    assertEquals(keyRange.getEnd().getId(), pojo.getId() - 1);
-    keyRange = ldth.ds.allocateIds(kind, 1);
-    assertEquals(pojo.getId() + 12, keyRange.getStart().getId());
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__"), sequenceNames);
+    assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
+  }
+  
+  public void testDirectSequenceAccess() {
+    KeyRange range = ldth.ds.allocateIds("that", 1);
+    HasSequenceWithSequenceGenerator pojo = new HasSequenceWithSequenceGenerator();
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    assertEquals(range.getEnd().getId(), pojo.getId() - 1);
+    Sequence seq = pm.getSequence("yar1");
+    assertEquals(pojo.getId() + 12, seq.nextValue());
+    assertEquals(pojo.getId() + 13, seq.nextValue());
+    assertEquals(Utils.newArrayList("that", "that"), sequenceNames);
+    assertEquals(Utils.newArrayList(12L, 12L), sequenceBatchSizes);
+    sequenceNames.clear();
+    sequenceBatchSizes.clear();
+    // getting a sequence always gets you a fresh batch
+    seq = pm.getSequence("yar1");
+    assertEquals(pojo.getId() + 24, seq.nextValue());
+    assertEquals(pojo.getId() + 25, seq.nextValue());
+    assertEquals(Utils.newArrayList("that"), sequenceNames);
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
   }
 

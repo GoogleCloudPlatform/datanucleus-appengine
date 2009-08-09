@@ -15,24 +15,28 @@
  **********************************************************************/
 package org.datanucleus.test;
 
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
-import javax.persistence.SequenceGenerator;
+import javax.jdo.annotations.Extension;
+import javax.jdo.annotations.IdGeneratorStrategy;
+import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Sequence;
+import javax.jdo.annotations.SequenceStrategy;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public final class SequenceExamplesJPA {
+public final class SequenceExamplesJDO {
 
-  private SequenceExamplesJPA() {}
-  
-  @Entity
+  private SequenceExamplesJDO() {
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasSequence {
 
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
     private Long id;
 
     private String val;
@@ -54,11 +58,13 @@ public final class SequenceExamplesJPA {
     }
   }
 
-  @Entity
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Sequence(name = "yar1", datastoreSequence = "that", strategy = SequenceStrategy.NONTRANSACTIONAL,
+            extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
   public static class HasSequenceWithSequenceGenerator {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar1")
-    @SequenceGenerator(name = "yar1", sequenceName = "that", allocationSize = 12)
+
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "yar1")
     private Long id;
 
     private String val;
@@ -80,11 +86,13 @@ public final class SequenceExamplesJPA {
     }
   }
 
-  @Entity
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Sequence(name = "yar2", strategy = SequenceStrategy.NONTRANSACTIONAL,
+            extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
   public static class HasSequenceWithNoSequenceName {
-    @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar2")
-    @SequenceGenerator(name = "yar2", allocationSize = 12)
+
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "yar2")
     private Long id;
 
     public Long getId() {

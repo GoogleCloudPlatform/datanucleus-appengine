@@ -104,6 +104,7 @@ public class AllTests {
     suite.addTestSuite(JPQLDeleteTest.class);
     suite.addTestSuite(JDOQLDeleteTest.class);
     suite.addTestSuite(JPASequenceTest.class);
+    suite.addTestSuite(JDOSequenceTest.class);
     return suite;
   }
 }

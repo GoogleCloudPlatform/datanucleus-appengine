@@ -16,7 +16,6 @@ limitations under the License.
 package org.datanucleus.store.appengine.valuegenerator;
 
 import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -28,6 +27,7 @@ import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.appengine.DatastoreManager;
+import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.EntityUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
@@ -55,6 +55,9 @@ import java.util.Properties;
  */
 public class SequenceGenerator extends AbstractDatastoreGenerator {
 
+  private static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
+  private static final String KEY_CACHE_SIZE_PROPERTY = "key-cache-size";
+
   // can't be final because we need the storeMgr to derive it, and storeMgr
   // isn't set until setStoreManager is invoked.
   private String sequenceName;
@@ -69,25 +72,44 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     OMFContext omfContext = getOMFContext();
     MetaDataManager mdm = omfContext.getMetaDataManager();
     ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
-    AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) this.properties.get("class-name"), clr);
+    AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) properties.get("class-name"), clr);
+    sequenceName = determineSequenceName(acmd);
+    if (sequenceName != null) {
+      // Fetch the sequence data
+      SequenceMetaData sequenceMetaData = mdm.getMetaDataForSequence(clr, sequenceName);
+      if (sequenceMetaData != null) {
+        // derive allocation size and sequence name from the sequence meta data
+        if (sequenceMetaData.hasExtension(KEY_CACHE_SIZE_PROPERTY)) {
+          allocationSize = Integer.parseInt(sequenceMetaData.getValueForExtension(KEY_CACHE_SIZE_PROPERTY));
+        } else {
+          allocationSize = longToInt(sequenceMetaData.getAllocationSize());
+        }
+        sequenceName = sequenceMetaData.getDatastoreSequence();
+      } else {
+        // key cache size is passed in as a prop for JDO when the sequence
+        // is used directly (pm.getSequence())
+        if (properties.getProperty(KEY_CACHE_SIZE_PROPERTY) != null) {
+          allocationSize = Integer.parseInt(properties.getProperty(KEY_CACHE_SIZE_PROPERTY));
+        }
+      }
+    }
+    // derive the sequence name from the class meta data
+    if (sequenceName == null) {
+      sequenceName = deriveSequenceNameFromClassMetaData(acmd);
+    }
+  }
+
+  private String determineSequenceName(AbstractClassMetaData acmd) {
+    String sequenceName = (String) properties.get("sequence-name");
+    if (sequenceName != null) {
+      return sequenceName;
+    }
     String fieldName = (String) properties.get("field-name");
     // Look up the meta-data for the field with the generator
     AbstractMemberMetaData ammd =
         acmd.getMetaDataForMember(fieldName.substring(fieldName.lastIndexOf(".") + 1));
-    String valueGeneratorName = ammd.getValueGeneratorName();
-    if (valueGeneratorName != null) {
-      // Fetch the sequence data
-      SequenceMetaData sequenceMetaData = mdm.getMetaDataForSequence(clr, valueGeneratorName);
-      if (sequenceMetaData != null) {
-        // derive allocation size and sequence name from the sequence meta data
-        allocationSize = longToInt(sequenceMetaData.getAllocationSize());
-        sequenceName = sequenceMetaData.getDatastoreSequence();
-      }
-    }
-    // default sequence name is the kind
-    if (sequenceName == null) {
-      sequenceName = determineKind(acmd);
-    }
+    // For JPA the sequence name is stored as the valueGeneratorName
+    return ammd.getSequence() != null ? ammd.getSequence() : ammd.getValueGeneratorName();
   }
 
   /**
@@ -107,8 +129,10 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     return storeMgr.getOMFContext();
   }
 
-  private String determineKind(AbstractClassMetaData acmd) {
-    return EntityUtils.determineKind(acmd, ((DatastoreManager) storeMgr).getIdentifierFactory());
+  // Default is the kind with _Sequence__ appended
+  private String deriveSequenceNameFromClassMetaData(AbstractClassMetaData acmd) {
+    return EntityUtils.determineKind(acmd, ((DatastoreManager) storeMgr).getIdentifierFactory()) +
+        SEQUENCE_POSTFIX;
   }
 
   protected ValueGenerationBlock reserveBlock(long size) {
@@ -116,7 +140,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
       // shouldn't happen
       throw new IllegalStateException("sequence name is null");
     }
-    DatastoreService ds = DatastoreServiceFactory.getDatastoreService();
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
     KeyRange range = ds.allocateIds(sequenceName, size);
     // Inefficient, but this is
     List<Long> ids = Utils.newArrayList();
