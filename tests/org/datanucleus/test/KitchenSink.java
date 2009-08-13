@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -77,6 +78,7 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public Text textVal;
   @Persistent(defaultFetchGroup = "true") public Link linkVal;
   @Persistent(defaultFetchGroup = "true") public ShortBlob shortBlobVal;
+  @Persistent(defaultFetchGroup = "true") public BlobKey blobKeyVal;
 
   @Persistent(defaultFetchGroup = "true") public String[] strArray;
   @Persistent(defaultFetchGroup = "true") public int[] primitiveIntArray;
@@ -102,6 +104,8 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public Blob[] blobArray;
   @Persistent(defaultFetchGroup = "true") public Text[] textArray;
   @Persistent(defaultFetchGroup = "true") public Link[] linkArray;
+  @Persistent(defaultFetchGroup = "true") public ShortBlob[] shortBlobArray;
+  @Persistent(defaultFetchGroup = "true") public BlobKey[] blobKeyArray;
 
   @Persistent(defaultFetchGroup = "true") public List<String> strList;
   @Persistent(defaultFetchGroup = "true") public List<Integer> integerList;
@@ -119,6 +123,8 @@ public class KitchenSink {
   @Persistent(defaultFetchGroup = "true") public List<Blob> blobList;
   @Persistent(defaultFetchGroup = "true") public List<Text> textList;
   @Persistent(defaultFetchGroup = "true") public List<Link> linkList;
+  @Persistent(defaultFetchGroup = "true") public List<ShortBlob> shortBlobList;
+  @Persistent(defaultFetchGroup = "true") public List<BlobKey> blobKeyList;
 
   public static final Date DATE1 = new Date(147);
   public static final Date DATE2 = new Date(247);
@@ -127,6 +133,9 @@ public class KitchenSink {
   public static final Blob BLOB1 = new Blob("a blob".getBytes());
   public static final Blob BLOB2 = new Blob("another blob".getBytes());
   public static final ShortBlob SHORTBLOB1 = new ShortBlob("a short blob".getBytes());
+  public static final ShortBlob SHORTBLOB2 = new ShortBlob("another short blob".getBytes());
+  public static final BlobKey BLOBKEY1 = new BlobKey("yar");
+  public static final BlobKey BLOBKEY2 = new BlobKey("yar2");
   public static final Text TEXT1 = new Text("some text");
   public static final Text TEXT2 = new Text("more text");
   public static final Link LINK1 = new Link("www.google.com");
@@ -189,6 +198,8 @@ public class KitchenSink {
     ks.blobArray = new Blob[] {BLOB1, BLOB2};
     ks.textArray = new Text[] {TEXT1, TEXT2};
     ks.linkArray = new Link[] {LINK1, LINK2};
+    ks.shortBlobArray = new ShortBlob[] {SHORTBLOB1, SHORTBLOB2};
+    ks.blobKeyArray = new BlobKey[] {BLOBKEY1, BLOBKEY2};
 
     ks.strList = Utils.newArrayList("p", "q");
     ks.integerList = Utils.newArrayList(11, 12);
@@ -206,6 +217,8 @@ public class KitchenSink {
     ks.blobList = Utils.newArrayList(BLOB1, BLOB2);
     ks.textList = Utils.newArrayList(TEXT1, TEXT2);
     ks.linkList = Utils.newArrayList(LINK1, LINK2);
+    ks.shortBlobList = Utils.newArrayList(SHORTBLOB1, SHORTBLOB2);
+    ks.blobKeyList = Utils.newArrayList(BLOBKEY1, BLOBKEY2);
     return ks;
   }
 
@@ -246,6 +259,7 @@ public class KitchenSink {
     entity.setProperty("textVal", TEXT1);
     entity.setProperty("linkVal", LINK1);
     entity.setProperty("shortBlobVal", SHORTBLOB1);
+    entity.setProperty("blobKeyVal", BLOBKEY1);
     entity.setProperty("strArray", Utils.newArrayList("a", "b"));
     entity.setProperty("primitiveIntArray", Utils.newArrayList(1L, 2L));
     entity.setProperty("integerArray", Utils.newArrayList(3L, 4L));
@@ -271,6 +285,8 @@ public class KitchenSink {
     entity.setProperty("blobArray", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textArray", Utils.newArrayList(TEXT1, TEXT2));
     entity.setProperty("linkArray", Utils.newArrayList(LINK1, LINK2));
+    entity.setProperty("shortBlobArray", Utils.newArrayList(SHORTBLOB1, SHORTBLOB2));
+    entity.setProperty("blobKeyArray", Utils.newArrayList(BLOBKEY1, BLOBKEY2));
 
     entity.setProperty("strList", Utils.newArrayList("p", "q"));
     entity.setProperty("integerList", Utils.newArrayList(11L, 12L));
@@ -289,6 +305,8 @@ public class KitchenSink {
     entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));
     entity.setProperty("linkList", Utils.newArrayList(LINK1, LINK2));
+    entity.setProperty("shortBlobList", Utils.newArrayList(SHORTBLOB1, SHORTBLOB2));
+    entity.setProperty("blobKeyList", Utils.newArrayList(BLOBKEY1, BLOBKEY2));
     // just to prove that this doesn't screw anything up
     entity.setProperty("an extra property", "yar!");
     return entity;
