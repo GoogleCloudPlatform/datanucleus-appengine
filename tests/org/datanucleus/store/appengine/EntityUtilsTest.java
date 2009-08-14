@@ -17,7 +17,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.apphosting.api.ApiProxy;
 
 import junit.framework.TestCase;
 
@@ -29,10 +28,19 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
  */
 public class EntityUtilsTest extends TestCase {
 
+  private DatastoreTestHelper dth;
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ApiProxy.setEnvironmentForCurrentThread(DatastoreTestHelper.ENV);
+    dth = new DatastoreTestHelper();
+    dth.setUp();
+  }
+
+  @Override
+  protected void tearDown() throws Exception {
+    dth.tearDown(false);
+    dth = null;
+    super.tearDown();
   }
 
   public void testUnencodedStringToEncodedString() {

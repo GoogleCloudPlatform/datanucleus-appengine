@@ -39,8 +39,16 @@ public class JDOTestCase extends TestCase {
     super.setUp();
     ldth = new DatastoreTestHelper();
     ldth.setUp();
-    pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
-    pm = pmf.getPersistenceManager();
+    boolean success = false;
+    try {
+      pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
+      pm = pmf.getPersistenceManager();
+      success = true;
+    } finally {
+      if (!success) {
+        ldth.tearDown(false);
+      }
+    }
   }
 
   @Override
@@ -67,20 +75,23 @@ public class JDOTestCase extends TestCase {
   protected void tearDown() throws Exception {
     boolean throwIfActiveTxn = !failed;
     failed = false;
-    if (!pm.isClosed()) {
-      if (pm.currentTransaction().isActive()) {
-        pm.currentTransaction().rollback();
+    try {
+      if (!pm.isClosed()) {
+        if (pm.currentTransaction().isActive()) {
+          pm.currentTransaction().rollback();
+        }
+        pm.close();
       }
-      pm.close();
+      pm = null;
+      if (!pmf.isClosed()) {
+        pmf.close();
+      }
+      pmf = null;
+    } finally {
+      ldth.tearDown(throwIfActiveTxn);
+      ldth = null;
+      super.tearDown();
     }
-    pm = null;
-    if (!pmf.isClosed()) {
-      pmf.close();
-    }
-    pmf = null;
-    ldth.tearDown(throwIfActiveTxn);
-    ldth = null;
-    super.tearDown();
   }
 
 

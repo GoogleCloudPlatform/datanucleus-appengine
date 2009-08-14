@@ -20,8 +20,6 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.apphosting.api.ApiProxy;
 
-import java.util.Map;
-
 /**
  * A test helper that sets up a datastore service that can be used in tests.
  *
@@ -31,48 +29,15 @@ public class DatastoreTestHelper {
 
   public DatastoreService ds;
 
-  public static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
-    public String getAppId() {
-      return "test";
-    }
-
-    public String getVersionId() {
-      return "1.0";
-    }
-
-    public String getEmail() {
-      throw new UnsupportedOperationException();
-    }
-
-    public boolean isLoggedIn() {
-      throw new UnsupportedOperationException();
-    }
-
-    public boolean isAdmin() {
-      throw new UnsupportedOperationException();
-    }
-
-    public String getAuthDomain() {
-      throw new UnsupportedOperationException();
-    }
-
-    public String getRequestNamespace() {
-      return "";
-    }
-
-    public Map<String, Object> getAttributes() {
-      return Utils.newHashMap();
-    }
-  };
-
   private final DatastoreDelegate delegate = newDatastoreDelegate();
 
   private static final String DATASTORE_DELEGATE_PROP = "orm.DatastoreDelegate";
 
+    private ApiProxy.Delegate originalDelegate;
   public void setUp() throws Exception {
+    originalDelegate = ApiProxy.getDelegate();
     delegate.setUp();
     ApiProxy.setDelegate(delegate);
-    ApiProxy.setEnvironmentForCurrentThread(ENV);
     ds = DatastoreServiceFactory.getDatastoreService();
   }
 
@@ -90,7 +55,7 @@ public class DatastoreTestHelper {
         }
       }
     } finally {
-      ApiProxy.clearEnvironmentForCurrentThread();
+      ApiProxy.setDelegate(originalDelegate);
       delegate.tearDown();
     }
   }

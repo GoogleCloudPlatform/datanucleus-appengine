@@ -49,8 +49,16 @@ public class JPATestCase extends TestCase {
     super.setUp();
     ldth = new DatastoreTestHelper();
     ldth.setUp();
-    emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
-    em = emf.createEntityManager();
+    boolean success = false;
+    try {
+      emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
+      em = emf.createEntityManager();
+      success = true;
+    } finally {
+      if (!success) {
+        ldth.tearDown(false);
+      }
+    }
   }
 
   public enum EntityManagerFactoryName {
@@ -76,18 +84,21 @@ public class JPATestCase extends TestCase {
   protected void tearDown() throws Exception {
     boolean throwIfActiveTxn = !failed;
     failed = false;
-    if (em.isOpen()) {
-      if (em.getTransaction().isActive()) {
-        em.getTransaction().rollback();
+    try {
+      if (em.isOpen()) {
+        if (em.getTransaction().isActive()) {
+          em.getTransaction().rollback();
+        }
+        em.close();
       }
-      em.close();
+      em = null;
+      emf.close();
+      emf = null;
+    } finally {
+      ldth.tearDown(throwIfActiveTxn);
+      ldth = null;
+      super.tearDown();
     }
-    em = null;
-    emf.close();
-    emf = null;
-    ldth.tearDown(throwIfActiveTxn);
-    ldth = null;
-    super.tearDown();
   }
 
   protected void beginTxn() {

@@ -20,6 +20,7 @@ import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
 
 import java.io.File;
+import java.util.Map;
 
 /**
  * {@link DatastoreDelegate} implementation that integrates with the stub
@@ -28,6 +29,40 @@ import java.io.File;
  * @author Max Ross <maxr@google.com>
  */
 class LocalDatastoreDelegate implements DatastoreDelegate {
+
+  private static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
+    public String getAppId() {
+      return "test";
+    }
+
+    public String getVersionId() {
+      return "1.0";
+    }
+
+    public String getEmail() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isLoggedIn() {
+      throw new UnsupportedOperationException();
+    }
+
+    public boolean isAdmin() {
+      throw new UnsupportedOperationException();
+    }
+
+    public String getAuthDomain() {
+      throw new UnsupportedOperationException();
+    }
+
+    public String getRequestNamespace() {
+      return "";
+    }
+
+    public Map<String, Object> getAttributes() {
+      return Utils.newHashMap();
+    }
+  };
 
   // Ok to reuse this across tests so long as we clear out the
   // datastore in tearDown()
@@ -47,10 +82,11 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
   }
 
   public void setUp() {
-    // nothing to set up
+    ApiProxy.setEnvironmentForCurrentThread(ENV);
   }
 
   public void tearDown() throws Exception {
+    ApiProxy.clearEnvironmentForCurrentThread();
     LocalDatastoreService lds = (LocalDatastoreService) localProxy.getService("datastore_v3");
     lds.clearProfiles();
   }

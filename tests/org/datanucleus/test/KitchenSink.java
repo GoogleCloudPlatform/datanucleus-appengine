@@ -173,6 +173,7 @@ public class KitchenSink {
     ks.textVal = TEXT1;
     ks.linkVal = LINK1;
     ks.shortBlobVal = SHORTBLOB1;
+    ks.blobKeyVal = BLOBKEY1;
 
     ks.strArray = new String[] {"a", "b"};
     ks.primitiveIntArray = new int[] {1, 2};
