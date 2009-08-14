@@ -142,7 +142,8 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
     KeyRange range = ds.allocateIds(sequenceName, size);
-    // Inefficient, but this is
+    // Too bad we can't pass an iterable and construct the ids
+    // on demand.
     List<Long> ids = Utils.newArrayList();
     long current = range.getStart().getId();
     for (int i = 0; i < size; i++) {

@@ -95,4 +95,15 @@ public final class SequenceExamplesJPA {
       this.id = id;
     }
   }
+
+  @Entity
+  public static class HasSequenceWithUnencodedStringPk {
+    @Id
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private String id;
+
+    public String getId() {
+      return id;
+    }
+  }
 }

@@ -23,6 +23,7 @@ import com.google.appengine.api.datastore.KeyRange;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequence;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithNoSequenceName;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithSequenceGenerator;
+import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithUnencodedStringPk;
 
 import java.util.List;
 
@@ -103,6 +104,24 @@ public class JPASequenceTest extends JPATestCase {
     assertEquals(pojo.getId() + 12, keyRange.getStart().getId());
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__"), sequenceNames);
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
+  }
+
+  public void testSequenceWithUnencodedStringPk() throws EntityNotFoundException {
+    String kind = getKind(HasSequenceWithUnencodedStringPk.class);
+    HasSequenceWithUnencodedStringPk pojo = new HasSequenceWithUnencodedStringPk();
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
+
+    HasSequenceWithUnencodedStringPk pojo2 = new HasSequenceWithUnencodedStringPk();
+    beginTxn();
+    em.persist(pojo2);
+    commitTxn();
+    ldth.ds.get(KeyFactory.createKey(kind, pojo2.getId()));
+    assertEquals(Long.parseLong(pojo.getId()), Long.parseLong(pojo2.getId()) - 1);
+    assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
+    assertEquals(Utils.newArrayList(1L, 1L), sequenceBatchSizes);
   }
 
   private String getKind(Class<?> cls) {
