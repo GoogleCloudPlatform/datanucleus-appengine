@@ -941,7 +941,7 @@ public class JPQLQueryTest extends JPATestCase {
     em.close();
   }
 
-  public void testFilterByMultiValueProperty_MemberOf() {
+  public void testFilterByMultiValueProperty_MemberOf_ArgsWrongOrder() {
     Entity entity = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
     entity.setProperty("keyList",
@@ -966,6 +966,41 @@ public class JPQLQueryTest extends JPATestCase {
     q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
         + " where keyList MEMBER OF :p1 AND keyList MEMBER OF :p2");
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be"));
+    assertEquals(1, result.size());
+    q.setParameter("p1", KeyFactory.createKey("be", "bo"));
+    q.setParameter("p2", KeyFactory.createKey("bo", "be2"));
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result3 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result3.size());
+  }
+
+  public void testFilterByMultiValueProperty_MemberOf_ArgsCorrectOrder() {
+    Entity entity = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
+    entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
+    entity.setProperty("keyList",
+                       Utils.newArrayList(KeyFactory.createKey("be", "bo"),
+                                          KeyFactory.createKey("bo", "be")));
+    ldth.ds.put(entity);
+
+    Query q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where :p1 MEMBER OF strList AND :p2 MEMBER OF strList");
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "3");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(1, result.size());
+    q.setParameter("p1", "1");
+    q.setParameter("p2", "4");
+    @SuppressWarnings("unchecked")
+    List<HasMultiValuePropsJPA> result2 = (List<HasMultiValuePropsJPA>) q.getResultList();
+    assertEquals(0, result2.size());
+
+    q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where :p1 MEMBER OF keyList AND :p2 MEMBER OF keyList");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
     assertEquals(1, result.size());
