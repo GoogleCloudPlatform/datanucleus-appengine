@@ -131,6 +131,10 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
   }
 
+  public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+  }
+
   public void testReplaceBidirColl() {
     Collection<BidirectionalChildJDO> childSet = Utils.<BidirectionalChildJDO>newHashSet(
         new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());

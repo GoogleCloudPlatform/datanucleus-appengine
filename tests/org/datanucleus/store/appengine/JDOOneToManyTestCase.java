@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
@@ -1178,7 +1179,35 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     bidir.setParent(pojo);
     pm.makePersistent(bidir);
+    pojo.getBidirChildren().add(bidir);
     commitTxn();
+    assertEquals(1, countForClass(bidir.getClass()));
+    Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
+    assertNotNull(e.getParent());
+    beginTxn();
+    pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
+    assertEquals(1, pojo.getBidirChildren().size());
+    commitTxn();
+    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
+  }
+
+  void testAddFetchedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+      throws EntityNotFoundException {
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    beginTxn();
+    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+    bidir.setParent(pojo);
+    pm.makePersistent(bidir);
+    pojo.getBidirChildren().add(bidir);
+    commitTxn();
+    assertEquals(1, countForClass(bidir.getClass()));
+    Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
+    assertNotNull(e.getParent());
     beginTxn();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());

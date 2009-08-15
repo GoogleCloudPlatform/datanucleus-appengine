@@ -827,7 +827,7 @@ public class DatastoreFieldManager implements FieldManager {
           throw new NucleusUserException(
               "Attempt was made to modify the parent of an object of type "
               + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + ".  Parents are immutable.").setFatal();
+              + "key " + datastoreEntity.getKey() + ".  Parents are immutable (changed value is " + key + ").").setFatal();
         }
       }
     } else if (key != null) {

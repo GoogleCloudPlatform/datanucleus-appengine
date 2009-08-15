@@ -19,6 +19,8 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.test.HasFetchGroupsJDO;
 
+import javax.jdo.Query;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -90,5 +92,45 @@ public class JDOFetchGroupTest extends JDOTestCase {
     assertEquals("2", pojo.getStr2());
     assertEquals("3", pojo.getStr3());
     assertEquals("4", pojo.getStr4());
+  }
+
+  public void testFetchGroupWithQuery() {
+    HasFetchGroupsJDO pojo = new HasFetchGroupsJDO();
+    pojo.setStr1("1");
+    pojo.setStr2("2");
+    pojo.setStr3("3");
+    pojo.setStr4("4");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    Query q = pm.newQuery(HasFetchGroupsJDO.class);
+    q.setUnique(true);
+    pojo = (HasFetchGroupsJDO) pm.detachCopy(q.execute());
+    commitTxn();
+    assertEquals("1", pojo.getStr1());
+    assertEquals("2", pojo.getStr2());
+    assertNull(pojo.getStr3());
+    assertEquals("4", pojo.getStr4());
+
+    beginTxn();
+    pm.getFetchPlan().addGroup("fg1");
+    pojo = (HasFetchGroupsJDO) pm.detachCopy(q.execute());
+    commitTxn();
+    assertEquals("1", pojo.getStr1());
+    assertEquals("2", pojo.getStr2());
+    assertEquals("3", pojo.getStr3());
+    assertEquals("4", pojo.getStr4());
+
+    beginTxn();
+    q = pm.newQuery(HasFetchGroupsJDO.class);
+    q.setUnique(true);
+    pm.getFetchPlan().setGroup("fg1");
+    pojo = (HasFetchGroupsJDO) pm.detachCopy(q.execute());
+    commitTxn();
+    assertNull(pojo.getStr1());
+    assertNull(pojo.getStr2());
+    assertEquals("3", pojo.getStr3());
+    assertNull(pojo.getStr4());
   }
 }

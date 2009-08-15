@@ -801,6 +801,28 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
+  void testAddFetchedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
+      throws EntityNotFoundException {
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    beginTxn();
+//    pojo = (HasOneToManyJDO) pm.getObjectById(pojo.getClass(), pojo.getId());
+
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    bidir.setParent(pojo);
+    em.persist(bidir);
+    commitTxn();
+    beginTxn();
+    pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
+    assertEquals(1, pojo.getBidirChildren().size());
+    commitTxn();
+    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
+  }
+
   void assertCountsInDatastore(Class<? extends HasOneToManyJPA> pojoClass,
                                Class<? extends BidirectionalChildJPA> bidirClass,
                                int expectedParent, int expectedChildren) {

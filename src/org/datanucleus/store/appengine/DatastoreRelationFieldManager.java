@@ -328,7 +328,7 @@ class DatastoreRelationFieldManager {
     for (Entity e : datastoreService.prepare(q).asIterable()) {
       if (parentEntity.getKey().equals(e.getKey().getParent())) {
         // TODO(maxr) Figure out how to hook this up to a StateManager!
-        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, getStoreManager(), om, false);
+        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, getStoreManager(), om, false, om.getFetchPlan());
         // We are potentially ignoring data errors where there is more than one
         // direct child for the one to one.  Unfortunately, in order to detect
         // this we need to read all the way to the end of the Iterable and that

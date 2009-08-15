@@ -388,6 +388,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     testAddQueriedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
   }
 
+  public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
+    testAddFetchedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
   public void testMultipleBidirChildren() {
     HasMultipleBidirChildrenJDO pojo = new HasMultipleBidirChildrenJDO();
 

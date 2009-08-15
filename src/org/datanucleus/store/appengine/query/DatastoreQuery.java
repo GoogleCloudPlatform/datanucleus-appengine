@@ -155,6 +155,7 @@ public class DatastoreQuery implements Serializable {
    */
   private enum ResultType {
     ENTITY, // return entities
+    ENTITY_PROJECTION, // return specific fields of an entity
     COUNT,  // return the count
     KEYS_ONLY // return just the keys
   }
@@ -383,8 +384,8 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
-      ClassLoaderResolver clr, DatastoreManager storeMgr) {
-    return entityToPojo(entity, acmd, clr, storeMgr, getObjectManager(), query.getIgnoreCache());
+      ClassLoaderResolver clr, DatastoreManager storeMgr, FetchPlan fp) {
+    return entityToPojo(entity, acmd, clr, storeMgr, getObjectManager(), query.getIgnoreCache(), fp);
   }
 
   /**
@@ -401,7 +402,7 @@ public class DatastoreQuery implements Serializable {
    */
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
       final ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om,
-      boolean ignoreCache) {
+      boolean ignoreCache, final FetchPlan fetchPlan) {
     storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
@@ -413,7 +414,7 @@ public class DatastoreQuery implements Serializable {
             acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
       }
       public FetchPlan getFetchPlanForLoading() {
-        return null;
+        return fetchPlan;
       }
     };
     Object pojo = om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
@@ -423,7 +424,11 @@ public class DatastoreQuery implements Serializable {
     // so that we can do a fetch without having to hide the entity in the
     // state manager.
     handler.setAssociatedEntity(stateMgr, EntityUtils.getCurrentTransaction(om), entity);
-    storeMgr.getPersistenceHandler().fetchObject(stateMgr, acmd.getAllMemberPositions());
+    int[] fieldsToFetch =
+        fetchPlan != null ?
+        fetchPlan.getFetchPlanForClass(acmd).getFieldsInActualFetchPlan() : acmd.getAllMemberPositions();
+    storeMgr.getPersistenceHandler().fetchObject(
+        stateMgr, fieldsToFetch);
     return pojo;
   }
 
@@ -483,7 +488,7 @@ public class DatastoreQuery implements Serializable {
       }
     }
 
-    List<Integer> projectionFieldNums = Utils.newArrayList();
+    final List<Integer> projectionFieldNums = Utils.newArrayList();
     ResultType resultType = validateResultExpression(compilation, acmd, projectionFieldNums);
     // TODO(maxr): Add checks for subqueries and anything else we don't allow
     String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
@@ -497,7 +502,14 @@ public class DatastoreQuery implements Serializable {
     } else {
       resultTransformer = new Function<Entity, Object>() {
         public Object apply(Entity from) {
-          return entityToPojo(from, acmd, clr, getDatastoreManager());
+          FetchPlan fp = query.getFetchPlan();
+          if (!projectionFieldNums.isEmpty()) {
+            // If this is a projection, ignore the fetch plan and just fetch everything.
+            // We do this because we're returning individual fields, not an entire
+            // entity.
+            fp = null;
+          }
+          return entityToPojo(from, acmd, clr, getDatastoreManager(), fp);
         }
       };
     }
@@ -556,8 +568,8 @@ public class DatastoreQuery implements Serializable {
             }
             projectionFieldNums.add(ammd.getAbsoluteFieldNumber());
             if (!ammd.isPrimaryKey()) {
-              // A single non-pk field locks the result type on entity
-              resultType = ResultType.ENTITY;
+              // A single non-pk field locks the result type on entity projection
+              resultType = ResultType.ENTITY_PROJECTION;
             }
           }
         } else {
@@ -567,6 +579,9 @@ public class DatastoreQuery implements Serializable {
           throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
         }
       }
+    }
+    if (resultType == null) {
+      resultType = ResultType.ENTITY;
     }
     return resultType;
   }

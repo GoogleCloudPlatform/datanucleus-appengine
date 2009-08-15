@@ -578,6 +578,10 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
 
+  public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  }
+
   public void testDeleteChildWithSeparateNameField() {
     HasChildWithSeparateNameFieldJPA parent = new HasChildWithSeparateNameFieldJPA();
     HasEncodedStringPkSeparateNameFieldJPA child = new HasEncodedStringPkSeparateNameFieldJPA();
