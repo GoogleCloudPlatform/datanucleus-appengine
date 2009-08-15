@@ -44,6 +44,7 @@ import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasBytesJPA;
 import org.datanucleus.test.HasDoubleJPA;
+import org.datanucleus.test.HasEncodedStringPkJDO;
 import org.datanucleus.test.HasEnumJPA;
 import org.datanucleus.test.HasKeyAncestorStringPkJPA;
 import org.datanucleus.test.HasKeyPkJPA;
@@ -445,16 +446,31 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testKeyQuery_KeyPk() {
-    Entity e = new Entity(HasKeyPkJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    Entity entityWithName = new Entity(HasKeyPkJPA.class.getSimpleName(), "blarg");
+    Entity entityWithId = new Entity(HasKeyPkJPA.class.getSimpleName());
+    ldth.ds.put(entityWithName);
+    ldth.ds.put(entityWithId);
 
-    javax.persistence.Query q = em.createQuery(
+    Query q = em.createQuery(
         "select from " + HasKeyPkJPA.class.getName() + " where id = :key");
-    q.setParameter("key", e.getKey());
-    @SuppressWarnings("unchecked")
-    List<HasKeyPkJPA> result = (List<HasKeyPkJPA>) q.getResultList();
-    assertEquals(1, result.size());
-    assertEquals(e.getKey(), result.get(0).getId());
+    q.setParameter("key", entityWithName.getKey());
+    HasKeyPkJPA result = (HasKeyPkJPA) q.getSingleResult();
+    assertEquals(entityWithName.getKey(), result.getId());
+
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykey");
+    q.setParameter("mykey", entityWithId.getKey());
+    result = (HasKeyPkJPA) q.getSingleResult();
+    assertEquals(entityWithId.getKey(), result.getId());
+
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykeyname");
+    q.setParameter("mykeyname", entityWithName.getKey().getName());
+    result = (HasKeyPkJPA) q.getSingleResult();
+    assertEquals(entityWithName.getKey(), result.getId());
+
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykeyid");
+    q.setParameter("mykeyid", entityWithId.getKey().getId());
+    result = (HasKeyPkJPA) q.getSingleResult();
+    assertEquals(entityWithId.getKey(), result.getId());
   }
 
   public void testKeyQueryWithSorts() {
@@ -1220,6 +1236,25 @@ public class JPQLQueryTest extends JPATestCase {
     List<HasLongPkJPA> results2 = (List<HasLongPkJPA>) q.getResultList();
     assertEquals(1, results2.size());
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
+  }
+
+  public void testKeyQueryWithEncodedStringPk() {
+    Entity e = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey().getName());
+    HasEncodedStringPkJDO result = (HasEncodedStringPkJDO) q.getSingleResult();
+    assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
+
+    q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey());
+    result = (HasEncodedStringPkJDO) q.getSingleResult();
+    assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
+
+    q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    q.setParameter("p", e.getKey().getName());
+    result = (HasEncodedStringPkJDO) q.getSingleResult();
+    assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
   }
 
   public void testQuerySingleResult_OneResult() {

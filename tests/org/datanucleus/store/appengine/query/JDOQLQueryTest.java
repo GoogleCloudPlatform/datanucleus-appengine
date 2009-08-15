@@ -44,6 +44,7 @@ import org.datanucleus.test.BidirectionalGrandchildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
+import org.datanucleus.test.HasEncodedStringPkJDO;
 import org.datanucleus.test.HasEnumJDO;
 import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasKeyAncestorStringPkJDO;
@@ -507,16 +508,42 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testKeyQuery_KeyPk() {
-    Entity e = new Entity(HasKeyPkJDO.class.getSimpleName());
-    ldth.ds.put(e);
+    Entity entityWithName = new Entity(HasKeyPkJDO.class.getSimpleName(), "blarg");
+    Entity entityWithId = new Entity(HasKeyPkJDO.class.getSimpleName());
+    ldth.ds.put(entityWithName);
+    ldth.ds.put(entityWithId);
 
     Query q = pm.newQuery(
         "select from " + HasKeyPkJDO.class.getName() +
         " where key == mykey parameters " + Key.class.getName() + " mykey");
     @SuppressWarnings("unchecked")
-    List<HasKeyPkJDO> result = (List<HasKeyPkJDO>) q.execute(e.getKey());
+    List<HasKeyPkJDO> result = (List<HasKeyPkJDO>) q.execute(entityWithName.getKey());
     assertEquals(1, result.size());
-    assertEquals(e.getKey(), result.get(0).getKey());
+    assertEquals(entityWithName.getKey(), result.get(0).getKey());
+
+    q = pm.newQuery(
+        "select from " + HasKeyPkJDO.class.getName() +
+        " where key == mykey parameters " + Key.class.getName() + " mykey");
+    @SuppressWarnings("unchecked")
+    List<HasKeyPkJDO> result2 = (List<HasKeyPkJDO>) q.execute(entityWithId.getKey());
+    assertEquals(1, result2.size());
+    assertEquals(entityWithId.getKey(), result2.get(0).getKey());
+
+    q = pm.newQuery(
+        "select from " + HasKeyPkJDO.class.getName() +
+        " where key == mykeyname parameters " + String.class.getName() + " mykeyname");
+    @SuppressWarnings("unchecked")
+    List<HasKeyPkJDO> result3 = (List<HasKeyPkJDO>) q.execute(entityWithName.getKey().getName());
+    assertEquals(1, result3.size());
+    assertEquals(entityWithName.getKey(), result3.get(0).getKey());
+
+    q = pm.newQuery(
+        "select from " + HasKeyPkJDO.class.getName() +
+        " where key == mykeyid parameters " + String.class.getName() + " mykeyid");
+    @SuppressWarnings("unchecked")
+    List<HasKeyPkJDO> result4 = (List<HasKeyPkJDO>) q.execute(entityWithId.getKey().getId());
+    assertEquals(1, result4.size());
+    assertEquals(entityWithId.getKey(), result4.get(0).getKey());
   }
 
   public void testKeyQueryWithSorts() {
@@ -1296,6 +1323,36 @@ public class JDOQLQueryTest extends JDOTestCase {
     List<HasLongPkJDO> results2 = (List<HasLongPkJDO>) q.execute(e.getKey().getId());
     assertEquals(1, results2.size());
     assertEquals(Long.valueOf(e.getKey().getId()), results2.get(0).getId());
+  }
+
+  public void testKeyQueryWithEncodedStringPk() {
+    Entity e = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), "yar");
+    ldth.ds.put(e);
+    Query q = pm.newQuery(
+        "select from " + HasEncodedStringPkJDO.class.getName() + " where id == p parameters String p");
+    @SuppressWarnings("unchecked")
+    List<HasEncodedStringPkJDO> results =
+        (List<HasEncodedStringPkJDO>) q.execute(e.getKey().getName());
+    assertEquals(1, results.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), results.get(0).getId());
+
+    q = pm.newQuery(
+        "select from " + HasEncodedStringPkJDO.class.getName() + " where id == p parameters "
+        + Key.class.getName() + " p");
+    @SuppressWarnings("unchecked")
+    List<HasEncodedStringPkJDO> results2 =
+        (List<HasEncodedStringPkJDO>) q.execute(e.getKey());
+    assertEquals(1, results2.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), results2.get(0).getId());
+
+    q = pm.newQuery(
+        "select from " + HasEncodedStringPkJDO.class.getName() + " where id == p parameters String p");
+    @SuppressWarnings("unchecked")
+    List<HasEncodedStringPkJDO> results3 =
+        (List<HasEncodedStringPkJDO>) q.execute(e.getKey().getName());
+    assertEquals(1, results3.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), results3.get(0).getId());
+
   }
 
   public void testUniqueQuery_OneResult() {
