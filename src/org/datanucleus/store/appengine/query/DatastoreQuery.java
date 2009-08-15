@@ -72,6 +72,7 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -913,9 +914,17 @@ public class DatastoreQuery implements Serializable {
             + ", Right: " + dyadic.getRight(), query.getSingleStringQuery());
       }
     } else if (right instanceof InvokeExpression) {
-      // We don't support any InvokeExpressions right now but we can at least
-      // give a better error.
-      throw newUnsupportedQueryMethodException((InvokeExpression) right);
+      InvokeExpression invoke = (InvokeExpression) right;
+      // can't support CURRENT_TIME because we don't have a Time meaning.
+      // maybe we can store Time fields as int64 without the temporal meaning?
+      if (invoke.getOperation().equals("CURRENT_TIMESTAMP") ||
+          invoke.getOperation().equals("CURRENT_DATE")) {
+        value = NOW_PROVIDER.now();
+      } else {
+        // We don't support any other InvokeExpressions right now but we can at least
+        // give a better error.
+        throw newUnsupportedQueryMethodException((InvokeExpression) right);
+      }
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
@@ -1265,4 +1274,14 @@ public class DatastoreQuery implements Serializable {
       super("Problem with query <" + queryString + ">: " + msg);
     }
   }
+
+  public interface NowProvider {
+    Date now();
+  }
+
+  public static NowProvider NOW_PROVIDER = new NowProvider() {
+    public Date now() {
+      return new Date();
+    }
+  };
 }

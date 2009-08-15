@@ -70,6 +70,7 @@ import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -2335,6 +2336,33 @@ public class JPQLQueryTest extends JPATestCase {
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
       // good
+    }
+  }
+
+  public void testCurrentDateFuncs() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ldth.ds.put(e);
+
+    for (String dateFunc : Arrays.asList("CURRENT_TIMESTAMP", "CURRENT_DATE")) {
+      Query q = em.createQuery("select from " + KitchenSink.class.getName() +
+                               " where dateVal < " + dateFunc);
+      @SuppressWarnings("unchecked")
+      List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
+      assertEquals(1, results.size());
+
+      DatastoreQuery.NowProvider orig = DatastoreQuery.NOW_PROVIDER;
+      DatastoreQuery.NOW_PROVIDER = new DatastoreQuery.NowProvider() {
+        public Date now() {
+          return new Date(KitchenSink.DATE1.getTime() - 1);
+        }
+      };
+      try {
+        e.setProperty("dateVal", new Date(KitchenSink.DATE1.getTime() - 1));
+        assertTrue(q.getResultList().isEmpty());
+        assertEquals(1, results.size());
+      } finally {
+        DatastoreQuery.NOW_PROVIDER = orig;
+      }
     }
   }
 
