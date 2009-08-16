@@ -51,6 +51,17 @@ public class Flight implements Serializable {
   @Column(name="flight_number")
   int flightNumber;
 
+  public Flight() {
+  }
+
+  public Flight(String origin, String dest, String name, int you, int me) {
+    this.origin = origin;
+    this.dest = dest;
+    this.name = name;
+    this.you = you;
+    this.me = me;
+  }
+
   public String getOrigin() {
     return origin;
   }

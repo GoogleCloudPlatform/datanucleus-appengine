@@ -267,7 +267,7 @@ public class DatastoreFieldManager implements FieldManager {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     if (ammd.getEmbeddedMetaData() != null) {
       return fetchEmbeddedField(ammd);
-    } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE) {
+    } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !ammd.isSerialized()) {
       return relationFieldManager.fetchRelationField(getClassLoaderResolver(), ammd);
     }
 
@@ -767,7 +767,7 @@ public class DatastoreFieldManager implements FieldManager {
       }
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, value);
-      } else if (ammd.getRelationType(clr) != Relation.NONE) {
+      } else if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
         relationFieldManager.storeRelationField(
             getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
       } else {

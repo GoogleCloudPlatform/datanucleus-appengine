@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.apphosting.api.DatastorePb;
 
+import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasSerializableJDO;
 
 import java.util.List;
@@ -46,6 +47,8 @@ public class SerializationTest extends JDOTestCase {
     hasSerializable.setYamList(Utils.newArrayList(yam));
     hasSerializable.setQuery(query);
     hasSerializable.setInteger(3);
+    Flight f = new Flight("bos", "mia", "harold", 23, 24);
+    hasSerializable.setFlight(f);
     beginTxn();
     pm.makePersistent(hasSerializable);
     commitTxn();
@@ -73,6 +76,10 @@ public class SerializationTest extends JDOTestCase {
     assertEquals(query.getKind(), reloadedQuery.getKind());
     Blob integerBlob = (Blob) e.getProperty("integer");
     assertEquals(Integer.valueOf(3), ss.deserialize(integerBlob, Integer.class));
+    Blob flightBlob = (Blob) e.getProperty("flight");
+    Flight f2 = (Flight) ss.deserialize(flightBlob, Flight.class);
+    assertEquals(f.getDest(), f2.getDest());
+    assertEquals(f.getOrigin(), f2.getOrigin());
   }
 
   public void testFetch() {
@@ -92,6 +99,8 @@ public class SerializationTest extends JDOTestCase {
     query.setKind("yes");
     e.setProperty("query", new HasSerializableJDO.ProtocolBufferSerializationStrategy().serialize(query));
     e.setProperty("integer", ss.serialize(3));
+    Flight f = new Flight("bos", "mia", "harold", 23, 24);
+    e.setProperty("flight", ss.serialize(f));
     ldth.ds.put(e);
     beginTxn();
     HasSerializableJDO hasSerializable = pm.getObjectById(
@@ -105,6 +114,9 @@ public class SerializationTest extends JDOTestCase {
     assertEquals(query.getApp(), hasSerializable.getQuery().getApp());
     assertEquals(query.getKind(), hasSerializable.getQuery().getKind());
     assertEquals(Integer.valueOf(3), hasSerializable.getInteger());
+    Flight f2 = hasSerializable.getFlight();
+    assertEquals(f.getDest(), f2.getDest());
+    assertEquals(f.getOrigin(), f2.getOrigin());
     commitTxn();
   }
 }

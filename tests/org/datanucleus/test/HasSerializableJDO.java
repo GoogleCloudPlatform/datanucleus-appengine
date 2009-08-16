@@ -56,6 +56,9 @@ public class HasSerializableJDO {
   @Persistent(serialized = "true")
   Integer integer;
 
+  @Persistent(serialized = "true")
+  private Flight flight;
+
   public Yam getYam() {
     return yam;
   }
@@ -90,6 +93,14 @@ public class HasSerializableJDO {
 
   public void setInteger(Integer integer) {
     this.integer = integer;
+  }
+
+  public Flight getFlight() {
+    return flight;
+  }
+
+  public void setFlight(Flight flight) {
+    this.flight = flight;
   }
 
   public static class ProtocolBufferSerializationStrategy implements SerializationStrategy {
