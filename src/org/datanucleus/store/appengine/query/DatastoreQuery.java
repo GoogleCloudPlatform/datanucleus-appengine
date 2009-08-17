@@ -134,6 +134,8 @@ public class DatastoreQuery implements Serializable {
     map.put(Expression.OP_GTEQ, Query.FilterOperator.GREATER_THAN_OR_EQUAL);
     map.put(Expression.OP_LT, Query.FilterOperator.LESS_THAN);
     map.put(Expression.OP_LTEQ, Query.FilterOperator.LESS_THAN_OR_EQUAL);
+    // only supported when the rhs is 'null'
+    map.put(Expression.OP_NOTEQ, Query.FilterOperator.GREATER_THAN);
     return map;
   }
 
@@ -930,6 +932,12 @@ public class DatastoreQuery implements Serializable {
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
     }
+    // We can only support != null.
+    if (operator.equals(Expression.OP_NOTEQ) && value != null) {
+      throw new UnsupportedDatastoreOperatorException(
+          query.getSingleStringQuery(), Expression.OP_NOTEQ,
+          "The 'not equal' operator is only supported when the operator argument is 'null'");
+    }
     List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
     AbstractMemberMetaData ammd = getMemberMetaData(qd.acmd, tuples);
     if (ammd == null) {
@@ -1247,12 +1255,19 @@ public class DatastoreQuery implements Serializable {
       UnsupportedOperationException {
     private final String queryString;
     private final Expression.Operator operator;
+    private final String msg;
 
     UnsupportedDatastoreOperatorException(String queryString,
         Expression.Operator operator) {
+      this(queryString, operator, null);
+    }
+
+    UnsupportedDatastoreOperatorException(String queryString,
+        Expression.Operator operator, String msg) {
       super(queryString);
       this.queryString = queryString;
       this.operator = operator;
+      this.msg = msg;
     }
 
     @Override

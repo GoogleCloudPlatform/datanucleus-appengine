@@ -104,13 +104,11 @@ public class JPQLQueryTest extends JPATestCase {
       new FilterPredicate("isbn", FilterOperator.LESS_THAN, 4L);
   private static final FilterPredicate ISBN_LTE_4 =
       new FilterPredicate("isbn", FilterOperator.LESS_THAN_OR_EQUAL, 4L);
-  private static final
-  SortPredicate
-      TITLE_ASC =
+  private static final FilterPredicate TITLE_GT_NULL_LITERAL =
+      new FilterPredicate("title", FilterOperator.GREATER_THAN, null);
+  private static final SortPredicate TITLE_ASC =
       new SortPredicate("title", SortDirection.ASCENDING);
-  private static final
-  SortPredicate
-      ISBN_DESC =
+  private static final SortPredicate ISBN_DESC =
       new SortPredicate("isbn", SortDirection.DESCENDING);
 
   @Override
@@ -238,6 +236,8 @@ public class JPQLQueryTest extends JPATestCase {
     assertQuerySupported(baseQuery + "WHERE title = 2 AND isbn = 4 ORDER BY title ASC, isbn DESC",
                          Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
                          Utils.newArrayList(TITLE_ASC, ISBN_DESC));
+    assertQuerySupported(baseQuery + "WHERE title <> null",
+                         Utils.newArrayList(TITLE_GT_NULL_LITERAL), NO_SORTS);
   }
 
   public void test2Equals2OrderBy() {
@@ -2052,6 +2052,33 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, books.size());
   }
 
+  public void testIsNotNull() {
+    Entity e = Book.newBookEntity("auth", "isbn", null);
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title is not null");
+    assertTrue(q.getResultList().isEmpty());
+    Query q2 = em.createQuery("select from " + Book.class.getName() + " where title <> null");
+    assertTrue(q2.getResultList().isEmpty());
+    e = Book.newBookEntity("auth2", "isbn2", "not null");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals("not null", b.getTitle());
+    b = (Book) q2.getSingleResult();
+    assertEquals("not null", b.getTitle());
+  }
+
+  public void testIsNotNull_Param() {
+    Entity e = Book.newBookEntity("auth", "isbn", null);
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
+    q.setParameter("p", null);
+    assertTrue(q.getResultList().isEmpty());
+    e = Book.newBookEntity("auth2", "isbn2", "not null");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals("not null", b.getTitle());
+  }
+
   public void testIsNullChild() {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(e);
@@ -2436,7 +2463,6 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-
   private void assertQueryUnsupportedByDatastore(String query) {
     Query q = em.createQuery(query);
     try {
@@ -2492,10 +2518,31 @@ public class JPQLQueryTest extends JPATestCase {
     }
     q.getResultList();
 
-    assertEquals(addedFilters, getFilterPredicates(q));
+    assertFilterPredicatesEqual(addedFilters, getFilterPredicates(q));
     assertEquals(addedSorts, getSortPredicates(q));
   }
 
+  // TODO(maxr): Get rid of this when we've fixed the npe in FilterPredicate.equals().
+  private static void assertFilterPredicatesEqual(
+      List<FilterPredicate> expected, List<FilterPredicate> actual) {
+    List<FilterPredicate> expected2 = Utils.newArrayList();
+    for (FilterPredicate fp : expected) {
+      if (fp.getValue() == null) {
+        expected2.add(new FilterPredicate(fp.getPropertyName(), fp.getOperator(), "____null"));
+      } else {
+        expected2.add(fp);
+      }
+    }
+    List<FilterPredicate> actual2 = Utils.newArrayList();
+    for (FilterPredicate fp : actual) {
+      if (fp.getValue() == null) {
+        actual2.add(new FilterPredicate(fp.getPropertyName(), fp.getOperator(), "____null"));
+      } else {
+        actual2.add(fp);
+      }
+    }
+    assertEquals(expected2, actual2);
+  }
   private DatastoreQuery getDatastoreQuery(javax.persistence.Query q) {
     return ((JPQLQuery) ((JPAQuery) q).getInternalQuery()).getDatastoreQuery();
   }

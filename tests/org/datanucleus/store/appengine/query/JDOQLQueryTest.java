@@ -97,6 +97,8 @@ public class JDOQLQueryTest extends JDOTestCase {
       new FilterPredicate("origin", FilterOperator.EQUAL, 2);
   private static final FilterPredicate ORIGIN_EQ_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.EQUAL, 2L);
+  private static final FilterPredicate ORIGIN_GT_NULL_LITERAL =
+      new FilterPredicate("origin", FilterOperator.GREATER_THAN, null);
   private static final FilterPredicate ORIGIN_EQ_2STR =
       new FilterPredicate("origin", FilterOperator.EQUAL, "2");
   private static final FilterPredicate DEST_EQ_4 =
@@ -162,6 +164,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByOrm(Flight.class, "~origin == 4", Expression.OP_COM, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "!origin == 4", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "-origin == 4", Expression.OP_NEG, unsupportedOps);
+    assertQueryUnsupportedByOrm(Flight.class, "origin != 4", Expression.OP_NOTEQ, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "origin instanceof " + Flight.class.getName(),
         Expression.OP_IS, unsupportedOps);
     assertEquals(Utils.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
@@ -205,6 +208,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupported("select from " + Flight.class.getName()
         + " where origin == 2 && dest == 4 order by origin asc, dest desc",
         Utils.newArrayList(ORIGIN_EQ_2_LITERAL, DEST_EQ_4_LITERAL), Utils.newArrayList(ORIG_ASC, DESC_DESC));
+    assertQuerySupported("select from " + Flight.class.getName() + " where origin != null",
+        Utils.newArrayList(ORIGIN_GT_NULL_LITERAL), NO_SORTS);
   }
 
   public void testBindVariables() {
@@ -1761,6 +1766,35 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, results.size());
   }
 
+  public void testIsNotNull() {
+    Entity e = Flight.newFlightEntity("name", "origin", null, 23, 24);
+    ldth.ds.put(e);
+    assertEquals(1, countForClass(Flight.class));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != null");
+    assertTrue(((List)q.execute()).isEmpty());
+    commitTxn();
+    beginTxn();
+    e = Flight.newFlightEntity("name", "origin", "not null", 23, 24);
+    ldth.ds.put(e);
+    q.setUnique(true);
+    Flight flight = (Flight) q.execute();
+    assertEquals("not null", flight.getDest());
+  }
+
+  public void testIsNotNull_Param() {
+    Entity e = Flight.newFlightEntity("name", "origin", null, 23, 24);
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != :p");
+    assertTrue(((List)q.execute((String) null)).isEmpty());
+    commitTxn();
+    beginTxn();
+    e = Flight.newFlightEntity("name", "origin", "not null", 23, 24);
+    ldth.ds.put(e);
+    q.setUnique(true);
+    Flight flight = (Flight) q.execute();
+    assertEquals("not null", flight.getDest());
+  }
+
   public void testQueryForOneToManySetWithKeyPk() {
     Entity e = new Entity(HasOneToManyKeyPkSetJDO.class.getSimpleName());
     ldth.ds.put(e);
@@ -2396,8 +2430,30 @@ public class JDOQLQueryTest extends JDOTestCase {
     } else if (bindVariables.length == 2) {
       q.execute(bindVariables[0], bindVariables[1]);
     }
-    assertEquals(addedFilters, getFilterPredicates(q));
+    assertFilterPredicatesEqual(addedFilters, getFilterPredicates(q));
     assertEquals(addedSorts, getSortPredicates(q));
+  }
+
+  // TODO(maxr): Get rid of this when we've fixed the npe in FilterPredicate.equals().
+  private static void assertFilterPredicatesEqual(
+      List<FilterPredicate> expected, List<FilterPredicate> actual) {
+    List<FilterPredicate> expected2 = Utils.newArrayList();
+    for (FilterPredicate fp : expected) {
+      if (fp.getValue() == null) {
+        expected2.add(new FilterPredicate(fp.getPropertyName(), fp.getOperator(), "____null"));
+      } else {
+        expected2.add(fp);
+      }
+    }
+    List<FilterPredicate> actual2 = Utils.newArrayList();
+    for (FilterPredicate fp : actual) {
+      if (fp.getValue() == null) {
+        actual2.add(new FilterPredicate(fp.getPropertyName(), fp.getOperator(), "____null"));
+      } else {
+        actual2.add(fp);
+      }
+    }
+    assertEquals(expected2, actual2);
   }
 
   private DatastoreQuery getDatastoreQuery(Query q) {
