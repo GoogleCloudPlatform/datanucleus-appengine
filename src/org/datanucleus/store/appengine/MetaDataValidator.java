@@ -22,6 +22,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.JPAAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.SequenceMetaData;
@@ -339,14 +340,29 @@ public class MetaDataValidator {
     } else if (pkType.equals(String.class)) {
       if (!DatastoreManager.isEncodedPKField(acmd, pkPos)) {
         noParentAllowed = true;
+      } else {
+        // encoded string pk
+        if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
+          throw new DatastoreMetaDataException(
+              acmd, pkMemberMetaData,
+              "IdentityStrategy SEQUENCE is not supported on encoded String primary keys.");
+        }
       }
     } else if (pkType.equals(Key.class)) {
-
+      if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
+        throw new DatastoreMetaDataException(
+            acmd, pkMemberMetaData,
+            "IdentityStrategy SEQUENCE is not supported on primary keys of type " + Key.class.getName());
+      }
     } else {
       throw new DatastoreMetaDataException(
           acmd, pkMemberMetaData, "Unsupported primary key type: " + pkType.getName());
     }
     return pkMemberMetaData;
+  }
+
+  private static boolean hasIdentityStrategy(IdentityStrategy strat, AbstractMemberMetaData ammd) {
+    return ammd.getValueStrategy() != null && ammd.getValueStrategy().equals(strat);
   }
 
   static final class DatastoreMetaDataException extends NucleusUserException {

@@ -337,4 +337,19 @@ public class IllegalMappingsJPA {
     @ManyToMany
     private List<ManyToMany1> manyToMany;
   }
+
+  @Entity
+  public static class SequenceOnEncodedStringPk {
+    @Id
+    @GeneratedValue(strategy=GenerationType.SEQUENCE)
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
+    private String id;
+  }
+
+  @Entity
+  public static class SequenceOnKeyPk {
+    @Id
+    @GeneratedValue(strategy=GenerationType.SEQUENCE)
+    private Key id;
+  }
 }

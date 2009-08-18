@@ -46,6 +46,8 @@ import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsPkId;
 import org.datanucleus.test.IllegalMappingsJPA.PkMarkedAsPkName;
 import org.datanucleus.test.IllegalMappingsJPA.PkNameOnNonStringField;
 import org.datanucleus.test.IllegalMappingsJPA.PkNameWithUnencodedStringPrimaryKey;
+import org.datanucleus.test.IllegalMappingsJPA.SequenceOnEncodedStringPk;
+import org.datanucleus.test.IllegalMappingsJPA.SequenceOnKeyPk;
 
 import javax.persistence.PersistenceException;
 
@@ -205,8 +207,8 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
 
   private void assertMetaDataException(Object pojo) {
     beginTxn();
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       commitTxn();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -221,4 +223,13 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     MetaDataValidator mdv = new MetaDataValidator(null, mdm, null);
     assertTrue(mdv.isJPA());
   }
+
+  public void testEncodedStringPkWithSequence() {
+    assertMetaDataException(new SequenceOnEncodedStringPk());
+  }
+
+  public void testKeyPkWithSequence() {
+    assertMetaDataException(new SequenceOnKeyPk());
+  }
+
 }

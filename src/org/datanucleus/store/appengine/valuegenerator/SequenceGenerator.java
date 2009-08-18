@@ -73,6 +73,10 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     MetaDataManager mdm = omfContext.getMetaDataManager();
     ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
     AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) properties.get("class-name"), clr);
+    if (acmd != null) {
+      ((DatastoreManager) storeMgr).validateMetaDataForClass(acmd, clr);
+    }
+
     sequenceName = determineSequenceName(acmd);
     if (sequenceName != null) {
       // Fetch the sequence data
@@ -99,10 +103,17 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     }
   }
 
+  /**
+   * AbstractClassMetaData can be null.
+   */
   private String determineSequenceName(AbstractClassMetaData acmd) {
     String sequenceName = (String) properties.get("sequence-name");
     if (sequenceName != null) {
       return sequenceName;
+    }
+    if (acmd == null) {
+      throw new IllegalStateException(
+          "Received a null AbstractClassMetaData and properties did not contain a sequence-name attribute.");
     }
     String fieldName = (String) properties.get("field-name");
     // Look up the meta-data for the field with the generator

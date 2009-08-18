@@ -367,4 +367,19 @@ public class IllegalMappingsJDO {
     @Persistent(mappedBy = "manyToMany")
     private List<ManyToMany1> manyToMany;
   }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class SequenceOnEncodedStringPk {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
+    @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
+    private String id;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class SequenceOnKeyPk {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
+    private Key id;
+  }
 }

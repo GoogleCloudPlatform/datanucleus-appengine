@@ -48,6 +48,8 @@ import org.datanucleus.test.IllegalMappingsJDO.PkMarkedAsPkId;
 import org.datanucleus.test.IllegalMappingsJDO.PkMarkedAsPkName;
 import org.datanucleus.test.IllegalMappingsJDO.PkNameOnNonStringField;
 import org.datanucleus.test.IllegalMappingsJDO.PkNameWithUnencodedStringPrimaryKey;
+import org.datanucleus.test.IllegalMappingsJDO.SequenceOnEncodedStringPk;
+import org.datanucleus.test.IllegalMappingsJDO.SequenceOnKeyPk;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
@@ -244,6 +246,14 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getOMFContext().getMetaDataManager();
     MetaDataValidator mdv = new MetaDataValidator(null, mdm, null);
     assertFalse(mdv.isJPA());
+  }
+
+  public void testEncodedStringPkWithSequence() {
+    assertMetaDataException(new SequenceOnEncodedStringPk());
+  }
+
+  public void testKeyPkWithSequence() {
+    assertMetaDataException(new SequenceOnKeyPk());
   }
 
   private void assertMetaDataException(Object pojo) {
