@@ -2208,15 +2208,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(entity);
 
     Query q = pm.newQuery("select name.first, anotherName.last from " + Person.class.getName());
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (UnsupportedOperationException e) {
-      // this will start to fail once we add support for selecting embedded fields
-    }
-//    @SuppressWarnings("unchecked")
-//    List<Object[]> result = (List<Object[]>) q.execute();
-//    assertEquals(1, result.size());
+    @SuppressWarnings("unchecked")
+    List<Object[]> result = (List<Object[]>) q.execute();
+    assertEquals(1, result.size());
   }
 
   public void testAggregateInFilterFails() {

@@ -491,8 +491,8 @@ public class DatastoreQuery implements Serializable {
       }
     }
 
-    final List<Integer> projectionFieldNums = Utils.newArrayList();
-    ResultType resultType = validateResultExpression(compilation, acmd, projectionFieldNums);
+    final List<AbstractMemberMetaData> projectionFields = Utils.newArrayList();
+    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields);
     // TODO(maxr): Add checks for subqueries and anything else we don't allow
     String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     Function<Entity, Object> resultTransformer;
@@ -506,7 +506,7 @@ public class DatastoreQuery implements Serializable {
       resultTransformer = new Function<Entity, Object>() {
         public Object apply(Entity from) {
           FetchPlan fp = query.getFetchPlan();
-          if (!projectionFieldNums.isEmpty()) {
+          if (!projectionFields.isEmpty()) {
             // If this is a projection, ignore the fetch plan and just fetch everything.
             // We do this because we're returning individual fields, not an entire
             // entity.
@@ -517,10 +517,11 @@ public class DatastoreQuery implements Serializable {
       };
     }
 
-    if (!projectionFieldNums.isEmpty()) {
-      // Wrap the entityToPojo function with a function that will apply the
+    if (!projectionFields.isEmpty()) {
+      // Wrap the existing transformer with a transformer that will apply the
       // appropriate projection to each Entity in the result set.
-      resultTransformer = newProjectionResultTransformer(projectionFieldNums, resultTransformer);
+      resultTransformer = new ProjectionResultTransformer(resultTransformer, getObjectManager(),
+                                                          projectionFields, query.getSingleStringQuery());
     }
     return new QueryData(
         parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer);
@@ -529,14 +530,14 @@ public class DatastoreQuery implements Serializable {
   /**
    * @param compilation The compiled query
    * @param acmd The meta data for the class we're querying
-   * @param projectionFieldNums Out param that will contain the absolute field
-   * position of any fields that have been explicitly selected in the result
+   * @param projectionFields Out param that will contain the member meta-data
+   * of any fields that have been explicitly selected in the result
    * expression.
    *
    * @return The ResultType
    */
   private ResultType validateResultExpression(
-      QueryCompilation compilation, AbstractClassMetaData acmd, List<Integer> projectionFieldNums) {
+      QueryCompilation compilation, AbstractClassMetaData acmd, List<AbstractMemberMetaData> projectionFields) {
     ResultType resultType = null;
     if (compilation.getExprResult() != null) {
       // the only expression results we support are count() and PrimaryExpression
@@ -546,7 +547,7 @@ public class DatastoreQuery implements Serializable {
           if (!invokeExpr.getOperation().equals("count")) {
             Expression.Operator operator = new Expression.Operator(invokeExpr.getOperation(), 0);
             throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
-          } else if (!projectionFieldNums.isEmpty()) {
+          } else if (!projectionFields.isEmpty()) {
             throw newAggregateAndRowResultsException();
           } else {
             resultType = ResultType.COUNT;
@@ -565,12 +566,8 @@ public class DatastoreQuery implements Serializable {
             if (ammd == null) {
               throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
             }
-            if (ammd.getParent() instanceof EmbeddedMetaData) {
-              throw new UnsupportedOperationException(
-                  "Selecting fields of embedded classes is not yet supported");
-            }
-            projectionFieldNums.add(ammd.getAbsoluteFieldNumber());
-            if (!ammd.isPrimaryKey()) {
+            projectionFields.add(ammd);
+            if (ammd.getParent() instanceof EmbeddedMetaData || !ammd.isPrimaryKey()) {
               // A single non-pk field locks the result type on entity projection
               resultType = ResultType.ENTITY_PROJECTION;
             }
@@ -597,33 +594,6 @@ public class DatastoreQuery implements Serializable {
         "Cannot combine an aggregate results with row results.", query.getSingleStringQuery());
   }
 
-
-  /**
-   * Wraps the provided entity-to-pojo {@link Function} in a {@link Function}
-   * that extracts the fields identified by the provided field numbers.
-   */
-  private Function<Entity, Object> newProjectionResultTransformer(
-      final List<Integer> projectionFieldNums, final Function<Entity, Object> entityToPojoFunc) {
-    return new Function<Entity, Object>() {
-      public Object apply(Entity from) {
-        PersistenceCapable pc = (PersistenceCapable) entityToPojoFunc.apply(from);
-        StateManager sm = getObjectManager().findStateManager(pc);
-        List<Object> values = Utils.newArrayList();
-        // Need to fetch the fields one at a time instead of using
-        // sm.provideFields() because that method doesn't respect the ordering
-        // of the field numbers and that ordering is important here.
-        for (int fieldNum : projectionFieldNums) {
-          values.add(sm.provideField(fieldNum));
-        }
-        if (values.size() == 1) {
-          // If there's only one value, just return it.
-          return values.get(0);
-        }
-        // Return an Object array.
-        return values.toArray(new Object[values.size()]);
-      }
-    };
-  }
 
   private void checkNotJoin(Expression expr) {
     if (expr instanceof JoinExpression) {
@@ -1066,7 +1036,7 @@ public class DatastoreQuery implements Serializable {
     EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
     // more than one tuple, so it must be embedded data
     for (String tuple : tuples.subList(1, tuples.size())) {
-      if (ammd.getEmbeddedMetaData() == null) {
+      if (emd == null) {
         throw new NucleusUserException(
             query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "
             + "the sub-object is embedded.").setFatal();

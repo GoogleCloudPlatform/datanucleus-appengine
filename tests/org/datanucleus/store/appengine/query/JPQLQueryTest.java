@@ -1836,7 +1836,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("the other title", titles2.get(1));
   }
 
-  public void testRestrictyFetcheFields_OneIdField() {
+  public void testRestrictFetchedFields_OneIdField() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ldth.ds.put(e1);
 
@@ -2032,15 +2032,9 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(entity);
 
     Query q = em.createQuery("select name.first, anotherName.last from " + Person.class.getName());
-    try {
-      q.getResultList();
-      fail("expected exception");
-    } catch (UnsupportedOperationException e) {
-      // this will start to fail once we add support for selecting embedded fields
-    }
-//    @SuppressWarnings("unchecked")
-//    List<Object[]> result = (List<Object[]>) q.execute();
-//    assertEquals(1, result.size());
+    @SuppressWarnings("unchecked")
+    List<Object[]> result = (List<Object[]>) q.getResultList();
+    assertEquals(1, result.size());
   }
 
   public void testIsNull() {
