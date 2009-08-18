@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.test.SequenceExamplesJDO.HasSequence;
+import org.datanucleus.test.SequenceExamplesJDO.HasSequenceOnNonPkFields;
 import org.datanucleus.test.SequenceExamplesJDO.HasSequenceWithNoSequenceName;
 import org.datanucleus.test.SequenceExamplesJDO.HasSequenceWithSequenceGenerator;
 import org.datanucleus.test.SequenceExamplesJDO.HasSequenceWithUnencodedStringPk;
@@ -144,6 +145,26 @@ public class JDOSequenceTest extends JDOTestCase {
     assertEquals(Long.parseLong(pojo.getId()), Long.parseLong(pojo2.getId()) - 1);
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
     assertEquals(Utils.newArrayList(1L, 1L), sequenceBatchSizes);
+  }
+
+  public void testSequenceOnNonPkFields() throws EntityNotFoundException {
+    String kind = getKind(HasSequenceOnNonPkFields.class);
+    HasSequenceOnNonPkFields pojo = new HasSequenceOnNonPkFields();
+    pojo.setId("yar");
+    beginTxn();
+    pm.makePersistent(pojo);
+    assertEquals(pojo.getVal1(), pojo.getVal2() - 1);
+    commitTxn();
+
+    HasSequenceOnNonPkFields pojo2 = new HasSequenceOnNonPkFields();
+    pojo2.setId("yar");
+    beginTxn();
+    pm.makePersistent(pojo2);
+    assertEquals(pojo.getVal2(), pojo2.getVal1() - 1);
+    commitTxn();
+    assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__",
+                                    kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
+    assertEquals(Utils.newArrayList(1L, 1L, 1L, 1L), sequenceBatchSizes);
   }
 
   private String getKind(Class<?> cls) {

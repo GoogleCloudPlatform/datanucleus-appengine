@@ -107,4 +107,33 @@ public final class SequenceExamplesJDO {
       return id;
     }
   }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class HasSequenceOnNonPkFields {
+
+    @PrimaryKey
+    private String id;
+
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
+    private long val1;
+
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
+    private long val2;
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public String getId() {
+      return id;
+    }
+
+    public long getVal1() {
+      return val1;
+    }
+
+    public long getVal2() {
+      return val2;
+    }
+  }
 }

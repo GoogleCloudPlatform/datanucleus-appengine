@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.test.SequenceExamplesJPA.HasSequence;
+import org.datanucleus.test.SequenceExamplesJPA.HasSequenceOnNonPkFields;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithNoSequenceName;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithSequenceGenerator;
 import org.datanucleus.test.SequenceExamplesJPA.HasSequenceWithUnencodedStringPk;
@@ -122,6 +123,26 @@ public class JPASequenceTest extends JPATestCase {
     assertEquals(Long.parseLong(pojo.getId()), Long.parseLong(pojo2.getId()) - 1);
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
     assertEquals(Utils.newArrayList(1L, 1L), sequenceBatchSizes);
+  }
+
+  public void testSequenceOnNonPkFields() {
+    String kind = getKind(HasSequenceOnNonPkFields.class);
+    HasSequenceOnNonPkFields pojo = new HasSequenceOnNonPkFields();
+    pojo.setId("yar");
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    assertEquals(pojo.getVal(), pojo.getVal2() - 1);
+
+    HasSequenceOnNonPkFields pojo2 = new HasSequenceOnNonPkFields();
+    pojo2.setId("yar");
+    beginTxn();
+    em.persist(pojo2);
+    commitTxn();
+    assertEquals(pojo.getVal2(), pojo2.getVal() - 1);
+    assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__",
+                                    kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
+    assertEquals(Utils.newArrayList(1L, 1L, 1L, 1L), sequenceBatchSizes);
   }
 
   private String getKind(Class<?> cls) {

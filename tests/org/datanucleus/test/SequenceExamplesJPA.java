@@ -106,4 +106,32 @@ public final class SequenceExamplesJPA {
       return id;
     }
   }
+
+  @Entity
+  public static class HasSequenceOnNonPkFields {
+    @Id
+    private String id;
+
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private long val;
+
+    @GeneratedValue(strategy = GenerationType.SEQUENCE)
+    private long val2;
+
+    public String getId() {
+      return id;
+    }
+
+    public void setId(String id) {
+      this.id = id;
+    }
+
+    public long getVal() {
+      return val;
+    }
+
+    public long getVal2() {
+      return val2;
+    }
+  }
 }
