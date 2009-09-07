@@ -122,6 +122,29 @@ public class JPAAttachDetachTest extends JPATestCase {
     assertEquals(differentNow, e.getProperty("date"));
   }
 
+  public void testMergeAfterFetch() throws Exception {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    DetachableJPA pojo = new DetachableJPA();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    em.persist(pojo);
+    em.close();
+    em = emf.createEntityManager();
+//    beginTxn();
+//    pojo = em.find(DetachableJPA.class, pojo.getId());
+    pojo = (DetachableJPA) em.createQuery("select from " + DetachableJPA.class.getName()).getSingleResult();
+//    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+    assertEquals("yar", pojo.getVal());
+    pojo.setVal("not yar");
+    em.merge(pojo);
+    em.close();
+    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJPA.class.getSimpleName(), pojo.getId()));
+    assertEquals("not yar", e.getProperty("val"));
+  }
+
   public void testSerializeWithMultiValueProps() throws Exception {
     beginTxn();
     DetachableWithMultiValuePropsJDO pojo = new DetachableWithMultiValuePropsJDO();

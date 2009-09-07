@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasVersionWithFieldJDO;
 import org.datanucleus.test.KitchenSink;
 
@@ -192,5 +193,15 @@ public class JDODeleteTest extends JDOTestCase {
       // good
     }
     pm = pmf.getPersistenceManager();
+  }
+
+  public void testDeleteHasAncestorPkField() {
+    Entity e =
+        new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), KeyFactory.createKey("Yam", 24));
+    ldth.ds.put(e);
+    beginTxn();
+    HasKeyAncestorKeyPkJDO pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, e.getKey());
+    pm.deletePersistent(pojo);
+    commitTxn();
   }
 }

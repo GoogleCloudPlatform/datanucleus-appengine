@@ -22,10 +22,14 @@ import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactory
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactoryTest;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandlerTest;
 import org.datanucleus.store.appengine.query.JDOQLDeleteTest;
+import org.datanucleus.store.appengine.query.JDOQLQueryJoinTest;
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
 import org.datanucleus.store.appengine.query.JPQLDeleteTest;
+import org.datanucleus.store.appengine.query.JPQLQueryJoinTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
-import org.datanucleus.store.appengine.query.StreamingQueryResultTest;
+import org.datanucleus.store.appengine.query.JoinHelperTest;
+import org.datanucleus.store.appengine.query.LazyResultTest;
+import org.datanucleus.store.appengine.query.SlicingIterableTest;
 
 /**
  * All tests for the app engine datanucleus plugin.
@@ -41,7 +45,7 @@ public class AllTests {
     suite.addTestSuite(DatastoreEntityManagerFactoryTest.class);
     suite.addTestSuite(JDOQLQueryTest.class);
     suite.addTestSuite(JPQLQueryTest.class);
-    suite.addTestSuite(StreamingQueryResultTest.class);
+    suite.addTestSuite(LazyResultTest.class);
     suite.addTestSuite(SerializationTest.class);
     suite.addTestSuite(SerializationManagerTest.class);
     suite.addTestSuite(JDOFetchTest.class);
@@ -105,6 +109,10 @@ public class AllTests {
     suite.addTestSuite(JDOQLDeleteTest.class);
     suite.addTestSuite(JPASequenceTest.class);
     suite.addTestSuite(JDOSequenceTest.class);
+    suite.addTestSuite(JoinHelperTest.class);
+    suite.addTestSuite(SlicingIterableTest.class);
+    suite.addTestSuite(JDOQLQueryJoinTest.class);
+    suite.addTestSuite(JPQLQueryJoinTest.class);
     return suite;
   }
 }

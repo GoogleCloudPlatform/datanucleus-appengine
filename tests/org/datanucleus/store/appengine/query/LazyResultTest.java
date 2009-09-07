@@ -19,24 +19,18 @@ import com.google.appengine.api.datastore.Entity;
 
 import junit.framework.TestCase;
 
-import org.datanucleus.ObjectManager;
-import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.store.appengine.DatastoreTestHelper;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
-import org.datanucleus.store.query.AbstractJavaQuery;
-import org.datanucleus.store.query.Query;
-import org.easymock.EasyMock;
 
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.ListIterator;
-import java.util.Map;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class StreamingQueryResultTest extends TestCase {
+public class LazyResultTest extends TestCase {
 
   protected DatastoreTestHelper ldth;
 
@@ -53,31 +47,11 @@ public class StreamingQueryResultTest extends TestCase {
     super.tearDown();
   }
 
-  private Query dummyQuery() {
-    ObjectManager om = EasyMock.createNiceMock(ObjectManager.class);
-    ApiAdapter apiAdapter = EasyMock.createNiceMock(ApiAdapter.class);
-    EasyMock.expect(om.getApiAdapter()).andReturn(apiAdapter).anyTimes();
-    EasyMock.replay(om);
-    EasyMock.replay(apiAdapter);
-    return new AbstractJavaQuery(om) {
-      public String getSingleStringQuery() {
-        return null;
-      }
-
-      protected void compileInternal(boolean forExecute, Map parameterValues) { }
-
-      protected Object performExecute(Map parameters) {
-        return null;
-      }
-    };
-  }
-
   public void testEquality() {
-    Query query = dummyQuery();
-    StreamingQueryResult sqr1 = new StreamingQueryResult(query, Collections.<Entity>emptyList(), null);
-    StreamingQueryResult sqr2 = new StreamingQueryResult(query, Collections.<Entity>emptyList(), null);
-    assertTrue(sqr1.equals(sqr1));
-    assertFalse(sqr1.equals(sqr2));
+    LazyResult lr1 = new LazyResult<Object>(Collections.<Entity>emptyList(), null);
+    LazyResult lr2 = new LazyResult<Object>(Collections.<Entity>emptyList(), null);
+    assertTrue(lr1.equals(lr1));
+    assertFalse(lr1.equals(lr2));
   }
 
   private static final Function<Entity, Object> NULL_FUNC = new Function<Entity, Object>() {
@@ -121,53 +95,49 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testSize_FreshIterator() {
-    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    assertEquals(0, sqr.size());
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    assertEquals(0, lr.size());
     assertEquals(0, iterable.nextCount);
 
     Entity e = null;
     iterable = new CountingIterable(Utils.newArrayList(e));
-    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    assertEquals(1, sqr.size());
+    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    assertEquals(1, lr.size());
     assertEquals(1, iterable.nextCount);
 
     iterable = new CountingIterable(Utils.newArrayList(e, e));
-    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    assertEquals(2, sqr.size());
+    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    assertEquals(2, lr.size());
     assertEquals(2, iterable.nextCount);
   }
 
   public void testSize_PartiallyConsumedIterator() {
-    Query query = dummyQuery();
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e, e));
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    sqr.resolveNext();
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr.resolveNext();
     assertEquals(1, iterable.nextCount);
-    assertEquals(3, sqr.size());
+    assertEquals(3, lr.size());
     assertEquals(3, iterable.nextCount);
   }
 
   public void testSize_ExhaustedIterator() {
-    Query query = dummyQuery();
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e));
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    sqr.resolveNext();
-    sqr.resolveNext();
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr.resolveNext();
+    lr.resolveNext();
     assertEquals(2, iterable.nextCount);
-    assertEquals(2, sqr.size());
+    assertEquals(2, lr.size());
     assertEquals(2, iterable.nextCount);
   }
 
   public void testGet_FreshIterator() {
-    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
     try {
-      sqr.get(0);
+      lr.get(0);
       fail("expected index out of bounds exception");
     } catch (IndexOutOfBoundsException e) {
       // good
@@ -177,14 +147,14 @@ public class StreamingQueryResultTest extends TestCase {
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     iterable = new CountingIterable(Utils.newArrayList(e1, e2));
-    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    assertEquals(e1, sqr.get(0));
+    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    assertEquals(e1, lr.get(0));
     assertEquals(1, iterable.nextCount);
-    assertEquals(e2, sqr.get(1));
+    assertEquals(e2, lr.get(1));
     assertEquals(2, iterable.nextCount);
 
     try {
-      sqr.get(3);
+      lr.get(3);
       fail("expected index out of bounds exception");
     } catch (IndexOutOfBoundsException e) {
       // good
@@ -193,20 +163,19 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testGet_PartiallyConsumedIterator() {
-    Query query = dummyQuery();
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    sqr.resolveNext();
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr.resolveNext();
     assertEquals(1, iterable.nextCount);
-    assertEquals(e1, sqr.get(0));
+    assertEquals(e1, lr.get(0));
     assertEquals(1, iterable.nextCount);
-    assertEquals(e2, sqr.get(1));
+    assertEquals(e2, lr.get(1));
     assertEquals(2, iterable.nextCount);
 
     try {
-      sqr.get(3);
+      lr.get(3);
       fail("expected index out of bounds exception");
     } catch (IndexOutOfBoundsException e) {
       // good
@@ -215,21 +184,20 @@ public class StreamingQueryResultTest extends TestCase {
   }
 
   public void testGet_ExhaustedIterator() {
-    Query query = dummyQuery();
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    sqr.resolveNext();
-    sqr.resolveNext();
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr.resolveNext();
+    lr.resolveNext();
     assertEquals(2, iterable.nextCount);
-    assertEquals(e1, sqr.get(0));
+    assertEquals(e1, lr.get(0));
     assertEquals(2, iterable.nextCount);
-    assertEquals(e2, sqr.get(1));
+    assertEquals(e2, lr.get(1));
     assertEquals(2, iterable.nextCount);
 
     try {
-      sqr.get(3);
+      lr.get(3);
       fail("expected index out of bounds exception");
     } catch (IndexOutOfBoundsException e) {
       // good
@@ -240,30 +208,29 @@ public class StreamingQueryResultTest extends TestCase {
   // This implicitly tests the iterator() method as well since iterator() just
   // delegates to listIterator()
   public void testListIterator() {
-    Query query = dummyQuery();
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    StreamingQueryResult sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    assertFalse(sqr.listIterator().hasNext());
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    assertFalse(lr.listIterator().hasNext());
 
     Entity e1 = new Entity("yar1");
     Entity e2 = new Entity("yar2");
     Entity e3 = new Entity("yar3");
     Entity e4 = new Entity("yar4");
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2, e3, e4));
-    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC);
 
-    ListIterator listIter = sqr.listIterator();
+    ListIterator listIter = lr.listIterator();
     assertTrue(listIter.hasNext());
     assertSame(e1, listIter.next());
     assertEquals(1, iterable.nextCount);
-    assertSame(e1, sqr.get(0));
+    assertSame(e1, lr.get(0));
     assertEquals(1, iterable.nextCount);
 
     assertEquals(e2, listIter.next());
     assertEquals(2, iterable.nextCount);
     // Calls to the iterator make more data available to get() so nextCount
     // does not increment.
-    assertSame(e2, sqr.get(1));
+    assertSame(e2, lr.get(1));
     assertEquals(2, iterable.nextCount);
 
     // now we work our way backwards
@@ -317,14 +284,14 @@ public class StreamingQueryResultTest extends TestCase {
     assertFalse(listIter.hasNext());
 
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    sqr = new StreamingQueryResult(query, iterable, NULL_FUNC);
-    listIter = sqr.listIterator();
+    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    listIter = lr.listIterator();
     assertTrue(listIter.hasNext());
     assertEquals(e1, listIter.next());
     assertEquals(1, iterable.nextCount);
 
     // Call to get makes more data available to the iterator.
-    sqr.get(1);
+    lr.get(1);
     assertEquals(2, iterable.nextCount);
     assertTrue(listIter.hasNext());
     assertSame(e2, listIter.next());

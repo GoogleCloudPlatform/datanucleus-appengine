@@ -1112,7 +1112,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterBySubObject_UnknownField() {
     try {
       pm.newQuery(
-          "select from " + Flight.class.getName() + " where origin.first == \"max\"").execute();
+          "select from " + Flight.class.getName() + " where origin.doesnotexist == \"max\"").execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
