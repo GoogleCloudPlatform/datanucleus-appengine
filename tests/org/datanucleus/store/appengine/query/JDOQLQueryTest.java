@@ -44,6 +44,7 @@ import org.datanucleus.test.BidirectionalGrandchildListJDO;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
+import org.datanucleus.test.HasEmbeddedJDO;
 import org.datanucleus.test.HasEncodedStringPkJDO;
 import org.datanucleus.test.HasEnumJDO;
 import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
@@ -1074,6 +1075,20 @@ public class JDOQLQueryTest extends JDOTestCase {
         + " where name.first == \"max\"");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.execute();
+    assertEquals(1, result.size());
+  }
+
+  public void testFilterByEmbeddedField_2LevelsDeep() {
+    Entity entity = new Entity(HasEmbeddedJDO.class.getSimpleName());
+    entity.setProperty("val1", "v1");
+    entity.setProperty("val2", "v2");
+    ldth.ds.put(entity);
+
+    Query q = pm.newQuery(
+        "select from " + HasEmbeddedJDO.class.getName()
+        + " where embedded1.embedded2.val2 == \"v2\"");
+    @SuppressWarnings("unchecked")
+    List<HasEmbeddedJDO> result = (List<HasEmbeddedJDO>) q.execute();
     assertEquals(1, result.size());
   }
 

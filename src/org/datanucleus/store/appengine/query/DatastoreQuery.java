@@ -1125,9 +1125,9 @@ public class DatastoreQuery implements Serializable {
     if (ammd == null || tuples.size() == 1) {
       return ammd;
     }
-    EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
     // more than one tuple, so it must be embedded data
     for (String tuple : tuples.subList(1, tuples.size())) {
+      EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
       if (emd == null) {
         throw new NucleusUserException(
             query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "

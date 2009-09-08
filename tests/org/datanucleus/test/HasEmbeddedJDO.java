@@ -18,6 +18,7 @@
 package org.datanucleus.test;
 
 import javax.jdo.annotations.Embedded;
+import javax.jdo.annotations.EmbeddedOnly;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -38,6 +39,10 @@ public class HasEmbeddedJDO {
   @Embedded
   private Flight flight;
 
+  @Persistent
+  @Embedded
+  private Embedded1 embedded1;
+
   public Long getId() {
     return id;
   }
@@ -48,5 +53,53 @@ public class HasEmbeddedJDO {
 
   public void setFlight(Flight flight) {
     this.flight = flight;
+  }
+
+  public Embedded1 getEmbedded1() {
+    return embedded1;
+  }
+
+  public void setEmbedded1(Embedded1 embedded1) {
+    this.embedded1 = embedded1;
+  }
+
+  @EmbeddedOnly
+  @PersistenceCapable
+  public static class Embedded1 {
+    private String val1;
+    
+    @Persistent
+    @Embedded
+    private Embedded2 embedded2;
+
+    public String getVal1() {
+      return val1;
+    }
+
+    public void setVal1(String val1) {
+      this.val1 = val1;
+    }
+
+    public Embedded2 getEmbedded2() {
+      return embedded2;
+    }
+
+    public void setEmbedded2(Embedded2 embedded2) {
+      this.embedded2 = embedded2;
+    }
+  }
+
+  @EmbeddedOnly
+  @PersistenceCapable
+  public static class Embedded2 {
+    private String val2;
+
+    public String getVal2() {
+      return val2;
+    }
+
+    public void setVal2(String val2) {
+      this.val2 = val2;
+    }
   }
 }
