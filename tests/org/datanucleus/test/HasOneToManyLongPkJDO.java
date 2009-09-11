@@ -22,9 +22,11 @@ import java.util.Collection;
  * @author Max Ross <maxr@google.com>
  */
 public interface HasOneToManyLongPkJDO extends Serializable {
-  public void addFlight(Flight flight);
-  public Collection<Flight> getFlights();
-  public void addBidirChild(BidirectionalChildLongPkJDO child);
-  public Collection<BidirectionalChildLongPkJDO> getBidirChildren();
-  public Long getId();
+  void addFlight(Flight flight);
+  Collection<Flight> getFlights();
+  void addBidirChild(BidirectionalChildLongPkJDO child);
+  Collection<BidirectionalChildLongPkJDO> getBidirChildren();
+  Long getId();
+  void removeFlights(Collection<Flight> flights);
+  void removeBidirChildren(Collection<BidirectionalChildLongPkJDO> bidirectionalChildLongPkJDOs);
 }

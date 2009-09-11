@@ -20,7 +20,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import org.datanucleus.test.BidirectionalChildJDO;
 import org.datanucleus.test.BidirectionalChildLongPkSetJDO;
 import org.datanucleus.test.BidirectionalChildSetJDO;
-import org.datanucleus.test.BidirectionalChildSetUnencodedStringPkJDO;
+import org.datanucleus.test.BidirectionalChildUnencodedStringPkSetJDO;
 import org.datanucleus.test.HasOneToManyKeyPkSetJDO;
 import org.datanucleus.test.HasOneToManyLongPkSetJDO;
 import org.datanucleus.test.HasOneToManySetJDO;
@@ -90,6 +90,18 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
                   new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
   }
 
+  public void testRemoveAll_LongPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_LongPkOnParent(new HasOneToManyLongPkSetJDO(), new BidirectionalChildLongPkSetJDO(),
+                  new BidirectionalChildLongPkSetJDO(), new BidirectionalChildLongPkSetJDO());
+  }
+
+  public void testRemoveAll_UnencodedStringPkOnParent() throws EntityNotFoundException {
+    HasOneToManyUnencodedStringPkSetJDO parent = new HasOneToManyUnencodedStringPkSetJDO();
+    parent.setId("parent id");
+    testRemoveAll_UnencodedStringPkOnParent(parent, new BidirectionalChildUnencodedStringPkSetJDO(),
+                  new BidirectionalChildUnencodedStringPkSetJDO(), new BidirectionalChildUnencodedStringPkSetJDO());
+  }
+
   public void testChangeParent() {
     testChangeParent(new HasOneToManySetJDO(), new HasOneToManySetJDO());
   }
@@ -124,7 +136,7 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
 
   public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
     testAddChildToOneToManyParentWithUnencodedStringPk(
-        new HasOneToManyUnencodedStringPkSetJDO(), new BidirectionalChildSetUnencodedStringPkJDO());
+        new HasOneToManyUnencodedStringPkSetJDO(), new BidirectionalChildUnencodedStringPkSetJDO());
   }
 
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {

@@ -59,7 +59,7 @@ abstract class DatastoreAbstractCollectionStoreSpecialization
     if (childKey == null || childKey.getParent() == null) {
       return false;
     }
-    Key parentKey = extractElementKey(om, ownerSM.getObject());
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(om.getApiAdapter(), ownerSM);
     return childKey.getParent().equals(parentKey);
   }
 

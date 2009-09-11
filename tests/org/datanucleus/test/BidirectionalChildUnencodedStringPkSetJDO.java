@@ -26,7 +26,7 @@ import javax.jdo.annotations.PrimaryKey;
  * @author Max Ross <maxr@google.com>
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class BidirectionalChildSetUnencodedStringPkJDO implements BidirectionalChildUnencodedStringPkJDO {
+public class BidirectionalChildUnencodedStringPkSetJDO implements BidirectionalChildUnencodedStringPkJDO {
 
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

@@ -81,4 +81,12 @@ public class HasOneToManyLongPkListJDO implements HasOneToManyLongPkJDO {
   public void setVal(String val) {
     this.val = val;
   }
+
+  public void removeFlights(Collection<Flight> flights) {
+    this.flights.removeAll(flights);
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildLongPkJDO> bidirChildren) {
+    this.bidirChildren.removeAll(bidirChildren);
+  }
 }

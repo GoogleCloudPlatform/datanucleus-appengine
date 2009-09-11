@@ -18,7 +18,6 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -151,8 +150,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         String kind =
             storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
         Query q = new Query(kind);
-        Object id = om.getApiAdapter().getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
-        Key key = id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
+        Key key = EntityUtils.getPrimaryKeyAsKey(sm.getObjectManager().getApiAdapter(), sm);
         q.setAncestor(key);
         // create an entity just to capture the name of the index property
         Entity entity = new Entity(kind);

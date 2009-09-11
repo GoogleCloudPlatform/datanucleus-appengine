@@ -67,4 +67,13 @@ public class HasOneToManyUnencodedStringPkListJDO implements HasOneToManyUnencod
   public Collection<BidirectionalChildUnencodedStringPkJDO> getBidirChildren() {
     return (List) bidirChildren;
   }
+
+  public void removeFlights(Collection<Flight> flights) {
+    this.flights.removeAll(flights);
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildUnencodedStringPkJDO> bidirChildren) {
+    this.bidirChildren.removeAll(bidirChildren);
+  }
+
 }

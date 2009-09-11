@@ -349,9 +349,6 @@ public final class EntityUtils {
   public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, StateManager sm) {
     Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
 
-    // TODO(maxr): Consolidate this logic in a single location.
-    // Also, we should be able to look at the meta data to see if we have
-    // an encoded or unencoded String.
     String kind =
         EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
     if (primaryKey instanceof Key) {

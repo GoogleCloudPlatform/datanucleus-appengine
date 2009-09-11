@@ -41,8 +41,8 @@ public class HasOneToManyUnencodedStringPkSetJDO implements HasOneToManyUnencode
 
   @Persistent(mappedBy = "parent")
   @Element(dependent = "true")
-  private Set<BidirectionalChildSetUnencodedStringPkJDO> bidirChildren =
-      new HashSet<BidirectionalChildSetUnencodedStringPkJDO>();
+  private Set<BidirectionalChildUnencodedStringPkSetJDO> bidirChildren =
+      new HashSet<BidirectionalChildUnencodedStringPkSetJDO>();
 
   public void addFlight(Flight flight) {
     flights.add(flight);
@@ -61,10 +61,18 @@ public class HasOneToManyUnencodedStringPkSetJDO implements HasOneToManyUnencode
   }
 
   public void addBidirChild(BidirectionalChildUnencodedStringPkJDO child) {
-    bidirChildren.add((BidirectionalChildSetUnencodedStringPkJDO) child);
+    bidirChildren.add((BidirectionalChildUnencodedStringPkSetJDO) child);
   }
 
   public Collection<BidirectionalChildUnencodedStringPkJDO> getBidirChildren() {
     return (Set) bidirChildren;
+  }
+
+  public void removeFlights(Collection<Flight> flights) {
+    this.flights.removeAll(flights);
+  }
+
+  public void removeBidirChildren(Collection<BidirectionalChildUnencodedStringPkJDO> bidirChildren) {
+    this.bidirChildren.removeAll(bidirChildren);
   }
 }

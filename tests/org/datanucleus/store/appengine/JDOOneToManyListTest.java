@@ -163,6 +163,18 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
                   new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
   }
 
+  public void testRemoveAll_LongPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_LongPkOnParent(new HasOneToManyLongPkListJDO(), new BidirectionalChildLongPkListJDO(),
+                  new BidirectionalChildLongPkListJDO(), new BidirectionalChildLongPkListJDO());
+  }
+
+  public void testRemoveAll_UnencodedStringPkOnParent() throws EntityNotFoundException {
+    HasOneToManyUnencodedStringPkListJDO parent = new HasOneToManyUnencodedStringPkListJDO();
+    parent.setId("parent id");
+    testRemoveAll_UnencodedStringPkOnParent(parent, new BidirectionalChildUnencodedStringPkListJDO(),
+                  new BidirectionalChildUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO());
+  }
+
   public void testChangeParent() {
     testChangeParent(new HasOneToManyListJDO(), new HasOneToManyListJDO());
   }
