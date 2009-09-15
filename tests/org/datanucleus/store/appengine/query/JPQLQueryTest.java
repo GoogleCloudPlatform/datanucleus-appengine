@@ -2457,6 +2457,15 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
+  public void testPositionalParam() {
+    Entity e = Book.newBookEntity("me", "isbn", "return of yam");
+    ldth.ds.put(e);
+    List<Book> result =
+        em.createQuery("select b from " + Book.class.getName() + " b where isbn=?1")
+            .setParameter(1, "isbn").getResultList();
+    assertEquals(1, result.size());
+  }
+
   private void assertQueryUnsupportedByDatastore(String query) {
     Query q = em.createQuery(query);
     try {

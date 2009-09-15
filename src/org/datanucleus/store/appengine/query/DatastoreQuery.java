@@ -873,7 +873,17 @@ public class DatastoreQuery implements Serializable {
       // implicit param
       return qd.parameters.get(pe.getPosition());
     }
-    return qd.parameters.get(pe.getId());
+    Object paramValue = qd.parameters.get(pe.getId());
+    if (paramValue == null) {
+      // JPQL positional param keys are Integers in this map so make sure
+      // we try to find it that way
+      try {
+        paramValue = qd.parameters.get(Integer.parseInt(pe.getId()));
+      } catch (NumberFormatException nfe) {
+        // that's fine, it just means this isn't a positional param
+      }
+    }
+    return paramValue;
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
