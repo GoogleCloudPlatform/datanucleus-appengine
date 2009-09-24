@@ -27,7 +27,11 @@ import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasLongPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
 
+import java.util.List;
+import java.util.Set;
+
 import javax.persistence.PersistenceException;
+import javax.persistence.Query;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -206,4 +210,93 @@ public class JPAPrimaryKeyTest extends JPATestCase {
       rollbackTxn();
     }
   }
+  
+  public void testUnencodedStringPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasUnencodedStringPkJPA pojo = new HasUnencodedStringPkJPA();
+    beginTxn();
+    pojo.setId("yar1");
+    em.persist(pojo);
+    commitTxn();
+
+    HasUnencodedStringPkJPA pojo2 = new HasUnencodedStringPkJPA();
+    beginTxn();
+    pojo2.setId("yar2");
+    em.persist(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    List<HasUnencodedStringPkJPA> pojos = (List<HasUnencodedStringPkJPA>) q.getResultList();
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<String> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet("yar1", "yar2"));
+    commitTxn();
+  }
+
+  public void testEncodedStringPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasEncodedStringPkJPA pojo = new HasEncodedStringPkJPA();
+    beginTxn();
+    String key1 = new KeyFactory.Builder("parent", 44)
+        .addChild(HasEncodedStringPkJPA.class.getSimpleName(), "yar1").getString();
+    pojo.setId(key1);
+    em.persist(pojo);
+    commitTxn();
+
+    HasEncodedStringPkJPA pojo2 = new HasEncodedStringPkJPA();
+    beginTxn();
+    String key2 = new KeyFactory.Builder("parent", 44)
+        .addChild(HasEncodedStringPkJPA.class.getSimpleName(), "yar2").getString();        
+    pojo2.setId(key2);
+    em.persist(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    List<HasEncodedStringPkJPA> pojos = (List<HasEncodedStringPkJPA>) q.getResultList();
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<String> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet(key1, key2));
+    commitTxn();
+  }
+
+  public void testUnencodedLongPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasLongPkJPA pojo = new HasLongPkJPA();
+    beginTxn();
+    pojo.setId(1L);
+    em.persist(pojo);
+    commitTxn();
+
+    HasLongPkJPA pojo2 = new HasLongPkJPA();
+    beginTxn();
+    pojo2.setId(2L);
+    em.persist(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = em.createQuery("select from " + HasLongPkJPA.class.getName() + " where id = :ids");
+    q.setParameter("ids", Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    List<HasLongPkJPA> pojos = (List<HasLongPkJPA>) q.getResultList();
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<Long> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet(1L, 2L));
+    commitTxn();
+  }
+  
 }

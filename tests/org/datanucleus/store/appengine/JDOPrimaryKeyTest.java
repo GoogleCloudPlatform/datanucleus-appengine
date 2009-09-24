@@ -27,12 +27,17 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasLongPkJDO;
 import org.datanucleus.test.HasUnencodedStringPkJDO;
 
+import java.util.List;
+import java.util.Set;
+
 import javax.jdo.JDOFatalUserException;
+import javax.jdo.Query;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class JDOPrimaryKeyTest extends JDOTestCase {
+
   public void testLongPk() throws EntityNotFoundException {
     HasLongPkJDO pojo = new HasLongPkJDO();
     beginTxn();
@@ -258,5 +263,93 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
       // good
       rollbackTxn();
     }
+  }
+
+  public void testUnencodedStringPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    HasUnencodedStringPkJDO pojo = new HasUnencodedStringPkJDO();
+    beginTxn();
+    pojo.setId("yar1");
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    HasUnencodedStringPkJDO pojo2 = new HasUnencodedStringPkJDO();
+    beginTxn();
+    pojo2.setId("yar2");
+    pm.makePersistent(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + HasUnencodedStringPkJDO.class.getName() + " where id == :ids");
+    List<HasUnencodedStringPkJDO> pojos =
+        (List<HasUnencodedStringPkJDO>) q.execute(Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<String> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet("yar1", "yar2"));
+    commitTxn();
+  }
+
+  public void testEncodedStringPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    HasEncodedStringPkJDO pojo = new HasEncodedStringPkJDO();
+    beginTxn();
+    String key1 = new KeyFactory.Builder("parent", 44)
+        .addChild(HasEncodedStringPkJDO.class.getSimpleName(), "yar1").getString();
+    pojo.setId(key1);
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    HasEncodedStringPkJDO pojo2 = new HasEncodedStringPkJDO();
+    beginTxn();
+    String key2 = new KeyFactory.Builder("parent", 44)
+        .addChild(HasEncodedStringPkJDO.class.getSimpleName(), "yar2").getString();
+    pojo2.setId(key2);
+    pm.makePersistent(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id == :ids");
+    List<HasEncodedStringPkJDO> pojos =
+        (List<HasEncodedStringPkJDO>) q.execute(Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<String> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet(key1, key2));
+    commitTxn();
+  }
+
+  public void testUnencodedLongPk_BatchGet() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    HasLongPkJDO pojo = new HasLongPkJDO();
+    beginTxn();
+    pojo.setId(1L);
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    HasLongPkJDO pojo2 = new HasLongPkJDO();
+    beginTxn();
+    pojo2.setId(2L);
+    pm.makePersistent(pojo2);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    assertNotNull(pojo2.getId());
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + HasLongPkJDO.class.getName() + " where id == :ids");
+    List<HasLongPkJDO> pojos =
+        (List<HasLongPkJDO>) q.execute(Utils.newArrayList(pojo.getId(), pojo2.getId()));
+    assertEquals(2, pojos.size());
+    // we should preserve order but right now we don't
+    Set<Long> pks = Utils.newHashSet(pojos.get(0).getId(), pojos.get(1).getId());
+    assertEquals(pks, Utils.newHashSet(1L, 2L));
+    commitTxn();
   }
 }

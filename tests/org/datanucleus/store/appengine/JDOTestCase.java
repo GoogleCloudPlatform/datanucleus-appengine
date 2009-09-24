@@ -17,6 +17,10 @@ package org.datanucleus.store.appengine;
 
 import junit.framework.TestCase;
 
+import org.datanucleus.ObjectManager;
+import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.metadata.MetaDataManager;
+
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
@@ -129,8 +133,12 @@ public class JDOTestCase extends TestCase {
   }
 
   protected int countForClass(Class<?> clazz) {
+    ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
+    MetaDataManager mdm = om.getMetaDataManager();
+    String kind = EntityUtils.determineKind(
+        mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
     return ldth.ds.prepare(
-        new com.google.appengine.api.datastore.Query(clazz.getSimpleName())).countEntities();
+        new com.google.appengine.api.datastore.Query(kind)).countEntities();
   }
 
 }

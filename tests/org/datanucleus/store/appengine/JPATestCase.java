@@ -19,6 +19,10 @@ import com.google.appengine.api.datastore.Query;
 
 import junit.framework.TestCase;
 
+import org.datanucleus.ObjectManager;
+import org.datanucleus.jpa.EntityManagerImpl;
+import org.datanucleus.metadata.MetaDataManager;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -121,7 +125,12 @@ public class JPATestCase extends TestCase {
   }
 
   public int countForClass(Class<?> clazz) {
-    return ldth.ds.prepare(new Query(clazz.getSimpleName())).countEntities();
+    ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
+    MetaDataManager mdm = om.getMetaDataManager();
+    String kind = EntityUtils.determineKind(
+        mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
+
+    return ldth.ds.prepare(new Query(kind)).countEntities();
   }
   
 }
