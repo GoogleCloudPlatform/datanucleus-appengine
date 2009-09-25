@@ -438,7 +438,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private void storePKIdField(int fieldNumber, Object value) {
+  void storePKIdField(int fieldNumber, Object value) {
     if (!fieldIsOfTypeLong(fieldNumber)) {
       throw new NucleusUserException(
           "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long").setFatal();

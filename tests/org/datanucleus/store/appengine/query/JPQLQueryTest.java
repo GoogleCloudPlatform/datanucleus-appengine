@@ -41,6 +41,7 @@ import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.BidirectionalChildLongPkListJPA;
 import org.datanucleus.test.BidirectionalGrandchildListJPA;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.DetachableJPA;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasBytesJPA;
 import org.datanucleus.test.HasDoubleJPA;
@@ -2464,6 +2465,16 @@ public class JPQLQueryTest extends JPATestCase {
         em.createQuery("select b from " + Book.class.getName() + " b where isbn=?1")
             .setParameter(1, "isbn").getResultList();
     assertEquals(1, result.size());
+  }
+
+  public void testDefaultClassName() {
+    ldth.ds.put(new Entity(DetachableJPA.class.getSimpleName()));
+    assertEquals(1, em.createQuery("select o from " + DetachableJPA.class.getName() + " o").getResultList().size());
+    assertEquals(1, em.createQuery("select o from DetachableJPA o").getResultList().size());
+  }
+
+  public void testQueryForClassWithNameStartingWithIn() {
+    assertTrue(em.createQuery("select o from InTheHouseJPA o").getResultList().isEmpty());
   }
 
   private void assertQueryUnsupportedByDatastore(String query) {

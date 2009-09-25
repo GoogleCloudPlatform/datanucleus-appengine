@@ -1233,7 +1233,7 @@ public class DatastoreQuery implements Serializable {
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else if (valueKey == null) {
       throw new NucleusUserException(
-          query.getSingleStringQuery() + ": Cannot query for objects with null parents.").setFatal();      
+          query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.").setFatal();      
     } else {
       addParentFilter(op, valueKey, qd.primaryDatastoreQuery);
     }

@@ -36,4 +36,10 @@ class DatastoreDeleteFieldManager extends DatastoreFieldManager {
     // swallow it - we typically treat this as an error but if it's part of a
     // delete operation we don't care
   }
+
+  @Override
+  void storePKIdField(int fieldNumber, Object value) {
+    // swallow it - we typically treat this as an error but if it's part of a
+    // delete operation we don't care
+  }
 }
