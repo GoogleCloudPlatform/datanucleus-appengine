@@ -23,6 +23,7 @@ import com.google.apphosting.api.ApiProxy;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.test.Flight;
 
+import java.sql.SQLException;
 import java.util.ConcurrentModificationException;
 
 import javax.jdo.JDODataStoreException;
@@ -82,9 +83,9 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     try {
       commitTxn();
       fail("expected exception");
-    } catch (JDOException e) {
+    } catch (JDODataStoreException e) {
       // good
-      assertTrue(e.getCause() instanceof NucleusDataStoreException);
+      assertTrue(e.getCause() instanceof SQLException);
       assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
     }
     assertFalse(pm.currentTransaction().isActive());

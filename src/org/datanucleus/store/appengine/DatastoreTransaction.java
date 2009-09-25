@@ -20,10 +20,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Transaction;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
 import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
 import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
+import java.sql.SQLException;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
@@ -56,13 +56,20 @@ public class DatastoreTransaction {
     deletedKeys.clear();
   }
 
-  void commit() {
+  void commit() throws SQLException {
     try {
       txn.commit();
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (ConcurrentModificationException e) {
-      throw wrapConcurrentModificationException(e);
+      // Weirdness.  For JDO we ultimately want a JDOCanRetryException to be
+      // thrown, but the only way to get JDO to interpret an exception thrown
+      // during commit as something that can be retried is to throw a
+      // SQLException.  See NucluesJDOHelper.getJDOExceptionForNucleusException
+      // for the special case logic.
+      SQLException sql = new SQLException("Concurrent Modification");
+      sql.initCause(e);
+      throw sql;
     } catch (DatastoreFailureException e) {
       throw wrapDatastoreFailureException(e);
     }

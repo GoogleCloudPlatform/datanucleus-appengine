@@ -19,6 +19,8 @@ import com.google.appengine.api.datastore.DatastoreService;
 
 import org.datanucleus.util.NucleusLogger;
 
+import java.sql.SQLException;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -70,7 +72,13 @@ class DatastoreXAResource extends EmulatedXAResource {
   public void commit(Xid arg0, boolean arg1) throws XAException {
     super.commit(arg0, arg1);
     if (currentTxn != null) {
-      currentTxn.commit();
+      try {
+        currentTxn.commit();
+      } catch (SQLException e) {
+        XAException xa = new XAException(e.getMessage());
+        xa.initCause(e);
+        throw xa;
+      }
       NucleusLogger.DATASTORE.debug(
           "Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
