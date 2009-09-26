@@ -18,6 +18,7 @@ package org.datanucleus.test;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
+import javax.jdo.annotations.Embedded;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -49,6 +50,18 @@ public class IgnorableMappingsJDO {
     public Long id;
 
     @Persistent(dependent = "true", defaultFetchGroup = "true")
+    private HasKeyPkJDO child;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class OneToManyParentWithEagerlyFetchedEmbeddedChild {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    public Long id;
+
+    // this is actually ok because it's embedded
+    @Persistent(dependent = "true", defaultFetchGroup = "true")
+    @Embedded
     private HasKeyPkJDO child;
   }
 

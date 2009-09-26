@@ -209,7 +209,7 @@ public class MetaDataValidator {
     if (ammd.getRelationType(clr) != Relation.NONE) {
       // Look for "eager" relationships.  Not supported but not necessarily an error
       // since we can always fall back to "lazy."
-      if (ammd.isDefaultFetchGroup()) {
+      if (ammd.isDefaultFetchGroup() && !ammd.isEmbedded()) {
         // We have separate error messages for JPA vs JDO because eagerness is configured
         // differently between the two.
         String msg = isJPA() ?

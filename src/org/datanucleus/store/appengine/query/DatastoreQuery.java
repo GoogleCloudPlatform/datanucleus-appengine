@@ -189,6 +189,11 @@ public class DatastoreQuery implements Serializable {
    */
   public Object performExecute(Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
+
+    if (query.getCandidateClass() == null) {
+      throw new NucleusUserException(
+          "Candidate class could not be found: " + query.getSingleStringQuery()).setFatal();
+    }
     DatastoreManager storeMgr = getStoreManager();
     ClassLoaderResolver clr = getClassLoaderResolver();
     AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
@@ -484,10 +489,6 @@ public class DatastoreQuery implements Serializable {
       throw new NucleusUserException("Only select and delete statements are supported.").setFatal();
     }
 
-    if (query.getCandidateClass() == null) {
-      throw new NucleusUserException(
-          "Candidate class could not be found: " + query.getSingleStringQuery()).setFatal();
-    }
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
     if (query.getGrouping() != null) {

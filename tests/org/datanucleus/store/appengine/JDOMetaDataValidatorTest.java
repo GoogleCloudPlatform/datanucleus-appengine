@@ -21,6 +21,7 @@ import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraints;
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChildList;
+import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedEmbeddedChild;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonStringPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithKeyAncestor;
@@ -227,6 +228,9 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
 
   public void testOneToManyWithEagerlyFetchedChild() {
     assertMetaDataException(new OneToManyParentWithEagerlyFetchedChild());
+    beginTxn();
+    pm.makePersistent(new OneToManyParentWithEagerlyFetchedEmbeddedChild());
+    commitTxn();
   }
 
   public void testUniqueConstraint() {

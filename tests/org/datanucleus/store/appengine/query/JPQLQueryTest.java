@@ -2477,6 +2477,16 @@ public class JPQLQueryTest extends JPATestCase {
     assertTrue(em.createQuery("select o from InTheHouseJPA o").getResultList().isEmpty());
   }
 
+  public void testNonexistentClassThrowsReasonableException() {
+    try {
+      em.createQuery("select o from xyam o").getResultList();
+      fail("expected exception");
+    } catch (PersistenceException e) {
+      // good
+    }
+
+  }
+
   private void assertQueryUnsupportedByDatastore(String query) {
     Query q = em.createQuery(query);
     try {

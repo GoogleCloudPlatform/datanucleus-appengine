@@ -2377,6 +2377,16 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testNonexistentClassThrowsReasonableException() {
+    try {
+      pm.newQuery("select from xyam order by date desc range 0,5").execute();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
