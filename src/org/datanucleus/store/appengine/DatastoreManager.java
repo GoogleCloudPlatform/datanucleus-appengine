@@ -27,9 +27,11 @@ import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.jpa.JPAAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
+import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.plugin.PluginManager;
 import org.datanucleus.plugin.PluginRegistry;
 import org.datanucleus.store.Extent;
@@ -319,8 +321,23 @@ public class DatastoreManager extends MappedStoreManager {
     return null;
   }
 
+
   @Override
   protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
+    InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
+    AbstractClassMetaData[] managingCmds = getClassesManagingTableForClass(cmd.getSuperAbstractClassMetaData(), clr);
+    if (managingCmds != null &&
+        managingCmds.length > 0 &&
+        managingCmds[0].getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE) {
+      return buildStoreData(cmd, clr);
+    } else if(managingCmds == null &&
+              (strat == InheritanceStrategy.COMPLETE_TABLE || strat == InheritanceStrategy.NEW_TABLE)) {
+      return buildStoreData(cmd, clr);
+    }
+    throw new UnsupportedInheritanceStrategyException(strat, deriveLegalStrategies());
+  }
+
+  private StoreData buildStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
     DatastoreTable table = new DatastoreTable(this, cmd, clr, dba);
     StoreData sd = new MappedStoreData(cmd, table, true);
     registerStoreData(sd);
@@ -328,6 +345,18 @@ public class DatastoreManager extends MappedStoreManager {
     // overflow
     table.buildMapping();
     return sd;
+  }
+
+  private String deriveLegalStrategies() {
+    return "The only supported strategy is " + (isJPA(omfContext) ? "InheritanceType.TABLE_PER_CLASS." : "complete-table");
+  }
+
+  final class UnsupportedInheritanceStrategyException extends NucleusUserException {
+    UnsupportedInheritanceStrategyException(InheritanceStrategy strat, String legalStrategy) {
+      super("App Engine does not support Inheritance Strategy " + strat
+          + ".  " + legalStrategy);
+      setFatal();
+    }
   }
 
   @Override
@@ -617,5 +646,9 @@ public class DatastoreManager extends MappedStoreManager {
   public void close() {
     validatedClasses.clear();
     super.close();
+  }
+
+  static boolean isJPA(OMFContext omfContext) {
+    return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
   }
 }

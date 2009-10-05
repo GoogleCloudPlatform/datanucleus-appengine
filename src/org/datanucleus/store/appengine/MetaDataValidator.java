@@ -19,7 +19,6 @@ import com.google.appengine.api.datastore.Key;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.jpa.JPAAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
@@ -239,7 +238,7 @@ public class MetaDataValidator {
   }
 
   boolean isJPA() {
-    return JPAAdapter.class.isAssignableFrom(metaDataManager.getOMFContext().getApiAdapter().getClass());
+    return DatastoreManager.isJPA(metaDataManager.getOMFContext());
   }
 
   private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {

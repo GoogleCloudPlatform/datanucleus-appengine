@@ -19,8 +19,14 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import org.datanucleus.test.HasSubclassJDO;
-import org.datanucleus.test.IsSubclassJDO;
+import org.datanucleus.test.SubclassesJDO;
+import org.datanucleus.test.SubclassesJDO.CompleteParent;
+import org.datanucleus.test.SubclassesJDO.NewParent;
+import org.datanucleus.test.SubclassesJDO.SubParent;
+
+import java.util.List;
+
+import javax.jdo.JDOFatalUserException;
 
 /**
  * There's something flaky here that will probably show up as a real bug at
@@ -30,52 +36,260 @@ import org.datanucleus.test.IsSubclassJDO;
  *
  * @author Max Ross <maxr@google.com>
  */
+// TODO(maxr): Tests where the key isn't on the parent
+// TODO(maxr): Tests where there are relationships on the parent/child/grandchild
+// TODO(maxr): Tests where there are embedded fields on the parent/child/grandchild
 public class JDOSubclassTest extends JDOTestCase {
 
   public void testInsertChild_KeyOnParent() throws EntityNotFoundException {
-    IsSubclassJDO pojo = new IsSubclassJDO();
-    pojo.setParentString("yar");
-    pojo.setChildString("childyar");
+    CompleteParent.CompleteChild completeTableChild = new CompleteParent.CompleteChild();
+    completeTableChild.setAString("a");
+    completeTableChild.setBString("b");
     beginTxn();
-    pm.makePersistent(pojo);
+    pm.makePersistent(completeTableChild);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(IsSubclassJDO.class.getSimpleName(), pojo.getId()));
-    assertEquals("yar", e.getProperty("parentString"));
-    assertEquals("childyar", e.getProperty("childString"));
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(CompleteParent.CompleteChild.class), completeTableChild.getId()));
+    assertEquals("a", e.getProperty("aString"));
+    assertEquals("b", e.getProperty("bString"));
+  }
+
+  public void testInsertGrandChild_KeyOnParent() throws EntityNotFoundException {
+    CompleteParent.CompleteGrandchild completeTableGrandchild = new CompleteParent.CompleteGrandchild();
+    completeTableGrandchild.setAString("a");
+    completeTableGrandchild.setBString("b");
+    completeTableGrandchild.setCString("c");
+    beginTxn();
+    pm.makePersistent(completeTableGrandchild);
+    commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(CompleteParent.CompleteGrandchild.class), completeTableGrandchild.getId()));
+    assertEquals("a", e.getProperty("aString"));
+    assertEquals("b", e.getProperty("bString"));
+    assertEquals("c", e.getProperty("cString"));
+  }
+
+  public void testUnsupportedStrategies_GAE() {
+    assertUnsupportedByGAE(new NewParent.CompleteChild());
+    assertUnsupportedByGAE(new NewParent.NewChild());
+
+    assertUnsupportedByGAE(new SubParent.CompleteChild());
+    assertUnsupportedByGAE(new SubParent.NewChild());
+    assertUnsupportedByGAE(new SubParent());
+
+    // The datanucleus enhancer doesn't handle these correctly
+    // and we end up with an IAE way before we get any callbacks that would
+    // allow us to detect the problem.
+//    assertUnsupportedByDataNucleus(new NewParent.SubChild());
+//    assertUnsupportedByDataNucleus(new SubParent.SubChild());
   }
 
   public void testInsertParent_KeyOnParent() throws EntityNotFoundException {
-    HasSubclassJDO pojo = new HasSubclassJDO();
-    pojo.setParentString("yar");
+    CompleteParent completeParent = new CompleteParent();
+    completeParent.setAString("a");
     beginTxn();
-    pm.makePersistent(pojo);
+    pm.makePersistent(completeParent);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasSubclassJDO.class.getSimpleName(), pojo.getId()));
-    assertEquals("yar", e.getProperty("parentString"));
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(CompleteParent.class), completeParent.getId()));
+    assertEquals("a", e.getProperty("aString"));
   }
 
   public void testFetchChild_KeyOnParent() {
-    Entity e = new Entity(IsSubclassJDO.class.getSimpleName());
-    e.setProperty("parentString", "yar");
-    e.setProperty("childString", "childyar");
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteChild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
     ldth.ds.put(e);
 
     beginTxn();
-    IsSubclassJDO pojo = pm.getObjectById(IsSubclassJDO.class, e.getKey());
-    assertEquals("yar", pojo.getParentString());
-    assertEquals("childyar", pojo.getChildString());
+    CompleteParent.CompleteChild completeTableChild = pm.getObjectById(CompleteParent.CompleteChild.class, e.getKey());
+    assertEquals("a", completeTableChild.getAString());
+    assertEquals("b", completeTableChild.getBString());
+  }
+
+  public void testFetchGrandChild_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteGrandchild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent.CompleteGrandchild completeTableGrandchild = 
+        pm.getObjectById(CompleteParent.CompleteGrandchild.class, e.getKey());
+    assertEquals("a", completeTableGrandchild.getAString());
+    assertEquals("b", completeTableGrandchild.getBString());
+    assertEquals("c", completeTableGrandchild.getCString());
   }
 
   public void testFetchParent_KeyOnParent() {
-    Entity e = new Entity(HasSubclassJDO.class.getSimpleName());
-    e.setProperty("parentString", "yar");
+    Entity e = new Entity(kindForClass(CompleteParent.class));
+    e.setProperty("aString", "a");
     ldth.ds.put(e);
 
     beginTxn();
-    HasSubclassJDO pojo = pm.getObjectById(HasSubclassJDO.class, e.getKey());
-    assertEquals("yar", pojo.getParentString());
+    CompleteParent
+        completeParent = pm.getObjectById(CompleteParent.class, e.getKey());
+    assertEquals("a", completeParent.getAString());
   }
 
+  public void testQueryChild_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteChild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent.CompleteChild completeTableChild = ((List<CompleteParent.CompleteChild>)
+        pm.newQuery(CompleteParent.CompleteChild.class).execute()).get(0);
+    assertEquals("a", completeTableChild.getAString());
+    assertEquals("b", completeTableChild.getBString());
+  }
+
+  public void testQueryGrandChild_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteGrandchild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent.CompleteGrandchild grandchild = ((List<CompleteParent.CompleteGrandchild>)pm.newQuery(
+        CompleteParent.CompleteGrandchild.class).execute()).get(0);
+    assertEquals("a", grandchild.getAString());
+    assertEquals("b", grandchild.getBString());
+    assertEquals("c", grandchild.getCString());
+  }
+
+  public void testQueryParent_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.class));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent
+        completeParent = ((List<CompleteParent>)pm.newQuery(CompleteParent.class).execute()).get(0);
+    assertEquals("a", completeParent.getAString());
+  }
+
+  public void testDeleteChild_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteChild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent.CompleteChild completeTableChild = pm.getObjectById(CompleteParent.CompleteChild.class, e.getKey());
+    pm.deletePersistent(completeTableChild);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  public void testDeleteGrandChild_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteGrandchild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    SubclassesJDO.CompleteParent.CompleteGrandchild grandChild =
+        pm.getObjectById(CompleteParent.CompleteGrandchild.class, e.getKey());
+    pm.deletePersistent(grandChild);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  public void testDeleteParent_KeyOnParent() {
+    Entity e = new Entity(kindForClass(CompleteParent.class));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent completeParent = pm.getObjectById(CompleteParent.class, e.getKey());
+    pm.deletePersistent(completeParent);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  public void testUpdateChild_KeyOnParent() throws EntityNotFoundException {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteChild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent.CompleteChild completeTableChild = pm.getObjectById(CompleteParent.CompleteChild.class, e.getKey());
+    completeTableChild.setAString("not a");
+    completeTableChild.setBString("not b");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+    assertEquals("not b", e.getProperty("bString"));
+  }
+
+  public void testUpdateGrandChild_KeyOnParent() throws EntityNotFoundException {
+    Entity e = new Entity(kindForClass(CompleteParent.CompleteGrandchild.class));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    SubclassesJDO.CompleteParent.CompleteGrandchild grandChild =
+        pm.getObjectById(SubclassesJDO.CompleteParent.CompleteGrandchild.class, e.getKey());
+    grandChild.setAString("not a");
+    grandChild.setBString("not b");
+    grandChild.setCString("not c");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+    assertEquals("not b", e.getProperty("bString"));
+    assertEquals("not c", e.getProperty("cString"));
+  }
+
+  public void testUpdateParent_KeyOnParent() throws EntityNotFoundException {
+    Entity e = new Entity(kindForClass(CompleteParent.class));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    CompleteParent completeParent = pm.getObjectById(CompleteParent.class, e.getKey());
+    completeParent.setAString("not a");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+  }
+
+  private void assertUnsupportedByGAE(Object obj) {
+    assertUnsupported(obj, DatastoreManager.UnsupportedInheritanceStrategyException.class);
+  }
+
+  private void assertUnsupported(Object obj, Class<? extends Exception> expectedCause) {
+    switchDatasource(PersistenceManagerFactoryName.transactional);
+    beginTxn();
+    try {
+      pm.makePersistent(obj);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause().getClass().getName(), expectedCause.isAssignableFrom(e.getCause().getClass()));
+    }
+    rollbackTxn();
+  }
 }

@@ -125,12 +125,15 @@ public class JPATestCase extends TestCase {
   }
 
   public int countForClass(Class<?> clazz) {
-    ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
-    MetaDataManager mdm = om.getMetaDataManager();
-    String kind = EntityUtils.determineKind(
-        mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
-
+    String kind = kindForClass(clazz);
     return ldth.ds.prepare(new Query(kind)).countEntities();
   }
-  
+
+  protected String kindForClass(Class<?> clazz) {
+    ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
+    MetaDataManager mdm = om.getMetaDataManager();
+    return EntityUtils.determineKind(
+        mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
+  }
+
 }

@@ -33,7 +33,8 @@ public class DatastoreTestHelper {
 
   private static final String DATASTORE_DELEGATE_PROP = "orm.DatastoreDelegate";
 
-    private ApiProxy.Delegate originalDelegate;
+  private ApiProxy.Delegate originalDelegate;
+
   public void setUp() throws Exception {
     originalDelegate = ApiProxy.getDelegate();
     delegate.setUp();
