@@ -21,6 +21,7 @@ import javax.persistence.GenerationType;
 import javax.persistence.Id;
 import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
+import javax.persistence.MappedSuperclass;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -134,6 +135,40 @@ public class SubclassesJPA {
 
   @Entity
   public static class SingleTableChild extends SingleTable {
+    private String bString;
+
+    public void setBString(String bString) {
+      this.bString = bString;
+    }
+
+    public String getBString() {
+      return bString;
+    }
+  }
+
+  @MappedSuperclass
+  public static class MappedSuperclassParent {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    private String aString;
+
+    public Long getId() {
+      return id;
+    }
+
+    public void setAString(String aString) {
+      this.aString = aString;
+    }
+
+    public String getAString() {
+      return aString;
+    }
+  }
+
+  @Entity
+  public static class MappedSuperclassChild extends MappedSuperclassParent {
     private String bString;
 
     public void setBString(String bString) {

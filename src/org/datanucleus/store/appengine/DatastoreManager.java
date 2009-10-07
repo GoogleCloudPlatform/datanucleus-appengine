@@ -325,13 +325,26 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
-    AbstractClassMetaData[] managingCmds = getClassesManagingTableForClass(cmd.getSuperAbstractClassMetaData(), clr);
-    if (managingCmds != null &&
-        managingCmds.length > 0 &&
-        managingCmds[0].getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE) {
+
+    if (strat == InheritanceStrategy.SUBCLASS_TABLE) {
+      // Table mapped into the table(s) of subclass(es)
+      // Just add the SchemaData entry with no table - managed by subclass
+      StoreData sdNew = new MappedStoreData(cmd, null, false);
+      registerStoreData(sdNew);
+      return sdNew;
+    } else if (strat == InheritanceStrategy.COMPLETE_TABLE && cmd.isAbstractPersistenceCapable()) {
+      // Abstract class with "complete-table" so gets no table
+      StoreData sdNew = new MappedStoreData(cmd, null, false);
+      registerStoreData(sdNew);
+      return sdNew;
+    } else if (strat == InheritanceStrategy.COMPLETE_TABLE && (
+        cmd.getSuperAbstractClassMetaData() == null ||
+        cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE ||
+        cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
       return buildStoreData(cmd, clr);
-    } else if(managingCmds == null &&
-              (strat == InheritanceStrategy.COMPLETE_TABLE || strat == InheritanceStrategy.NEW_TABLE)) {
+    } else if (strat == InheritanceStrategy.NEW_TABLE &&
+               (cmd.getSuperAbstractClassMetaData() == null ||
+                cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
       return buildStoreData(cmd, clr);
     }
     throw new UnsupportedInheritanceStrategyException(strat, deriveLegalStrategies());

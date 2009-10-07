@@ -25,6 +25,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -964,6 +965,11 @@ public class DatastoreFieldManager implements FieldManager {
   private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd, int[] fieldNumbers) {
     DatastoreTable dc = getStoreManager().getDatastoreClass(
         acmd.getFullClassName(), getClassLoaderResolver());
+    if (dc == null) {
+      // We've seen this when there is a class with the superclass inheritance
+      // strategy that does not have a parent
+      throw new NoPersistenceInformationException(acmd.getFullClassName());
+    }
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     dc.provideDatastoreIdMappings(consumer);
     dc.providePrimaryKeyMappings(consumer);

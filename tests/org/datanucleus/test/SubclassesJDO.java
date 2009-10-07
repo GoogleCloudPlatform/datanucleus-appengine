@@ -30,7 +30,7 @@ public class SubclassesJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(customStrategy = "complete-table")
-  public static class CompleteParent {
+  public static class CompleteTableParent {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
@@ -52,7 +52,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(customStrategy = "complete-table")
-    public static class CompleteChild extends CompleteParent {
+    public static class CompleteTableChild extends CompleteTableParent {
 
       @Persistent
       private String bString;
@@ -68,7 +68,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(customStrategy = "complete-table")
-    public static class CompleteGrandchild extends CompleteChild {
+    public static class CompleteTableGrandchild extends CompleteTableChild {
       @Persistent
       private String cString;
 
@@ -83,7 +83,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.NEW_TABLE)
-    public static class NewChild extends CompleteParent {
+    public static class NewTableChild extends CompleteTableParent {
 
       @Persistent
       private String bString;
@@ -99,7 +99,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.SUBCLASS_TABLE)
-    public static class SubChild extends CompleteParent {
+    public static class SubclassTableChild extends CompleteTableParent {
 
       @Persistent
       private String bString;
@@ -133,7 +133,7 @@ public class SubclassesJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(strategy = InheritanceStrategy.NEW_TABLE)
-  public static class NewParent {
+  public static class NewTableParent {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
@@ -155,7 +155,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(customStrategy = "complete-table")
-    public static class CompleteChild extends NewParent {
+    public static class CompleteTableChild extends NewTableParent {
 
       @Persistent
       private String bString;
@@ -171,7 +171,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.NEW_TABLE)
-    public static class NewChild extends NewParent {
+    public static class NewTableChild extends NewTableParent {
 
       @Persistent
       private String bString;
@@ -187,7 +187,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.SUBCLASS_TABLE)
-    public static class SubChild extends NewParent {
+    public static class SubclassTableChild extends NewTableParent {
 
       @Persistent
       private String bString;
@@ -221,7 +221,7 @@ public class SubclassesJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(strategy = InheritanceStrategy.SUBCLASS_TABLE)
-  public static class SubParent {
+  public static class SubclassTableParent {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
@@ -243,7 +243,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(customStrategy = "complete-table")
-    public static class CompleteChild extends SubParent {
+    public static class CompleteTableChild extends SubclassTableParent {
 
       @Persistent
       private String bString;
@@ -259,7 +259,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.NEW_TABLE)
-    public static class NewChild extends SubParent {
+    public static class NewTableChild extends SubclassTableParent {
 
       @Persistent
       private String bString;
@@ -275,7 +275,7 @@ public class SubclassesJDO {
 
     @PersistenceCapable(identityType = IdentityType.APPLICATION)
     @Inheritance(strategy = InheritanceStrategy.SUBCLASS_TABLE)
-    public static class SubChild extends SubParent {
+    public static class SubclassTableChild extends SubclassTableParent {
 
       @Persistent
       private String bString;
