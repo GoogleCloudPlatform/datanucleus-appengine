@@ -20,10 +20,13 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.exceptions.NoPersistenceInformationException;
+import org.datanucleus.test.SubclassesJPA.Child;
+import org.datanucleus.test.SubclassesJPA.Grandchild;
 import org.datanucleus.test.SubclassesJPA.Joined;
 import org.datanucleus.test.SubclassesJPA.JoinedChild;
 import org.datanucleus.test.SubclassesJPA.MappedSuperclassChild;
 import org.datanucleus.test.SubclassesJPA.MappedSuperclassParent;
+import org.datanucleus.test.SubclassesJPA.Parent;
 import org.datanucleus.test.SubclassesJPA.SingleTable;
 import org.datanucleus.test.SubclassesJPA.SingleTableChild;
 import org.datanucleus.test.SubclassesJPA.TablePerClass;
@@ -31,6 +34,7 @@ import org.datanucleus.test.SubclassesJPA.TablePerClassChild;
 import org.datanucleus.test.SubclassesJPA.TablePerClassGrandchild;
 
 import javax.persistence.PersistenceException;
+import javax.persistence.Query;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -43,324 +47,20 @@ public class JPASubclassTest extends JPATestCase {
     assertUnsupportedByGAE(new SingleTableChild());
   }
 
-  public void testInsertChild_TablePerClass() throws EntityNotFoundException {
-    TablePerClassChild tablePerClassChild = new TablePerClassChild();
-    tablePerClassChild.setAString("a");
-    tablePerClassChild.setBString("b");
-    beginTxn();
-    em.persist(tablePerClassChild);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(TablePerClassChild.class), tablePerClassChild.getId()));
-    assertEquals("a", e.getProperty("aString"));
-    assertEquals("b", e.getProperty("bString"));
+  public void testGrandchildren() throws Exception {
+    testGrandchild(new TablePerClassGrandchild());
   }
 
-  public void testInsertGrandChild_TablePerClass() throws EntityNotFoundException {
-    TablePerClassGrandchild tablePerClassGrandchild = new TablePerClassGrandchild();
-    tablePerClassGrandchild.setAString("a");
-    tablePerClassGrandchild.setBString("b");
-    tablePerClassGrandchild.setCString("c");
-    beginTxn();
-    em.persist(tablePerClassGrandchild);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(TablePerClassGrandchild.class), tablePerClassGrandchild.getId()));
-    assertEquals("a", e.getProperty("aString"));
-    assertEquals("b", e.getProperty("bString"));
-    assertEquals("c", e.getProperty("cString"));
+  public void testChildren() throws Exception {
+    testChild(new TablePerClassChild());
+    testChild(new MappedSuperclassChild());
   }
 
-  public void testInsertParent_TablePerClass() throws EntityNotFoundException {
-    TablePerClass tablePerClass = new TablePerClass();
-    tablePerClass.setAString("a");
-    beginTxn();
-    em.persist(tablePerClass);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(TablePerClass.class), tablePerClass.getId()));
-    assertEquals("a", e.getProperty("aString"));
+  public void testParents() throws Exception {
+    testParent(new TablePerClass());
+    testParent(new Joined());
+    testParent(new SingleTable());
   }
-
-  public void testFetchChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassChild
-        tablePerClassChild = em.find(TablePerClassChild.class, e.getKey());
-    assertEquals("a", tablePerClassChild.getAString());
-    assertEquals("b", tablePerClassChild.getBString());
-  }
-
-  public void testFetchGrandChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassGrandchild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    e.setProperty("cString", "c");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassGrandchild
-        tablePerClassGrandchild = em.find(TablePerClassGrandchild.class, e.getKey());
-    assertEquals("a", tablePerClassGrandchild.getAString());
-    assertEquals("b", tablePerClassGrandchild.getBString());
-    assertEquals("c", tablePerClassGrandchild.getCString());
-  }
-
-  public void testFetchParent_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClass.class));
-    e.setProperty("aString", "a");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClass
-        tablePerClass = em.find(TablePerClass.class, e.getKey());
-    assertEquals("a", tablePerClass.getAString());
-  }
-
-  public void testQueryChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassChild
-        tablePerClassChild = (TablePerClassChild) em.createQuery("select from " + TablePerClassChild.class.getName()).getSingleResult();
-    assertEquals("a", tablePerClassChild.getAString());
-    assertEquals("b", tablePerClassChild.getBString());
-  }
-
-  public void testQueryGrandChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassGrandchild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    e.setProperty("cString", "c");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassGrandchild
-        tablePerClassGrandchild = (TablePerClassGrandchild) em.createQuery("select from " + TablePerClassGrandchild.class.getName()).getSingleResult();
-    assertEquals("a", tablePerClassGrandchild.getAString());
-    assertEquals("b", tablePerClassGrandchild.getBString());
-    assertEquals("c", tablePerClassGrandchild.getCString());
-  }
-
-  public void testQueryParent_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClass.class));
-    e.setProperty("aString", "a");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClass
-        tablePerClass = (TablePerClass) em.createQuery("select from " + TablePerClass.class.getName()).getSingleResult();
-    assertEquals("a", tablePerClass.getAString());
-  }
-
-  public void testDeleteChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassChild
-        tablePerClassChild = em.find(TablePerClassChild.class, e.getKey());
-    em.remove(tablePerClassChild);
-    commitTxn();
-    try {
-      ldth.ds.get(e.getKey());
-      fail("expected exception");
-    } catch (EntityNotFoundException e1) {
-      // good
-    }
-  }
-
-  public void testDeleteGrandChild_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClassGrandchild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    e.setProperty("cString", "c");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassGrandchild
-        tablePerClassGrandchild = em.find(TablePerClassGrandchild.class, e.getKey());
-    em.remove(tablePerClassGrandchild);
-    commitTxn();
-    try {
-      ldth.ds.get(e.getKey());
-      fail("expected exception");
-    } catch (EntityNotFoundException e1) {
-      // good
-    }
-  }
-
-  public void testDeleteParent_TablePerClass() {
-    Entity e = new Entity(kindForClass(TablePerClass.class));
-    e.setProperty("aString", "a");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClass tablePerClass = em.find(TablePerClass.class, e.getKey());
-    em.remove(tablePerClass);
-    commitTxn();
-    try {
-      ldth.ds.get(e.getKey());
-      fail("expected exception");
-    } catch (EntityNotFoundException e1) {
-      // good
-    }
-  }
-
-  public void testUpdateChild_TablePerClass() throws EntityNotFoundException {
-    Entity e = new Entity(kindForClass(TablePerClassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassChild
-        tablePerClassChild = em.find(TablePerClassChild.class, e.getKey());
-    tablePerClassChild.setAString("not a");
-    tablePerClassChild.setBString("not b");
-    commitTxn();
-    e = ldth.ds.get(e.getKey());
-    assertEquals("not a", e.getProperty("aString"));
-    assertEquals("not b", e.getProperty("bString"));
-  }
-
-  public void testUpdateGrandChild_TablePerClass() throws EntityNotFoundException {
-    Entity e = new Entity(kindForClass(TablePerClassGrandchild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    e.setProperty("cString", "c");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClassGrandchild
-        tablePerClassGrandchild = em.find(TablePerClassGrandchild.class, e.getKey());
-    tablePerClassGrandchild.setAString("not a");
-    tablePerClassGrandchild.setBString("not b");
-    tablePerClassGrandchild.setCString("not c");
-    commitTxn();
-    e = ldth.ds.get(e.getKey());
-    assertEquals("not a", e.getProperty("aString"));
-    assertEquals("not b", e.getProperty("bString"));
-    assertEquals("not c", e.getProperty("cString"));
-  }
-
-  public void testUpdateParent_TablePerClass() throws EntityNotFoundException {
-    Entity e = new Entity(kindForClass(TablePerClass.class));
-    e.setProperty("aString", "a");
-    ldth.ds.put(e);
-
-    beginTxn();
-    TablePerClass
-        tablePerClass = em.find(TablePerClass.class, e.getKey());
-    tablePerClass.setAString("not a");
-    commitTxn();
-    e = ldth.ds.get(e.getKey());
-    assertEquals("not a", e.getProperty("aString"));
-  }
-
-  public void testInsertParent_Joined() throws EntityNotFoundException {
-    Joined joined = new Joined();
-    joined.setAString("a");
-    beginTxn();
-    em.persist(joined);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(Joined.class), joined.getId()));
-    assertEquals("a", e.getProperty("aString"));
-  }
-
-  public void testInsertParent_SingleTable() throws EntityNotFoundException {
-    SingleTable singleTable = new SingleTable();
-    singleTable.setAString("a");
-    beginTxn();
-    em.persist(singleTable);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(SingleTable.class), singleTable.getId()));
-    assertEquals("a", e.getProperty("aString"));
-  }
-
-  public void testInsertChild_MappedSuperclass() throws EntityNotFoundException {
-    MappedSuperclassChild child = new MappedSuperclassChild();
-    child.setAString("a");
-    child.setBString("b");
-    beginTxn();
-    em.persist(child);
-    commitTxn();
-
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(MappedSuperclassChild.class), child.getId()));
-    assertEquals("a", e.getProperty("aString"));
-    assertEquals("b", e.getProperty("bString"));
-  }
-
-  public void testFetchChild_MappedSuperclass() {
-    Entity e = new Entity(kindForClass(MappedSuperclassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    MappedSuperclassChild mappedSuperclassChild = em.find(MappedSuperclassChild.class, e.getKey());
-    assertEquals("a", mappedSuperclassChild.getAString());
-    assertEquals("b", mappedSuperclassChild.getBString());
-  }
-
-  public void testQueryChild_MappedSuperclass() {
-    Entity e = new Entity(kindForClass(MappedSuperclassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    MappedSuperclassChild mappedSuperclassChild = (MappedSuperclassChild)
-        em.createQuery("select from " + MappedSuperclassChild.class.getName()).getSingleResult();
-    assertEquals("a", mappedSuperclassChild.getAString());
-    assertEquals("b", mappedSuperclassChild.getBString());
-  }
-
-  public void testDeleteChild_MappedSuperclass() {
-    Entity e = new Entity(kindForClass(MappedSuperclassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    MappedSuperclassChild mappedSuperclassChild = em.find(MappedSuperclassChild.class, e.getKey());
-    em.remove(mappedSuperclassChild);
-    commitTxn();
-    try {
-      ldth.ds.get(e.getKey());
-      fail("expected exception");
-    } catch (EntityNotFoundException e1) {
-      // good
-    }
-  }
-
-  public void testUpdateChild_MappedSuperclass() throws EntityNotFoundException {
-    Entity e = new Entity(kindForClass(MappedSuperclassChild.class));
-    e.setProperty("aString", "a");
-    e.setProperty("bString", "b");
-    ldth.ds.put(e);
-
-    beginTxn();
-    MappedSuperclassChild mappedSuperclassChild = em.find(MappedSuperclassChild.class, e.getKey());
-    mappedSuperclassChild.setAString("not a");
-    mappedSuperclassChild.setBString("not b");
-    commitTxn();
-    e = ldth.ds.get(e.getKey());
-    assertEquals("not a", e.getProperty("aString"));
-    assertEquals("not b", e.getProperty("bString"));
-  }
-
 
   public void testInsertParent_MappedSuperclass() throws EntityNotFoundException {
     MappedSuperclassParent parent = new MappedSuperclassParent();
@@ -387,5 +87,283 @@ public class JPASubclassTest extends JPATestCase {
       // good
     }
     rollbackTxn();
+  }
+
+  private void testInsertParent(Parent parent) throws Exception {
+    parent.setAString("a");
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    assertEquals("a", e.getProperty("aString"));
+  }
+
+  private void testInsertChild(Child child) throws Exception {
+    child.setAString("a");
+    child.setBString("b");
+    beginTxn();
+    em.persist(child);
+    commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    assertEquals("a", e.getProperty("aString"));
+    assertEquals("b", e.getProperty("bString"));
+  }
+
+  private void testInsertGrandchild(Grandchild grandchild) throws Exception {
+    grandchild.setAString("a");
+    grandchild.setBString("b");
+    grandchild.setCString("c");
+    beginTxn();
+    em.persist(grandchild);
+    commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(grandchild.getClass()), grandchild.getId()));
+    assertEquals("a", e.getProperty("aString"));
+    assertEquals("b", e.getProperty("bString"));
+    assertEquals("c", e.getProperty("cString"));
+  }
+
+  private void testFetchParent(Class<? extends Parent> parentClass) {
+    Entity e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Parent parent = em.find(parentClass, e.getKey());
+    assertEquals(parentClass, parent.getClass());
+    assertEquals("a", parent.getAString());
+    commitTxn();
+  }
+
+  private void testFetchChild(Class<? extends Child> childClass) {
+    Entity e = new Entity(kindForClass(childClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Child child = em.find(childClass, e.getKey());
+    assertEquals(childClass, child.getClass());
+    assertEquals("a", child.getAString());
+    assertEquals("b", child.getBString());
+    commitTxn();
+  }
+
+  private void testFetchGrandchild(Class<? extends Grandchild> grandchildClass) {
+    Entity e = new Entity(kindForClass(grandchildClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Grandchild grandchild = em.find(grandchildClass, e.getKey());
+    assertEquals(grandchildClass, grandchild.getClass());
+    assertEquals("a", grandchild.getAString());
+    assertEquals("b", grandchild.getBString());
+    assertEquals("c", grandchild.getCString());
+    commitTxn();
+  }
+
+  private void testQueryParent(Class<? extends Parent> parentClass) {
+    Entity e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "a2");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + parentClass.getName() + " where aString = :p");
+    q.setParameter("p", "a2");
+    Parent parent = (Parent) q.getSingleResult();
+    assertEquals(parentClass, parent.getClass());
+    assertEquals("a2", parent.getAString());
+    commitTxn();
+  }
+
+  private void testQueryChild(Class<? extends Child> childClass) {
+    Entity e = new Entity(kindForClass(childClass));
+    e.setProperty("aString", "a2");
+    e.setProperty("bString", "b2");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + childClass.getName() + " where aString = :p");
+    q.setParameter("p", "a2");
+    Child child = (Child) q.getSingleResult();
+    assertEquals(childClass, child.getClass());
+    assertEquals("a2", child.getAString());
+    assertEquals("b2", child.getBString());
+
+    q = em.createQuery("select from " + childClass.getName() + " where bString = :p");
+    q.setParameter("p", "b2");
+    child = (Child) q.getSingleResult();
+    assertEquals(childClass, child.getClass());
+    assertEquals("a2", child.getAString());
+    assertEquals("b2", child.getBString());
+
+    commitTxn();
+  }
+
+  private void testQueryGrandchild(Class<? extends Grandchild> grandchildClass) {
+    Entity e = new Entity(kindForClass(grandchildClass));
+    e.setProperty("aString", "a2");
+    e.setProperty("bString", "b2");
+    e.setProperty("cString", "c2");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Query q = em.createQuery("select from " + grandchildClass.getName() + " where aString = :p");
+    q.setParameter("p", "a2");
+    Grandchild grandchild = (Grandchild) q.getSingleResult();
+
+    assertEquals(grandchildClass, grandchild.getClass());
+    assertEquals("a2", grandchild.getAString());
+    assertEquals("b2", grandchild.getBString());
+    assertEquals("c2", grandchild.getCString());
+
+    q = em.createQuery("select from " + grandchildClass.getName() + " where bString = :p");
+    q.setParameter("p", "b2");
+    grandchild = (Grandchild) q.getSingleResult();
+
+    assertEquals(grandchildClass, grandchild.getClass());
+    assertEquals("a2", grandchild.getAString());
+    assertEquals("b2", grandchild.getBString());
+    assertEquals("c2", grandchild.getCString());
+
+    q = em.createQuery("select from " + grandchildClass.getName() + " where cString = :p");
+    q.setParameter("p", "c2");
+    grandchild = (Grandchild) q.getSingleResult();
+
+    assertEquals(grandchildClass, grandchild.getClass());
+    assertEquals("a2", grandchild.getAString());
+    assertEquals("b2", grandchild.getBString());
+    assertEquals("c2", grandchild.getCString());
+    commitTxn();
+  }
+
+  private void testDeleteParent(Class<? extends Parent> parentClass) {
+    Entity e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Parent parent = em.find(parentClass, e.getKey());
+    em.remove(parent);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  private void testDeleteChild(Class<? extends Child> childClass) {
+    Entity e = new Entity(kindForClass(childClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Child child = em.find(childClass, e.getKey());
+    em.remove(child);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  private void testDeleteGrandchild(Class<? extends Grandchild> grandchildClass) {
+    Entity e = new Entity(kindForClass(grandchildClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    e.setProperty("cString", "c");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Child child = em.find(grandchildClass, e.getKey());
+    em.remove(child);
+    commitTxn();
+    try {
+      ldth.ds.get(e.getKey());
+      fail("expected exception");
+    } catch (EntityNotFoundException e1) {
+      // good
+    }
+  }
+
+  private void testUpdateParent(Class<? extends Parent> parentClass) throws Exception {
+    Entity e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "a");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Parent parent = em.find(parentClass, e.getKey());
+    parent.setAString("not a");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+  }
+
+  private void testUpdateChild(Class<? extends Child> childClass) throws Exception {
+    Entity e = new Entity(kindForClass(childClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Child child = em.find(childClass, e.getKey());
+    child.setAString("not a");
+    child.setBString("not b");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+    assertEquals("not b", e.getProperty("bString"));
+  }
+
+  private void testUpdateGrandchild(Class<? extends Grandchild> grandchildClass) throws Exception {
+    Entity e = new Entity(kindForClass(grandchildClass));
+    e.setProperty("aString", "a");
+    e.setProperty("bString", "b");
+    ldth.ds.put(e);
+
+    beginTxn();
+    Grandchild grandchild = em.find(grandchildClass, e.getKey());
+    grandchild.setAString("not a");
+    grandchild.setBString("not b");
+    grandchild.setCString("not c");
+    commitTxn();
+    e = ldth.ds.get(e.getKey());
+    assertEquals("not a", e.getProperty("aString"));
+    assertEquals("not b", e.getProperty("bString"));
+    assertEquals("not c", e.getProperty("cString"));
+  }
+
+  private void testGrandchild(Grandchild grandchild) throws Exception {
+    testInsertGrandchild(grandchild);
+    testUpdateGrandchild(grandchild.getClass());
+    testDeleteGrandchild(grandchild.getClass());
+    testFetchGrandchild(grandchild.getClass());
+    testQueryGrandchild(grandchild.getClass());
+  }
+
+  private void testChild(Child child) throws Exception {
+    testInsertChild(child);
+    testUpdateChild(child.getClass());
+    testDeleteChild(child.getClass());
+    testFetchChild(child.getClass());
+    testQueryChild(child.getClass());
+  }
+
+  private void testParent(Parent parent) throws Exception {
+    testInsertParent(parent);
+    testUpdateParent(parent.getClass());
+    testDeleteParent(parent.getClass());
+    testFetchParent(parent.getClass());
+    testQueryParent(parent.getClass());
   }
 }

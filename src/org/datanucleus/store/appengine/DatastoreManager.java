@@ -329,14 +329,10 @@ public class DatastoreManager extends MappedStoreManager {
     if (strat == InheritanceStrategy.SUBCLASS_TABLE) {
       // Table mapped into the table(s) of subclass(es)
       // Just add the SchemaData entry with no table - managed by subclass
-      StoreData sdNew = new MappedStoreData(cmd, null, false);
-      registerStoreData(sdNew);
-      return sdNew;
+      return buildStoreDataWithNoTable(cmd);
     } else if (strat == InheritanceStrategy.COMPLETE_TABLE && cmd.isAbstractPersistenceCapable()) {
       // Abstract class with "complete-table" so gets no table
-      StoreData sdNew = new MappedStoreData(cmd, null, false);
-      registerStoreData(sdNew);
-      return sdNew;
+      return buildStoreDataWithNoTable(cmd);
     } else if (strat == InheritanceStrategy.COMPLETE_TABLE && (
         cmd.getSuperAbstractClassMetaData() == null ||
         cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE ||
@@ -347,7 +343,29 @@ public class DatastoreManager extends MappedStoreManager {
                 cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
       return buildStoreData(cmd, clr);
     }
-    throw new UnsupportedInheritanceStrategyException(strat, deriveLegalStrategies());
+    String unsupportedMsg = buildUnsupportedInheritanceStrategyMessage(cmd);
+    throw new UnsupportedInheritanceStrategyException(strat, unsupportedMsg);
+  }
+
+  private static final String BAD_INHERITANCE_MESSAGE =
+      "Inheritance strategy %s was provided for %s but is not supported in this context.  "
+      + "Please see the documentation for information on using inheritance with %s: %s";
+
+  private static final String JPA_INHERITANCE_DOCS_URL = "todo";
+  private static final String JDO_INHERITANCE_DOCS_URL = "todo";
+
+  private String buildUnsupportedInheritanceStrategyMessage(ClassMetaData cmd) {
+    InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
+    if (isJPA(omfContext)) {
+      return String.format(BAD_INHERITANCE_MESSAGE, strat, cmd.getFullClassName(), "JPA", JPA_INHERITANCE_DOCS_URL);
+    }
+    return String.format(BAD_INHERITANCE_MESSAGE, strat, cmd.getFullClassName(), "JDO", JDO_INHERITANCE_DOCS_URL);
+  }
+
+  private StoreData buildStoreDataWithNoTable(ClassMetaData cmd) {
+    StoreData sdNew = new MappedStoreData(cmd, null, false);
+    registerStoreData(sdNew);
+    return sdNew;
   }
 
   private StoreData buildStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
@@ -358,10 +376,6 @@ public class DatastoreManager extends MappedStoreManager {
     // overflow
     table.buildMapping();
     return sd;
-  }
-
-  private String deriveLegalStrategies() {
-    return "The only supported strategy is " + (isJPA(omfContext) ? "InheritanceType.TABLE_PER_CLASS." : "complete-table");
   }
 
   final class UnsupportedInheritanceStrategyException extends NucleusUserException {

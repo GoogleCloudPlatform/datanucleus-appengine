@@ -28,9 +28,25 @@ import javax.persistence.MappedSuperclass;
  */
 public class SubclassesJPA {
 
+  public interface Parent {
+    Long getId();
+    void setAString(String val);
+    String getAString();
+  }
+
+  public interface Child extends Parent {
+    void setBString(String val);
+    String getBString();
+  }
+
+  public interface Grandchild extends Child {
+    void setCString(String val);
+    String getCString();
+  }
+
   @Entity
   @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
-  public static class TablePerClass {
+  public static class TablePerClass implements Parent {
     @Id
     @GeneratedValue(strategy= GenerationType.IDENTITY)
     private Long id;
@@ -51,7 +67,7 @@ public class SubclassesJPA {
   }
 
   @Entity
-  public static class TablePerClassChild extends TablePerClass {
+  public static class TablePerClassChild extends TablePerClass implements Child {
     private String bString;
 
     public void setBString(String bString) {
@@ -64,7 +80,7 @@ public class SubclassesJPA {
   }
 
   @Entity
-  public static class TablePerClassGrandchild extends TablePerClassChild {
+  public static class TablePerClassGrandchild extends TablePerClassChild implements Grandchild {
     private String cString;
 
     public void setCString(String cString) {
@@ -78,7 +94,7 @@ public class SubclassesJPA {
 
   @Entity
   @Inheritance(strategy = InheritanceType.JOINED)
-  public static class Joined {
+  public static class Joined implements Parent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -99,7 +115,7 @@ public class SubclassesJPA {
   }
 
   @Entity
-  public static class JoinedChild extends Joined {
+  public static class JoinedChild extends Joined implements Child {
     private String bString;
 
     public void setBString(String bString) {
@@ -113,7 +129,7 @@ public class SubclassesJPA {
 
   @Entity
   @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
-  public static class SingleTable {
+  public static class SingleTable implements Parent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -134,7 +150,7 @@ public class SubclassesJPA {
   }
 
   @Entity
-  public static class SingleTableChild extends SingleTable {
+  public static class SingleTableChild extends SingleTable implements Child {
     private String bString;
 
     public void setBString(String bString) {
@@ -147,7 +163,7 @@ public class SubclassesJPA {
   }
 
   @MappedSuperclass
-  public static class MappedSuperclassParent {
+  public static class MappedSuperclassParent implements Parent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
@@ -168,7 +184,7 @@ public class SubclassesJPA {
   }
 
   @Entity
-  public static class MappedSuperclassChild extends MappedSuperclassParent {
+  public static class MappedSuperclassChild extends MappedSuperclassParent implements Child {
     private String bString;
 
     public void setBString(String bString) {

@@ -61,6 +61,7 @@ import org.datanucleus.util.StringUtils;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -278,122 +279,128 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   private void initializeNonPK() {
-    AbstractMemberMetaData[] fields = cmd.getManagedMembers();
-    // Go through the fields for this class and add columns for them
-    for (AbstractMemberMetaData fmd : fields) {
-      // Primary key fields are added by the initialisePK method
-      if (!fmd.isPrimaryKey()) {
-        if (managesField(fmd.getFullFieldName())) {
-          if (!fmd.getClassName(true).equals(cmd.getFullClassName())) {
-            throw new UnsupportedOperationException("Overrides not currently supported.");
-          }
-        } else {
-          // Manage the field if not already managed (may already exist if overriding a superclass field)
-          if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
-            boolean isPrimary = true;
-            if (fmd.getTable() != null && fmd.getJoinMetaData() == null) {
-              // Field has a table specified and is not a 1-N with join table
-              // so is mapped to a secondary table
-              isPrimary = false;
+    // We only support inheritance strategies that resolve to all fields for
+    // a class plus all its subclasses living in every "table," so we'll
+    // iterate over all managed fields in the entire chain, topmost classes
+    // first so that overrides work properly.
+    for (AbstractClassMetaData curCmd : buildClassMetaDataList()) {
+      AbstractMemberMetaData[] fields = curCmd.getManagedMembers();
+      // Go through the fields for this class and add columns for them
+      for (AbstractMemberMetaData fmd : fields) {
+        // Primary key fields are added by the initialisePK method
+        if (!fmd.isPrimaryKey()) {
+          if (managesField(fmd.getFullFieldName())) {
+            if (!fmd.getClassName(true).equals(curCmd.getFullClassName())) {
+              throw new UnsupportedOperationException("Overrides not currently supported.");
             }
-            if (isPrimary) {
-              // Add the field to this table
-              JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
-                  this, fmd, dba, clr, FieldRole.ROLE_FIELD);
-              addFieldMapping(mapping);
-            } else {
-              throw new UnsupportedOperationException("No support for secondary tables.");
+          } else {
+            // Manage the field if not already managed (may already exist if overriding a superclass field)
+            if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
+              boolean isPrimary = true;
+              if (fmd.getTable() != null && fmd.getJoinMetaData() == null) {
+                // Field has a table specified and is not a 1-N with join table
+                // so is mapped to a secondary table
+                isPrimary = false;
+              }
+              if (isPrimary) {
+                // Add the field to this table
+                JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
+                    this, fmd, dba, clr, FieldRole.ROLE_FIELD);
+                addFieldMapping(mapping);
+              } else {
+                throw new UnsupportedOperationException("No support for secondary tables.");
+              }
+            } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
+              throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
             }
-          } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-            throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
-          }
 
-          // Calculate if we need a FK adding due to a 1-N (FK) relationship
-          boolean needsFKToContainerOwner = false;
-          int relationType = fmd.getRelationType(clr);
-          if (relationType == Relation.ONE_TO_MANY_BI) {
-            AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
-            if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {
-              needsFKToContainerOwner = true;
-            }
-          } else if (relationType == Relation.ONE_TO_MANY_UNI) {
-            if (fmd.getJoinMetaData() == null) {
-              needsFKToContainerOwner = true;
-            }
-          } else if (relationType == Relation.ONE_TO_ONE_BI) {
-            if (fmd.getMappedBy() != null) {
-              // This element type has a many-to-one pointing back.
-              // We assume that our pk is part of the pk of the element type.
+            // Calculate if we need a FK adding due to a 1-N (FK) relationship
+            boolean needsFKToContainerOwner = false;
+            int relationType = fmd.getRelationType(clr);
+            if (relationType == Relation.ONE_TO_MANY_BI) {
+              AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
+              if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {
+                needsFKToContainerOwner = true;
+              }
+            } else if (relationType == Relation.ONE_TO_MANY_UNI) {
+              if (fmd.getJoinMetaData() == null) {
+                needsFKToContainerOwner = true;
+              }
+            } else if (relationType == Relation.ONE_TO_ONE_BI) {
+              if (fmd.getMappedBy() != null) {
+                // This element type has a many-to-one pointing back.
+                // We assume that our pk is part of the pk of the element type.
+                DatastoreTable dt =
+                    (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+                dt.runCallBacks();
+                dt.markFieldAsParentKeyProvider(fmd.getName());
+              }
+            } else if (relationType == Relation.MANY_TO_ONE_BI) {
               DatastoreTable dt =
                   (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-              dt.runCallBacks();
-              dt.markFieldAsParentKeyProvider(fmd.getName());
+              AbstractClassMetaData acmd =
+                  storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
+              dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
             }
-          } else if (relationType == Relation.MANY_TO_ONE_BI) {
-            DatastoreTable dt =
-                (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-            AbstractClassMetaData acmd =
-                storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
-            dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
-          }
 
-          if (needsFKToContainerOwner) {
-            // 1-N uni/bidirectional using FK, so update the element side with a FK
-            if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
-                (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd))) {
-              // 1-N ForeignKey collection/array, so add FK to element table
-              AbstractClassMetaData elementCmd;
-              if (fmd.hasCollection()) {
-                // Collection
-                elementCmd = storeMgr.getOMFContext().getMetaDataManager()
-                    .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
-              } else {
-                // Array
-                elementCmd = storeMgr.getOMFContext().getMetaDataManager()
-                    .getMetaDataForClass(fmd.getType().getComponentType(), clr);
-              }
-              if (elementCmd == null) {
-                // Elements that are reference types or non-PC will come through here
-              } else {
-                AbstractClassMetaData[] elementCmds;
-                // TODO : Cater for interface elements, and get the metadata for the implementation classes here
-                if (elementCmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE) {
-                  elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
+            if (needsFKToContainerOwner) {
+              // 1-N uni/bidirectional using FK, so update the element side with a FK
+              if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
+                  (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd))) {
+                // 1-N ForeignKey collection/array, so add FK to element table
+                AbstractClassMetaData elementCmd;
+                if (fmd.hasCollection()) {
+                  // Collection
+                  elementCmd = storeMgr.getOMFContext().getMetaDataManager()
+                      .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
                 } else {
-                  elementCmds = new ClassMetaData[1];
-                  elementCmds[0] = elementCmd;
+                  // Array
+                  elementCmd = storeMgr.getOMFContext().getMetaDataManager()
+                      .getMetaDataForClass(fmd.getType().getComponentType(), clr);
                 }
+                if (elementCmd == null) {
+                  // Elements that are reference types or non-PC will come through here
+                } else {
+                  AbstractClassMetaData[] elementCmds;
+                  // TODO : Cater for interface elements, and get the metadata for the implementation classes here
+                  if (elementCmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE) {
+                    elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
+                  } else {
+                    elementCmds = new ClassMetaData[1];
+                    elementCmds[0] = elementCmd;
+                  }
 
-                // Run callbacks for each of the element classes.
-                for (AbstractClassMetaData elementCmd1 : elementCmds) {
-                  callbacks.put(elementCmd1.getFullClassName(), new CallBack(fmd));
-                  DatastoreTable dt =
-                      (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
-                  dt.runCallBacks();
-                  if (fmd.getMappedBy() != null) {
-                    // This element type has a many-to-one pointing back.
-                    // We assume that our pk is part of the pk of the element type.
-                    dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
+                  // Run callbacks for each of the element classes.
+                  for (AbstractClassMetaData elementCmd1 : elementCmds) {
+                    callbacks.put(elementCmd1.getFullClassName(), new CallBack(fmd));
+                    DatastoreTable dt =
+                        (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
+                    dt.runCallBacks();
+                    if (fmd.getMappedBy() != null) {
+                      // This element type has a many-to-one pointing back.
+                      // We assume that our pk is part of the pk of the element type.
+                      dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
+                    }
                   }
                 }
-              }
-            } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
-              // 1-N ForeignKey map, so add FK to value table
-              if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
-                // Key is stored in the value table so add the FK to the value table
-                AbstractClassMetaData valueCmd = storeMgr.getOMFContext().getMetaDataManager()
-                    .getMetaDataForClass(fmd.getMap().getValueType(), clr);
-                if (valueCmd == null) {
-                  // Interface elements will come through here and java.lang.String and others as well
-                } else {
-                }
-              } else if (fmd.getValueMetaData() != null && fmd.getValueMetaData().getMappedBy() != null) {
-                // Value is stored in the key table so add the FK to the key table
-                AbstractClassMetaData keyCmd = storeMgr.getOMFContext().getMetaDataManager()
-                    .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
-                if (keyCmd == null) {
-                  // Interface elements will come through here and java.lang.String and others as well
-                } else {
+              } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
+                // 1-N ForeignKey map, so add FK to value table
+                if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
+                  // Key is stored in the value table so add the FK to the value table
+                  AbstractClassMetaData valueCmd = storeMgr.getOMFContext().getMetaDataManager()
+                      .getMetaDataForClass(fmd.getMap().getValueType(), clr);
+                  if (valueCmd == null) {
+                    // Interface elements will come through here and java.lang.String and others as well
+                  } else {
+                  }
+                } else if (fmd.getValueMetaData() != null && fmd.getValueMetaData().getMappedBy() != null) {
+                  // Value is stored in the key table so add the FK to the key table
+                  AbstractClassMetaData keyCmd = storeMgr.getOMFContext().getMetaDataManager()
+                      .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
+                  if (keyCmd == null) {
+                    // Interface elements will come through here and java.lang.String and others as well
+                  } else {
+                  }
                 }
               }
             }
@@ -401,6 +408,21 @@ public class DatastoreTable implements DatastoreClass {
         }
       }
     }
+  }
+
+  /**
+   * Constructs a list containing the class meta data of {@link #cmd} and all
+   * its superclasses.  We add to the beginning of the list as we iterate up so
+   * the class at the top of the hierarchy is returned first. 
+   */
+  private LinkedList<AbstractClassMetaData> buildClassMetaDataList() {
+    LinkedList<AbstractClassMetaData> stack = Utils.newLinkedList();
+    AbstractClassMetaData curCmd = cmd;
+    while (curCmd != null) {
+      stack.addFirst(curCmd);
+      curCmd = curCmd.getSuperAbstractClassMetaData();
+    }
+    return stack;
   }
 
   private void markFieldAsParentKeyProvider(String mappedBy) {
