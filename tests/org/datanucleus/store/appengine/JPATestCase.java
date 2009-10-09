@@ -130,10 +130,14 @@ public class JPATestCase extends TestCase {
   }
 
   protected String kindForClass(Class<?> clazz) {
-    ObjectManager om = ((EntityManagerImpl)em).getObjectManager();
+    ObjectManager om = getObjectManager();
     MetaDataManager mdm = om.getMetaDataManager();
     return EntityUtils.determineKind(
         mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
+  }
+
+  protected ObjectManager getObjectManager() {
+    return ((EntityManagerImpl)em).getObjectManager();
   }
 
 }

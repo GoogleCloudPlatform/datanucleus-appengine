@@ -28,6 +28,7 @@ import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
@@ -2485,6 +2486,17 @@ public class JPQLQueryTest extends JPATestCase {
       // good
     }
 
+  }
+
+  public void testSubclassesNotSupported() {
+    JPQLQuery q = new JPQLQuery(getObjectManager());
+    q.setSubclasses(false);
+    try {
+      q.setSubclasses(true);
+      fail("expected nue");
+    } catch (NucleusUserException nue) {
+      // good
+    }
   }
 
   private void assertQueryUnsupportedByDatastore(String query) {

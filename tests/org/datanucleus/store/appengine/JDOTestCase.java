@@ -111,7 +111,7 @@ public class JDOTestCase extends TestCase {
     pm.currentTransaction().rollback();
   }
 
-  protected void makePersistentInTxn(Object obj) {
+  protected <T> T makePersistentInTxn(T obj) {
     boolean success = false;
     beginTxn();
     try {
@@ -123,6 +123,7 @@ public class JDOTestCase extends TestCase {
         rollbackTxn();
       }
     }
+    return obj;
   }
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
@@ -139,10 +140,14 @@ public class JDOTestCase extends TestCase {
   }
 
   protected String kindForClass(Class<?> clazz) {
-    ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
+    ObjectManager om = getObjectManager();
     MetaDataManager mdm = om.getMetaDataManager();
     return EntityUtils.determineKind(
         mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
+  }
+
+  protected ObjectManager getObjectManager() {
+    return ((JDOPersistenceManager)pm).getObjectManager();
   }
 
 }

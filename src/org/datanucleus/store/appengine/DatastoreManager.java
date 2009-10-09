@@ -34,6 +34,7 @@ import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.plugin.PluginManager;
 import org.datanucleus.plugin.PluginRegistry;
+import org.datanucleus.store.DefaultCandidateExtent;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
@@ -252,7 +253,10 @@ public class DatastoreManager extends MappedStoreManager {
     if (!cmd.isRequiresExtent()) {
         throw new NoExtentException(c.getName());
     }
-    return new DatastoreExtent(om, c, subclasses, cmd);
+    // In order to avoid breaking existing apps I'm hard-coding subclasses to
+    // be false.  This breaks spec compliance since the no-arg overload of
+    // PersistenceManager.getExtent() is supposed to return subclasses.
+    return new DefaultCandidateExtent(om, c, false, cmd);
   }
 /**
    * Method to create the IdentifierFactory to be used by this store.

@@ -29,6 +29,7 @@ import org.datanucleus.test.SubclassesJDO.Grandchild;
 import org.datanucleus.test.SubclassesJDO.NewTableParentWithCompleteTableChild;
 import org.datanucleus.test.SubclassesJDO.NewTableParentWithNewTableChild;
 import org.datanucleus.test.SubclassesJDO.NewTableParentWithSubclassTableChild;
+import org.datanucleus.test.SubclassesJDO.OverrideParent;
 import org.datanucleus.test.SubclassesJDO.Parent;
 import org.datanucleus.test.SubclassesJDO.SubclassTableParentWithCompleteTableChild;
 import org.datanucleus.test.SubclassesJDO.SubclassTableParentWithNewTableChild;
@@ -84,6 +85,18 @@ public class JDOSubclassTest extends JDOTestCase {
     testParent(new NewTableParentWithCompleteTableChild());
     testParent(new NewTableParentWithSubclassTableChild());
     testParent(new NewTableParentWithNewTableChild());
+  }
+
+  public void testOverride() throws Exception {
+    OverrideParent.Child child = new OverrideParent.Child();
+    child.setOverriddenString("blarg");
+    beginTxn();
+    pm.makePersistent(child);
+    commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    assertEquals("blarg", e.getProperty("overridden_string"));
+    assertFalse(e.hasProperty("overriddenProperty"));
   }
 
   private void assertUnsupportedByDataNuc(Object obj) {

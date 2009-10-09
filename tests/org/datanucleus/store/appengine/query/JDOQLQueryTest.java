@@ -29,6 +29,7 @@ import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
@@ -2384,7 +2385,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (JDOFatalUserException e) {
       // good
     }
+  }
 
+  public void testSubclassesNotSupported() {
+    JDOQLQuery q = new JDOQLQuery(getObjectManager());
+    q.setSubclasses(false);
+    try {
+      q.setSubclasses(true);
+      fail("expected nue");
+    } catch (NucleusUserException nue) {
+      // good
+    }
   }
 
   private void assertQueryUnsupportedByOrm(

@@ -400,6 +400,9 @@ public class SubclassesJDO {
     @Persistent
     private String aString;
 
+    @Persistent
+    private String overriddenString;
+
     public Long getId() {
       return id;
     }
@@ -643,4 +646,66 @@ public class SubclassesJDO {
 //      }
 //    }
 //  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class OverrideParent implements Parent {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Long id;
+
+    @Persistent
+    private String aString;
+
+    @Persistent
+    private String overriddenString;
+
+    public Long getId() {
+      return id;
+    }
+
+    public void setAString(String aString) {
+      this.aString = aString;
+    }
+
+    public String getAString() {
+      return aString;
+    }
+
+    public String getOverriddenString() {
+      return overriddenString;
+    }
+
+    public void setOverriddenString(String overriddenString) {
+      this.overriddenString = overriddenString;
+    }
+
+    @PersistenceCapable(identityType = IdentityType.APPLICATION)
+    public static class Child extends OverrideParent implements SubclassesJDO.Child {
+
+      @Persistent
+      private String bString;
+
+      @Persistent(column = "overridden_string")
+      private String overriddenString;
+
+      public void setBString(String bString) {
+        this.bString = bString;
+      }
+
+      public String getBString() {
+        return bString;
+      }
+
+      @Override
+      public String getOverriddenString() {
+        return overriddenString;
+      }
+
+      @Override
+      public void setOverriddenString(String overriddenString) {
+        this.overriddenString = overriddenString;
+      }
+    }
+  }
 }

@@ -97,4 +97,14 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     // TODO(maxr) Re-enable the checks that don't break multi-value filters
     // and implicit conversions.
   }
+
+  @Override
+  public void setSubclasses(boolean subclasses) {
+    // We don't support queries that also return subclasses
+    if (subclasses) {
+      throw new NucleusUserException(
+          "The App Engine datastore does not support queries that return subclass entities.").setFatal();
+    }
+    super.setSubclasses(subclasses);
+  }
 }

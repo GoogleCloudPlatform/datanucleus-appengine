@@ -75,6 +75,17 @@ public class JPASubclassTest extends JPATestCase {
     }
   }
 
+  public void testAttributeOverride() throws EntityNotFoundException {
+    MappedSuperclassChild child = new MappedSuperclassChild();
+    child.setOverriddenString("overridden");
+    beginTxn();
+    em.persist(child);
+    commitTxn();
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    assertEquals("overridden", e.getProperty("overridden_string"));
+    assertFalse(e.hasProperty("overriddenString"));
+  }
+
   private void assertUnsupportedByGAE(Object obj) {
     switchDatasource(EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed);
     beginTxn();

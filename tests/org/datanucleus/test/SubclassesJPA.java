@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import javax.persistence.AttributeOverride;
+import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -169,6 +171,7 @@ public class SubclassesJPA {
     private Long id;
 
     private String aString;
+    private String overriddenString;
 
     public Long getId() {
       return id;
@@ -181,9 +184,18 @@ public class SubclassesJPA {
     public String getAString() {
       return aString;
     }
+
+    public String getOverriddenString() {
+      return overriddenString;
+    }
+
+    public void setOverriddenString(String overriddenString) {
+      this.overriddenString = overriddenString;
+    }
   }
 
   @Entity
+  @AttributeOverride(name = "overriddenString", column = @Column(name = "overridden_string"))
   public static class MappedSuperclassChild extends MappedSuperclassParent implements Child {
     private String bString;
 
