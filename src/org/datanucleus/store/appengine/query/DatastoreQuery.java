@@ -561,7 +561,7 @@ public class DatastoreQuery implements Serializable {
       for (Expression resultExpr : compilation.getExprResult()) {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
-          if (!invokeExpr.getOperation().equals("count")) {
+          if (!isCountOperation(invokeExpr.getOperation())) {
             Expression.Operator operator = new Expression.Operator(invokeExpr.getOperation(), 0);
             throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
           } else if (!projectionFields.isEmpty()) {
@@ -601,6 +601,17 @@ public class DatastoreQuery implements Serializable {
       resultType = ResultType.ENTITY;
     }
     return resultType;
+  }
+
+  // TODO(maxr) Split this out into a more generic utility if we start
+  // handling other operators explicitly
+  private boolean isCountOperation(String operation) {
+    if (DatastoreManager.isJPA(query.getObjectManager().getOMFContext())) {
+      // jpa keywords are case-insensitive
+      return operation.toLowerCase().equals("count");
+    } else {
+      return operation.equals("count") || operation.equals("COUNT");
+    }
   }
 
   private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {

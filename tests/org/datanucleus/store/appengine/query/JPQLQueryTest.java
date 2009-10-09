@@ -1411,6 +1411,12 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName());
     assertEquals(2, q.getSingleResult());
+
+    q = em.createQuery("select COUNT(id) from " + Book.class.getName());
+    assertEquals(2, q.getSingleResult());
+
+    q = em.createQuery("select Count(id) from " + Book.class.getName());
+    assertEquals(2, q.getSingleResult());
   }
 
   public void testCountQueryWithFilter() {

@@ -679,7 +679,7 @@ public class DatastoreManager extends MappedStoreManager {
     super.close();
   }
 
-  static boolean isJPA(OMFContext omfContext) {
+  public static boolean isJPA(OMFContext omfContext) {
     return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
   }
 }

@@ -1522,6 +1522,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     assertEquals(2, q.execute());
+
+    q = pm.newQuery("select COUNT(id) from " + Flight.class.getName());
+    assertEquals(2, q.execute());
   }
 
   public void testCountQueryWithFilter_SingleString() {
