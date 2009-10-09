@@ -20,6 +20,7 @@ import org.datanucleus.plugin.ConfigurationElement;
 import org.datanucleus.plugin.Extension;
 import org.datanucleus.plugin.ExtensionPoint;
 import org.datanucleus.plugin.PluginRegistry;
+import org.datanucleus.store.appengine.jdo.DatastoreJDOMetaDataManager;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
 
 import java.io.IOException;
@@ -57,6 +58,24 @@ final class DatastorePluginRegistry implements PluginRegistry {
             // override with our own callback handler
             // See DatastoreJPACallbackHandler for the reason why we do this.
             cfg.putAttribute("class-name", DatastoreJPACallbackHandler.class.getName());
+            replaced = true;
+          }
+        }
+      }
+
+      if (!replaced) {
+        throw new RuntimeException("Unable to replace JPACallbackHandler.");
+      }
+    }
+
+    if (id.equals("org.datanucleus.metadata_manager")) {
+      boolean replaced = false;
+      for (Extension ext : ep.getExtensions()) {
+        for (ConfigurationElement cfg : ext.getConfigurationElements()) {
+          if (cfg.getAttribute("name").equals("JDO")) {
+            // override with our own metadata manager
+            // See DatastoreMetaDataManager for the reason why we do this.
+            cfg.putAttribute("class", DatastoreJDOMetaDataManager.class.getName());
             replaced = true;
           }
         }

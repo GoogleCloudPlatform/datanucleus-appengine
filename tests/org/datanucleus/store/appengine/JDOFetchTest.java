@@ -151,7 +151,7 @@ public class JDOFetchTest extends JDOTestCase {
     Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.keyToString(key);
-    KitchenSink ks = pm.getObjectById(KitchenSink.class, keyStr);
+    KitchenSink ks = pm.detachCopy(pm.getObjectById(KitchenSink.class, keyStr));
     assertNotNull(ks);
     assertEquals(keyStr, ks.key);
     assertEquals(KitchenSink.newKitchenSink(ks.key), ks);

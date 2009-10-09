@@ -39,4 +39,39 @@ limitations under the License.
     <extension point="org.datanucleus.store_valuegenerator">
         <valuegenerator name="sequence" class-name="org.datanucleus.store.appengine.valuegenerator.SequenceGenerator" datastore="appengine"/>
     </extension>
+
+    <!--
+         Types that we want in the default fetch group.  If you're updating this list
+         you best updated DatastoreJDOMetaDataManager as well
+     -->
+    <extension point="org.datanucleus.java_type">
+        <java-type name="com.google.appengine.api.datastore.Blob" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Blob;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Category" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Category;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Email" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Email;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.GeoPt" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.GeoPt;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.IMHandle" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.IMHandle;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Key" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Key;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Link" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Link;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.PhoneNumber" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.PhoneNumber;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.PostalAddress" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.PostalAddress;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Rating" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Rating;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.ShortBlob" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.ShortBlob;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.datastore.Text" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.datastore.Text;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.blobstore.BlobKey" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.blobstore.BlobKey;" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="com.google.appengine.api.users.User" persistent="true" dfg="true" embedded="true"/>
+        <java-type name="[Lcom.google.appengine.api.users.User;" persistent="true" dfg="true" embedded="true"/>
+    </extension>
 </plugin>

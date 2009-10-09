@@ -44,7 +44,7 @@ import javax.jdo.annotations.PrimaryKey;
  *
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
 public class KitchenSink {
   public enum KitchenSinkEnum {ONE, TWO}
 
@@ -73,58 +73,58 @@ public class KitchenSink {
   @Persistent public Date dateVal;
   @Persistent public KitchenSinkEnum ksEnum;
   @Persistent public BigDecimal bigDecimal;
-  @Persistent(defaultFetchGroup = "true") public User userVal;
-  @Persistent(defaultFetchGroup = "true") public Blob blobVal;
-  @Persistent(defaultFetchGroup = "true") public Text textVal;
-  @Persistent(defaultFetchGroup = "true") public Link linkVal;
-  @Persistent(defaultFetchGroup = "true") public ShortBlob shortBlobVal;
-  @Persistent(defaultFetchGroup = "true") public BlobKey blobKeyVal;
+  @Persistent public User userVal;
+  @Persistent public Blob blobVal;
+  @Persistent public Text textVal;
+  @Persistent public Link linkVal;
+  @Persistent public ShortBlob shortBlobVal;
+  @Persistent public BlobKey blobKeyVal;
 
-  @Persistent(defaultFetchGroup = "true") public String[] strArray;
-  @Persistent(defaultFetchGroup = "true") public int[] primitiveIntArray;
-  @Persistent(defaultFetchGroup = "true") public Integer[] integerArray;
-  @Persistent(defaultFetchGroup = "true") public long[] primitiveLongArray;
-  @Persistent(defaultFetchGroup = "true") public Long[] longArray;
-  @Persistent(defaultFetchGroup = "true") public short[] primitiveShortArray;
-  @Persistent(defaultFetchGroup = "true") public Short[] shortArray;
-  @Persistent(defaultFetchGroup = "true") public char[] primitiveCharArray;
-  @Persistent(defaultFetchGroup = "true") public Character[] characterArray;
-  @Persistent(defaultFetchGroup = "true") public float[] primitiveFloatArray;
-  @Persistent(defaultFetchGroup = "true") public Float[] floatArray;
-  @Persistent(defaultFetchGroup = "true") public double[] primitiveDoubleArray;
-  @Persistent(defaultFetchGroup = "true") public Double[] doubleArray;
-  @Persistent(defaultFetchGroup = "true") public byte[] primitiveByteArray;
-  @Persistent(defaultFetchGroup = "true") public Byte[] byteArray;
-  @Persistent(defaultFetchGroup = "true") public boolean[] primitiveBooleanArray;
-  @Persistent(defaultFetchGroup = "true") public Boolean[] booleanArray;
-  @Persistent(defaultFetchGroup = "true") public Date[] dateArray;
-  @Persistent(defaultFetchGroup = "true") public KitchenSinkEnum[] ksEnumArray;
+  @Persistent public String[] strArray;
+  @Persistent public int[] primitiveIntArray;
+  @Persistent public Integer[] integerArray;
+  @Persistent public long[] primitiveLongArray;
+  @Persistent public Long[] longArray;
+  @Persistent public short[] primitiveShortArray;
+  @Persistent public Short[] shortArray;
+  @Persistent public char[] primitiveCharArray;
+  @Persistent public Character[] characterArray;
+  @Persistent public float[] primitiveFloatArray;
+  @Persistent public Float[] floatArray;
+  @Persistent public double[] primitiveDoubleArray;
+  @Persistent public Double[] doubleArray;
+  @Persistent public byte[] primitiveByteArray;
+  @Persistent public Byte[] byteArray;
+  @Persistent public boolean[] primitiveBooleanArray;
+  @Persistent public Boolean[] booleanArray;
+  @Persistent public Date[] dateArray;
+  @Persistent public KitchenSinkEnum[] ksEnumArray;
   @Persistent(defaultFetchGroup = "true") public BigDecimal[] bigDecimalArray;
-  @Persistent(defaultFetchGroup = "true") public User[] userArray;
-  @Persistent(defaultFetchGroup = "true") public Blob[] blobArray;
-  @Persistent(defaultFetchGroup = "true") public Text[] textArray;
-  @Persistent(defaultFetchGroup = "true") public Link[] linkArray;
-  @Persistent(defaultFetchGroup = "true") public ShortBlob[] shortBlobArray;
-  @Persistent(defaultFetchGroup = "true") public BlobKey[] blobKeyArray;
+  @Persistent public User[] userArray;
+  @Persistent public Blob[] blobArray;
+  @Persistent public Text[] textArray;
+  @Persistent public Link[] linkArray;
+  @Persistent public ShortBlob[] shortBlobArray;
+  @Persistent public BlobKey[] blobKeyArray;
 
-  @Persistent(defaultFetchGroup = "true") public List<String> strList;
-  @Persistent(defaultFetchGroup = "true") public List<Integer> integerList;
-  @Persistent(defaultFetchGroup = "true") public List<Long> longList;
-  @Persistent(defaultFetchGroup = "true") public List<Short> shortList;
-  @Persistent(defaultFetchGroup = "true") public List<Character> charList;
-  @Persistent(defaultFetchGroup = "true") public List<Byte> byteList;
-  @Persistent(defaultFetchGroup = "true") public List<Double> doubleList;
-  @Persistent(defaultFetchGroup = "true") public List<Float> floatList;
-  @Persistent(defaultFetchGroup = "true") public List<Boolean> booleanList;
-  @Persistent(defaultFetchGroup = "true") public List<Date> dateList;
-  @Persistent(defaultFetchGroup = "true") public List<KitchenSinkEnum> ksEnumList;
+  @Persistent public List<String> strList;
+  @Persistent public List<Integer> integerList;
+  @Persistent public List<Long> longList;
+  @Persistent public List<Short> shortList;
+  @Persistent public List<Character> charList;
+  @Persistent public List<Byte> byteList;
+  @Persistent public List<Double> doubleList;
+  @Persistent public List<Float> floatList;
+  @Persistent public List<Boolean> booleanList;
+  @Persistent public List<Date> dateList;
+  @Persistent public List<KitchenSinkEnum> ksEnumList;
   @Persistent(defaultFetchGroup = "true") public List<BigDecimal> bigDecimalList;
-  @Persistent(defaultFetchGroup = "true") public List<User> userList;
-  @Persistent(defaultFetchGroup = "true") public List<Blob> blobList;
-  @Persistent(defaultFetchGroup = "true") public List<Text> textList;
-  @Persistent(defaultFetchGroup = "true") public List<Link> linkList;
-  @Persistent(defaultFetchGroup = "true") public List<ShortBlob> shortBlobList;
-  @Persistent(defaultFetchGroup = "true") public List<BlobKey> blobKeyList;
+  @Persistent public List<User> userList;
+  @Persistent public List<Blob> blobList;
+  @Persistent public List<Text> textList;
+  @Persistent public List<Link> linkList;
+  @Persistent public List<ShortBlob> shortBlobList;
+  @Persistent public List<BlobKey> blobKeyList;
 
   public static final Date DATE1 = new Date(147);
   public static final Date DATE2 = new Date(247);

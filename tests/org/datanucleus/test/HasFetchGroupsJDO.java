@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import com.google.appengine.api.datastore.Link;
+
 import javax.jdo.annotations.FetchGroup;
 import javax.jdo.annotations.FetchGroups;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -47,6 +49,9 @@ public class HasFetchGroupsJDO {
 
   @Persistent
   String str4;
+
+  @Persistent(defaultFetchGroup = "false")
+  Link link;
 
 
   public Long getId() {
@@ -87,5 +92,13 @@ public class HasFetchGroupsJDO {
 
   public void setStr4(String str4) {
     this.str4 = str4;
+  }
+
+  public Link getLink() {
+    return link;
+  }
+
+  public void setLink(Link link) {
+    this.link = link;
   }
 }

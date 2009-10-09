@@ -17,6 +17,8 @@
 
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Link;
+
 import org.datanucleus.test.HasFetchGroupsJDO;
 
 import javax.jdo.Query;
@@ -35,6 +37,8 @@ public class JDOFetchGroupTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
     beginTxn();
     pojo = pm.detachCopy(pm.getObjectById(HasFetchGroupsJDO.class, pojo.getId()));
     commitTxn();
@@ -132,5 +136,15 @@ public class JDOFetchGroupTest extends JDOTestCase {
     assertNull(pojo.getStr2());
     assertEquals("3", pojo.getStr3());
     assertNull(pojo.getStr4());
+  }
+
+  public void testFetchGroupOverridesCanBeManuallyUndone() {    
+    HasFetchGroupsJDO pojo = new HasFetchGroupsJDO();
+    pojo.setLink(new Link("blarg"));
+    makePersistentInTxn(pojo);
+    beginTxn();
+    pojo = pm.detachCopy(pm.getObjectById(HasFetchGroupsJDO.class, pojo.getId()));
+    commitTxn();
+    assertNull(pojo.getLink());
   }
 }
