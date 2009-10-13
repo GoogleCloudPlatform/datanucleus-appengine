@@ -1069,7 +1069,7 @@ public class DatastoreQuery implements Serializable {
 
   private void throwInvalidBatchLookupException() {
     throw new NucleusUserException(
-        "Batch lookup by primary key is only supported if no other filters are defined.").setFatal();
+        "Batch lookup by primary key is only supported if no other filters and no sort orders are defined.").setFatal();
   }
 
   /**
