@@ -126,4 +126,24 @@ public class JPADeleteTest extends JPATestCase {
     assertEquals(1L, JDOHelper.getVersion(hv));
   }
 
+  public void testDeletePersistentNew() {
+    int count = countForClass(KitchenSink.class);
+    beginTxn();
+    KitchenSink ks = KitchenSink.newKitchenSink();
+    em.persist(ks);
+    em.remove(ks);
+    commitTxn();
+    assertEquals(count, countForClass(KitchenSink.class));
+  }
+
+  public void testDeletePersistentNew_NoTxn() {
+    int count = countForClass(KitchenSink.class);
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
+    KitchenSink ks = KitchenSink.newKitchenSink();
+    em.persist(ks);
+    em.remove(ks);
+    assertEquals(count, countForClass(KitchenSink.class));
+    em.close();
+  }
+
 }

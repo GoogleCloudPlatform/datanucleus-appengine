@@ -286,4 +286,55 @@ public class JPAAttachDetachTest extends JPATestCase {
     Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
+  
+  public void testDeleteDetachedObject_NoTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
+    DetachableJPA pojo = new DetachableJPA();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    em.persist(pojo);
+    em.close();
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    em = emf.createEntityManager();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
+    em.close();
+    em = emf.createEntityManager();
+    pojo = em.merge(pojo);
+    // this is wrong and it will start to fail when we upgrade to DN 2.0
+    // We're tracking this with bug
+    // http://code.google.com/p/datanucleus-appengine/issues/detail?id=142
+    assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
+//    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
+//    em.remove(pojo);
+//    assertEquals(ObjectState.PERSISTENT_NEW_DELETED, JDOHelper.getObjectState(pojo));
+//    em.close();
+//    em = emf.createEntityManager();
+//    assertNull(em.find(pojo.getClass(), pojo.getId()));
+  }
+  
+  public void testDeleteDetachedObject_Txn() {
+    beginTxn();
+    DetachableJPA pojo = new DetachableJPA();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    em.persist(pojo);
+    commitTxn();
+    Long id = pojo.getId();
+    beginTxn();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    commitTxn();
+    beginTxn();
+    pojo = em.merge(pojo);
+    em.remove(pojo);
+    assertEquals(ObjectState.PERSISTENT_DELETED, JDOHelper.getObjectState(pojo));
+    commitTxn();
+    beginTxn();
+    assertNull(em.find(pojo.getClass(), id));
+    rollbackTxn();
+  }
+
+
 }

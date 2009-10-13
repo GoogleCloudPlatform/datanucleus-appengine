@@ -37,6 +37,7 @@ import java.util.Date;
 import java.util.List;
 
 import javax.jdo.JDOHelper;
+import javax.jdo.JDOObjectNotFoundException;
 import javax.jdo.ObjectState;
 
 /**
@@ -228,5 +229,99 @@ public class JDOAttachDetachTest extends JDOTestCase {
     commitTxn();
     Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
+  }
+
+  public void testDeleteDetachedObject_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    DetachableJDO pojo = new DetachableJDO();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    pm.makePersistent(pojo);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    pojo = pm.detachCopy(pm.getObjectById(pojo.getClass(), pojo.getId()));
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    pm.deletePersistent(pojo);
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    try {
+      pm.getObjectById(pojo.getClass(), pojo.getId());
+      fail("expected exception");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
+  }
+
+  public void testDeleteDetachedNewObject_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    DetachableJDO pojo = new DetachableJDO();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    pm.makePersistent(pojo);
+    pojo = pm.detachCopy(pojo);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    pm.deletePersistent(pojo);
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    try {
+      pm.getObjectById(pojo.getClass(), pojo.getId());
+      fail("expected exception");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
+  }
+
+  public void testDeleteDetachedObject_Txn() {
+    beginTxn();
+    DetachableJDO pojo = new DetachableJDO();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    pm.makePersistent(pojo);
+    commitTxn();
+    beginTxn();
+    pojo = pm.detachCopy(pm.getObjectById(pojo.getClass(), pojo.getId()));
+    commitTxn();
+    beginTxn();
+    pm.deletePersistent(pojo);
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    commitTxn();
+    beginTxn();
+    try {
+      pm.getObjectById(pojo.getClass(), pojo.getId());
+      fail("expected exception");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
+    rollbackTxn();
+  }
+
+  public void testDeleteDetachedNewObject_Txn() {
+    beginTxn();
+    DetachableJDO pojo = new DetachableJDO();
+    pojo.setVal("yar");
+    Date now = new Date();
+    pojo.setDate(now);
+    pm.makePersistent(pojo);
+    pojo = pm.detachCopy(pojo);
+    commitTxn();
+    beginTxn();
+    pm.deletePersistent(pojo);
+    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    commitTxn();
+    beginTxn();
+    try {
+      pm.getObjectById(pojo.getClass(), pojo.getId());
+      fail("expected exception");
+    } catch (JDOObjectNotFoundException e) {
+      // good
+    }
+    rollbackTxn();
   }
 }

@@ -204,4 +204,38 @@ public class JDODeleteTest extends JDOTestCase {
     pm.deletePersistent(pojo);
     commitTxn();
   }
+
+  public void testDeletePersistentNew() {
+    beginTxn();
+    KitchenSink ks = KitchenSink.newKitchenSink();
+    pm.makePersistent(ks);
+    String keyStr = ks.key;
+    pm.deletePersistent(ks);
+    commitTxn();
+    beginTxn();
+    try {
+      pm.getObjectById(KitchenSink.class, keyStr);
+      fail("expected onfe");
+    } catch (JDOObjectNotFoundException onfe) {
+      // good
+    } finally {
+      rollbackTxn();
+    }
+  }
+
+  public void testDeletePersistentNew_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    KitchenSink ks = KitchenSink.newKitchenSink();
+    pm.makePersistent(ks);
+    String keyStr = ks.key;
+    pm.deletePersistent(ks);
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    try {
+      pm.getObjectById(KitchenSink.class, keyStr);
+      fail("expected onfe");
+    } catch (JDOObjectNotFoundException onfe) {
+      // good
+    }
+  }
 }
