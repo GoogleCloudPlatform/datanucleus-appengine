@@ -53,8 +53,10 @@ public class JPAEnumTest extends JPATestCase {
     beginTxn();
     pojo = em.find(HasEnumJPA.class, pojo.getKey());
     assertNull(pojo.getMyEnum());
-    assertNull(pojo.getMyEnumArray());
-    assertNull(pojo.getMyEnumList());
+    assertNotNull(pojo.getMyEnumArray());
+    assertEquals(0, pojo.getMyEnumArray().length);
+    assertNotNull(pojo.getMyEnumList());
+    assertTrue(pojo.getMyEnumList().isEmpty());
     commitTxn();
   }
 

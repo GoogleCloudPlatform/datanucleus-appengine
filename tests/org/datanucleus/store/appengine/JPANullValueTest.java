@@ -34,8 +34,10 @@ public class JPANullValueTest extends JPATestCase {
     ldth.ds.put(e);
     beginTxn();
     NullDataJPA pojo = em.find(NullDataJPA.class, KeyFactory.keyToString(e.getKey()));
-    assertNull(pojo.getArray());
-    assertNull(pojo.getList());
+    assertNotNull(pojo.getArray());
+    assertEquals(0, pojo.getArray().length);
+    assertNotNull(pojo.getList());
+    assertTrue(pojo.getList().isEmpty());
     assertNull(pojo.getString());
     commitTxn();
   }
@@ -46,7 +48,8 @@ public class JPANullValueTest extends JPATestCase {
     ldth.ds.put(e);
     beginTxn();
     NullDataJPA pojo = em.find(NullDataJPA.class, e.getKey());
-    assertNull(pojo.getList());
+    assertNotNull(pojo.getList());
+    assertTrue(pojo.getList().isEmpty());
   }
 
   public void testFetchMultiValuePropWithOneNullEntry() {

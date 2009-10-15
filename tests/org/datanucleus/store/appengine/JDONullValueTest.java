@@ -35,8 +35,10 @@ public class JDONullValueTest extends JDOTestCase {
     ldth.ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, KeyFactory.keyToString(e.getKey()));
-    assertNull(pojo.getArray());
-    assertNull(pojo.getList());
+    assertNotNull(pojo.getArray());
+    assertEquals(0, pojo.getArray().length);
+    assertNotNull(pojo.getList());
+    assertTrue(pojo.getList().isEmpty());
     assertNull(pojo.getString());
     commitTxn();
   }
@@ -47,8 +49,10 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     NullDataWithDefaultValuesJDO pojo =
         pm.getObjectById(NullDataWithDefaultValuesJDO.class, KeyFactory.keyToString(e.getKey()));
-    assertNull(pojo.getArray());
-    assertNull(pojo.getList());
+    assertNotNull(pojo.getArray());
+    assertEquals(0, pojo.getArray().length);
+    assertNotNull(pojo.getList());
+    assertTrue(pojo.getList().isEmpty());
     assertNull(pojo.getString());
     commitTxn();
   }
@@ -59,7 +63,8 @@ public class JDONullValueTest extends JDOTestCase {
     ldth.ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
-    assertNull(pojo.getList());
+    assertNotNull(pojo.getList());
+    assertTrue(pojo.getList().isEmpty());
   }
 
   public void testFetchMultiValuePropWithOneNullEntry() {

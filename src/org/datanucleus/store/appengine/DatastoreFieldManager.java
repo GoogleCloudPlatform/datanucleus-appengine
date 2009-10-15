@@ -290,23 +290,23 @@ public class DatastoreFieldManager implements FieldManager {
       return fetchPKIdField();
     } else {
       Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
-      if (value != null) {
-        ClassLoaderResolver clr = getClassLoaderResolver();
-        if (ammd.isSerialized()) {
+      ClassLoaderResolver clr = getClassLoaderResolver();
+      if (ammd.isSerialized()) {
+        if (value != null) {
           // If the field is serialized we know it's a Blob that we
           // can deserialize without any conversion necessary.
           value = deserializeFieldValue(value, clr, ammd);
-        } else {
-          // Datanucleus invokes this method for the object versions
-          // of primitive types.  We need to make sure we convert
-          // appropriately.
-          value = getConversionUtils().datastoreValueToPojoValue(
-              clr, value, getStateManager(), getMetaData(fieldNumber));
-          if (Enum.class.isAssignableFrom(ammd.getType())) {
-            @SuppressWarnings("unchecked")
-            Class<Enum> enumClass = ammd.getType();
-            value = Enum.valueOf(enumClass, (String) value);
-          }
+        }
+      } else {
+        // Datanucleus invokes this method for the object versions
+        // of primitive types as well as collections of non-persistent types.
+        // We need to make sure we convert appropriately.
+        value = getConversionUtils().datastoreValueToPojoValue(
+            clr, value, getStateManager(), getMetaData(fieldNumber));
+        if (value != null && Enum.class.isAssignableFrom(ammd.getType())) {
+          @SuppressWarnings("unchecked")
+          Class<Enum> enumClass = ammd.getType();
+          value = Enum.valueOf(enumClass, (String) value);
         }
       }
       return value;

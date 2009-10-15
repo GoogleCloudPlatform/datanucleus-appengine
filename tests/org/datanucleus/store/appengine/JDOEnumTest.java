@@ -53,8 +53,10 @@ public class JDOEnumTest extends JDOTestCase {
     beginTxn();
     pojo = pm.getObjectById(HasEnumJDO.class, pojo.getKey());
     assertNull(pojo.getMyEnum());
-    assertNull(pojo.getMyEnumArray());
-    assertNull(pojo.getMyEnumList());
+    assertNotNull(pojo.getMyEnumArray());
+    assertEquals(0, pojo.getMyEnumArray().length);
+    assertNotNull(pojo.getMyEnumList());
+    assertTrue(pojo.getMyEnumList().isEmpty());
     commitTxn();
   }
 

@@ -304,7 +304,7 @@ class TypeConversionUtils {
    *
    * @param clr class loader resolver to use for string to class
    * conversions
-   * @param value The datastore value.
+   * @param value The datastore value.  Can be null.
    * @param ownerSM The owning state manager.  Used for creating change-detecting
    * wrappers.
    * @param ammd The meta data for the pojo property which will eventually
@@ -329,6 +329,15 @@ class TypeConversionUtils {
     return value;
   }
 
+  /**
+   *
+   * @param clr
+   * @param value Can be null.
+   * @param ownerSM
+   * @param ammd
+   * @param cmd
+   * @return
+   */
   private Object datastoreValueToPojoCollection(ClassLoaderResolver clr, Object value,
                                                 StateManager ownerSM, AbstractMemberMetaData ammd,
                                                 ContainerMetaData cmd) {
@@ -360,6 +369,13 @@ class TypeConversionUtils {
     return wrap(ownerSM, ammd, value);
   }
 
+  /**
+   *
+   * @param value The value we're converting to an array.  Can be null
+   * @param ammd The meta data for the field
+   * @return The datastore value converted to an array (potentially a primitive
+   * array, which is why we return Object and not Object[]).  Can be null.
+   */
   private Object datastoreValueToPojoArray(Object value, AbstractMemberMetaData ammd) {
     Class<?> memberType = ammd.getType().getComponentType();
 
@@ -423,12 +439,27 @@ class TypeConversionUtils {
     return collToReturn;
   }
 
+  /**
+   *
+   * @param datastoreList Can be null
+   * @param pojoType
+   * @param collType
+   * @return
+   */
   Collection<Object> convertDatastoreListToPojoCollection(List<Object> datastoreList, Class<?> pojoType,
       Class<? extends Collection> collType) {
     Function<Object, Object> func = DATASTORE_TO_POJO_TYPE_FUNC.get(pojoType);
     return convertDatastoreListToPojoCollection(datastoreList, pojoType, collType, func);
   }
 
+  /**
+   *
+   * @param datastoreList Can be null.
+   * @param pojoType
+   * @param collType
+   * @param func
+   * @return
+   */
   Collection<Object> convertDatastoreListToPojoCollection(List<Object> datastoreList, Class<?> pojoType,
       Class<? extends Collection> collType, Function<Object, Object> func) {
     Collection<Object> listToReturn = newCollection(collType);
@@ -468,6 +499,14 @@ class TypeConversionUtils {
     return setToReturn;
   }
 
+  /**
+   *
+   * @param datastoreList Can be null
+   * @param pojoType
+   * @param setType
+   * @param conversionFunc
+   * @return
+   */
   Set<Object> convertDatastoreListToPojoSet(List<Object> datastoreList, Class<?> pojoType,
       Class<? extends Set> setType, Function<Object, Object> conversionFunc) {
     Collection<?> convertedList =
@@ -480,6 +519,8 @@ class TypeConversionUtils {
   /**
    * Returns Object instead of Object[] because primitive arrays don't extend
    * Object[].
+   *
+   * @param datastoreList Can be null
    */
   Object convertDatastoreListToPojoArray(List<Object> datastoreList, Class<?> pojoType) {
     Collection<Object> datastoreColl =
