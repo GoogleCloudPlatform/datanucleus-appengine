@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import java.util.List;
+
 import javax.persistence.Embeddable;
 
 /**
@@ -25,11 +27,21 @@ public class EmbeddableJPA {
 
   private String embeddedString;
 
+  private List<String> multiVal;
+
   public String getEmbeddedString() {
     return embeddedString;
   }
 
   public void setEmbeddedString(String embeddedString) {
     this.embeddedString = embeddedString;
+  }
+
+  public List<String> getMultiVal() {
+    return multiVal;
+  }
+
+  public void setMultiVal(List<String> multiVal) {
+    this.multiVal = multiVal;
   }
 }

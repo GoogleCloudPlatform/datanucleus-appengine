@@ -17,6 +17,8 @@
 
 package org.datanucleus.test;
 
+import java.util.List;
+
 import javax.jdo.annotations.Embedded;
 import javax.jdo.annotations.EmbeddedOnly;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -67,6 +69,9 @@ public class HasEmbeddedJDO {
   @PersistenceCapable
   public static class Embedded1 {
     private String val1;
+
+    @Persistent
+    private List<String> multiVal1;
     
     @Persistent
     @Embedded
@@ -87,12 +92,21 @@ public class HasEmbeddedJDO {
     public void setEmbedded2(Embedded2 embedded2) {
       this.embedded2 = embedded2;
     }
+
+    public List<String> getMultiVal1() {
+      return multiVal1;
+    }
+
+    public void setMultiVal1(List<String> multiVal1) {
+      this.multiVal1 = multiVal1;
+    }
   }
 
   @EmbeddedOnly
   @PersistenceCapable
   public static class Embedded2 {
     private String val2;
+    private List<String> multiVal2;
 
     public String getVal2() {
       return val2;
@@ -100,6 +114,14 @@ public class HasEmbeddedJDO {
 
     public void setVal2(String val2) {
       this.val2 = val2;
+    }
+
+    public List<String> getMultiVal2() {
+      return multiVal2;
+    }
+
+    public void setMultiVal2(List<String> multiVal2) {
+      this.multiVal2 = multiVal2;
     }
   }
 }

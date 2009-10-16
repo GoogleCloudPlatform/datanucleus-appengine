@@ -267,7 +267,7 @@ public class DatastoreFieldManager implements FieldManager {
   public Object fetchObjectField(int fieldNumber) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     if (ammd.getEmbeddedMetaData() != null) {
-      return fetchEmbeddedField(ammd);
+      return fetchEmbeddedField(ammd, fieldNumber);
     } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !ammd.isSerialized()) {
       return relationFieldManager.fetchRelationField(getClassLoaderResolver(), ammd);
     }
@@ -298,11 +298,18 @@ public class DatastoreFieldManager implements FieldManager {
           value = deserializeFieldValue(value, clr, ammd);
         }
       } else {
+        if (ammd.getAbsoluteFieldNumber() == -1) {
+          // Embedded fields don't have their field number set because
+          // we pull the field from the EmbeddedMetaData, not the
+          // ClassMetaData.  So, if the field doesn't know its field number
+          // we'll pull the metadata from the ClassMetaData instead and use
+          // that one from this point forward.
+          ammd = getClassMetaData().getMetaDataForMember(ammd.getName());
+        }
         // Datanucleus invokes this method for the object versions
         // of primitive types as well as collections of non-persistent types.
         // We need to make sure we convert appropriately.
-        value = getConversionUtils().datastoreValueToPojoValue(
-            clr, value, getStateManager(), getMetaData(fieldNumber));
+        value = getConversionUtils().datastoreValueToPojoValue(clr, value, getStateManager(), ammd);
         if (value != null && Enum.class.isAssignableFrom(ammd.getType())) {
           @SuppressWarnings("unchecked")
           Class<Enum> enumClass = ammd.getType();
@@ -335,7 +342,7 @@ public class DatastoreFieldManager implements FieldManager {
     };
   }
 
-  private StateManager getEmbeddedStateManager(AbstractMemberMetaData ammd, Object value) {
+  private StateManager getEmbeddedStateManager(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
     if (value == null) {
       // Not positive this is the right approach, but when we read the values
       // of an embedded field out of the datastore we have no way of knowing
@@ -355,14 +362,18 @@ public class DatastoreFieldManager implements FieldManager {
     StateManager embeddedStateMgr = objMgr.findStateManager(value);
     if (embeddedStateMgr == null) {
       embeddedStateMgr = StateManagerFactory.newStateManagerForEmbedded(objMgr, value, false);
-      embeddedStateMgr.addEmbeddedOwner(getStateManager(), ammd.getAbsoluteFieldNumber());
+      embeddedStateMgr.addEmbeddedOwner(getStateManager(), fieldNumber);
       embeddedStateMgr.setPcObjectType(StateManager.EMBEDDED_PC);
     }
     return embeddedStateMgr;
   }
 
-  private Object fetchEmbeddedField(AbstractMemberMetaData ammd) {
-    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, null);
+  /**
+   * We can't trust the fieldNumber on the ammd provided because some embedded
+   * fields don't have this set.  That's why we pass it in as a separate param.
+   */
+  private Object fetchEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber) {
+    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, fieldNumber, null);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
     fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
@@ -767,7 +778,7 @@ public class DatastoreFieldManager implements FieldManager {
         }
       }
       if (ammd.getEmbeddedMetaData() != null) {
-        storeEmbeddedField(ammd, value);
+        storeEmbeddedField(ammd, fieldNumber, value);
       } else if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
         relationFieldManager.storeRelationField(
             getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
@@ -808,8 +819,12 @@ public class DatastoreFieldManager implements FieldManager {
     return getStateManager().getObjectManager();
   }
 
-  private void storeEmbeddedField(AbstractMemberMetaData ammd, Object value) {
-    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, value);
+  /**
+   * We can't trust the fieldNumber on the ammd provided because some embedded
+   * fields don't have this set.  That's why we pass it in as a separate param.
+   */
+  private void storeEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
+    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, fieldNumber, value);
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
     fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
     AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();

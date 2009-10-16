@@ -40,7 +40,8 @@ public class HasEmbeddedJPA {
   private EmbeddableJPA embeddable;
 
   @Embedded
-  @AttributeOverrides({@AttributeOverride(name="embeddedString", column=@Column(name="EMBEDDEDSTRING"))})
+  @AttributeOverrides({@AttributeOverride(name="embeddedString", column=@Column(name="EMBEDDEDSTRING")),
+                       @AttributeOverride(name="multiVal", column=@Column(name="MULTIVAL"))})
   private EmbeddableJPA embeddable2;
 
   public Long getId() {

@@ -40,8 +40,10 @@ public class JDOEmbeddedTest extends JDOTestCase {
     HasEmbeddedJDO.Embedded1 embedded1 = new HasEmbeddedJDO.Embedded1();
     pojo.setEmbedded1(embedded1);
     embedded1.setVal1("v1");
+    embedded1.setMultiVal1(Utils.newArrayList("yar1", "yar2"));
     HasEmbeddedJDO.Embedded2 embedded2 = new HasEmbeddedJDO.Embedded2();
     embedded2.setVal2("v2");
+    embedded2.setMultiVal2(Utils.newArrayList("bar1", "bar2"));
     embedded1.setEmbedded2(embedded2);
     beginTxn();
     pm.makePersistent(pojo);
@@ -55,8 +57,10 @@ public class JDOEmbeddedTest extends JDOTestCase {
     assertNull(pojo.getFlight().getId());
     assertNotNull(pojo.getEmbedded1());
     assertEquals("v1", pojo.getEmbedded1().getVal1());
+    assertEquals(Utils.newArrayList("yar1", "yar2"), pojo.getEmbedded1().getMultiVal1());
     assertNotNull(pojo.getEmbedded1().getEmbedded2());
     assertEquals("v2", pojo.getEmbedded1().getEmbedded2().getVal2());
+    assertEquals(Utils.newArrayList("bar1", "bar2"), pojo.getEmbedded1().getEmbedded2().getMultiVal2());
     commitTxn();
   }
 

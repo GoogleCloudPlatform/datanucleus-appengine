@@ -33,9 +33,11 @@ public class JPAEmbeddedTest extends JPATestCase {
     HasEmbeddedJPA pojo = new HasEmbeddedJPA();
     EmbeddableJPA embedded = new EmbeddableJPA();
     embedded.setEmbeddedString("yar");
+    embedded.setMultiVal(Utils.newArrayList("m1", "m2"));
     pojo.setEmbeddable(embedded);
     embedded = new EmbeddableJPA();
     embedded.setEmbeddedString("yar2");
+    embedded.setMultiVal(Utils.newArrayList("m3", "m4"));
     pojo.setEmbeddable2(embedded);
     beginTxn();
     em.persist(pojo);
@@ -43,12 +45,16 @@ public class JPAEmbeddedTest extends JPATestCase {
     assertEquals(1, countForClass(HasEmbeddedJPA.class));
     Entity e = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertEquals("yar", e.getProperty("embeddedString"));
+    assertEquals(Utils.newArrayList("m1", "m2"), e.getProperty("multiVal"));
     assertEquals("yar2", e.getProperty("EMBEDDEDSTRING"));
+    assertEquals(Utils.newArrayList("m3", "m4"), e.getProperty("MULTIVAL"));
     beginTxn();
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());
     assertNotNull(pojo.getEmbeddable());
     assertEquals("yar", pojo.getEmbeddable().getEmbeddedString());
+    assertEquals(Utils.newArrayList("m1", "m2"), pojo.getEmbeddable().getMultiVal());
     assertEquals("yar2", pojo.getEmbeddable2().getEmbeddedString());
+    assertEquals(Utils.newArrayList("m3", "m4"), pojo.getEmbeddable2().getMultiVal());
     commitTxn();
   }
 
