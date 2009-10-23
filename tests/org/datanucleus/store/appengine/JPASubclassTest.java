@@ -17,10 +17,15 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.exceptions.NoPersistenceInformationException;
+import org.datanucleus.test.IsEmbeddedWithEmbeddedSuperclass;
+import org.datanucleus.test.IsEmbeddedWithEmbeddedSuperclass2;
+import org.datanucleus.test.SubclassesJPA;
 import org.datanucleus.test.SubclassesJPA.Child;
+import org.datanucleus.test.SubclassesJPA.ChildEmbeddedInTablePerClass;
 import org.datanucleus.test.SubclassesJPA.Grandchild;
 import org.datanucleus.test.SubclassesJPA.Joined;
 import org.datanucleus.test.SubclassesJPA.JoinedChild;
@@ -32,6 +37,7 @@ import org.datanucleus.test.SubclassesJPA.SingleTableChild;
 import org.datanucleus.test.SubclassesJPA.TablePerClass;
 import org.datanucleus.test.SubclassesJPA.TablePerClassChild;
 import org.datanucleus.test.SubclassesJPA.TablePerClassGrandchild;
+import org.datanucleus.test.SubclassesJPA.TablePerClassParentWithEmbedded;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
@@ -84,6 +90,162 @@ public class JPASubclassTest extends JPATestCase {
     Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
     assertEquals("overridden", e.getProperty("overridden_string"));
     assertFalse(e.hasProperty("overriddenString"));
+  }
+
+  public void testEmbedded_Child() throws Exception {
+    ChildEmbeddedInTablePerClass child = new ChildEmbeddedInTablePerClass();
+    child.setAString("aString");
+    child.setBString("bString");
+    IsEmbeddedWithEmbeddedSuperclass embedded = new IsEmbeddedWithEmbeddedSuperclass();
+    embedded.setVal0("embedded val 0");
+    embedded.setVal1("embedded val 1");
+    child.setEmbedded(embedded);
+    SubclassesJPA.IsEmbeddedBase
+        embeddedBase = new SubclassesJPA.IsEmbeddedBase();
+    embeddedBase.setVal0("embedded base val 0");
+    child.setEmbeddedBase(embeddedBase);
+    IsEmbeddedWithEmbeddedSuperclass2 embedded2 = new IsEmbeddedWithEmbeddedSuperclass2();
+    embedded2.setVal2("embedded val 2");
+    embedded2.setVal3("embedded val 3");
+    child.setEmbedded2(embedded2);
+    SubclassesJPA.IsEmbeddedBase2
+        embeddedBase2 = new SubclassesJPA.IsEmbeddedBase2();
+    embeddedBase2.setVal2("embedded base val 2");
+    child.setEmbeddedBase2(embeddedBase2);
+    beginTxn();
+    em.persist(child);
+    commitTxn();
+    Key key = KeyFactory.createKey(kindForClass(child.getClass()), child.getId());
+    Entity e = ldth.ds.get(key);
+    assertEquals("aString", e.getProperty("aString"));
+    assertEquals("bString", e.getProperty("bString"));
+    assertEquals("embedded val 0", e.getProperty("val0"));
+    assertEquals("embedded val 1", e.getProperty("val1"));
+    assertEquals("embedded base val 0", e.getProperty("VAL0"));
+    assertEquals("embedded val 2", e.getProperty("val2"));
+    assertEquals("embedded val 3", e.getProperty("val3"));
+    assertEquals("embedded base val 2", e.getProperty("VAL2"));
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    child = em.find(child.getClass(), child.getId());
+    assertEmbeddedChildContents(child);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    Query q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val1 = :p");
+    q.setParameter("p", "embedded val 1");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val0 = :p");
+    q.setParameter("p", "embedded val 0");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 = :p");
+    q.setParameter("p", "embedded base val 0");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val2 = :p");
+    q.setParameter("p", "embedded val 2");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val3 = :p");
+    q.setParameter("p", "embedded val 3");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 = :p");
+    q.setParameter("p", "embedded base val 2");
+    child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
+    assertEmbeddedChildContents(child);
+
+    em.remove(child);
+    commitTxn();
+    try {
+      ldth.ds.get(key);
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+  }
+
+  public void testEmbedded_Parent() throws Exception {
+    TablePerClassParentWithEmbedded parent = new TablePerClassParentWithEmbedded();
+    parent.setAString("aString");
+    IsEmbeddedWithEmbeddedSuperclass embedded = new IsEmbeddedWithEmbeddedSuperclass();
+    embedded.setVal0("embedded val 0");
+    embedded.setVal1("embedded val 1");
+    parent.setEmbedded(embedded);
+    SubclassesJPA.IsEmbeddedBase
+        embeddedBase = new SubclassesJPA.IsEmbeddedBase();
+    embeddedBase.setVal0("embedded base val 0");
+    parent.setEmbeddedBase(embeddedBase);
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+    Key key = KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId());
+    Entity e = ldth.ds.get(key);
+    assertEquals("aString", e.getProperty("aString"));
+    assertEquals("embedded val 0", e.getProperty("val0"));
+    assertEquals("embedded val 1", e.getProperty("val1"));
+    assertEquals("embedded base val 0", e.getProperty("VAL0"));
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    parent = em.find(parent.getClass(), parent.getId());
+    assertEmbeddedParentContents(parent);
+    commitTxn();
+    em.close();
+    em = emf.createEntityManager();
+    beginTxn();
+    Query q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val1 = :p");
+    q.setParameter("p", "embedded val 1");
+    parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
+    assertEmbeddedParentContents(parent);
+
+    q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val0 = :p");
+    q.setParameter("p", "embedded val 0");
+    parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
+    assertEmbeddedParentContents(parent);
+
+    q = em.createQuery("select from " + parent.getClass().getName() + " where embeddedBase.val0 = :p");
+    q.setParameter("p", "embedded base val 0");
+    parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
+    assertEmbeddedParentContents(parent);
+
+    em.remove(parent);
+    commitTxn();
+    try {
+      ldth.ds.get(key);
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+  }
+
+  // This is absurd, but if the signature of this method and the one below
+  // refers to the actual type we want the runtime enhancer gets totally
+  // confused.  
+  private void assertEmbeddedParentContents(Object obj) {
+    TablePerClassParentWithEmbedded parentWithEmbedded = (TablePerClassParentWithEmbedded) obj;
+    assertEquals("aString", parentWithEmbedded.getAString());
+    assertEquals("embedded val 0", parentWithEmbedded.getEmbedded().getVal0());
+    assertEquals("embedded val 1", parentWithEmbedded.getEmbedded().getVal1());
+    assertEquals("embedded base val 0", parentWithEmbedded.getEmbeddedBase().getVal0());
+  }
+
+  private void assertEmbeddedChildContents(Object obj) {
+    ChildEmbeddedInTablePerClass child = (ChildEmbeddedInTablePerClass) obj;
+    assertEquals("bString", child.getBString());
+    assertEquals("embedded val 2", child.getEmbedded2().getVal2());
+    assertEquals("embedded val 3", child.getEmbedded2().getVal3());
+    assertEquals("embedded base val 2", child.getEmbeddedBase2().getVal2());
+    assertEmbeddedParentContents(child);
   }
 
   private void assertUnsupportedByGAE(Object obj) {

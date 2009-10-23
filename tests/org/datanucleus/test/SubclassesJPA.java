@@ -16,7 +16,10 @@ limitations under the License.
 package org.datanucleus.test;
 
 import javax.persistence.AttributeOverride;
+import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
+import javax.persistence.Embeddable;
+import javax.persistence.Embedded;
 import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
@@ -205,6 +208,117 @@ public class SubclassesJPA {
 
     public String getBString() {
       return bString;
+    }
+  }
+
+  @Entity
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class TablePerClassParentWithEmbedded implements Parent {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+
+    @Embedded
+    private IsEmbeddedWithEmbeddedSuperclass embedded;
+
+    @Embedded
+    @AttributeOverrides({@AttributeOverride(name="val0", column=@Column(name="VAL0"))})
+    private IsEmbeddedBase embeddedBase;
+
+    private String aString;
+
+    public Long getId() {
+      return id;
+    }
+
+    public IsEmbeddedWithEmbeddedSuperclass getEmbedded() {
+      return embedded;
+    }
+
+    public void setEmbedded(IsEmbeddedWithEmbeddedSuperclass embedded) {
+      this.embedded = embedded;
+    }
+
+    public String getAString() {
+      return aString;
+    }
+
+    public void setAString(String aString) {
+      this.aString = aString;
+    }
+
+    public IsEmbeddedBase getEmbeddedBase() {
+      return embeddedBase;
+    }
+
+    public void setEmbeddedBase(IsEmbeddedBase embeddedBase) {
+      this.embeddedBase = embeddedBase;
+    }
+  }
+
+  @Entity
+  public static class ChildEmbeddedInTablePerClass extends TablePerClassParentWithEmbedded {
+    private String bString;
+
+    @Embedded
+    @AttributeOverrides({@AttributeOverride(name="val2", column=@Column(name="VAL2"))})
+    private IsEmbeddedBase2 embeddedBase2;
+
+    @Embedded
+    private IsEmbeddedWithEmbeddedSuperclass2 embedded2;
+
+    public void setBString(String bString) {
+      this.bString = bString;
+    }
+
+    public String getBString() {
+      return bString;
+    }
+
+    public IsEmbeddedWithEmbeddedSuperclass2 getEmbedded2() {
+      return embedded2;
+    }
+
+    public void setEmbedded2(IsEmbeddedWithEmbeddedSuperclass2 embedded2) {
+      this.embedded2 = embedded2;
+    }
+
+    public IsEmbeddedBase2 getEmbeddedBase2() {
+      return embeddedBase2;
+    }
+
+    public void setEmbeddedBase2(IsEmbeddedBase2 embeddedBase2) {
+      this.embeddedBase2 = embeddedBase2;
+    }
+  }
+
+  @Embeddable
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class IsEmbeddedBase2 {
+
+    private String val2;
+
+    public String getVal2() {
+      return val2;
+    }
+
+    public void setVal2(String val2) {
+      this.val2 = val2;
+    }
+  }
+
+  @Embeddable
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class IsEmbeddedBase {
+
+    private String val0;
+
+    public String getVal0() {
+      return val0;
+    }
+
+    public void setVal0(String val0) {
+      this.val0 = val0;
     }
   }
 }

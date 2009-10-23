@@ -102,30 +102,10 @@ public class JDOSubclassTest extends JDOTestCase {
     assertFalse(e.hasProperty("overriddenProperty"));
   }
 
-  private void assertEmbeddedChildContents(CompleteTableParentWithEmbedded.Child child) {
-    assertEquals("embedded val 2", child.getEmbedded2().getVal2());
-    assertEquals("embedded val 3", child.getEmbedded2().getVal3());
-    assertEquals("embedded base val 2", child.getEmbeddedBase2().getVal2());
-    // I know it makes more sense to call assertEmbeddedParentContents()
-    // instead of repeating these checks, but the runtime enhancer
-    // gets sad when I do this.
-    assertEquals("aString", child.getAString());
-    assertEquals("embedded val 0", child.getEmbedded().getVal0());
-    assertEquals("embedded val 1", child.getEmbedded().getVal1());
-    assertEquals("embedded base val 0", child.getEmbeddedBase().getVal0());
-  }
-
-  private void assertEmbeddedParentContents(
-      CompleteTableParentWithEmbedded parentWithEmbedded) {
-    assertEquals("aString", parentWithEmbedded.getAString());
-    assertEquals("embedded val 0", parentWithEmbedded.getEmbedded().getVal0());
-    assertEquals("embedded val 1", parentWithEmbedded.getEmbedded().getVal1());
-    assertEquals("embedded base val 0", parentWithEmbedded.getEmbeddedBase().getVal0());
-  }
-
-  public void testEmbedded_Child() throws Exception {    
+  public void testEmbedded_Child() throws Exception {
     CompleteTableParentWithEmbedded.Child child = new CompleteTableParentWithEmbedded.Child();
     child.setAString("aString");
+    child.setBString("bString");
     SubclassesJDO.IsEmbeddedOnly embedded = new SubclassesJDO.IsEmbeddedOnly();
     embedded.setVal0("embedded val 0");
     embedded.setVal1("embedded val 1");
@@ -146,6 +126,7 @@ public class JDOSubclassTest extends JDOTestCase {
     Key key = KeyFactory.createKey(kindForClass(child.getClass()), child.getId());
     Entity e = ldth.ds.get(key);
     assertEquals("aString", e.getProperty("aString"));
+    assertEquals("bString", e.getProperty("bString"));
     assertEquals("embedded val 0", e.getProperty("val0"));
     assertEquals("embedded val 1", e.getProperty("val1"));
     assertEquals("embedded base val 0", e.getProperty("VAL0"));
@@ -252,6 +233,26 @@ public class JDOSubclassTest extends JDOTestCase {
     } catch (EntityNotFoundException enfe) {
       // good
     }
+  }
+
+  // This is absurd, but if the signature of this method and the one below
+  // refers to the actual type we want the runtime enhancer gets totally
+  // confused.
+  private void assertEmbeddedChildContents(Object obj) {
+    CompleteTableParentWithEmbedded.Child child = (CompleteTableParentWithEmbedded.Child) obj;
+    assertEquals("bString", child.getBString());
+    assertEquals("embedded val 2", child.getEmbedded2().getVal2());
+    assertEquals("embedded val 3", child.getEmbedded2().getVal3());
+    assertEquals("embedded base val 2", child.getEmbeddedBase2().getVal2());
+    assertEmbeddedParentContents(child);
+  }
+
+  private void assertEmbeddedParentContents(Object obj) {
+    CompleteTableParentWithEmbedded parentWithEmbedded = (CompleteTableParentWithEmbedded) obj;
+    assertEquals("aString", parentWithEmbedded.getAString());
+    assertEquals("embedded val 0", parentWithEmbedded.getEmbedded().getVal0());
+    assertEquals("embedded val 1", parentWithEmbedded.getEmbedded().getVal1());
+    assertEquals("embedded base val 0", parentWithEmbedded.getEmbeddedBase().getVal0());
   }
 
   private void assertUnsupportedByDataNuc(Object obj) {
