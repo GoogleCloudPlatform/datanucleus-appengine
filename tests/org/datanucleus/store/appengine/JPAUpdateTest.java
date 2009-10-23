@@ -121,6 +121,38 @@ public class JPAUpdateTest extends JPATestCase {
     assertEquals(2L, JDOHelper.getVersion(hv));
   }
 
+  public void testOptimisticLocking_Merge() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
+    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
+    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
+    Key key = ldth.ds.put(entity);
+
+    String keyStr = KeyFactory.keyToString(key);
+    beginTxn();
+    HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
+    hv.setValue("value");
+    commitTxn();
+    assertEquals(2L, hv.getVersion());
+    // make sure the version gets bumped
+    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
+
+    beginTxn();
+    // we update the entity directly in the datastore right before commit
+    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
+    ldth.ds.put(entity);
+    hv.setValue("another value");
+    em.merge(hv);
+    try {
+      commitTxn();
+      fail("expected optimistic exception");
+    } catch (RollbackException re) {
+      // good
+      assertTrue(re.getCause() instanceof OptimisticLockException);
+    }
+    // make sure the version didn't change on the model object
+    assertEquals(2L, JDOHelper.getVersion(hv));
+  }
+
   public void testOptimisticLocking_Delete() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(HasVersionJPA.class.getSimpleName());

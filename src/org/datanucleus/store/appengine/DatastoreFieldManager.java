@@ -36,11 +36,13 @@ import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
 import java.lang.reflect.Field;
+import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
@@ -98,8 +100,6 @@ public class DatastoreFieldManager implements FieldManager {
 
   private final SerializationManager serializationManager;
 
-  private final InsertMappingConsumer insertMappingConsumer;
-
   // Not final because we will reallocate if we hit a parent pk field
   // and the key of the current value does not have a parent, or if the pk
   // gets set.
@@ -128,13 +128,13 @@ public class DatastoreFieldManager implements FieldManager {
         return getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
       }
     };
-    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider, false));
     this.createdWithoutEntity = createdWithoutEntity;
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
+    InsertMappingConsumer mappingConsumer = buildMappingConsumer(sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver(), fieldNumbers);
+    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider, mappingConsumer, false));
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
     this.serializationManager = new SerializationManager();
-    this.insertMappingConsumer = buildMappingConsumerForWrite(getClassMetaData(), fieldNumbers);
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
@@ -330,14 +330,14 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
-      AbstractMemberMetaData ammd) {
-    final EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
-    // This implementation gets the meta data from the embedded meta data.
+      final InsertMappingConsumer consumer) {
+    // This implementation gets the meta data from the mapping consumer.
     // This is needed to ensure we see column overrides that are specific to
-    // a specific embedded field.
+    // a specific embedded field and subclass fields, which aren't included
+    // in EmbeddedMetaData for some reason.
     return new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
-        return emd.getMemberMetaData()[fieldNumber];
+        return consumer.getMemberMetaDataForIndex(fieldNumber);
       }
     };
   }
@@ -373,13 +373,21 @@ public class DatastoreFieldManager implements FieldManager {
    * fields don't have this set.  That's why we pass it in as a separate param.
    */
   private Object fetchEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber) {
-    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, fieldNumber, null);
-    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
-    AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
-    embeddedStateMgr.replaceFields(acmd.getAllMemberPositions(), this);
+    StateManager esm = getEmbeddedStateManager(ammd, fieldNumber, null);
+    // We need to build a mapping consumer for the embedded class so that we
+    // get correct fieldIndex --> metadata mappings for the class in the proper
+    // embedded context
+    // TODO(maxr) Consider caching this
+    InsertMappingConsumer mappingConsumer = buildMappingConsumer(
+        esm.getClassMetaData(), getClassLoaderResolver(),
+        esm.getClassMetaData().getAllMemberPositions(),
+        ammd.getEmbeddedMetaData());
+    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
+    fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mappingConsumer, true));
+    AbstractClassMetaData acmd = esm.getClassMetaData();
+    esm.replaceFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
-    return embeddedStateMgr.getObject();
+    return esm.getObject();
   }
 
   /**
@@ -601,7 +609,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private Key getParentKeyFromParentField(StateManager sm) {
-    AbstractMemberMetaData parentField = insertMappingConsumer.getParentMappingField();
+    AbstractMemberMetaData parentField = getInsertMappingConsumer().getParentMappingField();
     if (parentField == null) {
       return null;
     }
@@ -616,7 +624,7 @@ public class DatastoreFieldManager implements FieldManager {
     // One To Many it might also be available on the parent object.
     // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of
     // the KeyRegistry.
-    Set<JavaTypeMapping> externalFKMappings = insertMappingConsumer.getExternalFKMappings();
+    Set<JavaTypeMapping> externalFKMappings = getInsertMappingConsumer().getExternalFKMappings();
     for (JavaTypeMapping fkMapping : externalFKMappings) {
       Object fkValue = sm.getAssociatedValue(fkMapping);
       if (fkValue != null) {
@@ -781,12 +789,12 @@ public class DatastoreFieldManager implements FieldManager {
         storeEmbeddedField(ammd, fieldNumber, value);
       } else if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
         relationFieldManager.storeRelationField(
-            getClassMetaData(), ammd, value, createdWithoutEntity, insertMappingConsumer);
+            getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
       } else {
         // unwrap SCO values so that the datastore api doesn't
         // honk on unknown types
         value = unwrapSCOField(fieldNumber, value);
-        String propName = getPropertyName(fieldNumber);
+        String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
         if (isUnindexedProperty(ammd)) {
           datastoreEntity.setUnindexedProperty(propName, value);
         } else {
@@ -819,16 +827,28 @@ public class DatastoreFieldManager implements FieldManager {
     return getStateManager().getObjectManager();
   }
 
+  InsertMappingConsumer getInsertMappingConsumer() {
+    return fieldManagerStateStack.getFirst().mappingConsumer;
+  }
+
   /**
    * We can't trust the fieldNumber on the ammd provided because some embedded
    * fields don't have this set.  That's why we pass it in as a separate param.
    */
   private void storeEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
-    StateManager embeddedStateMgr = getEmbeddedStateManager(ammd, fieldNumber, value);
-    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(ammd);
-    fieldManagerStateStack.addFirst(new FieldManagerState(embeddedStateMgr, ammdProvider, true));
-    AbstractClassMetaData acmd = embeddedStateMgr.getClassMetaData();
-    embeddedStateMgr.provideFields(acmd.getAllMemberPositions(), this);
+    StateManager esm = getEmbeddedStateManager(ammd, fieldNumber, value);
+    // We need to build a mapping consumer for the embedded class so that we
+    // get correct fieldIndex --> metadata mappings for the class in the proper
+    // embedded context
+    // TODO(maxr) Consider caching this
+    InsertMappingConsumer mc = buildMappingConsumer(
+        esm.getClassMetaData(), getClassLoaderResolver(),
+        esm.getClassMetaData().getAllMemberPositions(),
+        ammd.getEmbeddedMetaData());
+    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mc);
+    fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mc, true));
+    AbstractClassMetaData acmd = esm.getClassMetaData();
+    esm.provideFields(acmd.getAllMemberPositions(), this);
     fieldManagerStateStack.removeFirst();
   }
 
@@ -959,7 +979,7 @@ public class DatastoreFieldManager implements FieldManager {
    * of this object.
    */
   boolean handleIndexFields() {
-    Set<JavaTypeMapping> orderMappings = insertMappingConsumer.getExternalOrderMappings();
+    Set<JavaTypeMapping> orderMappings = getInsertMappingConsumer().getExternalOrderMappings();
     boolean delayWrite = false;
     for (JavaTypeMapping orderMapping : orderMappings) {
       if (orderMapping instanceof IndexMapping) {
@@ -977,24 +997,38 @@ public class DatastoreFieldManager implements FieldManager {
     return delayWrite;
   }
 
-  private InsertMappingConsumer buildMappingConsumerForWrite(AbstractClassMetaData acmd, int[] fieldNumbers) {
-    DatastoreTable dc = getStoreManager().getDatastoreClass(
-        acmd.getFullClassName(), getClassLoaderResolver());
-    if (dc == null) {
+  private InsertMappingConsumer buildMappingConsumer(AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers) {
+    return buildMappingConsumer(acmd, clr, fieldNumbers, null);
+  }
+
+  /**
+   * Constructs a {@link MappingConsumer}.  If an {@link EmbeddedMetaData} is
+   * provided that means we need to construct the consumer in an embedded
+   * context.
+   */
+  private InsertMappingConsumer buildMappingConsumer(
+      AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers, EmbeddedMetaData emd) {
+    DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
+    if (table == null) {
       // We've seen this when there is a class with the superclass inheritance
       // strategy that does not have a parent
       throw new NoPersistenceInformationException(acmd.getFullClassName());
     }
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
-    dc.provideDatastoreIdMappings(consumer);
-    dc.providePrimaryKeyMappings(consumer);
-    dc.provideParentMappingField(consumer);
-    if (createdWithoutEntity) {
-      // This is the insert case.  We want to fill the consumer with mappings
+    if (emd == null) {
+      table.provideDatastoreIdMappings(consumer);
+      table.providePrimaryKeyMappings(consumer);
+    } else {
+      // skip pk mappings if embedded
+    }
+    table.provideParentMappingField(consumer);
+    if (createdWithoutEntity || emd != null) {
+      // This is the insert case or we're dealing with an embedded field.
+      // Either way we want to fill the consumer with mappings
       // for everything.
-      dc.provideNonPrimaryKeyMappings(consumer);
-      dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-      dc.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
+      table.provideNonPrimaryKeyMappings(consumer, emd != null);
+      table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+      table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
     } else {
       // This is the update case.  We only want to fill the consumer mappings
       // for the specific fields that were provided.
@@ -1004,7 +1038,42 @@ public class DatastoreFieldManager implements FieldManager {
           fmds[i] = acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
         }
       }
-      dc.provideMappingsForMembers(consumer, fmds, false);
+      table.provideMappingsForMembers(consumer, fmds, false);
+    }
+
+    if (emd != null) {
+      DatastoreTable parentTable = getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), clr);
+      AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
+      EmbeddedMapping embeddedMapping =
+          (EmbeddedMapping) parentTable.getMappingForFieldName(parentField.getFullFieldName());
+      // Build a map that gakes us from full field name to member meta data.
+      // The member meta data in this map comes from the embedded mapping,
+      // which means it will have subclass fields and column overrides.
+      Map<String, AbstractMemberMetaData> embeddedMetaDataByFullFieldName = Utils.newHashMap();
+      int numMappings = embeddedMapping.getNumberOfJavaTypeMappings();
+      for (int i = 0; i < numMappings; i++) {
+        JavaTypeMapping fieldMapping = embeddedMapping.getJavaTypeMapping(i);
+        AbstractMemberMetaData ammd = fieldMapping.getMemberMetaData();
+        embeddedMetaDataByFullFieldName.put(ammd.getFullFieldName(), ammd);
+      }
+
+      // We're going to update the consumer's map so make a copy over which we
+      // can safely iterate.
+      Map<Integer, AbstractMemberMetaData> map =
+          new HashMap<Integer, AbstractMemberMetaData>(consumer.getFieldIndexToMemberMetaData());
+      for (Map.Entry<Integer, AbstractMemberMetaData> entry : map.entrySet()) {
+        // For each value in the consumer's map, find the corresponding value in
+        // the embeddedMetaDataByFullFieldName we just built and install it as
+        // a replacement.  This will given us access to subclass fields and
+        // column overrides as we fetch/store the embedded field.
+        AbstractMemberMetaData replacement = embeddedMetaDataByFullFieldName.get(entry.getValue().getFullFieldName());
+        if (replacement == null) {
+          throw new RuntimeException(
+              "Unable to locate " + entry.getValue().getFullFieldName() + " in embedded meta-data "
+              + "map.  This is most likely an App Engine bug.");
+        }
+        consumer.getFieldIndexToMemberMetaData().put(entry.getKey(), replacement);
+      }
     }
     return consumer;
   }
@@ -1030,13 +1099,16 @@ public class DatastoreFieldManager implements FieldManager {
   private static final class FieldManagerState {
     private final StateManager stateManager;
     private final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
+    private final InsertMappingConsumer mappingConsumer;
     private final boolean isEmbedded;
 
     private FieldManagerState(StateManager stateManager,
         AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,
+        InsertMappingConsumer mappingConsumer,
         boolean isEmbedded) {
       this.stateManager = stateManager;
       this.abstractMemberMetaDataProvider = abstractMemberMetaDataProvider;
+      this.mappingConsumer = mappingConsumer;
       this.isEmbedded = isEmbedded;
     }
   }

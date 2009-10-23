@@ -37,12 +37,12 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.DatastoreMapping {
 
   private final JavaTypeMapping mapping;
-  private final MappedStoreManager storeMgr;
+  private final DatastoreManager storeMgr;
   private final DatastoreProperty field;
 
   public DatastoreFKMapping(JavaTypeMapping mapping, MappedStoreManager storeMgr, DatastoreField field) {
     this.mapping = mapping;
-    this.storeMgr = storeMgr;
+    this.storeMgr = (DatastoreManager) storeMgr;
     this.field = (DatastoreProperty) field;
     if (mapping != null) {
       // Register this datastore mapping with the owning JavaTypeMapping
@@ -144,9 +144,17 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
       // swallow are DataNucleus adding "hidden" back pointers to parent
       // objects.  We don't want these.  The back pointer is the parent
       // of the key itself.
-      AbstractMemberMetaData ammd = field.getMemberMetaData();
-      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
+      String propName = getPropertyName();
       ((Entity) datastoreEntity).setProperty(propName, value);
+    }
+  }
+
+  private String getPropertyName() {
+    AbstractMemberMetaData ammd = field.getMemberMetaData();
+    if (ammd != null) {
+      return EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
+    } else {
+      return field.getColumnMetaData().getName();
     }
   }
 
@@ -187,8 +195,7 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
   }
 
   public Object getObject(Object datastoreEntity, int exprIndex) {
-    AbstractMemberMetaData ammd = field.getMemberMetaData();
-    String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ammd);
+    String propName = getPropertyName();
     return ((Entity) datastoreEntity).getProperty(propName);
   }
 }

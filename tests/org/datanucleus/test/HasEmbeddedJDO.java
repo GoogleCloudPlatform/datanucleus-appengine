@@ -19,6 +19,7 @@ package org.datanucleus.test;
 
 import java.util.List;
 
+import javax.jdo.annotations.Column;
 import javax.jdo.annotations.Embedded;
 import javax.jdo.annotations.EmbeddedOnly;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -38,8 +39,22 @@ public class HasEmbeddedJDO {
   private Long id;
 
   @Persistent
-  @Embedded
+  @Embedded(members={
+              @Persistent(name="id", columns=@Column(name="flightId"))
+              })
   private Flight flight;
+
+  @Persistent
+  @Embedded(members={
+              @Persistent(name="id", columns=@Column(name="ID")),
+              @Persistent(name="origin", columns=@Column(name="ORIGIN")),
+              @Persistent(name="dest", columns=@Column(name="DEST")),
+              @Persistent(name="name", columns=@Column(name="NAME")),
+              @Persistent(name="you", columns=@Column(name="YOU")),
+              @Persistent(name="me", columns=@Column(name="ME")),
+              @Persistent(name="flightNumber", columns=@Column(name="FLIGHTNUMBER"))
+              })
+  private Flight anotherFlight;
 
   @Persistent
   @Embedded
@@ -63,6 +78,14 @@ public class HasEmbeddedJDO {
 
   public void setEmbedded1(Embedded1 embedded1) {
     this.embedded1 = embedded1;
+  }
+
+  public Flight getAnotherFlight() {
+    return anotherFlight;
+  }
+
+  public void setAnotherFlight(Flight anotherFlight) {
+    this.anotherFlight = anotherFlight;
   }
 
   @EmbeddedOnly

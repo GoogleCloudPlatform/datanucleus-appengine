@@ -38,9 +38,6 @@ import org.datanucleus.test.KitchenSink;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Field;
-import java.lang.reflect.InvocationHandler;
-import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Date;
@@ -50,16 +47,6 @@ import java.util.Iterator;
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreFieldManagerTest extends JDOTestCase {
-
-  private static final StateManager DUMMY_STATE_MANAGER =
-      (StateManager) Proxy.newProxyInstance(
-          DatastoreFieldManagerTest.class.getClassLoader(),
-          new Class[] {StateManager.class},
-          new InvocationHandler() {
-            public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
-              throw new UnsupportedOperationException();
-            }
-          });
 
   public void testFetching() {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
@@ -74,8 +61,12 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
         return value;
       }
     };
+    StateManager stateManagerMock = EasyMock.createMock(StateManager.class);
+    EasyMock.expect(stateManagerMock.getClassMetaData()).andReturn(acmd);
+    EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
+    EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -211,8 +202,12 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+    StateManager stateManagerMock = EasyMock.createMock(StateManager.class);
+    EasyMock.expect(stateManagerMock.getClassMetaData()).andReturn(acmd);
+    EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
+    EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), entity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), entity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -281,8 +276,12 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
         jpm.getObjectManager().getMetaDataManager().getMetaDataForClass(KitchenSink.class, clr);
+    StateManager stateManagerMock = EasyMock.createMock(StateManager.class);
+    EasyMock.expect(stateManagerMock.getClassMetaData()).andReturn(acmd);
+    EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
+    EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(DUMMY_STATE_MANAGER, getStoreManager(), ksEntity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0]) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -426,6 +425,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     StateManager sm = EasyMock.createMock(StateManager.class);
     ObjectManager om = EasyMock.createMock(ObjectManager.class);
     EasyMock.expect(sm.getObjectManager()).andReturn(om).anyTimes();
+    EasyMock.expect(sm.getClassMetaData()).andReturn(acmd).anyTimes();
     EasyMock.replay(sm);
     EasyMock.expect(om.getClassLoaderResolver()).andReturn(clr).anyTimes();
     EasyMock.expect(om.getStoreManager()).andReturn(getStoreManager()).anyTimes();

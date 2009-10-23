@@ -64,6 +64,7 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
@@ -1148,6 +1149,7 @@ public class DatastoreQuery implements Serializable {
       return ammd;
     }
     // more than one tuple, so it must be embedded data
+    String parentFullClassName = acmd.getFullClassName();
     for (String tuple : tuples.subList(1, tuples.size())) {
       EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
       if (emd == null) {
@@ -1155,7 +1157,13 @@ public class DatastoreQuery implements Serializable {
             query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "
             + "the sub-object is embedded.").setFatal();
       }
-      ammd = findMemberMetaDataWithName(tuple, emd.getMemberMetaData());
+      DatastoreTable parentTable =
+          getStoreManager().getDatastoreClass(parentFullClassName, getClassLoaderResolver());
+      parentFullClassName = ammd.getTypeName();
+      AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
+      EmbeddedMapping embeddedMapping =
+          (EmbeddedMapping) parentTable.getMappingForFieldName(parentField.getFullFieldName());
+      ammd = findMemberMetaDataWithName(tuple, embeddedMapping);
       if (ammd == null) {
         break;
       }
@@ -1163,11 +1171,12 @@ public class DatastoreQuery implements Serializable {
     return ammd;
   }
 
-  private AbstractMemberMetaData findMemberMetaDataWithName(
-      String name, AbstractMemberMetaData[] ammdList) {
-    for (AbstractMemberMetaData embedded : ammdList) {
-      if (embedded.getName().equals(name)) {
-        return embedded;
+  private AbstractMemberMetaData findMemberMetaDataWithName(String name, EmbeddedMapping embeddedMapping) {
+    int numMappings = embeddedMapping.getNumberOfJavaTypeMappings();
+    for (int i = 0; i < numMappings; i++) {
+      JavaTypeMapping fieldMapping = embeddedMapping.getJavaTypeMapping(i);
+      if (fieldMapping.getMemberMetaData().getName().equals(name)) {
+        return fieldMapping.getMemberMetaData();
       }
     }
     // Not ok, but caller knows what to do

@@ -17,12 +17,14 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.jdo.exceptions.NoPersistenceInformationException;
-import org.datanucleus.test.SubclassesJDO.Child;
+import org.datanucleus.test.SubclassesJDO;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentNoChildStrategy;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithCompleteTableChild;
+import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithEmbedded;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithNewTableChild;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithSubclassTableChild;
 import org.datanucleus.test.SubclassesJDO.Grandchild;
@@ -38,6 +40,7 @@ import org.datanucleus.test.SubclassesJDO.SubclassTableParentWithSubclassTableCh
 import java.util.List;
 
 import javax.jdo.JDOFatalUserException;
+import javax.jdo.Query;
 
 /**
  * There's something flaky here that will probably show up as a real bug at
@@ -48,8 +51,8 @@ import javax.jdo.JDOFatalUserException;
  * @author Max Ross <maxr@google.com>
  */
 // TODO(maxr): Tests where there are relationships on the parent/child/grandchild
-// TODO(maxr): Tests where there are embedded fields on the parent/child/grandchild
-// TODO(maxr): Tests where there are overrides
+// TODO(maxr): Tests where there is inheritance in the embedded classes
+// TODO(maxr): non-transactional tests
 public class JDOSubclassTest extends JDOTestCase {
 
   public void testGrandchildren() throws Exception {
@@ -99,6 +102,158 @@ public class JDOSubclassTest extends JDOTestCase {
     assertFalse(e.hasProperty("overriddenProperty"));
   }
 
+  private void assertEmbeddedChildContents(CompleteTableParentWithEmbedded.Child child) {
+    assertEquals("embedded val 2", child.getEmbedded2().getVal2());
+    assertEquals("embedded val 3", child.getEmbedded2().getVal3());
+    assertEquals("embedded base val 2", child.getEmbeddedBase2().getVal2());
+    // I know it makes more sense to call assertEmbeddedParentContents()
+    // instead of repeating these checks, but the runtime enhancer
+    // gets sad when I do this.
+    assertEquals("aString", child.getAString());
+    assertEquals("embedded val 0", child.getEmbedded().getVal0());
+    assertEquals("embedded val 1", child.getEmbedded().getVal1());
+    assertEquals("embedded base val 0", child.getEmbeddedBase().getVal0());
+  }
+
+  private void assertEmbeddedParentContents(
+      CompleteTableParentWithEmbedded parentWithEmbedded) {
+    assertEquals("aString", parentWithEmbedded.getAString());
+    assertEquals("embedded val 0", parentWithEmbedded.getEmbedded().getVal0());
+    assertEquals("embedded val 1", parentWithEmbedded.getEmbedded().getVal1());
+    assertEquals("embedded base val 0", parentWithEmbedded.getEmbeddedBase().getVal0());
+  }
+
+  public void testEmbedded_Child() throws Exception {    
+    CompleteTableParentWithEmbedded.Child child = new CompleteTableParentWithEmbedded.Child();
+    child.setAString("aString");
+    SubclassesJDO.IsEmbeddedOnly embedded = new SubclassesJDO.IsEmbeddedOnly();
+    embedded.setVal0("embedded val 0");
+    embedded.setVal1("embedded val 1");
+    child.setEmbedded(embedded);
+    SubclassesJDO.IsEmbeddedOnlyBase embeddedBase = new SubclassesJDO.IsEmbeddedOnlyBase();
+    embeddedBase.setVal0("embedded base val 0");
+    child.setEmbeddedBase(embeddedBase);
+    SubclassesJDO.IsEmbeddedOnly2 embedded2 = new SubclassesJDO.IsEmbeddedOnly2();
+    embedded2.setVal2("embedded val 2");
+    embedded2.setVal3("embedded val 3");
+    child.setEmbedded2(embedded2);
+    SubclassesJDO.IsEmbeddedOnlyBase2 embeddedBase2 = new SubclassesJDO.IsEmbeddedOnlyBase2();
+    embeddedBase2.setVal2("embedded base val 2");
+    child.setEmbeddedBase2(embeddedBase2);
+    beginTxn();
+    pm.makePersistent(child);
+    commitTxn();
+    Key key = KeyFactory.createKey(kindForClass(child.getClass()), child.getId());
+    Entity e = ldth.ds.get(key);
+    assertEquals("aString", e.getProperty("aString"));
+    assertEquals("embedded val 0", e.getProperty("val0"));
+    assertEquals("embedded val 1", e.getProperty("val1"));
+    assertEquals("embedded base val 0", e.getProperty("VAL0"));
+    assertEquals("embedded val 2", e.getProperty("val2"));
+    assertEquals("embedded val 3", e.getProperty("val3"));
+    assertEquals("embedded base val 2", e.getProperty("VAL2"));
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    child = pm.getObjectById(child.getClass(), child.getId());
+    assertEmbeddedChildContents(child);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    Query q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val1 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 1");
+    assertEmbeddedChildContents(child);
+
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val0 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 0");
+    assertEmbeddedChildContents(child);
+
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded base val 0");
+    assertEmbeddedChildContents(child);
+
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val2 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 2");
+    assertEmbeddedChildContents(child);
+
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val3 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 3");
+    assertEmbeddedChildContents(child);
+
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 == :p");
+    q.setUnique(true);
+    child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded base val 2");
+    assertEmbeddedChildContents(child);
+
+    pm.deletePersistent(child);
+    commitTxn();
+    try {
+      ldth.ds.get(key);
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+  }
+
+  public void testEmbedded_Parent() throws Exception {
+    CompleteTableParentWithEmbedded parent = new CompleteTableParentWithEmbedded();
+    parent.setAString("aString");
+    SubclassesJDO.IsEmbeddedOnly embedded = new SubclassesJDO.IsEmbeddedOnly();
+    embedded.setVal0("embedded val 0");
+    embedded.setVal1("embedded val 1");
+    parent.setEmbedded(embedded);
+    SubclassesJDO.IsEmbeddedOnlyBase embeddedBase = new SubclassesJDO.IsEmbeddedOnlyBase();
+    embeddedBase.setVal0("embedded base val 0");
+    parent.setEmbeddedBase(embeddedBase);
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+    Key key = KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId());
+    Entity e = ldth.ds.get(key);
+    assertEquals("aString", e.getProperty("aString"));
+    assertEquals("embedded val 0", e.getProperty("val0"));
+    assertEquals("embedded val 1", e.getProperty("val1"));
+    assertEquals("embedded base val 0", e.getProperty("VAL0"));
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    parent = pm.getObjectById(parent.getClass(), parent.getId());
+    assertEmbeddedParentContents(parent);
+    commitTxn();
+    pm.close();
+    pm = pmf.getPersistenceManager();
+    beginTxn();
+    Query q = pm.newQuery("select from " + parent.getClass().getName() + " where embedded.val1 == :p");
+    q.setUnique(true);
+    parent = (CompleteTableParentWithEmbedded) q.execute("embedded val 1");
+    assertEmbeddedParentContents(parent);
+
+    q = pm.newQuery("select from " + parent.getClass().getName() + " where embedded.val0 == :p");
+    q.setUnique(true);
+    parent = (CompleteTableParentWithEmbedded) q.execute("embedded val 0");
+    assertEmbeddedParentContents(parent);
+
+    q = pm.newQuery("select from " + parent.getClass().getName() + " where embeddedBase.val0 == :p");
+    q.setUnique(true);
+    parent = (CompleteTableParentWithEmbedded) q.execute("embedded base val 0");
+    assertEmbeddedParentContents(parent);
+
+    pm.deletePersistent(parent);
+    commitTxn();
+    try {
+      ldth.ds.get(key);
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+  }
+
   private void assertUnsupportedByDataNuc(Object obj) {
     switchDatasource(PersistenceManagerFactoryName.transactional);
     beginTxn();
@@ -135,7 +290,7 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("a", e.getProperty("aString"));
   }
 
-  private void testInsertChild(org.datanucleus.test.SubclassesJDO.Child child) throws Exception {
+  private void testInsertChild(SubclassesJDO.Child child) throws Exception {
     child.setAString("a");
     child.setBString("b");
     beginTxn();
@@ -173,14 +328,14 @@ public class JDOSubclassTest extends JDOTestCase {
     commitTxn();
   }
 
-  private void testFetchChild(Class<? extends org.datanucleus.test.SubclassesJDO.Child> childClass) {
+  private void testFetchChild(Class<? extends SubclassesJDO.Child> childClass) {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     ldth.ds.put(e);
 
     beginTxn();
-    org.datanucleus.test.SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
+    SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
     assertEquals(childClass, child.getClass());
     assertEquals("a", child.getAString());
     assertEquals("b", child.getBString());
@@ -216,7 +371,7 @@ public class JDOSubclassTest extends JDOTestCase {
     commitTxn();
   }
 
-  private void testQueryChild(Class<? extends org.datanucleus.test.SubclassesJDO.Child> childClass) {
+  private void testQueryChild(Class<? extends SubclassesJDO.Child> childClass) {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a2");
     e.setProperty("bString", "b2");
@@ -224,12 +379,13 @@ public class JDOSubclassTest extends JDOTestCase {
 
     beginTxn();
 
-    Child child = ((List<Child>) pm.newQuery("select from " + childClass.getName() + " where aString == 'a2'").execute()).get(0);
+    SubclassesJDO.Child
+        child = ((List<SubclassesJDO.Child>) pm.newQuery("select from " + childClass.getName() + " where aString == 'a2'").execute()).get(0);
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
 
-    child = ((List<Child>) pm.newQuery("select from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
+    child = ((List<SubclassesJDO.Child>) pm.newQuery("select from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
@@ -283,14 +439,14 @@ public class JDOSubclassTest extends JDOTestCase {
     }
   }
 
-  private void testDeleteChild(Class<? extends org.datanucleus.test.SubclassesJDO.Child> childClass) {
+  private void testDeleteChild(Class<? extends SubclassesJDO.Child> childClass) {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     ldth.ds.put(e);
 
     beginTxn();
-    org.datanucleus.test.SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
+    SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
     pm.deletePersistent(child);
     commitTxn();
     try {
@@ -309,7 +465,7 @@ public class JDOSubclassTest extends JDOTestCase {
     ldth.ds.put(e);
 
     beginTxn();
-    org.datanucleus.test.SubclassesJDO.Child child = pm.getObjectById(grandchildClass, e.getKey());
+    SubclassesJDO.Child child = pm.getObjectById(grandchildClass, e.getKey());
     pm.deletePersistent(child);
     commitTxn();
     try {
@@ -333,14 +489,14 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("not a", e.getProperty("aString"));
   }
 
-  private void testUpdateChild(Class<? extends org.datanucleus.test.SubclassesJDO.Child> childClass) throws Exception {
+  private void testUpdateChild(Class<? extends SubclassesJDO.Child> childClass) throws Exception {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     ldth.ds.put(e);
 
     beginTxn();
-    org.datanucleus.test.SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
+    SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
     child.setAString("not a");
     child.setBString("not b");
     commitTxn();
@@ -376,7 +532,7 @@ public class JDOSubclassTest extends JDOTestCase {
     testQueryGrandchild(grandchild.getClass());
   }
 
-  private void testChild(org.datanucleus.test.SubclassesJDO.Child child) throws Exception {
+  private void testChild(SubclassesJDO.Child child) throws Exception {
     testInsertChild(child);
     testUpdateChild(child.getClass());
     testDeleteChild(child.getClass());

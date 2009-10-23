@@ -15,6 +15,9 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import javax.jdo.annotations.Column;
+import javax.jdo.annotations.Embedded;
+import javax.jdo.annotations.EmbeddedOnly;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Inheritance;
@@ -705,6 +708,152 @@ public class SubclassesJDO {
       @Override
       public void setOverriddenString(String overriddenString) {
         this.overriddenString = overriddenString;
+      }
+    }
+  }
+
+  @PersistenceCapable
+  @EmbeddedOnly
+  @Inheritance(customStrategy = "complete-table")
+  public static class IsEmbeddedOnlyBase {
+    private String val0;
+
+    public String getVal0() {
+      return val0;
+    }
+
+    public void setVal0(String val0) {
+      this.val0 = val0;
+    }
+  }
+
+  @PersistenceCapable
+  @EmbeddedOnly
+  public static class IsEmbeddedOnly extends IsEmbeddedOnlyBase {
+    private String val1;
+
+    public String getVal1() {
+      return val1;
+    }
+
+    public void setVal1(String val1) {
+      this.val1 = val1;
+    }
+  }
+
+  @PersistenceCapable
+  @EmbeddedOnly
+  @Inheritance(customStrategy = "complete-table")
+  public static class IsEmbeddedOnlyBase2 {
+    private String val2;
+
+    public String getVal2() {
+      return val2;
+    }
+
+    public void setVal2(String val2) {
+      this.val2 = val2;
+    }
+  }
+
+  @PersistenceCapable
+  @EmbeddedOnly
+  public static class IsEmbeddedOnly2 extends IsEmbeddedOnlyBase2 {
+    private String val3;
+
+    public String getVal3() {
+      return val3;
+    }
+
+    public void setVal3(String val3) {
+      this.val3 = val3;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class CompleteTableParentWithEmbedded implements Parent {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Long id;
+
+    @Persistent
+    @Embedded
+    private IsEmbeddedOnly embedded;
+
+    @Persistent
+    @Embedded(members={
+                @Persistent(name="val0", columns=@Column(name="VAL0"))
+                })
+    private IsEmbeddedOnlyBase embeddedBase;
+
+    private String aString;
+
+    public Long getId() {
+      return id;
+    }
+
+    public IsEmbeddedOnly getEmbedded() {
+      return embedded;
+    }
+
+    public void setEmbedded(IsEmbeddedOnly embedded) {
+      this.embedded = embedded;
+    }
+
+    public String getAString() {
+      return aString;
+    }
+
+    public void setAString(String aString) {
+      this.aString = aString;
+    }
+
+    public IsEmbeddedOnlyBase getEmbeddedBase() {
+      return embeddedBase;
+    }
+
+    public void setEmbeddedBase(IsEmbeddedOnlyBase embeddedBase) {
+      this.embeddedBase = embeddedBase;
+    }
+
+    @PersistenceCapable(identityType = IdentityType.APPLICATION)
+    public static class Child extends CompleteTableParentWithEmbedded {
+      @Persistent
+      private String bString;
+
+      @Persistent
+      @Embedded(members={
+                  @Persistent(name="val2", columns=@Column(name="VAL2"))
+                  })
+      private IsEmbeddedOnlyBase2 embeddedBase2;
+
+      @Persistent
+      @Embedded
+      private IsEmbeddedOnly2 embedded2;
+
+      public void setBString(String bString) {
+        this.bString = bString;
+      }
+
+      public String getBString() {
+        return bString;
+      }
+
+      public IsEmbeddedOnly2 getEmbedded2() {
+        return embedded2;
+      }
+
+      public void setEmbedded2(IsEmbeddedOnly2 embedded2) {
+        this.embedded2 = embedded2;
+      }
+
+      public IsEmbeddedOnlyBase2 getEmbeddedBase2() {
+        return embeddedBase2;
+      }
+
+      public void setEmbeddedBase2(IsEmbeddedOnlyBase2 embeddedBase2) {
+        this.embeddedBase2 = embeddedBase2;
       }
     }
   }

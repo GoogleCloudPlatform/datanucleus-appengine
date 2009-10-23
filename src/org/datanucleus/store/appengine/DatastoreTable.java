@@ -99,6 +99,14 @@ public class DatastoreTable implements DatastoreClass {
       new LinkedHashMap<AbstractMemberMetaData, JavaTypeMapping>();
 
   /**
+   * Similar to {@link #fieldMappingsMap} except primary key fields are added as
+   * well.  This is needed to support persistence capable classes that can be
+   * persisted as top-level classes and as embedded classes.
+   */
+  private final Map<AbstractMemberMetaData, JavaTypeMapping> embeddedFieldMappingsMap =
+      new LinkedHashMap<AbstractMemberMetaData, JavaTypeMapping>();
+
+  /**
    * All the properties in the table.  Even though the datastore is schemaless,
    * the mappings provided by the ORM effectively impose a schema.  This allows
    * us to know, up front, what properties we can expect.
@@ -288,7 +296,11 @@ public class DatastoreTable implements DatastoreClass {
       // Go through the fields for this class and add columns for them
       for (AbstractMemberMetaData fmd : fields) {
         // Primary key fields are added by the initialisePK method
-        if (!fmd.isPrimaryKey()) {
+        if (fmd.isPrimaryKey()) {
+          // We need to know about this mapping when accessing the class as an
+          // embedded field.
+          embeddedFieldMappingsMap.put(fmd, pkMappings[0]);
+        } else {
           if (managesField(fmd.getFullFieldName())) {
             if (!fmd.getClassName(true).equals(curCmd.getFullClassName())) {
               throw new UnsupportedOperationException("Overrides not currently supported.");
@@ -307,6 +319,7 @@ public class DatastoreTable implements DatastoreClass {
                 JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
                     this, fmd, dba, clr, FieldRole.ROLE_FIELD);
                 addFieldMapping(mapping);
+                embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
               } else {
                 throw new UnsupportedOperationException("No support for secondary tables.");
               }
@@ -463,7 +476,7 @@ public class DatastoreTable implements DatastoreClass {
    * @param fieldName Name of the field
    * @return The java type mapping
    */
-  protected JavaTypeMapping getMappingForFieldName(String fieldName) {
+  public JavaTypeMapping getMappingForFieldName(String fieldName) {
     Set fields = fieldMappingsMap.keySet();
     for (Object field : fields) {
       AbstractMemberMetaData fmd = (AbstractMemberMetaData) field;
@@ -824,15 +837,18 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public void provideNonPrimaryKeyMappings(MappingConsumer consumer) {
+    provideNonPrimaryKeyMappings(consumer, false);
+  }
+
+  void provideNonPrimaryKeyMappings(MappingConsumer consumer, boolean isEmbedded) {
     consumer.preConsumeMapping(highestFieldNumber + 1);
 
-    Set fieldNumbersSet = fieldMappingsMap.keySet();
-    for (Object aFieldNumbersSet : fieldNumbersSet) {
-      AbstractMemberMetaData fmd = (AbstractMemberMetaData) aFieldNumbersSet;
-      JavaTypeMapping fieldMapping = fieldMappingsMap.get(fmd);
-      if (fieldMapping != null) {
-        if (!fmd.isPrimaryKey()) {
-          consumer.consumeMapping(fieldMapping, fmd);
+    Set<Map.Entry<AbstractMemberMetaData, JavaTypeMapping>> entries =
+        isEmbedded ? embeddedFieldMappingsMap.entrySet() : fieldMappingsMap.entrySet();
+    for (Map.Entry<AbstractMemberMetaData, JavaTypeMapping> entry : entries) {
+      if (entry.getValue() != null) {
+        if (!entry.getKey().isPrimaryKey() || isEmbedded) {
+          consumer.consumeMapping(entry.getValue(), entry.getKey());
         }
       }
     }

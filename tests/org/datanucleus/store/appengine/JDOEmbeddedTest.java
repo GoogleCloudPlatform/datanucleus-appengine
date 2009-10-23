@@ -17,8 +17,13 @@
 
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.KeyFactory;
+
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasEmbeddedJDO;
+import org.datanucleus.test.HasEmbeddedPc;
 import org.datanucleus.test.HasEmbeddedWithKeyPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 
@@ -27,9 +32,10 @@ import org.datanucleus.test.HasKeyPkJDO;
  */
 public class JDOEmbeddedTest extends JDOTestCase {
 
-  public void testEmbeddedWithGeneratedId() {
+  public void testEmbeddedWithGeneratedId() throws EntityNotFoundException {
     HasEmbeddedJDO pojo = new HasEmbeddedJDO();
     Flight f = new Flight();
+    f.setId("yarg");
     f.setFlightNumber(23);
     f.setName("harold");
     f.setOrigin("bos");
@@ -37,6 +43,17 @@ public class JDOEmbeddedTest extends JDOTestCase {
     f.setYou(24);
     f.setMe(25);
     pojo.setFlight(f);
+
+    Flight f2 = new Flight();
+    f2.setId("blarg");
+    f2.setFlightNumber(26);
+    f2.setName("jimmy");
+    f2.setOrigin("jfk");
+    f2.setDest("sea");
+    f2.setYou(28);
+    f2.setMe(29);
+    pojo.setAnotherFlight(f2);
+
     HasEmbeddedJDO.Embedded1 embedded1 = new HasEmbeddedJDO.Embedded1();
     pojo.setEmbedded1(embedded1);
     embedded1.setVal1("v1");
@@ -48,13 +65,39 @@ public class JDOEmbeddedTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
+
+    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(pojo.getClass()), pojo.getId()));
+    assertTrue(e.hasProperty("flightId"));
+    assertTrue(e.hasProperty("origin"));
+    assertTrue(e.hasProperty("dest"));
+    assertTrue(e.hasProperty("name"));
+    assertTrue(e.hasProperty("you"));
+    assertTrue(e.hasProperty("me"));
+    assertTrue(e.hasProperty("flightNumber"));
+    assertTrue(e.hasProperty("ID"));
+    assertTrue(e.hasProperty("ORIGIN"));
+    assertTrue(e.hasProperty("DEST"));
+    assertTrue(e.hasProperty("NAME"));
+    assertTrue(e.hasProperty("YOU"));
+    assertTrue(e.hasProperty("ME"));
+    assertTrue(e.hasProperty("FLIGHTNUMBER"));
+    assertTrue(e.hasProperty("val1"));
+    assertTrue(e.hasProperty("multiVal1"));
+    assertTrue(e.hasProperty("val2"));
+    assertTrue(e.hasProperty("multiVal2"));
+    assertEquals(18, e.getProperties().size());
+
     assertEquals(1, countForClass(HasEmbeddedJDO.class));
     assertEquals(0, countForClass(Flight.class));
+    switchDatasource(PersistenceManagerFactoryName.transactional);
     beginTxn();
     pojo = pm.getObjectById(HasEmbeddedJDO.class, pojo.getId());
     assertNotNull(pojo.getFlight());
-    // wild
-    assertNull(pojo.getFlight().getId());
+    // it's weird but flight doesn't have an equals() method
+    assertTrue(f.customEquals(pojo.getFlight()));
+    assertNotNull(pojo.getAnotherFlight());
+    assertTrue(f2.customEquals(pojo.getAnotherFlight()));
+    
     assertNotNull(pojo.getEmbedded1());
     assertEquals("v1", pojo.getEmbedded1().getVal1());
     assertEquals(Utils.newArrayList("yar1", "yar2"), pojo.getEmbedded1().getMultiVal1());
@@ -105,5 +148,17 @@ public class JDOEmbeddedTest extends JDOTestCase {
     pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());
     pojo.setEmbedded(embedded);
     commitTxn();
+  }
+
+  public void testEmbeddingPC() throws EntityNotFoundException {
+    HasEmbeddedPc parent = new HasEmbeddedPc();
+    HasKeyPkJDO embedded = new HasKeyPkJDO();
+    embedded.setKey(KeyFactory.createKey("blar", 43L));
+    parent.setEmbedded(embedded);
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+    Entity e = ldth.ds.get(parent.getKey());
+    assertTrue(e.hasProperty("key"));
   }
 }

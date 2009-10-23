@@ -129,6 +129,29 @@ public class JDOUpdateTest extends JDOTestCase {
     }
   }
 
+  public void testOptimisticLocking_Attach_NoField() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
+    Key key = ldth.ds.put(flightEntity);
+
+    String keyStr = KeyFactory.keyToString(key);
+    beginTxn();
+    Flight flight = pm.detachCopy(pm.getObjectById(Flight.class, keyStr));
+    commitTxn();
+    beginTxn();
+    flight.setName("2");
+    pm.makePersistent(flight);
+    flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
+    // we update the flight directly in the datastore right before commit
+    ldth.ds.put(flightEntity);
+    try {
+      commitTxn();
+      fail("expected optimistic exception");
+    } catch (JDOOptimisticVerificationException jove) {
+      // good
+    }
+  }
+
   public void testOptimisticLocking_Delete_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
@@ -721,7 +744,7 @@ public class JDOUpdateTest extends JDOTestCase {
 
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, key.getId());
-    f.setId(KeyFactory.keyToString(KeyFactory.createKey(key.getKind(), 33)));
+    f.setId(KeyFactory.keyToString(KeyFactory.createKey(key.getKind(), "jimmy")));
     pm.makePersistent(f);
     try {
       commitTxn();

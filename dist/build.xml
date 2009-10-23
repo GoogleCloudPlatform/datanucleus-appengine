@@ -3,8 +3,8 @@
 
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="3"/>
-  <property name="version.rc" value=".final"/>
+  <property name="version.point" value="4"/>
+  <property name="version.rc" value=".RC1"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -183,7 +183,7 @@
         <attribute name="Bundle-SymbolicName" value="org.datanucleus.store.appengine;singleton:=true"/>
         <attribute name="Bundle-Version" value="${version}"/>
         <attribute name="Bundle-Vendor" value="Google"/>
-        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.0.2, 1.1.5.final)&quot;"/>
+        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.0.4, 1.1.5.final)&quot;"/>
         <attribute name="Import-Package" value="javax.jdo, javax.jdo.annotations, javax.jdo.datastore, javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.persistence.spi"/>
       </manifest>
     </jar>
@@ -260,6 +260,11 @@
       /tmp/testdist/lib/shared/jsp/jasper-runtime-5.0.28.jar
       /tmp/testdist/lib/shared/jsp/commons-logging-1.1.1.jar
       /tmp/testdist/lib/tools/jsp
+      /tmp/testdist/lib/agent
+      /tmp/testdist/lib/agent/appengine-agent.jar
+      /tmp/testdist/lib/agent/appengine-agentimpl.jar
+      /tmp/testdist/lib/impl/agent
+      /tmp/testdist/lib/impl/agent/appengine-agentruntime.jar
      -->
     <delete dir="${orm.tmpdist.dir}"/>
     <mkdir dir="${orm.tmpdist.dir}"/>
@@ -299,6 +304,21 @@
       </fileset>
     </copy>
 
+    <mkdir dir="${orm.sdk.tmpdist.dir}/agent"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/agent">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-agent.jar"/>
+        <include name="appengine-agentimpl.jar"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmpdist.dir}/impl/agent"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/impl/agent">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-agentruntime.jar"/>
+      </fileset>
+    </copy>
+
     <!-- directory just needs to exist -->
     <mkdir dir="${orm.sdk.tmpdist.dir}/tools/jsp"/>
 
@@ -306,8 +326,12 @@
 
     <parallel>
       <daemons>
-        <java fork="true" classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
-              classname="com.google.appengine.tools.development.DevAppServerMain">
+        <java classname="com.google.appengine.tools.KickStart"
+              classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
+              fork="true" failonerror="true">
+          <arg value="com.google.appengine.tools.development.DevAppServerMain"/>
+          <arg value="--port=8080"/>
+          <arg value="--address=localhost"/>
           <arg value="${orm.tmpdist.dir}/demos/helloorm/war"/>
         </java>
       </daemons>

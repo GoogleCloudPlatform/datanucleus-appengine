@@ -28,6 +28,7 @@ import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -41,9 +42,13 @@ public class InsertMappingConsumer implements MappingConsumer {
   private final Set<JavaTypeMapping> externalFKMappings = new HashSet<JavaTypeMapping>();
   private final Set<JavaTypeMapping> externalOrderMappings = new HashSet<JavaTypeMapping>();
   private final List<MappingCallbacks> mc = new ArrayList<MappingCallbacks>();
-  private AbstractMemberMetaData parentMapping = null;
-
+  private final Map<Integer, AbstractMemberMetaData> fieldIndexToMemberMetaData = Utils.newHashMap();
   private final AbstractClassMetaData cmd;
+
+  private AbstractMemberMetaData parentMapping = null;
+  // running tally of the number of fields we've consumed
+  // we assume that fields are consumed in fieldIndex order
+  private int numFields = 0;
 
   public InsertMappingConsumer(AbstractClassMetaData cmd) {
     this.cmd = cmd;
@@ -62,7 +67,6 @@ public class InsertMappingConsumer implements MappingConsumer {
       // Reachable Fields (that relate to this object but have no column in the table)
     } else {
       // Fields to be "inserted" (that have a datastore column)
-
       // Check if the field is "insertable" (either using JPA column, or JDO extension)
       if (fmd.hasExtension("insertable") && fmd.getValueForExtension("insertable").equalsIgnoreCase("false")) {
         return;
@@ -77,8 +81,11 @@ public class InsertMappingConsumer implements MappingConsumer {
         }
       }
     }
+
+    fieldIndexToMemberMetaData.put(numFields++, fmd);
+
     if (m instanceof MappingCallbacks) {
-      mc.add((MappingCallbacks) m);
+        mc.add((MappingCallbacks) m);
     }
   }
 
@@ -113,5 +120,13 @@ public class InsertMappingConsumer implements MappingConsumer {
 
   void setParentMappingField(AbstractMemberMetaData parentMapping) {
     this.parentMapping = parentMapping;
+  }
+
+  AbstractMemberMetaData getMemberMetaDataForIndex(int index) {
+    return fieldIndexToMemberMetaData.get(index);
+  }
+
+  Map<Integer, AbstractMemberMetaData> getFieldIndexToMemberMetaData() {
+    return fieldIndexToMemberMetaData;
   }
 }

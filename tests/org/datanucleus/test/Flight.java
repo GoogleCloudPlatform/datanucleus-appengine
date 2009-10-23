@@ -181,4 +181,43 @@ public class Flight implements Serializable {
     return newFlightEntity(null, name, origin, dest, you, me);
   }
 
+  /**
+   * We get weird test failures if we give Flight an equals() method due to
+   * attempts to read fields of deleted objects.
+   * TODO(maxr) Straighten this out. 
+   */
+  public boolean customEquals(Object o) {
+    if (this == o) {
+      return true;
+    }
+    if (o == null || getClass() != o.getClass()) {
+      return false;
+    }
+
+    Flight flight = (Flight) o;
+
+    if (flightNumber != flight.flightNumber) {
+      return false;
+    }
+    if (me != flight.me) {
+      return false;
+    }
+    if (you != flight.you) {
+      return false;
+    }
+    if (dest != null ? !dest.equals(flight.dest) : flight.dest != null) {
+      return false;
+    }
+    if (id != null ? !id.equals(flight.id) : flight.id != null) {
+      return false;
+    }
+    if (name != null ? !name.equals(flight.name) : flight.name != null) {
+      return false;
+    }
+    if (origin != null ? !origin.equals(flight.origin) : flight.origin != null) {
+      return false;
+    }
+
+    return true;
+  }
 }
