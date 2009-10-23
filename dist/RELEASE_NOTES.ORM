@@ -2,6 +2,9 @@ Release Notes for the Google App Engine ORM, a DataNucleus plugin that provides
 access to the Google App Engine Datastore via JDO and JPA.
 
 VERSION 1.0.4 RC1
+- Inheritance is working for simple fields and embedded fields.  Relationships
+in base classes are completely untested and probably do not work.
+
 - Cannot add child to existing one-to-many if parent has Long or unencoded String pk
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=28
 
