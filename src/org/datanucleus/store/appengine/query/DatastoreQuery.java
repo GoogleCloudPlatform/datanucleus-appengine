@@ -502,7 +502,7 @@ public class DatastoreQuery implements Serializable {
           HAVING_OP);
     }
 
-    final List<AbstractMemberMetaData> projectionFields = Utils.newArrayList();
+    final List<String> projectionFields = Utils.newArrayList();
     ResultType resultType = validateResultExpression(compilation, acmd, projectionFields);
     // TODO(maxr): Add checks for subqueries and anything else we don't allow
     String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
@@ -532,7 +532,7 @@ public class DatastoreQuery implements Serializable {
       // Wrap the existing transformer with a transformer that will apply the
       // appropriate projection to each Entity in the result set.
       resultTransformer = new ProjectionResultTransformer(resultTransformer, getObjectManager(),
-                                                          projectionFields, query.getSingleStringQuery());
+                                                          projectionFields, compilation.getCandidateAlias());
     }
     QueryData qd = new QueryData(
         parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer);
@@ -548,14 +548,14 @@ public class DatastoreQuery implements Serializable {
   /**
    * @param compilation The compiled query
    * @param acmd The meta data for the class we're querying
-   * @param projectionFields Out param that will contain the member meta-data
+   * @param projectionFields Out param that will contain the names
    * of any fields that have been explicitly selected in the result
-   * expression.
+   * expression.  Field names will be of the form "a.b.c".
    *
    * @return The ResultType
    */
   private ResultType validateResultExpression(
-      QueryCompilation compilation, AbstractClassMetaData acmd, List<AbstractMemberMetaData> projectionFields) {
+      QueryCompilation compilation, AbstractClassMetaData acmd, List<String> projectionFields) {
     ResultType resultType = null;
     if (compilation.getExprResult() != null) {
       // the only expression results we support are count() and PrimaryExpression
@@ -584,7 +584,7 @@ public class DatastoreQuery implements Serializable {
             if (ammd == null) {
               throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
             }
-            projectionFields.add(ammd);
+            projectionFields.add(primaryExpr.getId());
             if (ammd.getParent() instanceof EmbeddedMetaData || !ammd.isPrimaryKey()) {
               // A single non-pk field locks the result type on entity projection
               resultType = ResultType.ENTITY_PROJECTION;
@@ -1081,6 +1081,10 @@ public class DatastoreQuery implements Serializable {
   private List<String> getTuples(PrimaryExpression expr, String alias) {
     List<String> tuples = Utils.newArrayList();
     tuples.addAll(expr.getTuples());
+    return getTuples(tuples, alias);
+  }
+
+  static List<String> getTuples(List<String> tuples, String alias) {
     if (alias != null && tuples.size() > 1 && alias.equals(tuples.get(0))) {
       tuples = tuples.subList(1, tuples.size());
     }
@@ -1122,8 +1126,7 @@ public class DatastoreQuery implements Serializable {
     return -negateMe.longValue();
   }
 
-  private JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd,
-                                                     AbstractClassMetaData acmd) {
+  JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd, AbstractClassMetaData acmd) {
     ClassLoaderResolver clr = getClassLoaderResolver();
     JavaTypeMapping mapping = null;
     // We might be looking for the mapping for a.b.c
@@ -1154,7 +1157,7 @@ public class DatastoreQuery implements Serializable {
       EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
       if (emd == null) {
         throw new NucleusUserException(
-            query.getSingleStringQuery() + ": Can only filter by properties of a sub-object if "
+            query.getSingleStringQuery() + ": Can only reference properties of a sub-object if "
             + "the sub-object is embedded.").setFatal();
       }
       DatastoreTable parentTable =
@@ -1162,7 +1165,7 @@ public class DatastoreQuery implements Serializable {
       parentFullClassName = ammd.getTypeName();
       AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
       EmbeddedMapping embeddedMapping =
-          (EmbeddedMapping) parentTable.getMappingForFieldName(parentField.getFullFieldName());
+          (EmbeddedMapping) parentTable.getMappingForFullFieldName(parentField.getFullFieldName());
       ammd = findMemberMetaDataWithName(tuple, embeddedMapping);
       if (ammd == null) {
         break;

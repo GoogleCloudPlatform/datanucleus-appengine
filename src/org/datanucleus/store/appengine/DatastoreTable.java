@@ -465,7 +465,7 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public boolean managesField(String fieldName) {
-    return fieldName != null && getMappingForFieldName(fieldName) != null;
+    return fieldName != null && getMappingForFullFieldName(fieldName) != null;
 
   }
 
@@ -476,11 +476,22 @@ public class DatastoreTable implements DatastoreClass {
    * @param fieldName Name of the field
    * @return The java type mapping
    */
-  public JavaTypeMapping getMappingForFieldName(String fieldName) {
+  public JavaTypeMapping getMappingForFullFieldName(String fieldName) {
     Set fields = fieldMappingsMap.keySet();
     for (Object field : fields) {
       AbstractMemberMetaData fmd = (AbstractMemberMetaData) field;
       if (fmd.getFullFieldName().equals(fieldName)) {
+        return fieldMappingsMap.get(fmd);
+      }
+    }
+    return null;
+  }
+
+  public JavaTypeMapping getMappingForSimpleFieldName(String fieldName) {
+    Set fields = fieldMappingsMap.keySet();
+    for (Object field : fields) {
+      AbstractMemberMetaData fmd = (AbstractMemberMetaData) field;
+      if (fmd.getName().equals(fieldName)) {
         return fieldMappingsMap.get(fmd);
       }
     }

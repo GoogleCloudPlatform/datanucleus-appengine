@@ -172,6 +172,17 @@ public class JDOSubclassTest extends JDOTestCase {
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded base val 2");
     assertEmbeddedChildContents(child);
 
+    q = pm.newQuery("select embedded.val1, embedded.val0, embeddedBase.val0, embedded2.val2, embedded2.val3, embeddedBase2.val2 from " +
+                    child.getClass().getName() + " where embeddedBase2.val2 == :p");
+    q.setUnique(true);
+    Object[] result = (Object[]) q.execute("embedded base val 2");
+    assertEquals("embedded val 1", result[0]);
+    assertEquals("embedded val 0", result[1]);
+    assertEquals("embedded base val 0", result[2]);
+    assertEquals("embedded val 2", result[3]);
+    assertEquals("embedded val 3", result[4]);
+    assertEquals("embedded base val 2", result[5]);
+
     pm.deletePersistent(child);
     commitTxn();
     try {
@@ -224,6 +235,14 @@ public class JDOSubclassTest extends JDOTestCase {
     q.setUnique(true);
     parent = (CompleteTableParentWithEmbedded) q.execute("embedded base val 0");
     assertEmbeddedParentContents(parent);
+
+    q = pm.newQuery("select embedded.val1, embedded.val0, embeddedBase.val0 from " +
+                    parent.getClass().getName() + " where embeddedBase.val0 == :p");
+    q.setUnique(true);
+    Object[] result = (Object[]) q.execute("embedded base val 0");
+    assertEquals("embedded val 1", result[0]);
+    assertEquals("embedded val 0", result[1]);
+    assertEquals("embedded base val 0", result[2]);
 
     pm.deletePersistent(parent);
     commitTxn();
@@ -370,6 +389,11 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals(parentClass, parent.getClass());
     assertEquals("a2", parent.getAString());
     commitTxn();
+
+    beginTxn();
+    String aString = ((List<String>) pm.newQuery("select aString from " + parentClass.getName() + " where aString == 'a2'").execute()).get(0);
+    assertEquals("a2", aString);
+    commitTxn();
   }
 
   private void testQueryChild(Class<? extends SubclassesJDO.Child> childClass) {
@@ -390,6 +414,11 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
+
+    Object[] result = ((List<Object[]>) pm.newQuery("select bString, aString from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
+    assertEquals(2, result.length);
+    assertEquals("b2", result[0]);
+    assertEquals("a2", result[1]);
 
     commitTxn();
   }
@@ -419,6 +448,12 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("a2", grandchild.getAString());
     assertEquals("b2", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
+
+    Object[] result = ((List<Object[]>) pm.newQuery("select bString, aString, cString from " + grandchildClass.getName() + " where cString == 'c2'").execute()).get(0);
+    assertEquals(3, result.length);
+    assertEquals("b2", result[0]);
+    assertEquals("a2", result[1]);
+    assertEquals("c2", result[2]);
 
     commitTxn();
   }

@@ -1045,8 +1045,8 @@ public class DatastoreFieldManager implements FieldManager {
       DatastoreTable parentTable = getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), clr);
       AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
       EmbeddedMapping embeddedMapping =
-          (EmbeddedMapping) parentTable.getMappingForFieldName(parentField.getFullFieldName());
-      // Build a map that gakes us from full field name to member meta data.
+          (EmbeddedMapping) parentTable.getMappingForFullFieldName(parentField.getFullFieldName());
+      // Build a map that takes us from full field name to member meta data.
       // The member meta data in this map comes from the embedded mapping,
       // which means it will have subclass fields and column overrides.
       Map<String, AbstractMemberMetaData> embeddedMetaDataByFullFieldName = Utils.newHashMap();

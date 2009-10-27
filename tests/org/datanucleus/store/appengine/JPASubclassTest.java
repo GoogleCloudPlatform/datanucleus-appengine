@@ -164,6 +164,18 @@ public class JPASubclassTest extends JPATestCase {
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
+    q = em.createQuery("select embedded.val1, embedded.val0, embeddedBase.val0, embedded2.val2, embedded2.val3, embeddedBase2.val2 from " +
+                    child.getClass().getName() + " where embeddedBase2.val2 = :p");
+    q.setParameter("p", "embedded base val 2");
+
+    Object[] result = (Object[]) q.getSingleResult();
+    assertEquals("embedded val 1", result[0]);
+    assertEquals("embedded val 0", result[1]);
+    assertEquals("embedded base val 0", result[2]);
+    assertEquals("embedded val 2", result[3]);
+    assertEquals("embedded val 3", result[4]);
+    assertEquals("embedded base val 2", result[5]);
+
     em.remove(child);
     commitTxn();
     try {
@@ -217,6 +229,15 @@ public class JPASubclassTest extends JPATestCase {
     q.setParameter("p", "embedded base val 0");
     parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
     assertEmbeddedParentContents(parent);
+
+    q = em.createQuery("select embedded.val1, embedded.val0, embeddedBase.val0 from " +
+                    parent.getClass().getName() + " where embeddedBase.val0 = :p");
+    q.setParameter("p", "embedded base val 0");
+
+    Object[] result = (Object[]) q.getSingleResult();
+    assertEquals("embedded val 1", result[0]);
+    assertEquals("embedded val 0", result[1]);
+    assertEquals("embedded base val 0", result[2]);
 
     em.remove(parent);
     commitTxn();
@@ -351,7 +372,14 @@ public class JPASubclassTest extends JPATestCase {
     Parent parent = (Parent) q.getSingleResult();
     assertEquals(parentClass, parent.getClass());
     assertEquals("a2", parent.getAString());
+
+    q = em.createQuery("select aString from " + parentClass.getName() + " where aString = :p");
+    q.setParameter("p", "a2");
+    String result = (String) q.getSingleResult();
+    assertEquals("a2", result);
+
     commitTxn();
+
   }
 
   private void testQueryChild(Class<? extends Child> childClass) {
@@ -374,6 +402,13 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
+
+    q = em.createQuery("select bString, aString from " + childClass.getName() + " where bString = :p");
+    q.setParameter("p", "b2");
+    Object[] result = (Object[]) q.getSingleResult();
+    assertEquals(2, result.length);
+    assertEquals("b2", result[0]);
+    assertEquals("a2", result[1]);
 
     commitTxn();
   }
@@ -412,6 +447,15 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals("a2", grandchild.getAString());
     assertEquals("b2", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
+
+    q = em.createQuery("select bString, aString, cString from " + grandchildClass.getName() + " where cString = :p");
+    q.setParameter("p", "c2");
+    Object[] result = (Object[]) q.getSingleResult();
+    assertEquals(3, result.length);
+    assertEquals("b2", result[0]);
+    assertEquals("a2", result[1]);
+    assertEquals("c2", result[2]);
+
     commitTxn();
   }
 
