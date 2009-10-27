@@ -53,6 +53,7 @@ import org.datanucleus.query.expression.VariableExpression;
 import org.datanucleus.query.symbol.Symbol;
 import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.FieldValues;
+import org.datanucleus.store.appengine.DatastoreExceptionTranslator;
 import org.datanucleus.store.appengine.DatastoreFieldManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastorePersistenceHandler;
@@ -138,8 +139,7 @@ public class DatastoreQuery implements Serializable {
     map.put(Expression.OP_GTEQ, Query.FilterOperator.GREATER_THAN_OR_EQUAL);
     map.put(Expression.OP_LT, Query.FilterOperator.LESS_THAN);
     map.put(Expression.OP_LTEQ, Query.FilterOperator.LESS_THAN_OR_EQUAL);
-    // only supported when the rhs is 'null'
-    map.put(Expression.OP_NOTEQ, Query.FilterOperator.GREATER_THAN);
+    map.put(Expression.OP_NOTEQ, Query.FilterOperator.NOT_EQUAL);
     return map;
   }
 
@@ -943,12 +943,6 @@ public class DatastoreQuery implements Serializable {
           "Right side of expression is of unexpected type: " + right.getClass().getName(),
           query.getSingleStringQuery());
     }
-    // We can only support != null.
-    if (operator.equals(Expression.OP_NOTEQ) && value != null) {
-      throw new UnsupportedDatastoreOperatorException(
-          query.getSingleStringQuery(), Expression.OP_NOTEQ,
-          "The 'not equal' operator is only supported when the operator argument is 'null'");
-    }
     List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
     AbstractClassMetaData acmd = qd.acmd;
     Query datastoreQuery = qd.primaryDatastoreQuery;
@@ -994,7 +988,11 @@ public class DatastoreQuery implements Serializable {
         throwInvalidBatchLookupException();
       }
       value = pojoParamToDatastoreParam(value);
-      datastoreQuery.addFilter(datastorePropName, op, value);
+      try {
+        datastoreQuery.addFilter(datastorePropName, op, value);
+      } catch (IllegalArgumentException iae) {
+        throw DatastoreExceptionTranslator.wrapIllegalArgumentException(iae);
+      }
     }
   }
 

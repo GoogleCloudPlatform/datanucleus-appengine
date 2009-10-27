@@ -106,8 +106,10 @@ public class JPQLQueryTest extends JPATestCase {
       new FilterPredicate("isbn", FilterOperator.LESS_THAN, 4L);
   private static final FilterPredicate ISBN_LTE_4 =
       new FilterPredicate("isbn", FilterOperator.LESS_THAN_OR_EQUAL, 4L);
-  private static final FilterPredicate TITLE_GT_NULL_LITERAL =
-      new FilterPredicate("title", FilterOperator.GREATER_THAN, null);
+  private static final FilterPredicate TITLE_NEQ_NULL_LITERAL =
+      new FilterPredicate("title", FilterOperator.NOT_EQUAL, null);
+  private static final FilterPredicate TITLE_NEQ_2_LITERAL =
+      new FilterPredicate("title", FilterOperator.NOT_EQUAL, 2L);
   private static final SortPredicate TITLE_ASC =
       new SortPredicate("title", SortDirection.ASCENDING);
   private static final SortPredicate ISBN_DESC =
@@ -188,7 +190,8 @@ public class JPQLQueryTest extends JPATestCase {
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)");
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");
-
+    // gets split into multiple inequality props
+    assertQueryUnsupportedByDatastore(baseQuery + "(title != 2 AND isbn != 4");
     assertEquals(
         new HashSet<Expression.Operator>(Arrays.asList(Expression.OP_CONCAT, Expression.OP_COM,
                                                        Expression.OP_NEG, Expression.OP_IS,
@@ -239,7 +242,9 @@ public class JPQLQueryTest extends JPATestCase {
                          Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
                          Utils.newArrayList(TITLE_ASC, ISBN_DESC));
     assertQuerySupported(baseQuery + "WHERE title <> null",
-                         Utils.newArrayList(TITLE_GT_NULL_LITERAL), NO_SORTS);
+                         Utils.newArrayList(TITLE_NEQ_NULL_LITERAL), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title <> 2",
+                         Utils.newArrayList(TITLE_NEQ_2_LITERAL), NO_SORTS);
   }
 
   public void test2Equals2OrderBy() {
@@ -2079,6 +2084,29 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not null", b.getTitle());
+  }
+
+  public void testNotEqual() {
+    Entity e = Book.newBookEntity("auth", "isbn", "yar");
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> 'yar'");
+    assertTrue(q.getResultList().isEmpty());
+    e = Book.newBookEntity("auth2", "isbn2", "not yar");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals("not yar", b.getTitle());
+  }
+
+  public void testNotEqual_Param() {
+    Entity e = Book.newBookEntity("auth", "isbn", "yar");
+    ldth.ds.put(e);
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
+    q.setParameter("p", "yar");
+    assertTrue(q.getResultList().isEmpty());
+    e = Book.newBookEntity("auth2", "isbn2", "not yar");
+    ldth.ds.put(e);
+    Book b = (Book) q.getSingleResult();
+    assertEquals("not yar", b.getTitle());
   }
 
   public void testIsNullChild() {

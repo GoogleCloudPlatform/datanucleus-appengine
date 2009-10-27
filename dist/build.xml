@@ -33,6 +33,7 @@
     <path refid="appengine.plugin.compile.deps"/>
     <pathelement location="${orm.lib.dir}/appengine-local-runtime.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
+    <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
     <pathelement location="${orm.lib.dir}/junit.jar"/>
     <pathelement location="${orm.lib.dir}/easymock.jar"/>
   </path>

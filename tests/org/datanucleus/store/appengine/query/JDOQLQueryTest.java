@@ -99,10 +99,12 @@ public class JDOQLQueryTest extends JDOTestCase {
       new FilterPredicate("origin", FilterOperator.EQUAL, 2);
   private static final FilterPredicate ORIGIN_EQ_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.EQUAL, 2L);
-  private static final FilterPredicate ORIGIN_GT_NULL_LITERAL =
-      new FilterPredicate("origin", FilterOperator.GREATER_THAN, null);
+  private static final FilterPredicate ORIGIN_NEQ_NULL_LITERAL =
+      new FilterPredicate("origin", FilterOperator.NOT_EQUAL, null);
   private static final FilterPredicate ORIGIN_EQ_2STR =
       new FilterPredicate("origin", FilterOperator.EQUAL, "2");
+  private static final FilterPredicate ORIGIN_NEQ_2_LITERAL =
+      new FilterPredicate("origin", FilterOperator.NOT_EQUAL, 2L);
   private static final FilterPredicate DEST_EQ_4 =
       new FilterPredicate("dest", FilterOperator.EQUAL, 4);
   private static final FilterPredicate DEST_EQ_4_LITERAL =
@@ -166,7 +168,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByOrm(Flight.class, "~origin == 4", Expression.OP_COM, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "!origin == 4", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "-origin == 4", Expression.OP_NEG, unsupportedOps);
-    assertQueryUnsupportedByOrm(Flight.class, "origin != 4", Expression.OP_NOTEQ, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "origin instanceof " + Flight.class.getName(),
         Expression.OP_IS, unsupportedOps);
     assertEquals(Utils.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
@@ -180,6 +181,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
         + " where origin > 2 order by dest");
+    // gets split into multiple inequality filters
+    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
+        + " where origin != 2 && dest != 4");
   }
 
   public void testSupportedFilters() {
@@ -210,8 +214,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupported("select from " + Flight.class.getName()
         + " where origin == 2 && dest == 4 order by origin asc, dest desc",
         Utils.newArrayList(ORIGIN_EQ_2_LITERAL, DEST_EQ_4_LITERAL), Utils.newArrayList(ORIG_ASC, DESC_DESC));
+    assertQuerySupported(Flight.class, "origin != 2", Utils.newArrayList(ORIGIN_NEQ_2_LITERAL), NO_SORTS);
     assertQuerySupported("select from " + Flight.class.getName() + " where origin != null",
-        Utils.newArrayList(ORIGIN_GT_NULL_LITERAL), NO_SORTS);
+        Utils.newArrayList(ORIGIN_NEQ_NULL_LITERAL), NO_SORTS);
   }
 
   public void testBindVariables() {
@@ -1810,8 +1815,37 @@ public class JDOQLQueryTest extends JDOTestCase {
     e = Flight.newFlightEntity("name", "origin", "not null", 23, 24);
     ldth.ds.put(e);
     q.setUnique(true);
-    Flight flight = (Flight) q.execute();
+    Flight flight = (Flight) q.execute((String) null);
     assertEquals("not null", flight.getDest());
+  }
+
+  public void testNotEqual() {
+    Entity e = Flight.newFlightEntity("name", "origin", "mia", 23, 24);
+    ldth.ds.put(e);
+    assertEquals(1, countForClass(Flight.class));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != 'mia'");
+    assertTrue(((List)q.execute()).isEmpty());
+    commitTxn();
+    beginTxn();
+    e = Flight.newFlightEntity("name", "origin", "not mia", 23, 24);
+    ldth.ds.put(e);
+    q.setUnique(true);
+    Flight flight = (Flight) q.execute();
+    assertEquals("not mia", flight.getDest());
+  }
+
+  public void testNotEqual_Param() {
+    Entity e = Flight.newFlightEntity("name", "origin", "mia", 23, 24);
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != :p");
+    assertTrue(((List)q.execute("mia")).isEmpty());
+    commitTxn();
+    beginTxn();
+    e = Flight.newFlightEntity("name", "origin", "not mia", 23, 24);
+    ldth.ds.put(e);
+    q.setUnique(true);
+    Flight flight = (Flight) q.execute("mia");
+    assertEquals("not mia", flight.getDest());
   }
 
   public void testQueryForOneToManySetWithKeyPk() {
@@ -2419,7 +2453,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(query);
     try {
       q.execute();
-      fail("expected IllegalArgumentException for query <" + query + ">");
+      fail("expected exception for query <" + query + ">");
     } catch (JDOFatalUserException e) {
       // good
     }
