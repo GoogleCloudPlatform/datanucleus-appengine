@@ -142,32 +142,44 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.close();
     pm = pmf.getPersistenceManager();
     beginTxn();
-    Query q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val1 == :p");
+    Query q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val1 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 1");
     assertEmbeddedChildContents(child);
 
-    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val0 == :p");
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded.val0 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 0");
     assertEmbeddedChildContents(child);
 
-    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 == :p");
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded base val 0");
     assertEmbeddedChildContents(child);
 
-    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val2 == :p");
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val2 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 2");
     assertEmbeddedChildContents(child);
 
-    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val3 == :p");
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embedded2.val3 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded val 3");
     assertEmbeddedChildContents(child);
 
-    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 == :p");
+    q = pm.newQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 == :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setUnique(true);
     child = (CompleteTableParentWithEmbedded.Child) q.execute("embedded base val 2");
     assertEmbeddedChildContents(child);
@@ -221,23 +233,30 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.close();
     pm = pmf.getPersistenceManager();
     beginTxn();
-    Query q = pm.newQuery("select from " + parent.getClass().getName() + " where embedded.val1 == :p");
+    Query q = pm.newQuery(
+        "select from " + parent.getClass().getName() + " where embedded.val1 == :p "
+        + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setUnique(true);
     parent = (CompleteTableParentWithEmbedded) q.execute("embedded val 1");
     assertEmbeddedParentContents(parent);
 
-    q = pm.newQuery("select from " + parent.getClass().getName() + " where embedded.val0 == :p");
+    q = pm.newQuery(
+        "select from " + parent.getClass().getName() + " where embedded.val0 == :p "
+        + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setUnique(true);
     parent = (CompleteTableParentWithEmbedded) q.execute("embedded val 0");
     assertEmbeddedParentContents(parent);
 
-    q = pm.newQuery("select from " + parent.getClass().getName() + " where embeddedBase.val0 == :p");
+    q = pm.newQuery(
+        "select from " + parent.getClass().getName() + " where embeddedBase.val0 == :p "
+        + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setUnique(true);
     parent = (CompleteTableParentWithEmbedded) q.execute("embedded base val 0");
     assertEmbeddedParentContents(parent);
 
     q = pm.newQuery("select embedded.val1, embedded.val0, embeddedBase.val0 from " +
-                    parent.getClass().getName() + " where embeddedBase.val0 == :p");
+                    parent.getClass().getName() + " where embeddedBase.val0 == :p "
+        + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setUnique(true);
     Object[] result = (Object[]) q.execute("embedded base val 0");
     assertEquals("embedded val 1", result[0]);
@@ -381,39 +400,77 @@ public class JDOSubclassTest extends JDOTestCase {
 
   private void testQueryParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
-    e.setProperty("aString", "a2");
+    e.setProperty("aString", "z8");
+    ldth.ds.put(e);
+
+    e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "z9");
     ldth.ds.put(e);
 
     beginTxn();
-    Parent parent = ((List<Parent>) pm.newQuery("select from " + parentClass.getName() + " where aString == 'a2'").execute()).get(0);
+    Parent parent = ((List<Parent>) pm.newQuery(
+        "select from " + parentClass.getName() + " where aString == 'z8'").execute()).get(0);
     assertEquals(parentClass, parent.getClass());
-    assertEquals("a2", parent.getAString());
+    assertEquals("z8", parent.getAString());
     commitTxn();
 
     beginTxn();
-    String aString = ((List<String>) pm.newQuery("select aString from " + parentClass.getName() + " where aString == 'a2'").execute()).get(0);
-    assertEquals("a2", aString);
+    List<Parent> parents = ((List<Parent>) pm.newQuery(
+        "select from " + parentClass.getName() + " where aString >= 'z8' order by aString desc").execute());
+    assertEquals(2, parents.size());
+    assertEquals("z9", parents.get(0).getAString());
+    assertEquals("z8", parents.get(1).getAString());
+    commitTxn();
+
+    beginTxn();
+    String aString = ((List<String>) pm.newQuery(
+        "select aString from " + parentClass.getName() + " where aString == 'z8'").execute()).get(0);
+    assertEquals("z8", aString);
     commitTxn();
   }
 
   private void testQueryChild(Class<? extends SubclassesJDO.Child> childClass) {
-    Entity e = new Entity(kindForClass(childClass));
-    e.setProperty("aString", "a2");
-    e.setProperty("bString", "b2");
-    ldth.ds.put(e);
+    Entity e1 = new Entity(kindForClass(childClass));
+    e1.setProperty("aString", "a2");
+    e1.setProperty("bString", "b2");
+    ldth.ds.put(e1);
+
+    Entity e2 = new Entity(kindForClass(childClass));
+    e2.setProperty("aString", "a2");
+    e2.setProperty("bString", "b3");
+    ldth.ds.put(e2);
+
+    Entity e3 = new Entity(kindForClass(childClass));
+    e3.setProperty("aString", "a2");
+    e3.setProperty("bString", "b3");
+    ldth.ds.put(e3);
 
     beginTxn();
 
-    SubclassesJDO.Child
-        child = ((List<SubclassesJDO.Child>) pm.newQuery("select from " + childClass.getName() + " where aString == 'a2'").execute()).get(0);
+    SubclassesJDO.Child child = ((List<SubclassesJDO.Child>) pm.newQuery(
+        "select from " + childClass.getName() + " where aString == 'a2'").execute()).get(0);
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
 
-    child = ((List<SubclassesJDO.Child>) pm.newQuery("select from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
+    child = ((List<SubclassesJDO.Child>) pm.newQuery(
+        "select from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
+
+    List<SubclassesJDO.Child> kids = ((List<SubclassesJDO.Child>) pm.newQuery(
+        "select from " + childClass.getName() + " where aString == 'a2' order by bString desc").execute());
+    assertEquals(3, kids.size());
+    assertEquals(e2.getKey().getId(), kids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), kids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), kids.get(2).getId().longValue());
+
+    kids = ((List<SubclassesJDO.Child>) pm.newQuery("select from " + childClass.getName() + " where aString == 'a2' order by aString desc").execute());
+    assertEquals(3, kids.size());
+    assertEquals(e1.getKey().getId(), kids.get(0).getId().longValue());
+    assertEquals(e2.getKey().getId(), kids.get(1).getId().longValue());
+    assertEquals(e3.getKey().getId(), kids.get(2).getId().longValue());
 
     Object[] result = ((List<Object[]>) pm.newQuery("select bString, aString from " + childClass.getName() + " where bString == 'b2'").execute()).get(0);
     assertEquals(2, result.length);
@@ -424,34 +481,71 @@ public class JDOSubclassTest extends JDOTestCase {
   }
 
   private void testQueryGrandchild(Class<? extends org.datanucleus.test.SubclassesJDO.Grandchild> grandchildClass) {
-    Entity e = new Entity(kindForClass(grandchildClass));
-    e.setProperty("aString", "a2");
-    e.setProperty("bString", "b2");
-    e.setProperty("cString", "c2");
-    ldth.ds.put(e);
+    Entity e1 = new Entity(kindForClass(grandchildClass));
+    e1.setProperty("aString", "a2");
+    e1.setProperty("bString", "b1");
+    e1.setProperty("cString", "c2");
+    ldth.ds.put(e1);
+
+    Entity e2 = new Entity(kindForClass(grandchildClass));
+    e2.setProperty("aString", "a2");
+    e2.setProperty("bString", "b3");
+    e2.setProperty("cString", "c3");
+    ldth.ds.put(e2);
+
+    Entity e3 = new Entity(kindForClass(grandchildClass));
+    e3.setProperty("aString", "a2");
+    e3.setProperty("bString", "b2");
+    e3.setProperty("cString", "c3");
+    ldth.ds.put(e3);
 
     beginTxn();
-    Grandchild grandchild = ((List<Grandchild>) pm.newQuery("select from " + grandchildClass.getName() + " where aString == 'a2'").execute()).get(0);
+    Grandchild grandchild = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2'").execute()).get(0);
+    assertEquals(grandchildClass, grandchild.getClass());
+    assertEquals("a2", grandchild.getAString());
+    assertEquals("b1", grandchild.getBString());
+    assertEquals("c2", grandchild.getCString());
+
+    grandchild = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where bString == 'b2'").execute()).get(0);
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a2", grandchild.getAString());
     assertEquals("b2", grandchild.getBString());
-    assertEquals("c2", grandchild.getCString());
+    assertEquals("c3", grandchild.getCString());
 
-    grandchild = ((List<Grandchild>) pm.newQuery("select from " + grandchildClass.getName() + " where bString == 'b2'").execute()).get(0);
+    grandchild = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where cString == 'c2'").execute()).get(0);
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a2", grandchild.getAString());
-    assertEquals("b2", grandchild.getBString());
+    assertEquals("b1", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
 
-    grandchild = ((List<Grandchild>) pm.newQuery("select from " + grandchildClass.getName() + " where cString == 'c2'").execute()).get(0);
-    assertEquals(grandchildClass, grandchild.getClass());
-    assertEquals("a2", grandchild.getAString());
-    assertEquals("b2", grandchild.getBString());
-    assertEquals("c2", grandchild.getCString());
+    List<Grandchild> grandkids = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by bString desc").execute());
+    assertEquals(3, grandkids.size());
+    assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), grandkids.get(2).getId().longValue());
 
-    Object[] result = ((List<Object[]>) pm.newQuery("select bString, aString, cString from " + grandchildClass.getName() + " where cString == 'c2'").execute()).get(0);
+    grandkids = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by aString desc").execute());
+    assertEquals(3, grandkids.size());
+    assertEquals(e1.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e2.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(2).getId().longValue());
+
+    grandkids = ((List<Grandchild>) pm.newQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by cString desc").execute());
+    assertEquals(3, grandkids.size());
+    assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), grandkids.get(2).getId().longValue());
+
+    Object[] result = ((List<Object[]>) pm.newQuery(
+        "select bString, aString, cString from " + grandchildClass.getName() + " where cString == 'c2'").execute()).get(0);
     assertEquals(3, result.length);
-    assertEquals("b2", result[0]);
+    assertEquals("b1", result[0]);
     assertEquals("a2", result[1]);
     assertEquals("c2", result[2]);
 

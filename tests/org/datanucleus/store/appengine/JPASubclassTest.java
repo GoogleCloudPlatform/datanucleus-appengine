@@ -39,6 +39,8 @@ import org.datanucleus.test.SubclassesJPA.TablePerClassChild;
 import org.datanucleus.test.SubclassesJPA.TablePerClassGrandchild;
 import org.datanucleus.test.SubclassesJPA.TablePerClassParentWithEmbedded;
 
+import java.util.List;
+
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
@@ -100,8 +102,7 @@ public class JPASubclassTest extends JPATestCase {
     embedded.setVal0("embedded val 0");
     embedded.setVal1("embedded val 1");
     child.setEmbedded(embedded);
-    SubclassesJPA.IsEmbeddedBase
-        embeddedBase = new SubclassesJPA.IsEmbeddedBase();
+    SubclassesJPA.IsEmbeddedBase embeddedBase = new SubclassesJPA.IsEmbeddedBase();
     embeddedBase.setVal0("embedded base val 0");
     child.setEmbeddedBase(embeddedBase);
     IsEmbeddedWithEmbeddedSuperclass2 embedded2 = new IsEmbeddedWithEmbeddedSuperclass2();
@@ -134,32 +135,44 @@ public class JPASubclassTest extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     beginTxn();
-    Query q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val1 = :p");
+    Query q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val1 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded val 1");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
-    q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val0 = :p");
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded.val0 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded val 0");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
-    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 = :p");
+    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase.val0 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded base val 0");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
-    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val2 = :p");
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val2 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded val 2");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
-    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val3 = :p");
+    q = em.createQuery("select from " + child.getClass().getName() + " where embedded2.val3 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded val 3");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
 
-    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 = :p");
+    q = em.createQuery("select from " + child.getClass().getName() + " where embeddedBase2.val2 = :p "
+      + "order by embedded.val1 desc, embedded.val0 desc, embeddedBase.val0 desc, "
+      + "embedded2.val2 desc, embedded2.val3 desc, embeddedBase2.val2");
     q.setParameter("p", "embedded base val 2");
     child = (ChildEmbeddedInTablePerClass) q.getSingleResult();
     assertEmbeddedChildContents(child);
@@ -215,23 +228,27 @@ public class JPASubclassTest extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     beginTxn();
-    Query q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val1 = :p");
+    Query q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val1 = :p "
+      + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setParameter("p", "embedded val 1");
     parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
     assertEmbeddedParentContents(parent);
 
-    q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val0 = :p");
+    q = em.createQuery("select from " + parent.getClass().getName() + " where embedded.val0 = :p "
+      + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setParameter("p", "embedded val 0");
     parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
     assertEmbeddedParentContents(parent);
 
-    q = em.createQuery("select from " + parent.getClass().getName() + " where embeddedBase.val0 = :p");
+    q = em.createQuery("select from " + parent.getClass().getName() + " where embeddedBase.val0 = :p "
+      + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setParameter("p", "embedded base val 0");
     parent = (TablePerClassParentWithEmbedded) q.getSingleResult();
     assertEmbeddedParentContents(parent);
 
     q = em.createQuery("select embedded.val1, embedded.val0, embeddedBase.val0 from " +
-                    parent.getClass().getName() + " where embeddedBase.val0 = :p");
+                    parent.getClass().getName() + " where embeddedBase.val0 = :p "
+      + "order by embedded.val1 desc, embedded.val0 asc, embeddedBase.val0 desc");
     q.setParameter("p", "embedded base val 0");
 
     Object[] result = (Object[]) q.getSingleResult();
@@ -363,30 +380,50 @@ public class JPASubclassTest extends JPATestCase {
 
   private void testQueryParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
-    e.setProperty("aString", "a2");
+    e.setProperty("aString", "z8");
+    ldth.ds.put(e);
+
+    e = new Entity(kindForClass(parentClass));
+    e.setProperty("aString", "z9");
     ldth.ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + parentClass.getName() + " where aString = :p");
-    q.setParameter("p", "a2");
+    q.setParameter("p", "z8");
     Parent parent = (Parent) q.getSingleResult();
     assertEquals(parentClass, parent.getClass());
-    assertEquals("a2", parent.getAString());
+    assertEquals("z8", parent.getAString());
+
+    q = em.createQuery("select from " + parentClass.getName() + " where aString >= :p order by aString desc");
+    q.setParameter("p", "z8");
+    List<Parent> parents = q.getResultList();
+    assertEquals("z9", parents.get(0).getAString());
+    assertEquals("z8", parents.get(1).getAString());
 
     q = em.createQuery("select aString from " + parentClass.getName() + " where aString = :p");
-    q.setParameter("p", "a2");
+    q.setParameter("p", "z8");
     String result = (String) q.getSingleResult();
-    assertEquals("a2", result);
+    assertEquals("z8", result);
 
     commitTxn();
 
   }
 
   private void testQueryChild(Class<? extends Child> childClass) {
-    Entity e = new Entity(kindForClass(childClass));
-    e.setProperty("aString", "a2");
-    e.setProperty("bString", "b2");
-    ldth.ds.put(e);
+    Entity e1 = new Entity(kindForClass(childClass));
+    e1.setProperty("aString", "a2");
+    e1.setProperty("bString", "b2");
+    ldth.ds.put(e1);
+
+    Entity e2 = new Entity(kindForClass(childClass));
+    e2.setProperty("aString", "a2");
+    e2.setProperty("bString", "b3");
+    ldth.ds.put(e2);
+
+    Entity e3 = new Entity(kindForClass(childClass));
+    e3.setProperty("aString", "a2");
+    e3.setProperty("bString", "b3");
+    ldth.ds.put(e3);
 
     beginTxn();
     Query q = em.createQuery("select from " + childClass.getName() + " where aString = :p");
@@ -403,6 +440,20 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
 
+    List<Child> kids = ((List<Child>) em.createQuery(
+        "select from " + childClass.getName() + " where aString = 'a2' order by bString desc").getResultList());
+    assertEquals(3, kids.size());
+    assertEquals(e2.getKey().getId(), kids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), kids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), kids.get(2).getId().longValue());
+
+    kids = ((List<Child>) em.createQuery(
+        "select from " + childClass.getName() + " where aString = 'a2' order by aString desc").getResultList());
+    assertEquals(3, kids.size());
+    assertEquals(e1.getKey().getId(), kids.get(0).getId().longValue());
+    assertEquals(e2.getKey().getId(), kids.get(1).getId().longValue());
+    assertEquals(e3.getKey().getId(), kids.get(2).getId().longValue());
+
     q = em.createQuery("select bString, aString from " + childClass.getName() + " where bString = :p");
     q.setParameter("p", "b2");
     Object[] result = (Object[]) q.getSingleResult();
@@ -414,14 +465,27 @@ public class JPASubclassTest extends JPATestCase {
   }
 
   private void testQueryGrandchild(Class<? extends Grandchild> grandchildClass) {
-    Entity e = new Entity(kindForClass(grandchildClass));
-    e.setProperty("aString", "a2");
-    e.setProperty("bString", "b2");
-    e.setProperty("cString", "c2");
-    ldth.ds.put(e);
+    Entity e1 = new Entity(kindForClass(grandchildClass));
+    e1.setProperty("aString", "a2");
+    e1.setProperty("bString", "b1");
+    e1.setProperty("cString", "c2");
+    ldth.ds.put(e1);
+
+    Entity e2 = new Entity(kindForClass(grandchildClass));
+    e2.setProperty("aString", "a2");
+    e2.setProperty("bString", "b3");
+    e2.setProperty("cString", "c3");
+    ldth.ds.put(e2);
+
+    Entity e3 = new Entity(kindForClass(grandchildClass));
+    e3.setProperty("aString", "a2");
+    e3.setProperty("bString", "b2");
+    e3.setProperty("cString", "c3");
+    ldth.ds.put(e3);
 
     beginTxn();
-    Query q = em.createQuery("select from " + grandchildClass.getName() + " where aString = :p");
+    Query q = em.createQuery(
+        "select from " + grandchildClass.getName() + " where aString = :p");
     q.setParameter("p", "a2");
     Grandchild grandchild = (Grandchild) q.getSingleResult();
 
@@ -430,7 +494,8 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals("b2", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
 
-    q = em.createQuery("select from " + grandchildClass.getName() + " where bString = :p");
+    q = em.createQuery(
+        "select from " + grandchildClass.getName() + " where bString = :p");
     q.setParameter("p", "b2");
     grandchild = (Grandchild) q.getSingleResult();
 
@@ -439,7 +504,8 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals("b2", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
 
-    q = em.createQuery("select from " + grandchildClass.getName() + " where cString = :p");
+    q = em.createQuery(
+        "select from " + grandchildClass.getName() + " where cString = :p");
     q.setParameter("p", "c2");
     grandchild = (Grandchild) q.getSingleResult();
 
@@ -447,6 +513,27 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals("a2", grandchild.getAString());
     assertEquals("b2", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
+
+    List<Grandchild> grandkids = ((List<Grandchild>) em.createQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by bString desc").getResultList());
+    assertEquals(3, grandkids.size());
+    assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), grandkids.get(2).getId().longValue());
+
+    grandkids = ((List<Grandchild>) em.createQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by aString desc").getResultList());
+    assertEquals(3, grandkids.size());
+    assertEquals(e1.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e2.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(2).getId().longValue());
+
+    grandkids = ((List<Grandchild>) em.createQuery(
+        "select from " + grandchildClass.getName() + " where aString == 'a2' order by cString desc").getResultList());
+    assertEquals(3, grandkids.size());
+    assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
+    assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
+    assertEquals(e1.getKey().getId(), grandkids.get(2).getId().longValue());
 
     q = em.createQuery("select bString, aString, cString from " + grandchildClass.getName() + " where cString = :p");
     q.setParameter("p", "c2");

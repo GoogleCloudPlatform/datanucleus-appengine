@@ -2525,7 +2525,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private DatastoreQuery getDatastoreQuery(Query q) {
     return ((JDOQLQuery)((JDOQuery)q).getInternalQuery()).getDatastoreQuery();
-}
+  }
 
   private List<FilterPredicate> getFilterPredicates(Query q) {
     return getDatastoreQuery(q).getLatestDatastoreQuery().getFilterPredicates();
