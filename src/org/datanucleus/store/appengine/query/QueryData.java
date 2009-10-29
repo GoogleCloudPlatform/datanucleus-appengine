@@ -26,6 +26,8 @@ import org.datanucleus.query.expression.VariableExpression;
 import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.Utils;
 
+import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -42,11 +44,14 @@ final class QueryData {
   final Query primaryDatastoreQuery;
   final DatastoreQuery.ResultType resultType;
   final Utils.Function<Entity, Object> resultTransformer;
+  final LinkedHashMap<String, List<Object>> inFilters = new LinkedHashMap<String, List<Object>>();
   Set<Key> batchGetKeys;
   // only used by JDO when there is an explicit variable
   VariableExpression joinVariableExpression;
   OrderExpression joinOrderExpression;
   Query joinQuery;
+  String currentOrProperty;
+  boolean isOrExpression = false;
 
   QueryData(
       Map parameters, AbstractClassMetaData acmd, DatastoreTable table,

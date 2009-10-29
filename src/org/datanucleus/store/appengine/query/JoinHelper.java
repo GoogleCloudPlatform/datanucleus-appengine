@@ -22,8 +22,6 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.query.DatastoreQuery.UnsupportedDatastoreFeatureException;
-import org.datanucleus.store.query.AbstractJavaQuery;
 
 import java.util.Iterator;
 import java.util.List;
@@ -65,7 +63,7 @@ final class JoinHelper {
     // this sort explicitly.
     String joinSortProp = query.getSortProperty(qd, qd.joinOrderExpression);
 
-    validateJoinQuery(qd, query.query, joinSortProp);
+    validateJoinQuery(qd, query, joinSortProp);
 
     if (!sortAlreadyExists(joinSortProp, Query.SortDirection.ASCENDING, qd.primaryDatastoreQuery)) {
       qd.primaryDatastoreQuery.addSort(joinSortProp);
@@ -117,22 +115,22 @@ final class JoinHelper {
     return optsWithoutOffsetAndLimit;
   }
 
-  private void validateJoinQuery(QueryData qd, AbstractJavaQuery query, String joinSortProp) {
+  private void validateJoinQuery(QueryData qd, DatastoreQuery query, String joinSortProp) {
     // all filters on the primary must be equality
     for (Query.FilterPredicate fp : qd.primaryDatastoreQuery.getFilterPredicates()) {
       if (fp.getOperator() != Query.FilterOperator.EQUAL) {
-        throw new UnsupportedDatastoreFeatureException(
+        throw query.new UnsupportedDatastoreFeatureException(
             "Filter on property '" + fp.getPropertyName() + "' uses operator '" + fp.getOperator()
-            + "'.  Joins are only supported when all filters are 'equals' filters.", query.getSingleStringQuery());
+            + "'.  Joins are only supported when all filters are 'equals' filters.");
       }
     }
 
     // all filters on the join must be equality
     for (Query.FilterPredicate fp : qd.joinQuery.getFilterPredicates()) {
       if (fp.getOperator() != Query.FilterOperator.EQUAL) {
-        throw new UnsupportedDatastoreFeatureException(
+        throw query.new UnsupportedDatastoreFeatureException(
             "Filter on property '" + fp.getPropertyName() + "' uses operator '" + fp.getOperator()
-            + "'.  Joins are only supported when all filters are 'equals' filters.", query.getSingleStringQuery());
+            + "'.  Joins are only supported when all filters are 'equals' filters.");
       }
     }
 
@@ -145,9 +143,9 @@ final class JoinHelper {
         (!primarySorts.isEmpty() &&
         (!primarySorts.get(0).getPropertyName().equals(joinSortProp) ||
          primarySorts.get(0).getDirection() != Query.SortDirection.ASCENDING))) {
-      throw new UnsupportedDatastoreFeatureException(
+      throw query.new UnsupportedDatastoreFeatureException(
           "Joins can only be sorted by the join column in "
-          + "ascending order (in this case '" + joinSortProp +"')", query.getSingleStringQuery());
+          + "ascending order (in this case '" + joinSortProp +"')");
     }    
   }
 

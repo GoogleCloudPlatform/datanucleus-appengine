@@ -125,11 +125,9 @@ public class DatastoreQuery implements Serializable {
           (Expression.Operator) Expression.OP_NEG,
           (Expression.Operator) Expression.OP_MUL,
           (Expression.Operator) Expression.OP_NOT,
-          (Expression.Operator) Expression.OP_OR,
           (Expression.Operator) Expression.OP_SUB);
 
-  private static final
-  Map<Expression.Operator, Query.FilterOperator> DATANUCLEUS_OP_TO_APPENGINE_OP = buildNewOpMap();
+  private static final Map<Expression.Operator, Query.FilterOperator> DATANUCLEUS_OP_TO_APPENGINE_OP = buildNewOpMap();
 
   private static Map<Expression.Operator, Query.FilterOperator> buildNewOpMap() {
     Map<Expression.Operator, Query.FilterOperator> map =
@@ -225,6 +223,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object executeQuery(QueryData qd, long fromInclNo, long toExclNo) {
+    processInFilters(qd);
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
@@ -261,6 +260,34 @@ public class DatastoreQuery implements Serializable {
       }
     } finally {
       mconn.release();
+    }
+  }
+
+  private void processInFilters(QueryData qd) {
+    if (qd.inFilters.isEmpty()) {
+      return;
+    }
+    boolean onlyKeyFilters = true;
+    Set<Key> batchGetKeys = Utils.newHashSet();
+    for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
+      if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
+        onlyKeyFilters = false;
+      } else {
+        for (Object obj : entry.getValue()) {
+          // Add to our list of batch get keys in case all the in filters
+          // end up being on the primary key
+          batchGetKeys.add(internalPkToKey(qd.acmd, obj));
+        }
+      }
+      qd.primaryDatastoreQuery.addFilter(entry.getKey(), Query.FilterOperator.IN, entry.getValue());
+    }
+    if (onlyKeyFilters) {
+      // All the in filters were on key so convert this to a batch get
+      if (qd.batchGetKeys == null) {
+        qd.batchGetKeys = batchGetKeys;
+      } else {
+        qd.batchGetKeys.addAll(batchGetKeys);
+      }
     }
   }
 
@@ -620,7 +647,7 @@ public class DatastoreQuery implements Serializable {
     // for specific fields in the result expression.  hsqldb has the
     // same restriction so I feel ok about this
     return new UnsupportedDatastoreFeatureException(
-        "Cannot combine an aggregate results with row results.", query.getSingleStringQuery());
+        "Cannot combine an aggregate results with row results.");
   }
 
 
@@ -629,8 +656,7 @@ public class DatastoreQuery implements Serializable {
       JoinExpression joinExpr = (JoinExpression) expr;
       if (joinExpr.getType() != JoinExpression.JoinType.JOIN_INNER &&
           joinExpr.getType() != JoinExpression.JoinType.JOIN_INNER_FETCH) {
-        throw new UnsupportedDatastoreFeatureException("Cannot fulfill outer join queries.",
-            query.getSingleStringQuery());
+        throw new UnsupportedDatastoreFeatureException("Cannot fulfill outer join queries.");
       }
       qd.joinOrderExpression = createJoinOrderExpression(joinExpr.getPrimaryExpression());
     }
@@ -687,8 +713,7 @@ public class DatastoreQuery implements Serializable {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
     if (isParentPK(ammd)) {
-      throw new UnsupportedDatastoreFeatureException(
-          "Cannot sort by parent.", query.getSingleStringQuery());
+      throw new UnsupportedDatastoreFeatureException("Cannot sort by parent.");
     } else {
       String sortProp;
       if (ammd.isPrimaryKey()) {
@@ -735,10 +760,24 @@ public class DatastoreQuery implements Serializable {
       return;
     }
     checkForUnsupportedOperator(expr.getOperator());
+    if (qd.isOrExpression) {
+      checkForUnsupportedOrOperator(expr.getOperator());
+    }
     if (expr instanceof DyadicExpression) {
       if (expr.getOperator().equals(Expression.OP_AND)) {
         addExpression(expr.getLeft(), qd);
         addExpression(expr.getRight(), qd);
+      } else if (expr.getOperator().equals(Expression.OP_OR)) {
+        boolean reset = !qd.isOrExpression;
+        qd.isOrExpression = true;
+        addExpression(expr.getLeft(), qd);
+        addExpression(expr.getRight(), qd);
+        // we could have OR(OR(EQ(P1, 'yar'), EQ(P1, 'yar2'))
+        // so only reset if it wasn't an or expression when we entered
+        if (reset) {
+          qd.isOrExpression = false;
+          qd.currentOrProperty = null;
+        }
       } else if (DATANUCLEUS_OP_TO_APPENGINE_OP.get(expr.getOperator()) == null) {
         throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
             expr.getOperator());
@@ -767,8 +806,13 @@ public class DatastoreQuery implements Serializable {
       }
     } else {
       throw new UnsupportedDatastoreFeatureException(
-          "Unexpected expression type while parsing query: "
-              + expr.getClass().getName(), query.getSingleStringQuery());
+          "Unexpected expression type while parsing query: "+ expr.getClass().getName());
+    }
+  }
+
+  private void checkForUnsupportedOrOperator(Expression.Operator operator) {
+    if (!operator.equals(Expression.OP_EQ) && !operator.equals(Expression.OP_OR)) {
+      throw new UnsupportedDatastoreFeatureException("'or' filters can only check equality");
     }
   }
 
@@ -803,8 +847,7 @@ public class DatastoreQuery implements Serializable {
     int wildcardIndex = matchesExpr.indexOf('%');
     if (wildcardIndex != matchesExpr.length() - 1) {
       throw new UnsupportedDatastoreFeatureException(
-          "Wildcard must appear at the end of the expression string (only prefix matches are supported)",
-          query.getSingleStringQuery());
+          "Wildcard must appear at the end of the expression string (only prefix matches are supported)");
     }
     return matchesExpr.substring(0, wildcardIndex);
   }
@@ -875,8 +918,7 @@ public class DatastoreQuery implements Serializable {
   private UnsupportedDatastoreFeatureException newUnsupportedQueryMethodException(
       InvokeExpression invocation) {
     throw new UnsupportedDatastoreFeatureException(
-        "Unsupported method <" + invocation.getOperation() + "> while parsing expression: " + invocation,
-        query.getSingleStringQuery());
+        "Unsupported method <" + invocation.getOperation() + "> while parsing expression: " + invocation);
   }
 
   private Object getParameterValue(QueryData qd, ParameterExpression pe) {
@@ -904,7 +946,7 @@ public class DatastoreQuery implements Serializable {
     Query.FilterOperator op = DATANUCLEUS_OP_TO_APPENGINE_OP.get(operator);
     if (op == null) {
       throw new UnsupportedDatastoreFeatureException("Operator " + operator + " does not have a "
-          + "corresponding operator in the datastore api.", query.getSingleStringQuery());
+          + "corresponding operator in the datastore api.");
     }
     Object value;
     if (right instanceof PrimaryExpression) {
@@ -932,7 +974,7 @@ public class DatastoreQuery implements Serializable {
       if (!op.equals(Query.FilterOperator.EQUAL)) {
         throw new UnsupportedDatastoreFeatureException("Operator " + operator + " cannot be "
             + "used as part of the join condition.  Use 'contains' if joining on a Collection field "
-            + "and equality if joining on a single-value field.", query.getSingleStringQuery());
+            + "and equality if joining on a single-value field.");
       }
       // add an ordering on the column that we'll add in later.
       qd.joinVariableExpression = (VariableExpression) right;
@@ -940,8 +982,7 @@ public class DatastoreQuery implements Serializable {
       return;
     } else {
       throw new UnsupportedDatastoreFeatureException(
-          "Right side of expression is of unexpected type: " + right.getClass().getName(),
-          query.getSingleStringQuery());
+          "Right side of expression is of unexpected type: " + right.getClass().getName());
     }
     List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
     AbstractClassMetaData acmd = qd.acmd;
@@ -979,20 +1020,53 @@ public class DatastoreQuery implements Serializable {
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
-      if (value instanceof Collection) {
-        throw new NucleusUserException(
-            "Collection parameters are only supported when filtering on primary key.").setFatal();
-      }
       if (qd.batchGetKeys != null) {
         // can only do a batch get if no other filters defined
         throwInvalidBatchLookupException();
       }
       value = pojoParamToDatastoreParam(value);
-      try {
-        datastoreQuery.addFilter(datastorePropName, op, value);
-      } catch (IllegalArgumentException iae) {
-        throw DatastoreExceptionTranslator.wrapIllegalArgumentException(iae);
+      if (qd.isOrExpression) {
+        addLeftPrimaryOrExpression(qd, datastorePropName, value);
+      } else {
+        if (value instanceof Collection) {
+          // DataNuc compiles IN to EQUALS.  If we receive a Collection
+          // and the operator is EQUALS we turn it into IN.
+          if (op == Query.FilterOperator.EQUAL) {
+            op = Query.FilterOperator.IN;
+          } else {
+            throw new UnsupportedDatastoreFeatureException(
+                "Collection parameters are only supported for equality filters.");
+          }
+        }
+        try {
+          datastoreQuery.addFilter(datastorePropName, op, value);
+        } catch (IllegalArgumentException iae) {
+          throw DatastoreExceptionTranslator.wrapIllegalArgumentException(iae);
+        }
       }
+    }
+  }
+
+  private void addLeftPrimaryOrExpression(QueryData qd, String datastorePropName, Object value) {
+    List<Object> valueList;
+    if (qd.currentOrProperty == null) {
+      qd.currentOrProperty = datastorePropName;
+    } else if (!qd.currentOrProperty.equals(datastorePropName)) {
+      throw new UnsupportedDatastoreFeatureException(
+          "Or filters cannot be applied to multiple properties (found both "
+          + qd.currentOrProperty + " and "+ datastorePropName + ").");
+    }
+    valueList = qd.inFilters.get(datastorePropName);
+    if (valueList == null) {
+      valueList = Utils.newArrayList();
+      qd.inFilters.put(datastorePropName, valueList);
+    }
+    if (value instanceof Iterable) {
+      for (Object v : ((Iterable) value)) {
+        valueList.add(v);
+      }
+    } else {
+      valueList.add(value);
     }
   }
 
@@ -1063,7 +1137,7 @@ public class DatastoreQuery implements Serializable {
         "Right side of expression is composed of unsupported components.  "
         + "Left: " + dyadic.getLeft().getClass().getName()
         + ", Op: " + dyadic.getOperator()
-        + ", Right: " + dyadic.getRight(), query.getSingleStringQuery());
+        + ", Right: " + dyadic.getRight());
   }
 
   private void throwInvalidBatchLookupException() {
@@ -1234,7 +1308,7 @@ public class DatastoreQuery implements Serializable {
       if (op != Query.FilterOperator.EQUAL) {
         throw new UnsupportedDatastoreFeatureException(
             "Only the equals operator is supported on conditions involving the owning side of a "
-            + "one-to-one.", query.getSingleStringQuery());
+            + "one-to-one.");
       }
       if (valueKey == null) {
         // User is asking for parents where child is null.  Unfortunately we
@@ -1307,14 +1381,12 @@ public class DatastoreQuery implements Serializable {
     // We only support queries on parent if it is an equality filter.
     if (op != Query.FilterOperator.EQUAL) {
       throw new UnsupportedDatastoreFeatureException("Operator is of type " + op + " but the "
-          + "datastore only supports parent queries using the equality operator.",
-          query.getSingleStringQuery());
+          + "datastore only supports parent queries using the equality operator.");
     }
 
     if (key == null) {
       throw new UnsupportedDatastoreFeatureException(
-          "Received a null parent parameter.  The datastore does not support querying for null parents.",
-          query.getSingleStringQuery());
+          "Received a null parent parameter.  The datastore does not support querying for null parents.");
     }
     datastoreQuery.setAncestor(key);
   }
@@ -1384,11 +1456,11 @@ public class DatastoreQuery implements Serializable {
   }
 
   // Specialization just exists to support tests
-  static class UnsupportedDatastoreFeatureException extends
+  class UnsupportedDatastoreFeatureException extends
       UnsupportedOperationException {
 
-    UnsupportedDatastoreFeatureException(String msg, String queryString) {
-      super("Problem with query <" + queryString + ">: " + msg);
+    UnsupportedDatastoreFeatureException(String msg) {
+      super("Problem with query <" + query.getSingleStringQuery() + ">: " + msg);
     }
   }
 

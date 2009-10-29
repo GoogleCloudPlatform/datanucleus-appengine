@@ -24,6 +24,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
+import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
@@ -114,6 +115,10 @@ public class JPQLQueryTest extends JPATestCase {
       new SortPredicate("title", SortDirection.ASCENDING);
   private static final SortPredicate ISBN_DESC =
       new SortPredicate("isbn", SortDirection.DESCENDING);
+  private static final FilterPredicate TITLE_IN_2_ARGS =
+      new FilterPredicate("title", FilterOperator.IN, Arrays.asList("2", 2L));
+  private static final FilterPredicate TITLE_IN_3_ARGS =
+      new FilterPredicate("title", FilterOperator.IN, Arrays.asList("2", 2L, false));
 
   @Override
   protected void setUp() throws Exception {
@@ -158,8 +163,6 @@ public class JPQLQueryTest extends JPATestCase {
     Set<Expression.Operator> unsupportedOps =
         new HashSet<Expression.Operator>(DatastoreQuery.UNSUPPORTED_OPERATORS);
     baseQuery += "WHERE ";
-    assertQueryUnsupportedByOrm(baseQuery + "title = 'foo' OR title = 'bar'", Expression.OP_OR,
-                                unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "NOT title = 'foo'", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(baseQuery + "(title + author) = 'foo'", Expression.OP_ADD,
                                 unsupportedOps);
@@ -182,6 +185,12 @@ public class JPQLQueryTest extends JPATestCase {
     assertQueryUnsupportedByOrm(baseQuery + "title % author = 'foo'", Expression.OP_MOD,
                                 unsupportedOps);
     assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title LIKE '%foo'");
+    // can't have 'or' on multiple properties
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title = 'yar' or author = null");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "isbn = 4 and (title = 'yar' or author = 'yam')");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title IN('yar') or author = 'yam'");
+    // can only check equality
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title > 5 or title < 2");
 
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
@@ -217,11 +226,11 @@ public class JPQLQueryTest extends JPATestCase {
     assertQuerySupported(baseQuery + "title = 2", Utils.newArrayList(TITLE_EQ_2), NO_SORTS);
     assertQuerySupported(baseQuery + "title = \"2\"", Utils.newArrayList(TITLE_EQ_2STR), NO_SORTS);
     assertQuerySupported(baseQuery + "(title = 2)", Utils.newArrayList(TITLE_EQ_2), NO_SORTS);
-    assertQuerySupported(baseQuery + "title = 2 AND isbn = 4", Utils.newArrayList(TITLE_EQ_2,
-                                                                                  ISBN_EQ_4),
+    assertQuerySupported(baseQuery + "title = 2 AND isbn = 4",
+                         Utils.newArrayList(TITLE_EQ_2,ISBN_EQ_4),
                          NO_SORTS);
-    assertQuerySupported(baseQuery + "(title = 2 AND isbn = 4)", Utils.newArrayList(TITLE_EQ_2,
-                                                                                    ISBN_EQ_4),
+    assertQuerySupported(baseQuery + "(title = 2 AND isbn = 4)",
+                         Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
                          NO_SORTS);
     assertQuerySupported(baseQuery + "(title = 2) AND (isbn = 4)", Utils.newArrayList(
         TITLE_EQ_2, ISBN_EQ_4), NO_SORTS);
@@ -245,6 +254,22 @@ public class JPQLQueryTest extends JPATestCase {
                          Utils.newArrayList(TITLE_NEQ_NULL_LITERAL), NO_SORTS);
     assertQuerySupported(baseQuery + "WHERE title <> 2",
                          Utils.newArrayList(TITLE_NEQ_2_LITERAL), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title = '2' OR title = 2",
+                         Utils.newArrayList(TITLE_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title = '2' OR title = 2 OR title = false",
+                         Utils.newArrayList(TITLE_IN_3_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title IN ('2', 2)",
+                         Utils.newArrayList(TITLE_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title IN ('2', 2, false)",
+                         Utils.newArrayList(TITLE_IN_3_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE (title = '2' OR title = 2) AND isbn = 4",
+                         Utils.newArrayList(ISBN_EQ_4, TITLE_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title IN ('2', 2) AND isbn = 4",
+                         Utils.newArrayList(ISBN_EQ_4, TITLE_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE (title = '2' OR title = 2 OR title = false) AND isbn = 4",
+                         Utils.newArrayList(ISBN_EQ_4, TITLE_IN_3_ARGS), NO_SORTS);
+    assertQuerySupported(baseQuery + "WHERE title IN ('2', 2, false) AND isbn = 4",
+                         Utils.newArrayList(ISBN_EQ_4, TITLE_IN_3_ARGS), NO_SORTS);
   }
 
   public void test2Equals2OrderBy() {
@@ -1706,6 +1731,30 @@ public class JPQLQueryTest extends JPATestCase {
     commitTxn();
   }
 
+  private static class NoQueryDelegate implements ApiProxy.Delegate {
+    private final ApiProxy.Delegate original = ApiProxy.getDelegate();
+    public byte[] makeSyncCall(ApiProxy.Environment environment, String pkg, String method, byte[] bytes)
+        throws ApiProxy.ApiProxyException {
+      if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
+        throw new RuntimeException("boom");
+      }
+      return original.makeSyncCall(environment, pkg, method, bytes);
+    }
+
+    public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
+      original.log(environment, logRecord);
+    }
+
+    public NoQueryDelegate install() {
+      ApiProxy.setDelegate(this);
+      return this;
+    }
+
+    public void uninstall() {
+      ApiProxy.setDelegate(original);
+    }
+  }
+
   public void testBatchGet_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
@@ -1716,15 +1765,98 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
-    Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
-    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    @SuppressWarnings("unchecked")
-    List<Book> books = (List<Book>) q.getResultList();
-    assertEquals(2, books.size());
-    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-        books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-    assertTrue(keys.contains(e1.getKey()));
-    assertTrue(keys.contains(e2.getKey()));
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_NoTxn_EncodedStringParam() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      q.setParameter("ids", Utils.newArrayList(
+          KeyFactory.keyToString(key),
+          KeyFactory.keyToString(e1.getKey()),
+          KeyFactory.keyToString(e2.getKey())));
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_NoTxn_In() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e3);
+
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Key key = KeyFactory.createKey("yar", "does not exist");
+      Query q = em.createQuery("select from " + Book.class.getName() + " where id IN (:ids)");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+
+      q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q.setParameter("id1", key);
+      q.setParameter("id2", e1.getKey());
+      q.setParameter("id3", e2.getKey());
+      books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+
+      q = em.createQuery("select from " + Book.class.getName() + " where "
+                         + "id IN (:id1, :id3) OR id IN (:id2)");
+      q.setParameter("id1", key);
+      q.setParameter("id2", e1.getKey());
+      q.setParameter("id3", e2.getKey());
+      books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Count_NoTxn() {
@@ -1736,11 +1868,44 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
     ldth.ds.put(e3);
 
-    Key key = KeyFactory.createKey("yar", "does not exist");
-    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id = :ids");
-    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    int count = (Integer) q.getSingleResult();
-    assertEquals(2, count);
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Key key = KeyFactory.createKey("yar", "does not exist");
+      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id = :ids");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      int count = (Integer) q.getSingleResult();
+      assertEquals(2, count);
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_Count_NoTxn_In() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e3);
+
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Key key = KeyFactory.createKey("yar", "does not exist");
+      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id IN (:ids)");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      int count = (Integer) q.getSingleResult();
+      assertEquals(2, count);
+
+      q = em.createQuery("select count(id) from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q.setParameter("id1", key);
+      q.setParameter("id2", e1.getKey());
+      q.setParameter("id3", e2.getKey());
+      count = (Integer) q.getSingleResult();
+      assertEquals(2, count);
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Txn() {
@@ -1751,16 +1916,57 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
     ldth.ds.put(e3);
 
-    Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
-    Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
-    q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    @SuppressWarnings("unchecked")
-    List<Book> books = (List<Book>) q.getResultList();
-    assertEquals(2, books.size());
-    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-        books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-    assertTrue(keys.contains(e1.getKey()));
-    assertTrue(keys.contains(e2.getKey()));
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
+      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_Txn_In() {
+    Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e1);
+    Entity e2 = Book.newBookEntity(e1.getKey(), "auth", "123432", "title", -40);
+    ldth.ds.put(e2);
+    Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
+    ldth.ds.put(e3);
+
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
+      Query q = em.createQuery("select from " + Book.class.getName() + " where id IN (:ids)");
+      q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+
+      q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q.setParameter("id1", key);
+      q.setParameter("id2", e1.getKey());
+      q.setParameter("id3", e2.getKey());
+      books = (List<Book>) q.getResultList();
+      assertEquals(2, books.size());
+      keys = Utils.newHashSet(KeyFactory.stringToKey(
+          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Illegal() {
@@ -2107,6 +2313,180 @@ public class JPQLQueryTest extends JPATestCase {
     ldth.ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not yar", b.getTitle());
+  }
+
+  public void testIn_Literals() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN ('auth1', 'auth3')");
+    List<Book> books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where title IN (null, 'yar1')");
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(1).getId());
+  }
+
+  public void testIn_Params() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1, :p2)");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    List<Book> books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() +
+                       " where author IN (:p1) OR author IN (:p2)");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+  }
+
+  public void testIn_CollectionParam() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1)");
+    q.setParameter("p1", Arrays.asList("auth1", "auth3"));
+    List<Book> books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() +
+                       " where author IN (:p1) OR author IN (:p2)");
+    q.setParameter("p1", Arrays.asList("auth1"));
+    q.setParameter("p2", Arrays.asList("auth3"));
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+  }
+
+  public void testMultipleIn_Literals() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "author IN ('auth1', 'auth3') AND isbn IN ('isbn3', 'isbn2')");
+    List<Book> books = q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "author IN ('auth1') OR author IN ('auth4', 'auth2')");
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(1).getId());
+  }
+
+  public void testMultipleIn_Params() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "author IN (:p1, :p2) AND isbn IN (:p3, :p4)");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    q.setParameter("p3", "isbn3");
+    q.setParameter("p4", "isbn2");
+    List<Book> books = q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "author IN (:p1, :p2) OR author IN (:p3, :p4)");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    q.setParameter("p3", "auth4");
+    q.setParameter("p4", "auth5");
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+  }
+
+  public void testOr_Literals() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() +
+                             " where author = 'auth1' or author = 'auth3'");
+    List<Book> books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() +
+                       " where title is null or title = 'yar1'");
+    books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(1).getId());
+  }
+
+  public void testOr_Params() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() +
+                             " where author = :p1 or author = :p2");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    List<Book> books = q.getResultList();
+    assertEquals(2, books.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
+  }
+
+  public void testMultipleOr_Literals() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "(author  = 'auth1' or author = 'auth3') AND "
+                             + "(isbn = 'isbn3' or isbn = 'isbn2')");
+    List<Book> books = q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
+  }
+
+  public void testMultipleOr_Params() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "(author  = :p1 or author = :p2) AND "
+                             + "(isbn = :p3 or isbn = :p4)");
+    q.setParameter("p1", "auth1");
+    q.setParameter("p2", "auth3");
+    q.setParameter("p3", "isbn3");
+    q.setParameter("p4", "isbn2");
+    List<Book> books = q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
   }
 
   public void testIsNullChild() {
