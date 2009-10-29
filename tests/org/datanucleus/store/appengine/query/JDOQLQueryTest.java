@@ -72,6 +72,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -105,8 +106,6 @@ public class JDOQLQueryTest extends JDOTestCase {
       new FilterPredicate("origin", FilterOperator.EQUAL, "2");
   private static final FilterPredicate ORIGIN_NEQ_2_LITERAL =
       new FilterPredicate("origin", FilterOperator.NOT_EQUAL, 2L);
-  private static final FilterPredicate DEST_EQ_4 =
-      new FilterPredicate("dest", FilterOperator.EQUAL, 4);
   private static final FilterPredicate DEST_EQ_4_LITERAL =
       new FilterPredicate("dest", FilterOperator.EQUAL, 4L);
   private static final FilterPredicate ORIG_GT_2_LITERAL =
@@ -121,6 +120,10 @@ public class JDOQLQueryTest extends JDOTestCase {
       new SortPredicate("origin", SortDirection.ASCENDING);
   private static final SortPredicate DESC_DESC =
       new SortPredicate("dest", SortDirection.DESCENDING);
+  private static final FilterPredicate ORIGIN_IN_2_ARGS =
+      new FilterPredicate("origin", FilterOperator.IN, Arrays.asList("2", 2L));
+  private static final FilterPredicate ORIGIN_IN_3_ARGS =
+      new FilterPredicate("origin", FilterOperator.IN, Arrays.asList("2", 2L, false));
 
   @Override
   protected void setUp() throws Exception {
@@ -151,8 +154,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByOrm(
         "select avg(you) from " + Flight.class.getName(), new Expression.Operator("avg", 0));
     Set<Expression.Operator> unsupportedOps = Utils.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
-    assertQueryUnsupportedByOrm(Flight.class,
-        "origin == 2 || dest == 3", Expression.OP_OR, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "!origin", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "(origin + dest) == 4", Expression.OP_ADD, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "origin + dest == 4", Expression.OP_ADD, unsupportedOps);
@@ -164,7 +165,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByOrm(Flight.class, "origin * dest == 4", Expression.OP_MUL, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "(origin % dest) == 4", Expression.OP_MOD, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "origin % dest == 4", Expression.OP_MOD, unsupportedOps);
-    assertQueryUnsupportedByOrm(Flight.class, "origin | dest == 4", Expression.OP_OR, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "~origin == 4", Expression.OP_COM, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "!origin == 4", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "-origin == 4", Expression.OP_NEG, unsupportedOps);
@@ -172,18 +172,33 @@ public class JDOQLQueryTest extends JDOTestCase {
         Expression.OP_IS, unsupportedOps);
     assertEquals(Utils.<Expression.Operator>newHashSet(Expression.OP_CONCAT, Expression.OP_LIKE,
         Expression.OP_ISNOT), unsupportedOps);
+    String baseQuery = "select from " + Flight.class.getName() + " where ";
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
     // We need to have it return BadRequest instead of NeedIndex for that to
     // happen.
-    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
-        + " where (origin > 2 && dest < 4)");
+    assertQueryUnsupportedByDatastore(baseQuery + "(origin > 2 && dest < 4)");
     // inequality filter prop is not the same as the first order by prop
-    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
-        + " where origin > 2 order by dest");
+    assertQueryUnsupportedByDatastore(baseQuery + "origin > 2 order by dest");
     // gets split into multiple inequality filters
-    assertQueryUnsupportedByDatastore("select from " + Flight.class.getName()
-        + " where origin != 2 && dest != 4");
+    assertQueryUnsupportedByDatastore(baseQuery + "origin != 2 && dest != 4");
+
+    // can't have 'or' on multiple properties
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title == 'yar' || author == null");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "isbn == 4 && (title == 'yar' || author == 'yam')");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + ":p1.contains(title) || author == 'yam'");
+    // can only check equality
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title > 5 || title < 2");
+  }
+
+  private void assertQueryRequiresUnsupportedDatastoreFeature(String query) {
+    Query q = pm.newQuery(query);
+    try {
+      q.execute();
+      fail("expected UnsupportedDatastoreFeatureException for query <" + query + ">");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // Good.
+    }
   }
 
   public void testSupportedFilters() {
@@ -217,6 +232,22 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQuerySupported(Flight.class, "origin != 2", Utils.newArrayList(ORIGIN_NEQ_2_LITERAL), NO_SORTS);
     assertQuerySupported("select from " + Flight.class.getName() + " where origin != null",
         Utils.newArrayList(ORIGIN_NEQ_NULL_LITERAL), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin == '2' || origin == 2",
+                         Utils.newArrayList(ORIGIN_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(Flight.class, "origin == '2' || origin == 2 || origin == false",
+                         Utils.newArrayList(ORIGIN_IN_3_ARGS), NO_SORTS);
+    assertQuerySupported(Flight.class, ":p1.contains(origin)",
+                         Utils.newArrayList(ORIGIN_IN_2_ARGS), NO_SORTS, Arrays.asList("2", 2L));
+    assertQuerySupported(Flight.class, ":p1.contains(origin)",
+                         Utils.newArrayList(ORIGIN_IN_3_ARGS), NO_SORTS, Arrays.asList("2", 2L, false));
+    assertQuerySupported(Flight.class, "(origin == '2' || origin == 2) && dest == 4",
+                         Utils.newArrayList(DEST_EQ_4_LITERAL, ORIGIN_IN_2_ARGS), NO_SORTS);
+    assertQuerySupported(Flight.class, ":p1.contains(origin) && dest == 4",
+                         Utils.newArrayList(ORIGIN_IN_2_ARGS, DEST_EQ_4_LITERAL), NO_SORTS, Arrays.asList("2", 2L));
+    assertQuerySupported(Flight.class, "(origin == '2' || origin == 2 || origin == false) && dest == 4",
+                         Utils.newArrayList(DEST_EQ_4_LITERAL, ORIGIN_IN_3_ARGS), NO_SORTS);
+    assertQuerySupported(Flight.class, ":p1.contains(origin) && dest == 4",
+                         Utils.newArrayList(ORIGIN_IN_3_ARGS, DEST_EQ_4_LITERAL), NO_SORTS, Arrays.asList("2", 2L, false));
   }
 
   public void testBindVariables() {
@@ -228,18 +259,18 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
     assertQuerySupported(queryStr + "parameters int two, int four",
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, 2, 4);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4_LITERAL), NO_SORTS, 2, 4L);
     assertQuerySupportedWithExplicitParams(queryStr,
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4), NO_SORTS, "int two, int four", 2, 4);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4_LITERAL), NO_SORTS, "int two, int four", 2, 4L);
 
     queryStr = "select from " + Flight.class.getName() + " where origin == two && dest == four ";
     String orderStr = "order by origin asc, dest desc";
     assertQuerySupported(queryStr + "parameters int two, int four " + orderStr,
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
-        Utils.newArrayList(ORIG_ASC, DESC_DESC), 2, 4);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4_LITERAL),
+        Utils.newArrayList(ORIG_ASC, DESC_DESC), 2, 4L);
     assertQuerySupportedWithExplicitParams(queryStr + orderStr,
-        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4),
-        Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2, 4);
+        Utils.newArrayList(ORIGIN_EQ_2, DEST_EQ_4_LITERAL),
+        Utils.newArrayList(ORIG_ASC, DESC_DESC), "int two, int four", 2, 4L);
   }
 
   public void test2Equals2OrderBy() {
@@ -755,6 +786,128 @@ public class JDOQLQueryTest extends JDOTestCase {
       q.execute(null);
       fail("expected exception");
     } catch (JDOFatalUserException e) {
+      // good
+    }
+  }
+
+  public void testContains() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name)");
+    List<Flight> flights = (List<Flight>) q.execute(Arrays.asList("name1", "name3"));
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(dest)");
+    flights = (List<Flight>) q.execute(Arrays.asList(null, "mia1"));
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(dest) || :p2.contains(dest)");
+    flights = (List<Flight>) q.execute(Arrays.asList(null, "mia1"), Arrays.asList("mia2"));
+    assertEquals(3, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(2).getId());
+  }
+
+  public void testMultipleIn_Params() {
+    Entity e = Flight.newFlightEntity("name1", "mia1", "bos1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "mia2", "bos2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "mia3", "bos3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name) && :p2.contains(origin)");
+    List<Flight> flights =
+        (List<Flight>) q.execute(Utils.newArrayList("name1", "name3"), Utils.newArrayList("mia3", "mia2"));
+    assertEquals(1, flights.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(0).getId());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name) || :p2.contains(name)");
+    flights =
+        (List<Flight>) q.execute(Utils.newArrayList("name1", "name3"), Utils.newArrayList("name4", "name5"));
+
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
+  }
+
+
+  public void testOr_Literals() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() +
+                             " where name == 'name1' || name == 'name3'");
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
+
+    q = pm.newQuery("select from " + Flight.class.getName() +
+                       " where dest == null || dest == 'mia1'");
+    flights = (List<Flight>) q.execute();
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+  }
+
+  public void testOr_Params() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() +
+                             " where name == :p1 || name == :p2");
+    List<Flight> flights = (List<Flight>) q.execute("name1", "name3");
+    assertEquals(2, flights.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
+  }
+
+  public void testMultipleOr_Literals() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
+                             + "(name  == 'name1' || name == 'name3') && "
+                             + "(origin == 'bos3' || origin == 'bos2')");
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(1, flights.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(0).getId());
+  }
+
+  public void testMultipleOr_Params() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
+                             + "(name == :p1 || name == :p2) && "
+                             + "(origin == :p3 || origin == :p4)");
+    Map<String, String> paramMap = Utils.newHashMap();
+    paramMap.put("p1", "name1");
+    paramMap.put("p2", "name3");
+    paramMap.put("p3", "bos3");
+    paramMap.put("p4", "bos2");
+    List<Flight> flights = (List<Flight>) q.executeWithMap(paramMap);
+    assertEquals(1, flights.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(0).getId());
+  }
+
+  public void testIsNullChild() {
+    Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
+    ldth.ds.put(e);
+    Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " where flight == null");
+    try {
+      q.execute();
+      fail("expected");
+    } catch (JDOFatalUserException ex) {
       // good
     }
   }

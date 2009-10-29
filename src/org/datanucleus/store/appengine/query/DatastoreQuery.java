@@ -811,7 +811,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private void checkForUnsupportedOrOperator(Expression.Operator operator) {
-    if (!operator.equals(Expression.OP_EQ) && !operator.equals(Expression.OP_OR)) {
+    if (operator != null && !operator.equals(Expression.OP_EQ) && !operator.equals(Expression.OP_OR)) {
       throw new UnsupportedDatastoreFeatureException("'or' filters can only check equality");
     }
   }

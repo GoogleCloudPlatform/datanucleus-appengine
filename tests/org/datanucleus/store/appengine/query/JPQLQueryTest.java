@@ -200,7 +200,7 @@ public class JPQLQueryTest extends JPATestCase {
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");
     // gets split into multiple inequality props
-    assertQueryUnsupportedByDatastore(baseQuery + "(title != 2 AND isbn != 4");
+    assertQueryUnsupportedByDatastore(baseQuery + "title <> 2 AND isbn <> 4");
     assertEquals(
         new HashSet<Expression.Operator>(Arrays.asList(Expression.OP_CONCAT, Expression.OP_COM,
                                                        Expression.OP_NEG, Expression.OP_IS,
@@ -2478,7 +2478,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ldth.ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
-                             + "(author  = :p1 or author = :p2) AND "
+                             + "(author = :p1 or author = :p2) AND "
                              + "(isbn = :p3 or isbn = :p4)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2917,9 +2917,10 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(query);
     try {
       q.getResultList();
-      fail("expected IllegalArgumentException for query <" + query + ">");
+      fail("expected PersistenceException for query <" + query + ">");
     } catch (PersistenceException e) {
       // good
+      assertTrue(e.getCause().getMessage(), e.getCause() instanceof IllegalArgumentException);
     }
   }
 
