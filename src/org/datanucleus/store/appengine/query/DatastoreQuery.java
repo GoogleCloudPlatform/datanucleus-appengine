@@ -15,15 +15,20 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
+import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withCursor;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.QueryResultIterable;
+import com.google.appengine.api.datastore.QueryResultIterator;
+import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Transaction;
 
@@ -235,7 +240,8 @@ public class DatastoreQuery implements Serializable {
         FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
         JoinHelper joinHelper = new JoinHelper();
         return wrapEntityQueryResult(
-            joinHelper.executeJoinQuery(qd, this, ds, opts), qd.resultTransformer, ds, mconn);
+            joinHelper.executeJoinQuery(qd, this, ds, opts),
+            qd.resultTransformer, ds, mconn, CursorProvider.NO_CURSOR);
       } else {
         latestDatastoreQuery = qd.primaryDatastoreQuery;
         Transaction txn = null;
@@ -301,7 +307,7 @@ public class DatastoreQuery implements Serializable {
       if (qd.resultType == ResultType.COUNT) {
         return Collections.singletonList(entities.size());
       }
-      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn);
+      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, CursorProvider.NO_CURSOR);
     }
   }
 
@@ -338,28 +344,55 @@ public class DatastoreQuery implements Serializable {
     return Collections.singletonList(preparedQuery.countEntities());
   }
 
+  private CursorProvider buildCursorProvider(final QueryResultList<Entity> entities) {
+    return new CursorProvider() {
+      public Cursor get() {
+        return entities.getCursor();
+      }
+    };
+  }
+
+  private CursorProvider buildCursorProvider(final QueryResultIterable<Entity> entities) {
+    return new CursorProvider() {
+      public Cursor get() {
+        QueryResultIterator<Entity> iter = entities.iterator();
+        while(iter.hasNext()) {
+          iter.next();
+        }
+        return iter.getCursor();
+      }
+    };
+  }
+
   private Object fulfillEntityQuery(
       PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer,
       DatastoreService ds, ManagedConnection mconn) {
-    Iterable<Entity> entities;
+    CursorProvider cursorProvider;
+    Iterable<Entity> entityIterable;
     if (opts != null) {
       if (opts.getLimit() != null) {
-        entities = preparedQuery.asList(opts);
+        QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
+        cursorProvider = buildCursorProvider(entities);
+        entityIterable = entities;
       } else {
-        entities = preparedQuery.asIterable(opts);
+        QueryResultIterable<Entity> entities = preparedQuery.asQueryResultIterable(opts);
+        cursorProvider = buildCursorProvider(entities);
+        entityIterable = entities;
       }
     } else {
-      entities = preparedQuery.asIterable();
+      QueryResultIterable<Entity> entities = preparedQuery.asQueryResultIterable();
+      cursorProvider = buildCursorProvider(entities);
+      entityIterable = entities;
     }
-    return wrapEntityQueryResult(entities, resultTransformer, ds, mconn);
+    return wrapEntityQueryResult(entityIterable, resultTransformer, ds, mconn, cursorProvider);
   }
 
   private Object wrapEntityQueryResult(Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
-      DatastoreService ds, ManagedConnection mconn) {
+      DatastoreService ds, ManagedConnection mconn, CursorProvider cursorProvider) {
     if (isBulkDelete()) {
       return deleteEntityQueryResult(entities, ds);
     }
-    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn);
+    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, cursorProvider);
   }
 
   private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds) {
@@ -372,9 +405,10 @@ public class DatastoreQuery implements Serializable {
   }
 
   private List<?> newStreamingQueryResultForEntities(
-      Iterable<Entity> entities, final Function<Entity, Object> resultTransformer, final ManagedConnection mconn) {
+      Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
+      final ManagedConnection mconn, CursorProvider cursorProvider) {
     final StreamingQueryResult qr = new StreamingQueryResult(
-        query, new RuntimeExceptionWrappingIterable(entities), resultTransformer);
+        query, new RuntimeExceptionWrappingIterable(entities), resultTransformer, cursorProvider);
     // Add a listener to the connection so we can get a callback when the connection is
     // flushed.
     ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
@@ -435,7 +469,32 @@ public class DatastoreQuery implements Serializable {
         opts.limit(intExclNo - offset);
       }
     }
+    Cursor cursor = getCursor();
+    // If we have a cursor, add it to the fetch options
+    if (cursor != null) {
+      if (opts == null) {
+        opts = withCursor(cursor);
+      } else {
+        opts.cursor(cursor);
+      }
+    }
     return opts;
+  }
+
+  /**
+   * @return The cursor the user added to the query, or {@code null} if no
+   * cursor.
+   */
+  private Cursor getCursor() {
+    // users can provide the cursor as a Cursor or its String representation.
+    Object obj = query.getExtension(CursorHelper.QUERY_CURSOR_PROPERTY_NAME);
+    if (obj != null) {
+      if (obj instanceof Cursor) {
+        return (Cursor) obj;
+      }
+      return Cursor.fromWebSafeString((String) obj);
+    }
+    return null;
   }
 
   private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
@@ -603,7 +662,7 @@ public class DatastoreQuery implements Serializable {
           }
         } else if (resultExpr instanceof PrimaryExpression) {
           if (resultType == ResultType.COUNT) {
-            throw newAggregateAndRowResultsException();            
+            throw newAggregateAndRowResultsException();
           }
           if (resultType == null) {
             resultType = ResultType.KEYS_ONLY;
@@ -690,7 +749,7 @@ public class DatastoreQuery implements Serializable {
 
   static Query.SortDirection getSortDirection(OrderExpression oe) {
     return oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
-            ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;    
+            ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
   }
 
   private boolean isJoin(Expression expr, List<String> tuples) {
@@ -1333,7 +1392,7 @@ public class DatastoreQuery implements Serializable {
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else if (valueKey == null) {
       throw new NucleusUserException(
-          query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.").setFatal();      
+          query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.").setFatal();
     } else {
       addParentFilter(op, valueKey, qd.primaryDatastoreQuery);
     }

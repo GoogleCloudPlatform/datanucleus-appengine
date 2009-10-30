@@ -124,12 +124,15 @@ class LazyResult<T> implements Iterable<T> {
 
   public int size() {
     // We're forced to resolve everything.
-    while (lazyEntityIterator.hasNext()) {
-      resolveNext();
-    }
+    resolveAll();
     return resolvedPojos.size();
   }
 
+  void resolveAll() {
+    while (lazyEntityIterator.hasNext()) {
+      resolveNext();
+    }
+  }
 
   /**
    * {@link AbstractListIterator implementation that uses the Iterator

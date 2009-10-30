@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
+import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.exceptions.NucleusUserException;
@@ -44,6 +45,7 @@ class StreamingQueryResult extends AbstractQueryResult {
 
   private boolean loadResultsAtCommit = true;
 
+  private final CursorProvider cursorProvider;
   /**
    * Constructs a StreamingQueryResult
    *
@@ -51,11 +53,14 @@ class StreamingQueryResult extends AbstractQueryResult {
    * @param lazyEntities The result of the query.
    * @param entityToPojoFunc A function that can convert a {@link Entity}
    * into a pojo.
+   * @param cursorProvider Provides a cursor that points to the end of the
+   * result set.
    */
   public StreamingQueryResult(Query query, Iterable<Entity> lazyEntities,
-      Function<Entity, Object> entityToPojoFunc) {
+      Function<Entity, Object> entityToPojoFunc, CursorProvider cursorProvider) {
     super(query);
     this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc);
+    this.cursorProvider = cursorProvider;
     // Process any supported extensions
     String ext = (String) query.getExtension("datanucleus.query.loadResultsAtCommit");
     if (ext != null) {
@@ -69,6 +74,7 @@ class StreamingQueryResult extends AbstractQueryResult {
     if (loadResultsAtCommit && isOpen()) {
       try {
         // If we are still open, force consumption of the rest of the results
+        lazyResult.resolveAll();
         size();
       } catch (NucleusUserException jpue) {
         // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
@@ -117,4 +123,9 @@ class StreamingQueryResult extends AbstractQueryResult {
   public int size() {
     return lazyResult.size();
   }
+
+  Cursor getCursor() {
+    return cursorProvider.get();
+  }
+  
 }
