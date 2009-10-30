@@ -343,7 +343,11 @@ public class DatastoreQuery implements Serializable {
       DatastoreService ds, ManagedConnection mconn) {
     Iterable<Entity> entities;
     if (opts != null) {
-      entities = preparedQuery.asIterable(opts);
+      if (opts.getLimit() != null) {
+        entities = preparedQuery.asList(opts);
+      } else {
+        entities = preparedQuery.asIterable(opts);
+      }
     } else {
       entities = preparedQuery.asIterable();
     }
