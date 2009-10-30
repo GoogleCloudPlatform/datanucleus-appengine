@@ -2091,14 +2091,74 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
-    Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
-    @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    assertEquals(2, flights.size());
-    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-        flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-    assertTrue(keys.contains(e1.getKey()));
-    assertTrue(keys.contains(e2.getKey()));
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
+      @SuppressWarnings("unchecked")
+      List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      assertEquals(2, flights.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_NoTxn_EncodedStringKey() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
+      @SuppressWarnings("unchecked")
+      List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(
+          KeyFactory.keyToString(key),
+          KeyFactory.keyToString(e1.getKey()),
+          KeyFactory.keyToString(e2.getKey())));
+      assertEquals(2, flights.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
+  }
+
+  public void testBatchGet_NoTxn_Contains() {
+    commitTxn();
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
+    ldth.ds.put(e3);
+
+    Key key = KeyFactory.createKey("yar", "does not exist");
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where :ids.contains(id)");
+      @SuppressWarnings("unchecked")
+      List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      assertEquals(2, flights.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Count_NoTxn() {
@@ -2113,9 +2173,14 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     Key key = KeyFactory.createKey("yar", "does not exist");
 
-    Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where id == :ids");
-    int count = (Integer) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    assertEquals(2, count);
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where id == :ids");
+      int count = (Integer) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      assertEquals(2, count);
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Txn() {
@@ -2127,14 +2192,19 @@ public class JDOQLQueryTest extends JDOTestCase {
     ldth.ds.put(e3);
 
     Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
-    Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
-    @SuppressWarnings("unchecked")
-    List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-    assertEquals(2, flights.size());
-    Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-        flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-    assertTrue(keys.contains(e1.getKey()));
-    assertTrue(keys.contains(e2.getKey()));
+    NoQueryDelegate nqd = new NoQueryDelegate().install();
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids");
+      @SuppressWarnings("unchecked")
+      List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      assertEquals(2, flights.size());
+      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
+          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
+      assertTrue(keys.contains(e1.getKey()));
+      assertTrue(keys.contains(e2.getKey()));
+    } finally {
+      nqd.uninstall();
+    }
   }
 
   public void testBatchGet_Illegal() {

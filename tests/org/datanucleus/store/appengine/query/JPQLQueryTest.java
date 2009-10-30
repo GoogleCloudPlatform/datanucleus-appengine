@@ -24,7 +24,6 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
-import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
@@ -1729,30 +1728,6 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, results.size());
     assertEquals(0, results.get(0).getBooks().size());
     commitTxn();
-  }
-
-  private static class NoQueryDelegate implements ApiProxy.Delegate {
-    private final ApiProxy.Delegate original = ApiProxy.getDelegate();
-    public byte[] makeSyncCall(ApiProxy.Environment environment, String pkg, String method, byte[] bytes)
-        throws ApiProxy.ApiProxyException {
-      if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
-        throw new RuntimeException("boom");
-      }
-      return original.makeSyncCall(environment, pkg, method, bytes);
-    }
-
-    public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
-      original.log(environment, logRecord);
-    }
-
-    public NoQueryDelegate install() {
-      ApiProxy.setDelegate(this);
-      return this;
-    }
-
-    public void uninstall() {
-      ApiProxy.setDelegate(original);
-    }
   }
 
   public void testBatchGet_NoTxn() {

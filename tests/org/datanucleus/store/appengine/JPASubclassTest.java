@@ -428,7 +428,7 @@ public class JPASubclassTest extends JPATestCase {
     beginTxn();
     Query q = em.createQuery("select from " + childClass.getName() + " where aString = :p");
     q.setParameter("p", "a2");
-    Child child = (Child) q.getSingleResult();
+    Child child = (Child) q.getResultList().get(0);
     assertEquals(childClass, child.getClass());
     assertEquals("a2", child.getAString());
     assertEquals("b2", child.getBString());
@@ -487,11 +487,11 @@ public class JPASubclassTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + grandchildClass.getName() + " where aString = :p");
     q.setParameter("p", "a2");
-    Grandchild grandchild = (Grandchild) q.getSingleResult();
+    Grandchild grandchild = (Grandchild) q.getResultList().get(0);
 
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a2", grandchild.getAString());
-    assertEquals("b2", grandchild.getBString());
+    assertEquals("b1", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
 
     q = em.createQuery(
@@ -502,7 +502,7 @@ public class JPASubclassTest extends JPATestCase {
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a2", grandchild.getAString());
     assertEquals("b2", grandchild.getBString());
-    assertEquals("c2", grandchild.getCString());
+    assertEquals("c3", grandchild.getCString());
 
     q = em.createQuery(
         "select from " + grandchildClass.getName() + " where cString = :p");
@@ -511,25 +511,25 @@ public class JPASubclassTest extends JPATestCase {
 
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a2", grandchild.getAString());
-    assertEquals("b2", grandchild.getBString());
+    assertEquals("b1", grandchild.getBString());
     assertEquals("c2", grandchild.getCString());
 
     List<Grandchild> grandkids = ((List<Grandchild>) em.createQuery(
-        "select from " + grandchildClass.getName() + " where aString == 'a2' order by bString desc").getResultList());
+        "select from " + grandchildClass.getName() + " where aString = 'a2' order by bString desc").getResultList());
     assertEquals(3, grandkids.size());
     assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
     assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
     assertEquals(e1.getKey().getId(), grandkids.get(2).getId().longValue());
 
     grandkids = ((List<Grandchild>) em.createQuery(
-        "select from " + grandchildClass.getName() + " where aString == 'a2' order by aString desc").getResultList());
+        "select from " + grandchildClass.getName() + " where aString = 'a2' order by aString desc").getResultList());
     assertEquals(3, grandkids.size());
     assertEquals(e1.getKey().getId(), grandkids.get(0).getId().longValue());
     assertEquals(e2.getKey().getId(), grandkids.get(1).getId().longValue());
     assertEquals(e3.getKey().getId(), grandkids.get(2).getId().longValue());
 
     grandkids = ((List<Grandchild>) em.createQuery(
-        "select from " + grandchildClass.getName() + " where aString == 'a2' order by cString desc").getResultList());
+        "select from " + grandchildClass.getName() + " where aString = 'a2' order by cString desc").getResultList());
     assertEquals(3, grandkids.size());
     assertEquals(e2.getKey().getId(), grandkids.get(0).getId().longValue());
     assertEquals(e3.getKey().getId(), grandkids.get(1).getId().longValue());
@@ -539,7 +539,7 @@ public class JPASubclassTest extends JPATestCase {
     q.setParameter("p", "c2");
     Object[] result = (Object[]) q.getSingleResult();
     assertEquals(3, result.length);
-    assertEquals("b2", result[0]);
+    assertEquals("b1", result[0]);
     assertEquals("a2", result[1]);
     assertEquals("c2", result[2]);
 
