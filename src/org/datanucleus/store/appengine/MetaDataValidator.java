@@ -255,11 +255,22 @@ public class MetaDataValidator {
         } else {
           relationClassString = ammd.getTypeName();
         }
-        if (!nonRepeatableRelationTypes.add(relationClassString)) {
-          throw new DatastoreMetaDataException(
-              acmd, ammd, "Class " + acmd.getFullClassName() + " has multiple relationship fields of type " + relationClassString
-                          + ".  This is not yet supported.");
-        }
+        // We need to check the entire class hierarchy all the way up to
+        // Object because any field that is assignable from objects of type
+        // relationClassString are ambiguous and therefore not supported.
+        do {
+          if (!nonRepeatableRelationTypes.add(relationClassString)) {
+            throw new DatastoreMetaDataException(
+                acmd, ammd, "Class " + acmd.getFullClassName() + " has multiple relationship fields of type " + relationClassString
+                            + ".  This is not yet supported.");
+          }
+          Class<?> superclass = clr.classForName(relationClassString).getSuperclass();
+          if (superclass.equals(Object.class)) {
+            relationClassString = null;
+          } else {
+            relationClassString = superclass.getName();
+          }
+        } while (relationClassString != null);
       }
     }
 

@@ -29,6 +29,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.Inheritance;
 import javax.persistence.InheritanceType;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
@@ -394,7 +395,7 @@ public class IllegalMappingsJPA {
   }
 
   @Entity
-  @javax.persistence.Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
   public static class Has2CollectionsOfSameTypeParent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -408,5 +409,48 @@ public class IllegalMappingsJPA {
   public static class Has2CollectionsOfSameTypeChild extends Has2CollectionsOfSameTypeParent {
     @OneToMany
     private List<Flight> flights2;
+  }
+
+  @Entity
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class Has2CollectionsOfAssignableBaseTypeSuper {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+  }
+
+  @Entity
+  public static class Has2CollectionsOfAssignableBaseTypeSub extends Has2CollectionsOfAssignableBaseTypeSuper {
+    private String str;
+  }
+
+  @Entity
+  public static class Has2CollectionsOfAssignableType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
+
+    @OneToMany
+    private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
+  }
+
+  @Entity
+  @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class Has2CollectionsOfAssignableTypeSuper {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
+  }
+
+  @Entity
+  public static class Has2CollectionsOfAssignableTypeSub extends Has2CollectionsOfAssignableTypeSuper {
+    @OneToMany
+    private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
   }
 }

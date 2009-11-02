@@ -17,12 +17,14 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
-import org.datanucleus.test.IgnorableMappingsJPA;
+import org.datanucleus.test.IgnorableMappingsJPA.HasInitialSequenceValue;
 import org.datanucleus.test.IgnorableMappingsJPA.HasUniqueConstraint;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
+import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfAssignableType;
+import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfAssignableTypeSub;
 import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameType;
 import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameTypeChild;
 import org.datanucleus.test.IllegalMappingsJPA.Has2OneToOnesOfSameType;
@@ -206,7 +208,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
 
   public void testInitialSequenceValue() {
-    assertMetaDataException(new IgnorableMappingsJPA.HasInitialSequenceValue());
+    assertMetaDataException(new HasInitialSequenceValue());
   }
 
   private void assertMetaDataException(Object pojo) {
@@ -241,8 +243,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     assertMetaDataException(new Has2OneToOnesOfSameType());
     assertMetaDataException(new HasOneToOneAndOneToManyOfSameType());
     assertMetaDataException(new Has2CollectionsOfSameTypeChild());
+    assertMetaDataException(new Has2CollectionsOfAssignableType());
+    assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
   }
-
-
-
 }

@@ -24,6 +24,8 @@ import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetch
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedEmbeddedChild;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonStringPrimaryKeyField;
+import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfAssignableType;
+import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfAssignableTypeSub;
 import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfSameType;
 import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfSameTypeChild;
 import org.datanucleus.test.IllegalMappingsJDO.Has2OneToOnesOfSameType;
@@ -269,6 +271,8 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     assertMetaDataException(new Has2OneToOnesOfSameType());
     assertMetaDataException(new HasOneToOneAndOneToManyOfSameType());
     assertMetaDataException(new Has2CollectionsOfSameTypeChild());
+    assertMetaDataException(new Has2CollectionsOfAssignableType());
+    assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
   }
 
   private void assertMetaDataException(Object pojo) {

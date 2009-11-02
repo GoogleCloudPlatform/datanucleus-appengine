@@ -442,4 +442,51 @@ public class IllegalMappingsJDO {
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Flight> flights2;
   }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class Has2CollectionsOfAssignableBaseTypeSuper {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2CollectionsOfAssignableBaseTypeSub extends Has2CollectionsOfAssignableBaseTypeSuper {
+    private String str;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2CollectionsOfAssignableType {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class Has2CollectionsOfAssignableTypeSuper {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2CollectionsOfAssignableTypeSub extends Has2CollectionsOfAssignableTypeSuper {
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
+  }
 }
