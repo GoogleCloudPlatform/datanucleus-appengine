@@ -348,6 +348,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
   void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJPA> pojoClass)
       throws EntityNotFoundException {
+    getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
+        "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors", true);
+
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 

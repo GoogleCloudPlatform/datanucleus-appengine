@@ -47,11 +47,11 @@ public class HasOneToOnesWithDifferentCascadesJPA {
 
   @OneToOne(cascade = CascadeType.PERSIST, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascadepersist")
-  private HasStringAncestorStringPkJPA cascadePersistChild;
+  private HasStringAncestorKeyPkJPA cascadePersistChild;
 
   @OneToOne(cascade = CascadeType.REMOVE, fetch = FetchType.LAZY)
   @JoinColumn(name = "cascaderemove")
-  private HasStringAncestorStringPkJPA cascadeRemoveChild;
+  private HasKeyAncestorKeyPkJPA cascadeRemoveChild;
 
   public String getId() {
     return id;
@@ -65,19 +65,19 @@ public class HasOneToOnesWithDifferentCascadesJPA {
     this.cascadeAllChild = cascadeAllChild;
   }
 
-  public HasStringAncestorStringPkJPA getCascadePersistChild() {
+  public HasStringAncestorKeyPkJPA getCascadePersistChild() {
     return cascadePersistChild;
   }
 
-  public void setCascadePersistChild(HasStringAncestorStringPkJPA cascadePersistChild) {
+  public void setCascadePersistChild(HasStringAncestorKeyPkJPA cascadePersistChild) {
     this.cascadePersistChild = cascadePersistChild;
   }
 
-  public HasStringAncestorStringPkJPA getCascadeRemoveChild() {
+  public HasKeyAncestorKeyPkJPA getCascadeRemoveChild() {
     return cascadeRemoveChild;
   }
 
-  public void setCascadeRemoveChild(HasStringAncestorStringPkJPA cascadeRemoveChild) {
+  public void setCascadeRemoveChild(HasKeyAncestorKeyPkJPA cascadeRemoveChild) {
     this.cascadeRemoveChild = cascadeRemoveChild;
   }
 

@@ -40,11 +40,11 @@ public class HasOneToOnesWithDifferentCascadesJDO {
   private HasKeyAncestorStringPkJDO cascadeAllChildWithKeyAncestor;
 
   @Persistent(dependent = "false")
-  private HasStringAncestorStringPkJDO cascadePersistChild;
+  private HasStringAncestorKeyPkJDO cascadePersistChild;
 
   @Persistent(dependent = "false")
   @Extension(vendorName="datanucleus", key="cascade-persist", value="false")
-  private HasStringAncestorStringPkJDO cascadeRemoveChild;
+  private HasKeyAncestorKeyPkJDO cascadeRemoveChild;
 
   public String getId() {
     return id;
@@ -58,19 +58,19 @@ public class HasOneToOnesWithDifferentCascadesJDO {
     this.cascadeAllChild = cascadeAllChild;
   }
 
-  public HasStringAncestorStringPkJDO getCascadePersistChild() {
+  public HasStringAncestorKeyPkJDO getCascadePersistChild() {
     return cascadePersistChild;
   }
 
-  public void setCascadePersistChild(HasStringAncestorStringPkJDO cascadePersistChild) {
+  public void setCascadePersistChild(HasStringAncestorKeyPkJDO cascadePersistChild) {
     this.cascadePersistChild = cascadePersistChild;
   }
 
-  public HasStringAncestorStringPkJDO getCascadeRemoveChild() {
+  public HasKeyAncestorKeyPkJDO getCascadeRemoveChild() {
     return cascadeRemoveChild;
   }
 
-  public void setCascadeRemoveChild(HasStringAncestorStringPkJDO cascadeRemoveChild) {
+  public void setCascadeRemoveChild(HasKeyAncestorKeyPkJDO cascadeRemoveChild) {
     this.cascadeRemoveChild = cascadeRemoveChild;
   }
 

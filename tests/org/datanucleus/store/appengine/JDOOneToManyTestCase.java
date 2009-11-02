@@ -738,6 +738,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDO> pojoClass)
       throws EntityNotFoundException {
+    getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
+        "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors", true);
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 

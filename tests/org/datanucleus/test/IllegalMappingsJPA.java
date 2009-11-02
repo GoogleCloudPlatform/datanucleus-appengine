@@ -29,6 +29,7 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.InheritanceType;
 import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
@@ -351,5 +352,61 @@ public class IllegalMappingsJPA {
     @Id
     @GeneratedValue(strategy=GenerationType.SEQUENCE)
     private Key id;
+  }
+
+  @Entity
+  public static class Has2CollectionsOfSameType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private List<Flight> flights1;
+
+    @OneToMany
+    private List<Flight> flights2;
+  }
+
+  @Entity
+  public static class Has2OneToOnesOfSameType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private Flight f1;
+
+    @OneToMany
+    private Flight f2;
+  }
+
+  @Entity
+  public static class HasOneToOneAndOneToManyOfSameType {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private List<Flight> flights;
+
+    @OneToMany
+    private Flight f2;
+  }
+
+  @Entity
+  @javax.persistence.Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
+  public static class Has2CollectionsOfSameTypeParent {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    private List<Flight> flights1;
+  }
+
+  @Entity
+  public static class Has2CollectionsOfSameTypeChild extends Has2CollectionsOfSameTypeParent {
+    @OneToMany
+    private List<Flight> flights2;
   }
 }

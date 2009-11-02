@@ -24,6 +24,8 @@ import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.Extensions;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.Inheritance;
+import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -381,5 +383,63 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
     private Key id;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2CollectionsOfSameType {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    private List<Flight> flights1;
+
+    @Persistent
+    private List<Flight> flights2;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2OneToOnesOfSameType {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    private Flight f1;
+
+    @Persistent
+    private Flight f2;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class HasOneToOneAndOneToManyOfSameType {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    private List<Flight> flights;
+
+    @Persistent
+    private Flight f2;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class Has2CollectionsOfSameTypeParent {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Flight> flights1;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Has2CollectionsOfSameTypeChild extends Has2CollectionsOfSameTypeParent {
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
+    private List<Flight> flights2;
   }
 }

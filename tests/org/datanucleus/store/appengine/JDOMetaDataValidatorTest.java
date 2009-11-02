@@ -24,10 +24,14 @@ import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetch
 import org.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedEmbeddedChild;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJDO.EncodedPkOnNonStringPrimaryKeyField;
+import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfSameType;
+import org.datanucleus.test.IllegalMappingsJDO.Has2CollectionsOfSameTypeChild;
+import org.datanucleus.test.IllegalMappingsJDO.Has2OneToOnesOfSameType;
 import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkNameFields;
+import org.datanucleus.test.IllegalMappingsJDO.HasOneToOneAndOneToManyOfSameType;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.LongParent;
@@ -258,6 +262,13 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
 
   public void testKeyPkWithSequence() {
     assertMetaDataException(new SequenceOnKeyPk());
+  }
+
+  public void testHasMultipleRelationshipFieldsOfSameType() {
+    assertMetaDataException(new Has2CollectionsOfSameType());
+    assertMetaDataException(new Has2OneToOnesOfSameType());
+    assertMetaDataException(new HasOneToOneAndOneToManyOfSameType());
+    assertMetaDataException(new Has2CollectionsOfSameTypeChild());
   }
 
   private void assertMetaDataException(Object pojo) {

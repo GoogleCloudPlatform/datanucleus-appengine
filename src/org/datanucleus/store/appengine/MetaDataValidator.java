@@ -89,6 +89,16 @@ public class MetaDataValidator {
                     IgnorableMetaDataBehavior.NONE,
                     IgnorableMetaDataBehavior.ERROR);
 
+  private static final Set<Integer> NON_REPEATABLE_RELATION_TYPES = Utils.newHashSet(
+      Relation.ONE_TO_MANY_BI,
+      Relation.ONE_TO_MANY_UNI,
+      Relation.ONE_TO_ONE_BI,
+      Relation.ONE_TO_ONE_UNI
+  );
+
+  private static final String ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE =
+      "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors";
+
   private final AbstractClassMetaData acmd;
   private final MetaDataManager metaDataManager;
   private final ClassLoaderResolver clr;
@@ -122,16 +132,26 @@ public class MetaDataValidator {
 
   private void validateFields(AbstractMemberMetaData pkMemberMetaData) {
     Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
+    Set<String> nonRepeatableRelationTypes = Utils.newHashSet();
     Class<?> pkClass = pkMemberMetaData.getType();
 
-    for (AbstractMemberMetaData ammd : acmd.getManagedMembers()) {
-      validateField(pkMemberMetaData, pkClass, foundOneOrZeroExtensions, ammd);
-    }
+    // the constraints that we check across all fields apply to the entire
+    // persistent class hierarchy so we're going to validate every field
+    // at every level of the hierarchy.  As an example, this lets us detect
+    // multiple one-to-many relationships at different levels of the class
+    // hierarchy
+    AbstractClassMetaData curCmd = acmd;
+    do {
+      for (AbstractMemberMetaData ammd : curCmd.getManagedMembers()) {
+        validateField(pkMemberMetaData, pkClass, foundOneOrZeroExtensions, nonRepeatableRelationTypes, ammd);
+      }
+      curCmd = curCmd.getSuperAbstractClassMetaData();
+    } while (curCmd != null);
   }
 
   private void validateField(AbstractMemberMetaData pkMemberMetaData,
                              Class<?> pkClass, Set<String> foundOneOrZeroExtensions,
-                             AbstractMemberMetaData ammd) {
+                             Set<String> nonRepeatableRelationTypes, AbstractMemberMetaData ammd) {
     // can only have one field with this extension
     for (String extension : ONE_OR_ZERO_EXTENSIONS) {
       if (ammd.hasExtension(extension)) {
@@ -224,6 +244,22 @@ public class MetaDataValidator {
                         + "consider maintaining a List<Key> on both sides of the relationship.  "
                         + "See http://code.google.com/appengine/docs/java/datastore/relationships.html#Unowned_Relationships "
                         + "for more information.");
+      } else if (ammd.getEmbeddedMetaData() == null &&
+                 NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
+                 !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE)) {
+        String relationClassString;
+        if (ammd.getCollection() != null) {
+          relationClassString = ammd.getCollection().getElementType();
+        } else if (ammd.getArray() != null) {
+          relationClassString = ammd.getArray().getElementType();
+        } else {
+          relationClassString = ammd.getTypeName();
+        }
+        if (!nonRepeatableRelationTypes.add(relationClassString)) {
+          throw new DatastoreMetaDataException(
+              acmd, ammd, "Class " + acmd.getFullClassName() + " has multiple relationship fields of type " + relationClassString
+                          + ".  This is not yet supported.");
+        }
       }
     }
 
@@ -239,6 +275,11 @@ public class MetaDataValidator {
 
   boolean isJPA() {
     return DatastoreManager.isJPA(metaDataManager.getOMFContext());
+  }
+
+  private boolean getBooleanConfigProperty(String configProperty) {
+    return metaDataManager.getOMFContext().getPersistenceConfiguration()
+        .getBooleanProperty(configProperty);
   }
 
   private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {

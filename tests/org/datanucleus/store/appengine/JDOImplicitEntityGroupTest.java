@@ -20,10 +20,12 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
+import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasKeyAncestorStringPkJDO;
 import org.datanucleus.test.HasOneToOneJDO;
 import org.datanucleus.test.HasOneToOneParentJDO;
 import org.datanucleus.test.HasOneToOnesWithDifferentCascadesJDO;
+import org.datanucleus.test.HasStringAncestorKeyPkJDO;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
 
 import javax.jdo.JDOFatalUserException;
@@ -95,7 +97,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
   public void testOneToOnePersistCascadePersist() throws EntityNotFoundException {
     HasOneToOnesWithDifferentCascadesJDO parent = new HasOneToOnesWithDifferentCascadesJDO();
-    HasStringAncestorStringPkJDO child = new HasStringAncestorStringPkJDO();
+    HasStringAncestorKeyPkJDO child = new HasStringAncestorKeyPkJDO();
     parent.setCascadePersistChild(child);
 
     beginTxn();
@@ -104,18 +106,18 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
     beginTxn();
     parent = pm.getObjectById(HasOneToOnesWithDifferentCascadesJDO.class, parent.getId());
-    child = pm.getObjectById(HasStringAncestorStringPkJDO.class, child.getId());
-    assertEquals(parent.getId(), child.getAncestorId());
+    child = pm.getObjectById(HasStringAncestorKeyPkJDO.class, child.getKey());
+    assertEquals(parent.getId(), child.getAncestorKey());
     assertNotNull(parent.getCascadePersistChild());
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
+    Entity childEntity = ldth.ds.get(child.getKey());
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
   public void testOneToOnePersistCascadeRemove() throws EntityNotFoundException {
     HasOneToOnesWithDifferentCascadesJDO parent = new HasOneToOnesWithDifferentCascadesJDO();
-    HasStringAncestorStringPkJDO child = new HasStringAncestorStringPkJDO();
+    HasKeyAncestorKeyPkJDO child = new HasKeyAncestorKeyPkJDO();
     parent.setCascadeRemoveChild(child);
 
     beginTxn();
@@ -163,7 +165,8 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     pm.makePersistent(anotherParent);
     commitTxn();
 
-    HasStringAncestorStringPkJDO child = new HasStringAncestorStringPkJDO(anotherParent.getId());
+    HasStringAncestorKeyPkJDO child = new HasStringAncestorKeyPkJDO();
+    child.setAncestorKey(anotherParent.getId());
     parent.setCascadePersistChild(child);
 
     beginTxn();
@@ -236,7 +239,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
   public void testOneToOneRemoveChildCascadeRemove() throws EntityNotFoundException {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
-    Entity childEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentEntity.getKey());
+    Entity childEntity = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentEntity.getKey());
     ldth.ds.put(childEntity);
     parentEntity.setProperty("cascaderemove", childEntity.getKey());
     ldth.ds.put(parentEntity);
@@ -245,7 +248,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     HasOneToOnesWithDifferentCascadesJDO parent = pm.getObjectById(
         HasOneToOnesWithDifferentCascadesJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
     assertNotNull(parent.getCascadeRemoveChild());
-    assertKeyParentEquals(parent.getId(), childEntity, parent.getCascadeRemoveChild().getId());
+    assertKeyParentEquals(parent.getId(), childEntity, parent.getCascadeRemoveChild().getKey());
     pm.deletePersistent(parent.getCascadeRemoveChild());
     commitTxn();
 

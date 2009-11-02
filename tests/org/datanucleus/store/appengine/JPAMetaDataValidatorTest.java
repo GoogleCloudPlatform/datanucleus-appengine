@@ -17,15 +17,19 @@ package org.datanucleus.store.appengine;
 
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManager;
-import org.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import org.datanucleus.test.IgnorableMappingsJPA;
+import org.datanucleus.test.IgnorableMappingsJPA.HasUniqueConstraint;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
 import org.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
 import org.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
+import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameType;
+import org.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameTypeChild;
+import org.datanucleus.test.IllegalMappingsJPA.Has2OneToOnesOfSameType;
 import org.datanucleus.test.IllegalMappingsJPA.HasLongPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkNameFields;
+import org.datanucleus.test.IllegalMappingsJPA.HasOneToOneAndOneToManyOfSameType;
 import org.datanucleus.test.IllegalMappingsJPA.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJPA.LongParent;
 import org.datanucleus.test.IllegalMappingsJPA.ManyToMany1;
@@ -231,5 +235,14 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   public void testKeyPkWithSequence() {
     assertMetaDataException(new SequenceOnKeyPk());
   }
+
+  public void testHasMultipleRelationshipFieldsOfSameType() {
+    assertMetaDataException(new Has2CollectionsOfSameType());
+    assertMetaDataException(new Has2OneToOnesOfSameType());
+    assertMetaDataException(new HasOneToOneAndOneToManyOfSameType());
+    assertMetaDataException(new Has2CollectionsOfSameTypeChild());
+  }
+
+
 
 }
