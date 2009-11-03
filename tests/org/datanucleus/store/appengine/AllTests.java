@@ -99,9 +99,13 @@ public class AllTests {
     suite.addTestSuite(JPAAttachDetachTest.class);
     suite.addTestSuite(JDOSubclassTest.class);
     suite.addTestSuite(JDOBidirectionalOneToOneSubclassTest.class);
+    suite.addTestSuite(JPABidirectionalOneToOneSubclassTest.class);
     suite.addTestSuite(JDOBidirectionalOneToManySubclassTest.class);
+    suite.addTestSuite(JPABidirectionalOneToManySubclassTest.class);
     suite.addTestSuite(JDOUnidirectionalOneToOneSubclassTest.class);
+    suite.addTestSuite(JPAUnidirectionalOneToOneSubclassTest.class);
     suite.addTestSuite(JDOUnidirectionalOneToManySubclassTest.class);
+    suite.addTestSuite(JPAUnidirectionalOneToManySubclassTest.class);
     suite.addTestSuite(JPASubclassTest.class);
     suite.addTestSuite(JPALobTest.class);
     suite.addTestSuite(JDOUnindexedPropertiesTest.class);

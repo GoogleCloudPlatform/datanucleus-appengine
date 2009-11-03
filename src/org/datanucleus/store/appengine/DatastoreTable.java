@@ -427,7 +427,8 @@ public class DatastoreTable implements DatastoreClass {
       // see if any of our superclasses have a parentMappingField
       while (!Object.class.equals(curClass)) {
         DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
-        if (dt.parentMappingField != null) {
+        // sometimes the parent table is not yet initialized
+        if (dt != null && dt.parentMappingField != null) {
           parentMappingField = dt.parentMappingField;
           break;
         }
