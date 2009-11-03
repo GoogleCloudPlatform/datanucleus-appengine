@@ -92,7 +92,7 @@ class DatastoreRelationFieldManager {
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
         DatastoreTable table = getStoreManager().getDatastoreClass(
-            ammd.getAbstractClassMetaData().getFullClassName(),
+            acmd.getFullClassName(),
             fieldManager.getClassLoaderResolver());
 
         StateManager sm = getStateManager();

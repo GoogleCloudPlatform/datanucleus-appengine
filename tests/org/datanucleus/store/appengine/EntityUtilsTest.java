@@ -45,13 +45,13 @@ public class EntityUtilsTest extends TestCase {
 
   public void testUnencodedStringToEncodedString() {
     String keyStr = (String) EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, "yar");
+        "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, "yar", null, false);
     assertEquals(KeyFactory.createKey("Object", "yar"), KeyFactory.stringToKey(keyStr));
   }
 
   public void testUnencodedStringToUnencodedString() {
     String keyStr = (String) EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, "yar");
+        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, "yar", null, false);
     assertEquals("yar", keyStr);
 
   }
@@ -59,7 +59,7 @@ public class EntityUtilsTest extends TestCase {
   public void testUnencodedStringToLong() {
     try {
     EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, "yar");
+        "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, "yar", null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -68,7 +68,7 @@ public class EntityUtilsTest extends TestCase {
 
   public void testUnencodedStringToKey() {
     Key key = (Key) EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, "yar");
+        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, "yar", null, false);
     assertEquals(KeyFactory.createKey("Object", "yar"), key);
   }
 
@@ -76,7 +76,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", "yar");
     String keyStr = (String) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class,
-        KeyFactory.keyToString(key));
+        KeyFactory.keyToString(key), null, false);
     assertEquals(key, KeyFactory.stringToKey(keyStr));
   }
 
@@ -84,7 +84,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", "yar");
     String name = (String) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class,
-        KeyFactory.keyToString(key));
+        KeyFactory.keyToString(key), null, false);
     assertEquals("yar", name);
   }
 
@@ -93,7 +93,7 @@ public class EntityUtilsTest extends TestCase {
     try {
       EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class,
-        KeyFactory.keyToString(key));
+        KeyFactory.keyToString(key), null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -104,7 +104,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", 44);
     long id = (Long) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class,
-        KeyFactory.keyToString(key));
+        KeyFactory.keyToString(key), null, false);
     assertEquals(44, id);
   }
 
@@ -113,7 +113,7 @@ public class EntityUtilsTest extends TestCase {
     try {
       EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class,
-        KeyFactory.keyToString(key));
+        KeyFactory.keyToString(key), null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -124,7 +124,7 @@ public class EntityUtilsTest extends TestCase {
     Key input = KeyFactory.createKey("Object", "yar");
     Key output = (Key) EntityUtils.idToInternalKey(
       "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class,
-      KeyFactory.keyToString(input));
+      KeyFactory.keyToString(input), null, false);
     assertEquals(input, output);
   }
 
@@ -132,20 +132,20 @@ public class EntityUtilsTest extends TestCase {
     Key input = KeyFactory.createKey("Object", 33);
     Key output = (Key) EntityUtils.idToInternalKey(
       "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class,
-      KeyFactory.keyToString(input));
+      KeyFactory.keyToString(input), null, false);
     assertEquals(input, output);
   }
 
   public void testLongToEncodedString() {
     String output = (String) EntityUtils.idToInternalKey(
-      "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, 44);
+      "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, 44, null, false);
     assertEquals(KeyFactory.createKey("Object", 44), KeyFactory.stringToKey(output));
   }
 
   public void testLongToUnencodedString() {
     try {
       EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, 44);
+        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, 44, null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -154,13 +154,13 @@ public class EntityUtilsTest extends TestCase {
 
   public void testLongToLong() {
     long output = (Long) EntityUtils.idToInternalKey(
-      "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, 44);
+      "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, 44, null, false);
     assertEquals(44, output);
   }
 
   public void testLongToKey() {
     Key output = (Key) EntityUtils.idToInternalKey(
-      "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, 44);
+      "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, 44, null, false);
     assertEquals(KeyFactory.createKey("Object", 44), output);
 
   }
@@ -169,7 +169,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", 44);
     String output = (String) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class,
-        key);
+        key, null, false);
     assertEquals(key, KeyFactory.stringToKey(output));
   }
 
@@ -177,7 +177,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", "yar");
     String output = (String) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class,
-        key);
+        key, null, false);
     assertEquals("yar", output);
   }
 
@@ -185,7 +185,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", 44);
     try {
       EntityUtils.idToInternalKey(
-          "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, key);
+          "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, key, null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -196,7 +196,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", "yar");
     try {
       EntityUtils.idToInternalKey(
-          "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, key);
+          "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, key, null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -206,31 +206,31 @@ public class EntityUtilsTest extends TestCase {
   public void testKeyToKey() {
     Key key = KeyFactory.createKey("Object", "yar");
     Key output = (Key) EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, key);
+        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, key, null, false);
     assertEquals(key, output);
   }
 
   public void testNullToEncodedString() {
     Object output = EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, null);
+        "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, null, null, false);
     assertNull(output);
   }
 
   public void testNullToUnencodedString() {
     Object output = EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, null);
+        "Object", new PrimaryKeyMemberMetaData(false, String.class), Object.class, null, null, false);
     assertNull(output);
   }
 
   public void testNullToLong() {
     Object output = EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, null);
+        "Object", new PrimaryKeyMemberMetaData(false, Long.class), Object.class, null, null, false);
     assertNull(output);
   }
 
   public void testNullToKey() {
     Object output = EntityUtils.idToInternalKey(
-        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, null);
+        "Object", new PrimaryKeyMemberMetaData(false, Key.class), Object.class, null, null, false);
     assertNull(output);
   }
 
@@ -239,7 +239,7 @@ public class EntityUtilsTest extends TestCase {
     try {
       EntityUtils.idToInternalKey(
           "NotObject", new PrimaryKeyMemberMetaData(true, String.class), Object.class,
-          KeyFactory.keyToString(key));
+          KeyFactory.keyToString(key), null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good
@@ -250,7 +250,7 @@ public class EntityUtilsTest extends TestCase {
     Key key = KeyFactory.createKey("Object", "yar");
     try {
       EntityUtils.idToInternalKey(
-          "NotObject", new PrimaryKeyMemberMetaData(true, Key.class), Object.class, key);
+          "NotObject", new PrimaryKeyMemberMetaData(true, Key.class), Object.class, key, null, false);
       fail("expected exception");
     } catch (NucleusUserException e) {
       // good

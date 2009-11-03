@@ -364,11 +364,11 @@ public class DatastoreTable implements DatastoreClass {
                 AbstractClassMetaData elementCmd;
                 if (fmd.hasCollection()) {
                   // Collection
-                  elementCmd = storeMgr.getOMFContext().getMetaDataManager()
+                  elementCmd = storeMgr.getMetaDataManager()
                       .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
                 } else {
                   // Array
-                  elementCmd = storeMgr.getOMFContext().getMetaDataManager()
+                  elementCmd = storeMgr.getMetaDataManager()
                       .getMetaDataForClass(fmd.getType().getComponentType(), clr);
                 }
                 if (elementCmd == null) {
@@ -400,7 +400,7 @@ public class DatastoreTable implements DatastoreClass {
                 // 1-N ForeignKey map, so add FK to value table
                 if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
                   // Key is stored in the value table so add the FK to the value table
-                  AbstractClassMetaData valueCmd = storeMgr.getOMFContext().getMetaDataManager()
+                  AbstractClassMetaData valueCmd = storeMgr.getMetaDataManager()
                       .getMetaDataForClass(fmd.getMap().getValueType(), clr);
                   if (valueCmd == null) {
                     // Interface elements will come through here and java.lang.String and others as well
@@ -408,7 +408,7 @@ public class DatastoreTable implements DatastoreClass {
                   }
                 } else if (fmd.getValueMetaData() != null && fmd.getValueMetaData().getMappedBy() != null) {
                   // Value is stored in the key table so add the FK to the key table
-                  AbstractClassMetaData keyCmd = storeMgr.getOMFContext().getMetaDataManager()
+                  AbstractClassMetaData keyCmd = storeMgr.getMetaDataManager()
                       .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
                   if (keyCmd == null) {
                     // Interface elements will come through here and java.lang.String and others as well
@@ -419,6 +419,19 @@ public class DatastoreTable implements DatastoreClass {
             }
           }
         }
+      }
+    }
+
+    if (parentMappingField == null) {
+      Class curClass = clr.classForName(cmd.getFullClassName()).getSuperclass();
+      // see if any of our superclasses have a parentMappingField
+      while (!Object.class.equals(curClass)) {
+        DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
+        if (dt.parentMappingField != null) {
+          parentMappingField = dt.parentMappingField;
+          break;
+        }
+        curClass = curClass.getSuperclass();
       }
     }
   }
@@ -439,11 +452,14 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   private void markFieldAsParentKeyProvider(String mappedBy) {
-    if (parentMappingField != null) {
+
+    AbstractMemberMetaData newParentMappingField = getFieldMetaData(mappedBy);
+    if (parentMappingField == null) {
+      parentMappingField = newParentMappingField;
+    } else if (parentMappingField != newParentMappingField) { // intentional reference compare
       throw new NucleusException(
           "App Engine ORM does not support multiple parent key provider fields.");
     }
-    parentMappingField = getFieldMetaData(mappedBy);
   }
 
   protected void addFieldMapping(JavaTypeMapping fieldMapping) {
@@ -1041,23 +1057,31 @@ public class DatastoreTable implements DatastoreClass {
               // User-defined name
               identifier = idFactory.newDatastoreFieldIdentifier(colmd.getName());
             }
-            DatastoreProperty refColumn =
-                addDatastoreField(mapping.getJavaType().getName(), identifier, mapping, colmd);
-            refDatastoreMapping.getDatastoreField().copyConfigurationTo(refColumn);
+            // When we have an inherited relationship we end up
+            // trying to add an owner property twice - once from the super-class
+            // and once from the sub-class.  This generates an exception for
+            // duplicate property names.  To avoid this we check to see if
+            // the table already has a property with this name before attempting
+            // to add the mapping
+            if (!datastorePropertiesByName.containsKey(identifier.getIdentifierName())) {
+              DatastoreProperty refColumn =
+                  addDatastoreField(mapping.getJavaType().getName(), identifier, mapping, colmd);
+              refDatastoreMapping.getDatastoreField().copyConfigurationTo(refColumn);
 
-            if ((colmd.getAllowsNull() == null) ||
-                (colmd.getAllowsNull() != null && colmd.isAllowsNull())) {
-              // User either wants it nullable, or havent specified anything, so make it nullable
-              refColumn.setNullable();
+              if ((colmd.getAllowsNull() == null) ||
+                  (colmd.getAllowsNull() != null && colmd.isAllowsNull())) {
+                // User either wants it nullable, or havent specified anything, so make it nullable
+                refColumn.setNullable();
+              }
+              AbstractClassMetaData acmd =
+                  storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
+              // this is needed for one-to-many sets
+              addOwningClassMetaData(colmd.getName(), acmd);
+              fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
+                  .createDatastoreMapping(mapping, refColumn,
+                                          refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
+              ((PersistenceCapableMapping) fkMapping).addJavaTypeMapping(mapping);
             }
-            AbstractClassMetaData acmd =
-                storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
-            // this is needed for one-to-many sets
-            addOwningClassMetaData(colmd.getName(), acmd);
-            fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
-                .createDatastoreMapping(mapping, refColumn,
-                                        refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
-            ((PersistenceCapableMapping) fkMapping).addJavaTypeMapping(mapping);
           }
 
           // Save the external FK
@@ -1146,11 +1170,10 @@ public class DatastoreTable implements DatastoreClass {
     }
     if (indexColumnName == null) {
       // No name defined so generate one
-      indexColumnName = idFactory.newForeignKeyFieldIdentifier(fmd, null, null,
-                                                               storeMgr.getOMFContext()
-                                                                   .getTypeManager().isDefaultEmbeddedType(
-                                                                   indexType),
-                                                               FieldRole.ROLE_INDEX);
+      indexColumnName = idFactory.newForeignKeyFieldIdentifier(
+          fmd, null, null,
+          storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(indexType),
+          FieldRole.ROLE_INDEX);
     }
 
     DatastoreField column =

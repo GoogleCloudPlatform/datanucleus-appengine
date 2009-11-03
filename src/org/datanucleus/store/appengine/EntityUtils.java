@@ -27,6 +27,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
@@ -116,18 +117,18 @@ public final class EntityUtils {
    * When the pk field is an encoded String you can give us an unencoded
    * String, an encoded String, or a Key.
    */
-  public static Object idToInternalKey(ObjectManager om, Class<?> cls, final Object val) {
+  public static Object idToInternalKey(ObjectManager om, Class<?> cls, Object val, boolean allowSubclasses) {
     AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
         cls, om.getClassLoaderResolver());
-    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-    String kind = determineKind(cmd, storeMgr.getIdentifierFactory());
+    String kind = determineKind(cmd, om);
     AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(om, cls);
-    return idToInternalKey(kind, pkMemberMetaData, cls, val);
+    return idToInternalKey(kind, pkMemberMetaData, cls, val, om, allowSubclasses);
   }
 
   // broken out for testing
   static Object idToInternalKey(
-      String kind, AbstractMemberMetaData pkMemberMetaData,Class<?> cls, Object val) {
+      String kind, AbstractMemberMetaData pkMemberMetaData, Class<?> cls, Object val,
+      ObjectManager om, boolean allowSubclasses) {
     Object result = null;
     Class<?> pkType = pkMemberMetaData.getType();
     if (val instanceof String) {
@@ -135,7 +136,7 @@ public final class EntityUtils {
     } else if (val instanceof Long || val instanceof Integer) {
       result = intOrLongToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
     } else if (val instanceof Key) {
-      result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
+      result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, (Key) val, om, allowSubclasses);
     }
     if (result == null && val != null) {
       // missed a case somewhere
@@ -171,15 +172,39 @@ public final class EntityUtils {
     }
   }
 
+  private static boolean keyKindIsValid(String kind, AbstractMemberMetaData pkMemberMetaData,
+                                        Class<?> cls, Key key, ObjectManager om, boolean allowSubclasses) {
+
+    if (key.getKind().equals(kind)) {
+      return true;
+    }
+
+    if (!allowSubclasses) {
+      return false;
+    }
+
+    MetaDataManager mdm = pkMemberMetaData.getMetaDataManager();
+    // see if the key kind is a subclass of the requested kind
+    String[] subclasses = mdm.getSubclassesForClass(cls.getName(), true);
+    if (subclasses != null) {
+      for (String subclass : subclasses) {
+        AbstractClassMetaData subAcmd = mdm.getMetaDataForClass(subclass, om.getClassLoaderResolver());
+        if (key.getKind().equals(determineKind(subAcmd, om))) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
   // TODO(maxr): This method is generally useful.  Consider making it public
   // and refactoring the error messages so that they aren't specific to
   // object lookups.
   private static Object keyToInternalKey(String kind, Class<?> pkType,
                                          AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
-                                         Object val) {
+                                         Key key, ObjectManager om, boolean allowSubclasses) {
     Object result = null;
-    Key key = (Key) val;
-    if (!key.getKind().equals(kind)) {
+    if (!keyKindIsValid(kind, pkMemberMetaData, cls, key, om, allowSubclasses)) {
       throw new NucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is a Key for kind " + key.getKind()).setFatal();
@@ -225,7 +250,7 @@ public final class EntityUtils {
       }
       result = key.getId();
     } else if (pkType.equals(Key.class)) {
-      result = val;
+      result = key;
     }
     return result;
   }

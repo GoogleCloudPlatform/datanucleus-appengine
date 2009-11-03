@@ -106,7 +106,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         StateManager parentSm = om.findStateManager(parent);
         // need to register the proper parent for this entity
         Key parentKey = EntityUtils.getPrimaryKeyAsKey(om.getApiAdapter(), parentSm);
-        KeyRegistry.getKeyRegistry(om).registerKey(element, parentKey);
+        KeyRegistry.getKeyRegistry(om).registerKey(element, parentKey, ecs.getElementType());
       }
       handler.insertObject(elementSm);
     }

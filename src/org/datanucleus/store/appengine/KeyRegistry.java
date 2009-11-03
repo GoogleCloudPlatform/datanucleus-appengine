@@ -21,6 +21,8 @@ import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ArrayMetaData;
+import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -74,17 +76,30 @@ class KeyRegistry {
           // TODO(maxr): Make sure we're not pulling back unnecessary data
           // when we iterate over the values.
           for (Object element : (Iterable) childValue) {
-            parentKeyMap.put(element, key);
+            addToParentKeyMap(element, key, getExpectedChildType(dependent), true);
           }
         } else {
-          parentKeyMap.put(childValue, key);
+          boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
+          addToParentKeyMap(
+              childValue, key, getExpectedChildType(dependent), checkForPolymorphism);
         }
       }
     }
   }
 
-  void registerKey(Object childValue, Key key) {
-    parentKeyMap.put(childValue, key);  
+  private String getExpectedChildType(AbstractMemberMetaData dependent) {
+    if (dependent.getCollection() != null) {
+      CollectionMetaData cmd = dependent.getCollection();
+      return cmd.getElementType();
+    } else if (dependent.getArray() != null) {
+      ArrayMetaData amd = dependent.getArray();
+      return amd.getElementType();
+    }
+    return dependent.getTypeName();
+  }
+
+  void registerKey(Object childValue, Key key, String expectedType) {
+    addToParentKeyMap(childValue, key, expectedType, false);
   }
 
   Key getRegisteredKey(Object object) {
@@ -93,6 +108,15 @@ class KeyRegistry {
 
   void clear() {
     parentKeyMap.clear();
+  }
+
+  private void addToParentKeyMap(Object childValue, Key key, String expectedType, boolean checkForPolymorphism) {
+    if (checkForPolymorphism && childValue != null && !childValue.getClass().getName().equals(expectedType)) {
+      throw new UnsupportedOperationException(
+          "Received a child of type " + childValue.getClass().getName() + " for a field of type "
+          + expectedType + ".  Unfortunately polymorphism in relationships is not yet supported.");
+    }
+    parentKeyMap.put(childValue, key);
   }
 
   /**

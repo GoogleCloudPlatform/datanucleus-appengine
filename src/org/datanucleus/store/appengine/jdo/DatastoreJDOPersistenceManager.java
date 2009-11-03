@@ -58,7 +58,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
   @Override
   public Object getObjectById(Class cls, Object key) {
     try {
-      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
+      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key, false);
     } catch (NucleusUserException e) {
       String keyStr = key == null ? "" : key.toString();
       String msg = "Exception converting " + keyStr + " to an internal key.";

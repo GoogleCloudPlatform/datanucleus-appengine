@@ -41,7 +41,7 @@ public class DatastoreEntityManager extends EntityManagerImpl {
   @Override
   public Object find(Class cls, Object key) {
     try {
-      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key);
+      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key, false);
     } catch (NucleusUserException e) {
       throw new PersistenceException(e);
     }

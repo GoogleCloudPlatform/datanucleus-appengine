@@ -410,7 +410,7 @@ public class DatastoreManager extends MappedStoreManager {
                                                          StatementClassMapping resultMappings) {
     ObjectManager om = sm.getObjectManager();
     Class<?> cls = om.getClassLoaderResolver().classForName(sm.getClassMetaData().getFullClassName());
-    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj);
+    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj, true);
     // Need to provide this to the field manager in the form of the pk
     // of the type: Key, Long, encoded String, or unencoded String
     return new KeyOnlyFieldManager(internalKey);
