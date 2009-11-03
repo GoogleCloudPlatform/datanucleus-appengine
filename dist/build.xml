@@ -18,7 +18,8 @@
   <property name="compile.tests.dest.dir" value="${orm.tmp.dir}/testclasses"/>
   <property name="orm.lib.dir" value="../lib"/>
   <property name="orm.tmpdist.dir" value="/tmp/testdist"/>
-  <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}/lib"/>
+  <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}"/>
+  <property name="orm.sdk.tmpdist.lib.dir" value="${orm.sdk.tmpdist.dir}/lib"/>
 
   <path id="appengine.plugin.compile.deps">
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.5.jar"/>
@@ -202,6 +203,7 @@
     <zip destfile="${dist.target}">
       <zipfileset prefix="demos/helloorm" dir="../demos/helloorm">
         <include name="build.xml"/>
+        <include name="COPYING"/>
       </zipfileset>
       <zipfileset prefix="demos/helloorm/src" dir="../demos/helloorm/src">
         <!-- Avoids grabbing WEB-INF and META-INF -->
@@ -209,6 +211,8 @@
       </zipfileset>
       <zipfileset prefix="demos/helloorm/war" dir="${orm.tmp.dir}/exploded">
         <include name="**"/>
+        <exclude name="WEB-INF/classes/com/**"/>
+        <exclude name="WEB-INF/lib/*"/>
         <exclude name="META-INF/**"/>
       </zipfileset>
       <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
@@ -252,6 +256,7 @@
       /tmp/testdist/lib/appengine-tools-api.jar
       /tmp/testdist/lib/impl/appengine-local-runtime.jar
       /tmp/testdist/lib/impl/appengine-api.jar
+      /tmp/testdist/lib/impl/appengine-api-labs.jar
       /tmp/testdist/lib/impl/appengine-api-stubs.jar
       /tmp/testdist/lib/shared/geronimo-servlet_2.5_spec-1.2.jar
       /tmp/testdist/lib/shared/geronimo-jsp_2.1_spec-1.0.1.jar
@@ -266,29 +271,33 @@
       /tmp/testdist/lib/agent/appengine-agentimpl.jar
       /tmp/testdist/lib/impl/agent
       /tmp/testdist/lib/impl/agent/appengine-agentruntime.jar
+      /tmp/testdist/lib/user/appengine-api.jar
+      /tmp/testdist/lib/user/appengine-api-labs.jar
+      /tmp/testdist/config/user/ant-macros.xml
      -->
     <delete dir="${orm.tmpdist.dir}"/>
     <mkdir dir="${orm.tmpdist.dir}"/>
 
     <!-- Now setup a directory that contains the sdk jars we need to run the demos -->
-    <mkdir dir="${orm.sdk.tmpdist.dir}"/>
-    <copy todir="${orm.sdk.tmpdist.dir}">
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-tools-api.jar"/>
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmpdist.dir}/impl"/>
-    <copy todir="${orm.sdk.tmpdist.dir}/impl">
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/impl"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/impl">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime.jar"/>
         <include name="appengine-api-stubs.jar"/>
         <include name="appengine-api.jar"/>
+        <include name="appengine-api-labs.jar"/>
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmpdist.dir}/shared"/>
-    <copy todir="${orm.sdk.tmpdist.dir}/shared">
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/shared"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/shared">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-runtime-shared.jar"/>
         <include name="geronimo-servlet*.jar"/>
@@ -296,8 +305,9 @@
         <include name="geronimo-el*.jar"/>
       </fileset>
     </copy>
-    <mkdir dir="${orm.sdk.tmpdist.dir}/shared/jsp"/>
-    <copy todir="${orm.sdk.tmpdist.dir}/shared/jsp">
+
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/shared/jsp"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/shared/jsp">
       <fileset dir="${orm.lib.dir}">
         <include name="repackaged-appengine-jasper-compiler-5.0.28.jar"/>
         <include name="repackaged-appengine-jasper-runtime-5.0.28.jar"/>
@@ -305,39 +315,48 @@
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmpdist.dir}/agent"/>
-    <copy todir="${orm.sdk.tmpdist.dir}/agent">
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/agent"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/agent">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-agent.jar"/>
         <include name="appengine-agentimpl.jar"/>
       </fileset>
     </copy>
 
-    <mkdir dir="${orm.sdk.tmpdist.dir}/impl/agent"/>
-    <copy todir="${orm.sdk.tmpdist.dir}/impl/agent">
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/impl/agent"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/impl/agent">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-agentruntime.jar"/>
       </fileset>
     </copy>
 
-    <!-- directory just needs to exist -->
-    <mkdir dir="${orm.sdk.tmpdist.dir}/tools/jsp"/>
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/user"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/user">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-api.jar"/>
+        <include name="appengine-api-labs.jar"/>
+      </fileset>
+    </copy>
 
+    <!-- directory just needs to exist -->
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/tools/jsp"/>
+
+    <mkdir dir="${orm.sdk.tmpdist.dir}/config/user"/>
+    <copy todir="${orm.sdk.tmpdist.dir}/config/user">
+      <fileset dir=".">
+        <include name="ant-macros.xml"/>
+      </fileset>
+    </copy>
     <unzip src="${dist.target}" dest="${orm.tmpdist.dir}"/>
 
+    <property name="sdk.dir" value="${orm.sdk.tmpdist.lib.dir}/.."/>
     <parallel>
       <daemons>
-        <java classname="com.google.appengine.tools.KickStart"
-              classpath="${orm.sdk.tmpdist.dir}/appengine-tools-api.jar"
-              fork="true" failonerror="true">
-          <arg value="com.google.appengine.tools.development.DevAppServerMain"/>
-          <arg value="--port=8080"/>
-          <arg value="--address=localhost"/>
-          <arg value="${orm.tmpdist.dir}/demos/helloorm/war"/>
-        </java>
+        <ant antfile="${orm.tmpdist.dir}/demos/helloorm/build.xml" target="runserver"
+           dir="${orm.tmpdist.dir}/demos/helloorm/"/>
       </daemons>
       <sequential>
-        <sleep seconds="8"/>
+        <sleep seconds="10"/>
 
         <!-- create a flight -->
         <exec executable="curl" failifexecutionfails="true" failonerror="true">
@@ -385,6 +404,7 @@
        line this gets ignored.  This is what we want. -->
   <property name="appengine.sdk.path" value="../../appengine-java-sdk"/>
   <property name="appengine.sdk.lib.path" value="${appengine.sdk.path}/lib"/>
+  <property name="appengine.sdk.config.path" value="${appengine.sdk.path}/config"/>
 
   <target name="updatesdkjars"
           description="Pull in new sdk jars.  Assumes sdk is located at ../../appengine-java-sdk.  Pass -Dappengine.sdk.path=/path/to/sdk to override.">
@@ -394,6 +414,9 @@
         <fileset dir="${appengine.sdk.lib.path}" includes="appengine-tools-api.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/impl" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/shared" includes = "appengine*.jar"/>
+      </copy>
+      <copy  todir="." verbose="true" overwrite="true">
+        <fileset dir="${appengine.sdk.config.path}/user" includes="ant-macros.xml"/>
       </copy>
   </target>
 </project>
