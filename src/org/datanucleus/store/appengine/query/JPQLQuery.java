@@ -16,7 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine.query;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.query.AbstractJPQLQuery;
 import org.datanucleus.store.query.QueryInvalidParametersException;
 
@@ -128,8 +128,8 @@ public class JPQLQuery extends AbstractJPQLQuery {
   public void setSubclasses(boolean subclasses) {
     // We don't support queries that also return subclasses
     if (subclasses) {
-      throw new NucleusUserException(
-          "The App Engine datastore does not support queries that return subclass entities.").setFatal();
+      throw new FatalNucleusUserException(
+          "The App Engine datastore does not support queries that return subclass entities.");
     }
     super.setSubclasses(subclasses);
   }

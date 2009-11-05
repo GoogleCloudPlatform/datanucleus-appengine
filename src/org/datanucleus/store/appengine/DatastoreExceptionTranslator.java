@@ -22,7 +22,6 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
-import org.datanucleus.exceptions.NucleusUserException;
 
 import java.util.ConcurrentModificationException;
 
@@ -39,7 +38,7 @@ public final class DatastoreExceptionTranslator {
 
   public static NucleusException wrapIllegalArgumentException(IllegalArgumentException e) {
     // Bad input, so mark fatal to let user know not to retry.
-    return new NucleusUserException("Illegal argument", e).setFatal();
+    return new FatalNucleusUserException("Illegal argument", e);
   }
 
   public static NucleusDataStoreException wrapDatastoreFailureException(

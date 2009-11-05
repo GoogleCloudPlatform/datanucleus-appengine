@@ -20,7 +20,6 @@ import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.OMFContext;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
@@ -29,6 +28,7 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.EntityUtils;
+import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
 import org.datanucleus.store.valuegenerator.ValueGenerationBlock;
@@ -131,7 +131,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
    */
   private int longToInt(Long val) {
     if (Long.valueOf(val.intValue()).longValue() != val) {
-      throw new NucleusUserException("id batch size is too big: " + val).setFatal();
+      throw new FatalNucleusUserException("id batch size is too big: " + val);
     }
     return val.intValue();
   }

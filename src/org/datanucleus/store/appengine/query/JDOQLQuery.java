@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine.query;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 
 import java.util.Map;
@@ -102,8 +103,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   public void setSubclasses(boolean subclasses) {
     // We don't support queries that also return subclasses
     if (subclasses) {
-      throw new NucleusUserException(
-          "The App Engine datastore does not support queries that return subclass entities.").setFatal();
+      throw new FatalNucleusUserException(
+          "The App Engine datastore does not support queries that return subclass entities.");
     }
     super.setSubclasses(subclasses);
   }

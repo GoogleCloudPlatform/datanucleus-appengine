@@ -27,7 +27,6 @@ import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
@@ -175,9 +174,8 @@ public class DatastoreFieldManager implements FieldManager {
       return fetchParentStringPKField(fieldNumber);
     } else if (isPKNameField(fieldNumber)) {
       if (!fieldIsOfTypeString(fieldNumber)) {
-        throw new NucleusUserException(
-            "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String")
-            .setFatal();
+        throw new FatalNucleusUserException(
+            "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
       }
       return fetchPKNameField();
     }
@@ -192,9 +190,9 @@ public class DatastoreFieldManager implements FieldManager {
   private String fetchPKNameField() {
     Key key = datastoreEntity.getKey();
     if (key.getName() == null) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Attempting to fetch field with \"" + DatastoreManager.PK_NAME + "\" extension but the "
-          + "entity is identified by an id, not a name.").setFatal();
+          + "entity is identified by an id, not a name.");
     }
     return datastoreEntity.getKey().getName();
   }
@@ -202,9 +200,9 @@ public class DatastoreFieldManager implements FieldManager {
   private long fetchPKIdField() {
     Key key = datastoreEntity.getKey();
     if (key.getName() != null) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Attempting to fetch field with \"" + DatastoreManager.PK_ID + "\" extension but the "
-          + "entity is identified by a name, not an id.").setFatal();
+          + "entity is identified by a name, not an id.");
     }
     return datastoreEntity.getKey().getId();
   }
@@ -225,14 +223,13 @@ public class DatastoreFieldManager implements FieldManager {
     } else {
       if (datastoreEntity.getKey().isComplete() && datastoreEntity.getKey().getName() == null) {
         // This is trouble, probably an incorrect mapping.
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "The primary key for " + getClassMetaData().getFullClassName() + " is an unencoded "
             + "string but the key of the corresponding entity in the datastore does not have a "
             + "name.  You may want to either change the primary key to be an encoded string "
             + "(add the \"" + DatastoreManager.ENCODED_PK + "\" extension), change the "
             + "primary key to be of type " + Key.class.getName() + ", or, if you're certain that "
-            + "this class will never have a parent, change the primary key to be of type Long.")
-            .setFatal();
+            + "this class will never have a parent, change the primary key to be of type Long.");
       }
       return datastoreEntity.getKey().getName();
     }
@@ -460,8 +457,8 @@ public class DatastoreFieldManager implements FieldManager {
 
   void storePKIdField(int fieldNumber, Object value) {
     if (!fieldIsOfTypeLong(fieldNumber)) {
-      throw new NucleusUserException(
-          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long").setFatal();
+      throw new FatalNucleusUserException(
+          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long");
     }
     Key key = null;
     if (value != null) {
@@ -474,8 +471,8 @@ public class DatastoreFieldManager implements FieldManager {
   private void storePKNameField(int fieldNumber, String value) {
     // TODO(maxr) make sure the pk is an encoded string
     if (!fieldIsOfTypeString(fieldNumber)) {
-      throw new NucleusUserException(
-          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String").setFatal();
+      throw new FatalNucleusUserException(
+          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String");
     }
     Key key = null;
     if (value != null) {
@@ -490,9 +487,9 @@ public class DatastoreFieldManager implements FieldManager {
       try {
         key = KeyFactory.stringToKey(value);
       } catch (IllegalArgumentException iae) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Attempt was made to set parent to " + value
-            + " but this cannot be converted into a Key.").setFatal();
+            + " but this cannot be converted into a Key.");
       }
     }
     storeParentKeyPK(key);
@@ -505,7 +502,7 @@ public class DatastoreFieldManager implements FieldManager {
         try {
           key = KeyFactory.stringToKey(value);
         } catch (IllegalArgumentException iae) {
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  The "
               + "primary key field is an encoded String but an unencoded value has been provided. "
               + "If you want to set an unencoded value on this field you can either change its "
@@ -513,16 +510,16 @@ public class DatastoreFieldManager implements FieldManager {
               + "\" extension), change its type to be a " + Key.class.getName() + " and then set "
               + "the Key's name field, or create a separate String field for the name component "
               + "of your primary key and add the \"" + DatastoreManager.PK_NAME
-              + "\" extension.").setFatal();
+              + "\" extension.");
         }
       }
     } else {
       if (value == null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  Cannot have "
             + "a null primary key field if the field is unencoded and of type String.  "
             + "Please provide a value or, if you want the datastore to generate an id on your "
-            + "behalf, change the type of the field to Long.").setFatal();
+            + "behalf, change the type of the field to Long.");
       }
       if (value != null) {
         if (datastoreEntity.getParent() != null) {
@@ -647,20 +644,20 @@ public class DatastoreFieldManager implements FieldManager {
 
   private void storeKeyPK(Key key) {
     if (key != null && !datastoreEntity.getKind().equals(key.getKind())) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Attempt was made to set the primray key of an entity with kind "
-          + datastoreEntity.getKind() + " to a key with kind " + key.getKind()).setFatal();
+          + datastoreEntity.getKind() + " to a key with kind " + key.getKind());
     }
     if (datastoreEntity.getKey().isComplete()) {
       // this modification is only okay if it's actually a no-op
       if (!datastoreEntity.getKey().equals(key)) {
         if (!keyAlreadySet) {
           // Different key provided so the update isn't allowed.
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Attempt was made to modify the primary key of an object of type "
               + getStateManager().getClassMetaData().getFullClassName() + " identified by "
               + "key " + datastoreEntity.getKey() + "  Primary keys are immutable.  "
-              + "(New value: " + key).setFatal();
+              + "(New value: " + key);
         }
       }
     } else if (key != null) {
@@ -668,7 +665,7 @@ public class DatastoreFieldManager implements FieldManager {
       if (key.getParent() != null) {
         if (keyAlreadySet) {
           // can't provide a key and a parent - one or the other
-          throw new NucleusUserException(PARENT_ALREADY_SET).setFatal();
+          throw new FatalNucleusUserException(PARENT_ALREADY_SET);
         }
         parentAlreadySet = true;
       }
@@ -746,7 +743,7 @@ public class DatastoreFieldManager implements FieldManager {
     } else if (fieldIsOfTypeKey(fieldNumber)) {
       Key key = (Key) value;
       if (key != null && key.getParent() != null && parentAlreadySet) {
-        throw new NucleusUserException(PARENT_ALREADY_SET).setFatal();
+        throw new FatalNucleusUserException(PARENT_ALREADY_SET);
       }
       storeKeyPK((Key) value);
     } else {
@@ -854,28 +851,28 @@ public class DatastoreFieldManager implements FieldManager {
 
   private void storeParentKeyPK(Key key) {
     if (key != null && parentAlreadySet) {
-      throw new NucleusUserException(PARENT_ALREADY_SET).setFatal();
+      throw new FatalNucleusUserException(PARENT_ALREADY_SET);
     }
     if (datastoreEntity.getParent() != null) {
       // update is ok if it's a no-op
       if (!datastoreEntity.getParent().equals(key)) {
         if (!parentAlreadySet) {
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Attempt was made to modify the parent of an object of type "
               + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + ".  Parents are immutable (changed value is " + key + ").").setFatal();
+              + "key " + datastoreEntity.getKey() + ".  Parents are immutable (changed value is " + key + ").");
         }
       }
     } else if (key != null) {
       if (!createdWithoutEntity) {
         // Shouldn't even happen.
-        throw new NucleusUserException("You can only rely on this class to properly handle "
+        throw new FatalNucleusUserException("You can only rely on this class to properly handle "
             + "parent pks if you instantiated the class without providing a datastore "
-            + "entity to the constructor.").setFatal();
+            + "entity to the constructor.");
       }
 
       if (keyAlreadySet) {
-        throw new NucleusUserException(PARENT_ALREADY_SET).setFatal();
+        throw new FatalNucleusUserException(PARENT_ALREADY_SET);
       }
 
       // If this field is labeled as a parent PK we need to recreate the Entity, passing

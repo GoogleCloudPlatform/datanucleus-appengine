@@ -25,7 +25,6 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.NullValue;
@@ -205,17 +204,17 @@ class DatastoreRelationFieldManager {
     Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentSM);
 
     if (childKey.getParent() == null) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Detected attempt to establish " + parentKey + " as the "
          + "parent of " + childKey + " but the entity identified by "
          + childKey + " has already been persisted without a parent.  A parent cannot "
-         + "be established or changed once an object has been persisted.").setFatal();
+         + "be established or changed once an object has been persisted.");
     } else if (!parentKey.equals(childKey.getParent())) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Detected attempt to establish " + parentKey + " as the "
          + "parent of " + childKey + " but the entity identified by "
          + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
-         + "be established or changed once an object has been persisted.").setFatal();
+         + "be established or changed once an object has been persisted.");
     }
   }
 
@@ -299,11 +298,11 @@ class DatastoreRelationFieldManager {
     Key parentKey = fieldManager.getEntity().getParent();
     if (parentKey == null) {
       String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
-      throw new NucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
+      throw new FatalNucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
           + "provide a reference to its parent but the entity does not have a parent.  "
           + "Did you perhaps try to establish an instance of " + childClass  +  " as "
           + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
-          + "persisted?").setFatal();
+          + "persisted?");
     }
     ObjectManager om = getStateManager().getObjectManager();
     return mapping.getObject(om, parentKey, NOT_USED);

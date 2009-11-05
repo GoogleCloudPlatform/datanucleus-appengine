@@ -40,7 +40,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
@@ -66,6 +65,7 @@ import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreTable;
 import org.datanucleus.store.appengine.DatastoreTransaction;
 import org.datanucleus.store.appengine.EntityUtils;
+import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
@@ -195,15 +195,15 @@ public class DatastoreQuery implements Serializable {
       long fromInclNo, long toExclNo, Map<String, ?> parameters) {
 
     if (query.getCandidateClass() == null) {
-      throw new NucleusUserException(
-          "Candidate class could not be found: " + query.getSingleStringQuery()).setFatal();
+      throw new FatalNucleusUserException(
+          "Candidate class could not be found: " + query.getSingleStringQuery());
     }
     DatastoreManager storeMgr = getStoreManager();
     ClassLoaderResolver clr = getClassLoaderResolver();
     AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     if (acmd == null) {
-      throw new NucleusUserException("No meta data for " + query.getCandidateClass().getName()
-          + ".  Perhaps you need to run the enhancer on this class?").setFatal();
+      throw new FatalNucleusUserException("No meta data for " + query.getCandidateClass().getName()
+          + ".  Perhaps you need to run the enhancer on this class?");
     }
 
     storeMgr.validateMetaDataForClass(acmd, clr);
@@ -577,7 +577,7 @@ public class DatastoreQuery implements Serializable {
                              final AbstractClassMetaData acmd, DatastoreTable table,
                              final ClassLoaderResolver clr) {
     if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
-      throw new NucleusUserException("Only select and delete statements are supported.").setFatal();
+      throw new FatalNucleusUserException("Only select and delete statements are supported.");
     }
 
     // We don't support in-memory query fulfillment, so if the query contains
@@ -867,6 +867,12 @@ public class DatastoreQuery implements Serializable {
       } else {
         throw newUnsupportedQueryMethodException(invocation);
       }
+    } else if (expr instanceof VariableExpression) {
+      // We usually end up with this when there's a field that can't be resolved
+      VariableExpression varExpr = (VariableExpression) expr;
+      throw new FatalNucleusUserException(
+          "Unexpected expression type while parsing query.  Are you certain that a field named " +
+          varExpr.getId() + " exists on your object?");
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Unexpected expression type while parsing query: "+ expr.getClass().getName());
@@ -902,9 +908,9 @@ public class DatastoreQuery implements Serializable {
       matchesExprObj = matchesExprObj.toString();
     }
     if (!(matchesExprObj instanceof String)) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Prefix matching only supported on strings (received a "
-          + matchesExprObj.getClass().getName() + ").").setFatal();
+          + matchesExprObj.getClass().getName() + ").");
     }
     String matchesExpr = (String) matchesExprObj;
     int wildcardIndex = matchesExpr.indexOf('%');
@@ -1138,17 +1144,17 @@ public class DatastoreQuery implements Serializable {
     if (expr instanceof VariableExpression) {
       // Change the class meta data to the meta-data for the joined class
       if (qd.joinVariableExpression == null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             query.getSingleStringQuery()
             + ": Encountered a variable expression that isn't part of a join.  Maybe you're "
-            + "referencing a non-existent field of an embedded class.").setFatal();
+            + "referencing a non-existent field of an embedded class.");
       }
       if (!((VariableExpression) expr).getId().equals(qd.joinVariableExpression.getId())) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             query.getSingleStringQuery()
             + ": Encountered a variable (" + ((VariableExpression) expr).getId()
             + ") that doesn't match the join variable ("
-            + qd.joinVariableExpression.getId() + ")").setFatal();
+            + qd.joinVariableExpression.getId() + ")");
       }
       Class<?> joinedClass = getSymbolTable().getSymbol(qd.joinVariableExpression.getId()).getValueType();
       return getMetaDataManager().getMetaDataForClass(joinedClass, getClassLoaderResolver());
@@ -1175,8 +1181,8 @@ public class DatastoreQuery implements Serializable {
       // can only do a batch get if no other filters defined
       throwInvalidBatchLookupException();
     } else if (!op.equals(Query.FilterOperator.EQUAL)) {
-      throw new NucleusUserException(
-          "Batch lookup by primary key is only supported with the equality operator.").setFatal();
+      throw new FatalNucleusUserException(
+          "Batch lookup by primary key is only supported with the equality operator.");
     }
     qd.batchGetKeys = Utils.newHashSet();
     for (Object obj : value) {
@@ -1204,8 +1210,8 @@ public class DatastoreQuery implements Serializable {
   }
 
   private void throwInvalidBatchLookupException() {
-    throw new NucleusUserException(
-        "Batch lookup by primary key is only supported if no other filters and no sort orders are defined.").setFatal();
+    throw new FatalNucleusUserException(
+        "Batch lookup by primary key is only supported if no other filters and no sort orders are defined.");
   }
 
   /**
@@ -1243,9 +1249,9 @@ public class DatastoreQuery implements Serializable {
   }
 
   private NucleusException noMetaDataException(String member, String fullClassName) {
-    return new NucleusUserException(
+    return new FatalNucleusUserException(
         "No meta-data for member named " + member + " on class " + fullClassName
-            + ".  Are you sure you provided the correct member name in your query?").setFatal();
+            + ".  Are you sure you provided the correct member name in your query?");
   }
 
   private Object negateNumber(Number negateMe) {
@@ -1291,9 +1297,9 @@ public class DatastoreQuery implements Serializable {
     for (String tuple : tuples.subList(1, tuples.size())) {
       EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
       if (emd == null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             query.getSingleStringQuery() + ": Can only reference properties of a sub-object if "
-            + "the sub-object is embedded.").setFatal();
+            + "the sub-object is embedded.");
       }
       DatastoreTable parentTable =
           getStoreManager().getDatastoreClass(parentFullClassName, getClassLoaderResolver());
@@ -1355,9 +1361,9 @@ public class DatastoreQuery implements Serializable {
         jdoPrimaryKey = sm.provideField(acmd.getPKMemberPositions()[0]);
       }
       if (jdoPrimaryKey == null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             query.getSingleStringQuery() + ": Parameter value " + value
-            + " does not have an id.").setFatal();
+            + " does not have an id.");
       }
     }
     Key valueKey = null;
@@ -1377,13 +1383,13 @@ public class DatastoreQuery implements Serializable {
         // User is asking for parents where child is null.  Unfortunately we
         // don't have a way to fulfill this because one-to-one is actually
         // implemented as a one-to-many
-        throw new NucleusUserException(
-            query.getSingleStringQuery() + ": Cannot query for parents with null children.").setFatal();
+        throw new FatalNucleusUserException(
+            query.getSingleStringQuery() + ": Cannot query for parents with null children.");
       }
 
       if (valueKey.getParent() == null) {
-        throw new NucleusUserException(
-            query.getSingleStringQuery() + ": Key of parameter value does not have a parent.").setFatal();
+        throw new FatalNucleusUserException(
+            query.getSingleStringQuery() + ": Key of parameter value does not have a parent.");
       }
 
       // The field is the child side of an owned one to one.  We can just add
@@ -1391,8 +1397,8 @@ public class DatastoreQuery implements Serializable {
       qd.primaryDatastoreQuery.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else if (valueKey == null) {
-      throw new NucleusUserException(
-          query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.").setFatal();
+      throw new FatalNucleusUserException(
+          query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.");
     } else {
       addParentFilter(op, valueKey, qd.primaryDatastoreQuery);
     }
@@ -1404,9 +1410,9 @@ public class DatastoreQuery implements Serializable {
     String fieldKind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     if (!keyKind.equals(fieldKind)) {
-      throw new NucleusUserException(query.getSingleStringQuery() + ": Field "
+      throw new FatalNucleusUserException(query.getSingleStringQuery() + ": Field "
                                  + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
-                                 + " parameter value contains Key of kind " + keyKind ).setFatal();
+                                 + " parameter value contains Key of kind " + keyKind );
     }
   }
 

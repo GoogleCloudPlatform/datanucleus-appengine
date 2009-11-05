@@ -23,7 +23,6 @@ import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
@@ -140,10 +139,10 @@ public final class EntityUtils {
     }
     if (result == null && val != null) {
       // missed a case somewhere
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Received a request to find an object of type " + cls.getName() + " identified by "
           + val + ".  This is not a valid representation of a primary key for an instance of "
-          + cls.getName() + ".").setFatal();
+          + cls.getName() + ".");
     }
     return result;
   }
@@ -205,14 +204,14 @@ public final class EntityUtils {
                                          Key key, ObjectManager om, boolean allowSubclasses) {
     Object result = null;
     if (!keyKindIsValid(kind, pkMemberMetaData, cls, key, om, allowSubclasses)) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
-          + "identifier is a Key for kind " + key.getKind()).setFatal();
+          + "identifier is a Key for kind " + key.getKind());
     }
     if (!key.isComplete()) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
-          + "identifier is is an incomplete Key").setFatal();
+          + "identifier is is an incomplete Key");
     }
     if (pkType.equals(String.class)) {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
@@ -222,11 +221,11 @@ public final class EntityUtils {
           // By definition, classes with unencoded string pks
           // do not have parents.  Since this key has a parent
           // this isn't valid input.
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the Key that was provided as an argument has a "
-              + "parent.").setFatal();
+              + "parent.");
         }
         result = key.getName();
       }
@@ -235,18 +234,18 @@ public final class EntityUtils {
         // By definition, classes with unencoded string pks
         // do not have parents.  Since this key has a parent
         // this isn't valid input.
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the Key that was provided as an argument has a "
-            + "parent.").setFatal();
+            + "parent.");
       }
       if (key.getName() != null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long.  However, the encoded string "
             + "representation of the Key that was provided as an argument has its name field "
-            + "set, not its id.  This makes it an invalid key for this class.").setFatal();
+            + "set, not its id.  This makes it an invalid key for this class.");
       }
       result = key.getId();
     } else if (pkType.equals(Key.class)) {
@@ -263,10 +262,10 @@ public final class EntityUtils {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
         result = KeyFactory.keyToString(keyWithId);
       } else {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is an unencoded String.  However, the provided value is of type "
-            + val.getClass().getName() + ".").setFatal();
+            + val.getClass().getName() + ".");
       }
     } else if (pkType.equals(Long.class)) {
       result = keyWithId.getId();
@@ -283,27 +282,27 @@ public final class EntityUtils {
     try {
       decodedKey = KeyFactory.stringToKey((String) val);
       if (!decodedKey.isComplete()) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of kind " + kind + " but the provided "
             + "identifier is the String representation of an incomplete Key for kind "
-            + decodedKey.getKind()).setFatal();
+            + decodedKey.getKind());
       }
     } catch (IllegalArgumentException iae) {
       if (pkType.equals(Long.class)) {
         // We were given an unencoded String and the pk type is Long.
         // There's no way that can be valid
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + " identified by the String "
-            + val + ", but the primary key of " + cls.getName() + " is of type Long.").setFatal();
+            + val + ", but the primary key of " + cls.getName() + " is of type Long.");
       }
       // this is ok, it just means we were only given the name
       decodedKey = KeyFactory.createKey(kind, (String) val);
     }
     if (!decodedKey.getKind().equals(kind)) {
-      throw new NucleusUserException(
+      throw new FatalNucleusUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is the String representation of a Key for kind "
-          + decodedKey.getKind()).setFatal();
+          + decodedKey.getKind());
     }
     if (pkType.equals(String.class)) {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
@@ -311,40 +310,40 @@ public final class EntityUtils {
         result = KeyFactory.keyToString(decodedKey);
       } else {
         if (decodedKey.getParent() != null) {
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the encoded string representation of the Key that "
-              + "was provided as an argument has a parent.").setFatal();
+              + "was provided as an argument has a parent.");
         }
         // Pk is an unencoded string so need to pass on just the name
         // component.  However, we need to make sure the provided key actually
         // contains a name component.
         if (decodedKey.getName() == null) {
-          throw new NucleusUserException(
+          throw new FatalNucleusUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String.  However, the encoded string "
               + "representation of the Key that was provided as an argument has its id field "
-              + "set, not its name.  This makes it an invalid key for this class.").setFatal();
+              + "set, not its name.  This makes it an invalid key for this class.");
         }
         result = decodedKey.getName();
       }
     } else if (pkType.equals(Long.class)) {
       if (decodedKey.getParent() != null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the encoded string representation of the Key that "
-            + "was provided as an argument has a parent.").setFatal();
+            + "was provided as an argument has a parent.");
       }
 
       if (decodedKey.getName() != null) {
-        throw new NucleusUserException(
+        throw new FatalNucleusUserException(
             "Received a request to find an object of type " + cls.getName() + " identified by the "
             + "encoded String representation of "
             + decodedKey + ", but the primary key of " + cls.getName() + " is of type Long and the "
             + "encoded String has its name component set.  It must have its id component set "
-            + "instead in order to be legal.").setFatal();
+            + "instead in order to be legal.");
       }
       // pk is a long so just pass on the id component
       result = decodedKey.getId();

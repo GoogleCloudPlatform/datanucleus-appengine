@@ -184,11 +184,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertQueryUnsupportedByDatastore(baseQuery + "origin != 2 && dest != 4");
 
     // can't have 'or' on multiple properties
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title == 'yar' || author == null");
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "isbn == 4 && (title == 'yar' || author == 'yam')");
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + ":p1.contains(title) || author == 'yam'");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin == 'yar' || dest == null");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin == 4 && (dest == 'yar' || name == 'yam')");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + ":p1.contains(origin) || name == 'yam'");
     // can only check equality
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "title > 5 || title < 2");
+    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin > 5 || origin < 2");
   }
 
   private void assertQueryRequiresUnsupportedDatastoreFeature(String query) {

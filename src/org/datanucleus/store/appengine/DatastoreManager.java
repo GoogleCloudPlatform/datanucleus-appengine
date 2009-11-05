@@ -25,8 +25,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
-import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.JPAAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -270,7 +268,7 @@ public class DatastoreManager extends MappedStoreManager {
         .getAttributeValueForExtension("org.datanucleus.store_identifierfactory",
             "name", idFactoryName, "class-name");
     if (idFactoryClassName == null) {
-      throw new NucleusUserException(idFactoryName).setFatal();
+      throw new FatalNucleusUserException(idFactoryName);
     }
     Map<String, String> props = new HashMap<String, String>();
     addStringPropIfNotNull(conf, props, "datanucleus.mapping.Catalog", "DefaultCatalog");
@@ -288,12 +286,12 @@ public class DatastoreManager extends MappedStoreManager {
       identifierFactory = (IdentifierFactory) ClassUtils.newInstance(cls, argTypes, args);
     }
     catch (ClassNotFoundException cnfe) {
-      throw new NucleusUserException(
-          idFactoryName + ":" + idFactoryClassName, cnfe).setFatal();
+      throw new FatalNucleusUserException(
+          idFactoryName + ":" + idFactoryClassName, cnfe);
     }
     catch (Exception e) {
       NucleusLogger.PERSISTENCE.error(e);
-      throw new NucleusException(idFactoryClassName, e).setFatal();
+      throw new FatalNucleusUserException(idFactoryClassName, e);
     }
   }
 
@@ -675,11 +673,10 @@ public class DatastoreManager extends MappedStoreManager {
     return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
   }
 
-  static final class UnsupportedInheritanceStrategyException extends NucleusUserException {
+  static final class UnsupportedInheritanceStrategyException extends FatalNucleusUserException {
     UnsupportedInheritanceStrategyException(InheritanceStrategy strat, String legalStrategy) {
       super("App Engine does not support Inheritance Strategy " + strat
           + ".  " + legalStrategy);
-      setFatal();
     }
   }
 }

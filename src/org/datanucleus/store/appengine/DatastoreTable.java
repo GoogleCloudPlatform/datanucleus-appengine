@@ -1040,10 +1040,10 @@ public class DatastoreTable implements DatastoreClass {
             ColumnMetaData colmd = correspondentColumnsMapping.getColumnMetaDataByIdentifier(
                     refDatastoreMapping.getDatastoreField().getIdentifier());
             if (colmd == null) {
-              throw new NucleusUserException(
+              throw new FatalNucleusUserException(
                   String.format("Primary Key column \"%s\" for table \"%s\" is not mapped.",
                   refDatastoreMapping.getDatastoreField().getIdentifier(),
-                  toString())).setFatal();
+                  toString()));
             }
 
             DatastoreIdentifier identifier;
