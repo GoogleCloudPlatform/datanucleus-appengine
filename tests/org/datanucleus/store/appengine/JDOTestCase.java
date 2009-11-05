@@ -146,6 +146,10 @@ public class JDOTestCase extends TestCase {
         mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
   }
 
+  protected String kindForObject(Object obj) {
+    return kindForClass(obj.getClass());
+  }
+  
   protected ObjectManager getObjectManager() {
     return ((JDOPersistenceManager)pm).getObjectManager();
   }

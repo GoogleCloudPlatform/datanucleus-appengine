@@ -382,14 +382,6 @@ public class DatastoreManager extends MappedStoreManager {
     return sd;
   }
 
-  final class UnsupportedInheritanceStrategyException extends NucleusUserException {
-    UnsupportedInheritanceStrategyException(InheritanceStrategy strat, String legalStrategy) {
-      super("App Engine does not support Inheritance Strategy " + strat
-          + ".  " + legalStrategy);
-      setFatal();
-    }
-  }
-
   @Override
   public Object getResultValueAtPosition(Object key, JavaTypeMapping mapping, int position) {
     // this is the key, and we're only using this for keys, so just return it.
@@ -681,5 +673,13 @@ public class DatastoreManager extends MappedStoreManager {
 
   public static boolean isJPA(OMFContext omfContext) {
     return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
+  }
+
+  static final class UnsupportedInheritanceStrategyException extends NucleusUserException {
+    UnsupportedInheritanceStrategyException(InheritanceStrategy strat, String legalStrategy) {
+      super("App Engine does not support Inheritance Strategy " + strat
+          + ".  " + legalStrategy);
+      setFatal();
+    }
   }
 }

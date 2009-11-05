@@ -50,8 +50,6 @@ import javax.jdo.Query;
  *
  * @author Max Ross <maxr@google.com>
  */
-// TODO(maxr): Tests where there are relationships on the parent/child/grandchild
-// TODO(maxr): Tests where there is inheritance in the embedded classes
 // TODO(maxr): non-transactional tests
 public class JDOSubclassTest extends JDOTestCase {
 

@@ -140,4 +140,7 @@ public class JPATestCase extends TestCase {
     return ((EntityManagerImpl)em).getObjectManager();
   }
 
+  protected String kindForObject(Object obj) {
+    return kindForClass(obj.getClass());
+  }  
 }
