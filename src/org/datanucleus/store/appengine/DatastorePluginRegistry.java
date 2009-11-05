@@ -57,7 +57,7 @@ final class DatastorePluginRegistry implements PluginRegistry {
           if (cfg.getAttribute("name").equals("JPA")) {
             // override with our own callback handler
             // See DatastoreJPACallbackHandler for the reason why we do this.
-            cfg.putAttribute("class-name", DatastoreJPACallbackHandler.class.getName());
+            threadsafePutAttribute(cfg, "class-name", DatastoreJPACallbackHandler.class.getName());
             replaced = true;
           }
         }
@@ -75,7 +75,7 @@ final class DatastorePluginRegistry implements PluginRegistry {
           if (cfg.getAttribute("name").equals("JDO")) {
             // override with our own metadata manager
             // See DatastoreMetaDataManager for the reason why we do this.
-            cfg.putAttribute("class", DatastoreJDOMetaDataManager.class.getName());
+            threadsafePutAttribute(cfg, "class", DatastoreJDOMetaDataManager.class.getName());
             replaced = true;
           }
         }
@@ -86,6 +86,22 @@ final class DatastorePluginRegistry implements PluginRegistry {
       }
     }
     return ep;
+  }
+
+  private void threadsafePutAttribute(ConfigurationElement cfg, String attrName, String val) {
+    // we make a fixed set of changes and we're the only ones making them so
+    // it's ok for this check to be outside of the synchronized block
+    if (!val.equals(cfg.getAttribute(attrName))) {
+      // These config elements are typically instantiated and initialized when
+      // the pmf/emf is initialized so they were never designed to be threadsafe.
+      // However, in order to inject our own config attributes we need to modify
+      // them during pm/em creation.  To make this modification safe we synchronize
+      // on the config element.  This should be sufficient since we're the only
+      // one mutating them after system startup.
+      synchronized (cfg) {
+        cfg.putAttribute(attrName, val);
+      }
+    }
   }
 
   public ExtensionPoint[] getExtensionPoints() {
