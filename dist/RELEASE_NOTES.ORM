@@ -1,6 +1,22 @@
 Release Notes for the Google App Engine ORM, a DataNucleus plugin that provides
 access to the Google App Engine Datastore via JDO and JPA.
 
+VERSION 1.0.4 RC2
+- Explicitly disallow multiple relationships of the same type
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=154
+
+- Occasional ArrayOutOfBoundsIndexException
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=156
+
+- Support inheritance
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=25
+
+- Support != queries
+
+- Support IN queries
+
+- Support datastore cursors
+
 VERSION 1.0.4 RC1
 - Inheritance is working for simple fields and embedded fields.  Relationships
 in base classes are completely untested and probably do not work.

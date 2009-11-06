@@ -4,7 +4,7 @@ Created-By: 1.5.0_20-141 (Apple Inc.)
 Bundle-ManifestVersion: 2
 Bundle-Name: DataNucleus AppEngine
 Bundle-SymbolicName: org.datanucleus.store.appengine;singleton:=true
-Bundle-Version: 1.0.4.RC1
+Bundle-Version: 1.0.4.RC2
 Bundle-Vendor: Google
 Require-Bundle: org.datanucleus;bundle-version="[1.0.4, 1.1.5.final)"
 Import-Package: javax.jdo, javax.jdo.annotations, javax.jdo.datastore,
