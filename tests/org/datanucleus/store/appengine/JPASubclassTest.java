@@ -51,8 +51,8 @@ public class JPASubclassTest extends JPATestCase {
 
   public void testUnsupportedStrategies_GAE() {
     // Child classes need to go first due to datanuc runtime enhancer weirdness
-    assertUnsupportedByGAE(new JoinedChild());
-    assertUnsupportedByGAE(new SingleTableChild());
+    assertUnsupportedByGAE(new JoinedChild(), "JOINED");
+    assertUnsupportedByGAE(new SingleTableChild(), "SINGLE_TABLE");
   }
 
   public void testGrandchildren() throws Exception {
@@ -286,7 +286,7 @@ public class JPASubclassTest extends JPATestCase {
     assertEmbeddedParentContents(child);
   }
 
-  private void assertUnsupportedByGAE(Object obj) {
+  private void assertUnsupportedByGAE(Object obj, String msgMustContain) {
     switchDatasource(EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed);
     beginTxn();
     em.persist(obj);
@@ -294,8 +294,9 @@ public class JPASubclassTest extends JPATestCase {
       commitTxn();
       fail("expected exception");
     } catch (PersistenceException e) {
-      assertTrue(e.getCause() instanceof DatastoreManager.UnsupportedInheritanceStrategyException);
       // good
+      assertTrue(e.getCause() instanceof DatastoreManager.UnsupportedInheritanceStrategyException);
+      assertTrue(e.getCause().getMessage().contains(msgMustContain));
     }
     rollbackTxn();
   }

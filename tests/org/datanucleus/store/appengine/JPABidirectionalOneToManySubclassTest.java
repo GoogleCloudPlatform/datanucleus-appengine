@@ -357,4 +357,24 @@ public class JPABidirectionalOneToManySubclassTest extends JPATestCase {
       // good
     }
   }
+
+  public void testWrongChildType_Update() {
+    Example1.A parent = new Example1.A();
+    parent.setAString("a string");
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+    beginTxn();
+    parent = em.find(parent.getClass(), parent.getId());
+    Example1.Y child = new Example1.Y();
+    child.setXString("x string");
+    parent.getChildren().add(child);
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
 }

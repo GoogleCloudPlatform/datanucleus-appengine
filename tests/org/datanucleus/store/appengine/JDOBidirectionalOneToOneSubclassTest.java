@@ -277,4 +277,25 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     }
     rollbackTxn();
   }
+
+  public void testWrongChildType_Update() {
+    Example1.A parent = new Example1.A();
+    parent.setAString("a string");
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+
+    beginTxn();
+    parent = pm.getObjectById(parent.getClass(), parent.getId());
+    Example1.Y child = new Example1.Y();
+    child.setXString("x string");
+    parent.setChild(child);
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
 }

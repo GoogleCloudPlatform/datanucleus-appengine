@@ -212,4 +212,40 @@ public class JPAUnidirectionalOneToManySubclassTest extends JPATestCase {
     assertEquals(0, countForClass(parent.getClass()));
     assertEquals(0, countForClass(subChild.getClass()));
   }
+
+  public void testWrongChildType() {
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    SubChild child = new SubChild();
+    parent.getSuperParentSuperChildren().add(child);
+
+    beginTxn();
+    em.persist(parent);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
+
+  public void testWrongChildType_Update() {
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+
+    beginTxn();
+    parent = em.find(parent.getClass(), parent.getId());
+    SubChild child = new SubChild();
+    parent.getSuperParentSuperChildren().add(child);
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
 }

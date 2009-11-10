@@ -208,4 +208,41 @@ public class JPAUnidirectionalOneToOneSubclassTest extends JPATestCase {
     assertEquals(0, countForClass(parent.getClass()));
     assertEquals(0, countForClass(subChild.getClass()));
   }
+
+  public void testWrongChildType() throws IllegalAccessException, InstantiationException {
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    // working around more runtime enhancer madness
+    Object child = SubChild.class.newInstance();
+    parent.setSuperParentSuperChild((SuperChild) child);
+
+    beginTxn();
+    em.persist(parent);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
+
+  public void testWrongChildType_Update() throws IllegalAccessException, InstantiationException {
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    beginTxn();
+    em.persist(parent);
+    commitTxn();
+    beginTxn();
+    parent = em.find(parent.getClass(), parent.getId());
+    // working around more runtime enhancer madness
+    Object child = SubChild.class.newInstance();
+    parent.setSuperParentSuperChild((SuperChild) child);
+
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
 }

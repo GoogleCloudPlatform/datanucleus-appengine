@@ -65,13 +65,13 @@ public class JPQLCursorTest extends JPATestCase {
     books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
     assertEquals(e3.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
-    assertNull(JPACursorHelper.getCursor(books));
+    assertNotNull(JPACursorHelper.getCursor(books));
 
     q.setHint(JPACursorHelper.CURSOR_HINT, c.toWebSafeString());
     books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
     assertEquals(e3.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
-    assertNull(JPACursorHelper.getCursor(books));
+    assertNotNull(JPACursorHelper.getCursor(books));
 
     commitTxn();
   }

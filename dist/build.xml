@@ -20,6 +20,7 @@
   <property name="orm.tmpdist.dir" value="/tmp/testdist"/>
   <property name="orm.sdk.tmpdist.dir" value="${orm.tmpdist.dir}"/>
   <property name="orm.sdk.tmpdist.lib.dir" value="${orm.sdk.tmpdist.dir}/lib"/>
+  <property name="orm.testresults.dir" value="/tmp/testresults"/>
 
   <path id="appengine.plugin.compile.deps">
     <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.5.jar"/>
@@ -101,8 +102,8 @@
   </target>
 
   <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">
-    <delete dir="testresults"/>
-    <mkdir dir="testresults"/>
+    <delete dir="${orm.testresults.dir}"/>
+    <mkdir dir="${orm.testresults.dir}"/>
     <junit printsummary="yes" fork="yes" haltonerror="yes" haltonfailure="yes">
       <classpath>
         <path refid="appengine.plugin.test.compile.deps"/>
@@ -111,7 +112,7 @@
       <jvmarg value="-Dappengine.orm.disable.duplicate.pmf.exception"/>
       <jvmarg value="-Dappengine.orm.disable.duplicate.emf.exception"/>
       <formatter type="plain"/>
-      <batchtest fork="yes" todir="testresults">
+      <batchtest fork="yes" todir="${orm.testresults.dir}">
         <fileset dir="${plugin.test.dir}">
           <include name="**/*Test.java"/>
           <exclude name="**/AllTests.java"/>

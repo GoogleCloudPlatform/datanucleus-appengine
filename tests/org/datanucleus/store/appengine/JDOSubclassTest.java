@@ -64,10 +64,10 @@ public class JDOSubclassTest extends JDOTestCase {
     testChild(new CompleteTableParentNoChildStrategy.Child());
     testChild(new SubclassTableParentWithCompleteTableChild.Child());
     testChild(new SubclassTableParentWithNewTableChild.Child());
+    testChild(new NewTableParentWithCompleteTableChild.Child());
   }
 
   public void testUnsupportedStrategies_GAE() {
-    assertUnsupportedByGAE(new NewTableParentWithCompleteTableChild.Child());
     assertUnsupportedByGAE(new NewTableParentWithNewTableChild.Child());
     assertUnsupportedByGAE(new CompleteTableParentWithNewTableChild.Child());
     assertUnsupportedByGAE(new SubclassTableParentWithNewTableChild.Child.Grandchild());

@@ -212,4 +212,40 @@ public class JDOUnidirectionalOneToManySubclassTest extends JDOTestCase {
     assertEquals(0, countForClass(parent.getClass()));
     assertEquals(0, countForClass(subChild.getClass()));
   }
+
+  public void testWrongChildType() {
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    SubChild child = new SubChild();
+    parent.getSuperParentSuperChildren().add(child);
+
+    beginTxn();
+    try {
+      pm.makePersistent(parent);
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+    rollbackTxn();
+  }
+
+  public void testWrongChildType_Update() throws IllegalAccessException, InstantiationException {
+    SubChild child = SubChild.class.newInstance();
+    SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
+    parent.setSuperParentString("a string");
+    beginTxn();
+    pm.makePersistent(parent);
+    commitTxn();
+    beginTxn();
+    parent = pm.getObjectById(parent.getClass(), parent.getId());
+
+    parent.getSuperParentSuperChildren().add(child);
+    try {
+      commitTxn();
+      fail("expected exception");
+    } catch (UnsupportedOperationException uoe) {
+      // good
+    }
+  }
+
 }

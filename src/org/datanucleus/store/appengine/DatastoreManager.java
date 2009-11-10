@@ -71,6 +71,9 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+
+import javax.persistence.InheritanceType;
 
 
 /**
@@ -134,6 +137,16 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public static final String SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY =
       EXTENSION_PREFIX + "slow-but-more-accurate-jpql-delete-query";
+
+  private static final Map<InheritanceStrategy, String> INHERITANCE_STRATEGY_MAP =
+      new ConcurrentHashMap<InheritanceStrategy, String>();
+
+  static {
+    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.SUBCLASS_TABLE, "MappedSuperclass");
+    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.COMPLETE_TABLE, InheritanceType.TABLE_PER_CLASS.name());
+    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.NEW_TABLE, InheritanceType.JOINED.name());
+    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.SUPERCLASS_TABLE, InheritanceType.SINGLE_TABLE.name());
+  }
 
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
@@ -328,29 +341,33 @@ public class DatastoreManager extends MappedStoreManager {
   protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
 
+    // The overarching rule for supported inheritance strategies is that we
+    // don't split the state of an object across multiple entities.
     if (strat == InheritanceStrategy.SUBCLASS_TABLE) {
       // Table mapped into the table(s) of subclass(es)
       // Just add the SchemaData entry with no table - managed by subclass
       return buildStoreDataWithNoTable(cmd);
-    } else if (strat == InheritanceStrategy.COMPLETE_TABLE && cmd.isAbstractPersistenceCapable()) {
-      // Abstract class with "complete-table" so gets no table
-      return buildStoreDataWithNoTable(cmd);
-    } else if (strat == InheritanceStrategy.COMPLETE_TABLE && (
-        cmd.getSuperAbstractClassMetaData() == null ||
-        cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.COMPLETE_TABLE ||
-        cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
+    } else if (strat == InheritanceStrategy.COMPLETE_TABLE) {
+      if (cmd.isAbstractPersistenceCapable()) {
+        // Abstract class with "complete-table" so gets no table
+        return buildStoreDataWithNoTable(cmd);
+      }
       return buildStoreData(cmd, clr);
     } else if (strat == InheritanceStrategy.NEW_TABLE &&
                (cmd.getSuperAbstractClassMetaData() == null ||
                 cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
+      // New Table means you store your fields and your fields only (no fields
+      // from superclasses).  Thiis only ok if you don't have a persistent
+      // superclass or your persistent superclass has delegated responsibility
+      // for storing its fields to you.
       return buildStoreData(cmd, clr);
     }
     String unsupportedMsg = buildUnsupportedInheritanceStrategyMessage(cmd);
-    throw new UnsupportedInheritanceStrategyException(strat, unsupportedMsg);
+    throw new UnsupportedInheritanceStrategyException(unsupportedMsg);
   }
 
   private static final String BAD_INHERITANCE_MESSAGE =
-      "Inheritance strategy %s was provided for %s but is not supported in this context.  "
+      "Found inheritance strategy '%s' on %s.  This strategy is not supported in this context.  "
       + "Please see the documentation for information on using inheritance with %s: %s";
 
   private static final String JPA_INHERITANCE_DOCS_URL = "todo";
@@ -359,9 +376,16 @@ public class DatastoreManager extends MappedStoreManager {
   private String buildUnsupportedInheritanceStrategyMessage(ClassMetaData cmd) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
     if (isJPA(omfContext)) {
-      return String.format(BAD_INHERITANCE_MESSAGE, strat, cmd.getFullClassName(), "JPA", JPA_INHERITANCE_DOCS_URL);
+      // make sure our exception msg has the jpa inheritance identifiers in it
+      String jpaInheritanceType = getJPAInheritanceType(strat);
+      return String.format(BAD_INHERITANCE_MESSAGE, jpaInheritanceType, cmd.getFullClassName(), "JPA", JPA_INHERITANCE_DOCS_URL);
     }
+    // internal inheritance identifiers are jdo so no need to do any translation
     return String.format(BAD_INHERITANCE_MESSAGE, strat, cmd.getFullClassName(), "JDO", JDO_INHERITANCE_DOCS_URL);
+  }
+
+  private String getJPAInheritanceType(InheritanceStrategy strat) {
+    return INHERITANCE_STRATEGY_MAP.get(strat); 
   }
 
   private StoreData buildStoreDataWithNoTable(ClassMetaData cmd) {
@@ -674,9 +698,8 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   static final class UnsupportedInheritanceStrategyException extends FatalNucleusUserException {
-    UnsupportedInheritanceStrategyException(InheritanceStrategy strat, String legalStrategy) {
-      super("App Engine does not support Inheritance Strategy " + strat
-          + ".  " + legalStrategy);
+    UnsupportedInheritanceStrategyException(String msg) {
+      super(msg);
     }
   }
 }

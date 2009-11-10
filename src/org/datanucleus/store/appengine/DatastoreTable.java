@@ -422,18 +422,25 @@ public class DatastoreTable implements DatastoreClass {
       }
     }
 
-    if (parentMappingField == null) {
-      Class curClass = clr.classForName(cmd.getFullClassName()).getSuperclass();
-      // see if any of our superclasses have a parentMappingField
-      while (!Object.class.equals(curClass)) {
-        DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
-        // sometimes the parent table is not yet initialized
-        if (dt != null && dt.parentMappingField != null) {
-          parentMappingField = dt.parentMappingField;
-          break;
+    Class curClass = clr.classForName(cmd.getFullClassName()).getSuperclass();
+    // see if any of our superclasses have a parentMappingField
+    while (!Object.class.equals(curClass)) {
+      DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
+      // sometimes the parent table is not yet initialized
+      if (dt != null) {
+        // inherit the parentMappingField
+        if (parentMappingField == null) {
+          if (dt.parentMappingField != null) {
+            parentMappingField = dt.parentMappingField;
+            break;
+          }
         }
-        curClass = curClass.getSuperclass();
+        // inherit any external fk mappings
+        if (!dt.externalFkMappings.isEmpty()) {
+          externalFkMappings.putAll(dt.externalFkMappings);
+        }
       }
+      curClass = curClass.getSuperclass();
     }
   }
 

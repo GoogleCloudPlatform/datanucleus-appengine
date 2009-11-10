@@ -71,14 +71,14 @@ public class JDOQLCursorTest extends JDOTestCase {
     flights = (List<Flight>) q.execute();
     assertEquals(1, flights.size());
     assertEquals(e3.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
-    assertNull(JDOCursorHelper.getCursor(flights));
+    assertNotNull(JDOCursorHelper.getCursor(flights));
 
     extensionMap.put(JDOCursorHelper.CURSOR_EXTENSION, c.toWebSafeString());
     q.setExtensions(extensionMap);
     flights = (List<Flight>) q.execute();
     assertEquals(1, flights.size());
     assertEquals(e3.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
-    assertNull(JDOCursorHelper.getCursor(flights));
+    assertNotNull(JDOCursorHelper.getCursor(flights));
     commitTxn();
   }
 }
