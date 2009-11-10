@@ -20,7 +20,6 @@ package org.datanucleus.store.appengine;
 import com.google.apphosting.api.ApiProxy;
 
 import java.util.Set;
-import java.util.concurrent.Future;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -38,12 +37,6 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
       String methodName, byte[] request) throws ApiProxy.ApiProxyException {
     policy.intercept(methodName);
     return inner.makeSyncCall(environment, packageName, methodName, request);
-  }
-
-  public Future makeAsyncCall(ApiProxy.Environment environment, String packageName,
-      String methodName, byte[] request, ApiProxy.ApiConfig apiConfig) {
-    policy.intercept(methodName);
-    return inner.makeAsyncCall(environment, packageName, methodName, request, apiConfig);
   }
 
   public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {

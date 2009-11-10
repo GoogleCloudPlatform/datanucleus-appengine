@@ -17,12 +17,10 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.tools.development.ApiProxyLocalImpl;
-import com.google.appengine.tools.development.LocalEnvironment;
 import com.google.apphosting.api.ApiProxy;
 
 import java.io.File;
 import java.util.Map;
-import java.util.concurrent.Future;
 
 /**
  * {@link DatastoreDelegate} implementation that integrates with the stub
@@ -32,7 +30,7 @@ import java.util.concurrent.Future;
  */
 class LocalDatastoreDelegate implements DatastoreDelegate {
 
-  private static final LocalEnvironment ENV = new LocalEnvironment(null) {
+  private static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
     public String getAppId() {
       return "test";
     }
@@ -93,17 +91,12 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
     lds.clearProfiles();
   }
 
-  public byte[] makeSyncCall(LocalEnvironment environment, String packageName,
+  public byte[] makeSyncCall(ApiProxy.Environment environment, String packageName,
       String methodName, byte[] request) throws ApiProxy.ApiProxyException {
     return localProxy.makeSyncCall(environment, packageName, methodName, request);
   }
 
-  public Future<byte[]> makeAsyncCall(LocalEnvironment environment, String s, String s1, byte[] bytes,
-                              ApiProxy.ApiConfig apiConfig) {
-    return localProxy.makeAsyncCall(environment, s, s1, bytes, apiConfig);
-  }
-
-  public void log(LocalEnvironment environment, ApiProxy.LogRecord logRecord) {
+  public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
     localProxy.log(environment, logRecord);
   }
 }

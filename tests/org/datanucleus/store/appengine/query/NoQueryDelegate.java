@@ -16,10 +16,7 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
-import com.google.appengine.tools.development.LocalEnvironment;
 import com.google.apphosting.api.ApiProxy;
-
-import java.util.concurrent.Future;
 
 /**
  * A delegate that throws a {@link RuntimeException} whenever RunQuery is
@@ -27,9 +24,9 @@ import java.util.concurrent.Future;
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-public class NoQueryDelegate implements ApiProxy.Delegate<LocalEnvironment> {
+public class NoQueryDelegate implements ApiProxy.Delegate {
   private final ApiProxy.Delegate original = ApiProxy.getDelegate();
-  public byte[] makeSyncCall(LocalEnvironment environment, String pkg, String method, byte[] bytes)
+  public byte[] makeSyncCall(ApiProxy.Environment environment, String pkg, String method, byte[] bytes)
       throws ApiProxy.ApiProxyException {
     if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
       throw new RuntimeException("boom");
@@ -37,15 +34,7 @@ public class NoQueryDelegate implements ApiProxy.Delegate<LocalEnvironment> {
     return original.makeSyncCall(environment, pkg, method, bytes);
   }
 
-  public Future<byte[]> makeAsyncCall(LocalEnvironment localEnvironment, String pkg, String method,
-                                      byte[] bytes, ApiProxy.ApiConfig apiConfig) {
-    if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
-      throw new RuntimeException("boom");
-    }
-    return original.makeAsyncCall(localEnvironment, pkg, method, bytes, apiConfig);
-  }
-
-  public void log(LocalEnvironment environment, ApiProxy.LogRecord logRecord) {
+  public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
     original.log(environment, logRecord);
   }
 

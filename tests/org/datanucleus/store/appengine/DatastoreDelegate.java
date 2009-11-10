@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.tools.development.LocalEnvironment;
 import com.google.apphosting.api.ApiProxy;
 
 /**
@@ -27,7 +26,7 @@ import com.google.apphosting.api.ApiProxy;
  *
  * @author Max Ross <maxr@google.com>
  */
-interface DatastoreDelegate extends ApiProxy.Delegate<LocalEnvironment> {
+interface DatastoreDelegate extends ApiProxy.Delegate {
 
   void setUp() throws Exception;
 
