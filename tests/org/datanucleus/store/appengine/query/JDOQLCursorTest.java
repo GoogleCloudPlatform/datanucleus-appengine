@@ -17,13 +17,18 @@ package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.QueryResultIterator;
 
 import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.store.appengine.Utils;
+import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -80,5 +85,102 @@ public class JDOQLCursorTest extends JDOTestCase {
     assertEquals(e3.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
     assertNotNull(JDOCursorHelper.getCursor(flights));
     commitTxn();
+  }
+  
+  public void testCursorEquality() {
+    List<Key> keys = Utils.newArrayList();
+    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
+    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
+    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
+
+    com.google.appengine.api.datastore.Query query = new com.google.appengine.api.datastore.Query("Book");
+    QueryResultIterator entityIter = ldth.ds.prepare(query).asQueryResultIterator();
+    List<Cursor> lowLevelCursors = Utils.newArrayList();
+    lowLevelCursors.add(entityIter.getCursor());
+    entityIter.next();
+    lowLevelCursors.add(entityIter.getCursor());
+    entityIter.next();
+    lowLevelCursors.add(entityIter.getCursor());
+    entityIter.next();
+    lowLevelCursors.add(entityIter.getCursor());
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + Book.class.getName());
+    Iterator<Book> bookIter = asIterator(q);
+    List<Cursor> ormCursors = Utils.newArrayList();
+    ormCursors.add(JDOCursorHelper.getCursor(bookIter));
+    bookIter.next();
+    ormCursors.add(JDOCursorHelper.getCursor(bookIter));
+    bookIter.next();
+    ormCursors.add(JDOCursorHelper.getCursor(bookIter));
+    bookIter.next();
+    ormCursors.add(JDOCursorHelper.getCursor(bookIter));
+    commitTxn();
+    
+    assertEquals(lowLevelCursors, ormCursors);
+
+    for (int i = 0; i < lowLevelCursors.size(); i++) {
+      Cursor lowLevelCursor = lowLevelCursors.get(i);
+      List<Entity> list = ldth.ds.prepare(query).asList(FetchOptions.Builder.withCursor(lowLevelCursor));
+      assertEquals(3 - i, list.size());
+    }
+  }
+
+  public void testGetCursor_Iterator() {
+    List<Key> keys = Utils.newArrayList();
+    for (int i = 0; i < 10; i++) {
+      keys.add(ldth.ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
+    }
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + Book.class.getName());
+    Iterator<Book> bookIter = asIterator(q);
+    assertCursorResults(JDOCursorHelper.getCursor(bookIter), keys);
+    int index = 0;
+    while (bookIter.hasNext()) {
+      bookIter.next();
+      assertCursorResults(JDOCursorHelper.getCursor(bookIter), keys.subList(++index, keys.size()));
+    }
+    // setting a max result means we call asQueryResultList(), and there are no
+    // intermediate cursors available from a List.
+    q.setRange(0, 1);
+
+    bookIter = asIterator(q);
+    assertNull(JDOCursorHelper.getCursor((asIterator(q))));
+    while (bookIter.hasNext()) {
+      bookIter.next();
+      assertNull(JDOCursorHelper.getCursor((asIterator(q))));
+    }
+  }
+
+  private <T> Iterator<T> asIterator(Query q) {
+    return ((List) q.execute()).iterator();
+  }
+
+  public void testGetCursor_Iterable() {
+    List<Key> keys = Utils.newArrayList();
+    for (int i = 0; i < 10; i++) {
+      keys.add(ldth.ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
+    }
+
+    beginTxn();
+    Query q = pm.newQuery("select from " + Book.class.getName());
+    // no limit specified so what we get back doesn't have an end cursor
+    List<Book> bookList = (List<Book>) q.execute();
+    assertNull(JDOCursorHelper.getCursor(bookList));
+    for (Book b : bookList) {
+      // no cursor
+      assertNull(JDOCursorHelper.getCursor(bookList));
+    }
+  }
+
+  private void assertCursorResults(Cursor cursor, List<Key> expectedKeys) {
+    Query q = pm.newQuery("select from " + Book.class.getName());
+    q.addExtension(JDOCursorHelper.QUERY_CURSOR_PROPERTY_NAME, cursor);
+    List<Key> keys = Utils.newArrayList();
+    for (Object b : (Iterable) q.execute()) {
+      keys.add(KeyFactory.stringToKey(((Book) b).getId()));
+    }
+    assertEquals(expectedKeys, keys);
   }
 }

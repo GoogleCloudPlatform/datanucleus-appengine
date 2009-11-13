@@ -29,7 +29,7 @@ import java.util.Iterator;
  *
  * @author Max Ross <maxr@google.com>
  */
-final class RuntimeExceptionWrappingIterable implements Iterable<Entity> {
+class RuntimeExceptionWrappingIterable implements Iterable<Entity> {
 
   private final Iterable<Entity> inner;
 
@@ -39,11 +39,15 @@ final class RuntimeExceptionWrappingIterable implements Iterable<Entity> {
 
   public Iterator<Entity> iterator() {
     try {
-      return new RuntimeExceptionWrappingIterator(inner.iterator());
+      return newIterator(inner.iterator());
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (DatastoreFailureException e) {
       throw wrapDatastoreFailureException(e);
     }
+  }
+
+  Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
+    return new RuntimeExceptionWrappingIterator(innerIter);
   }
 }

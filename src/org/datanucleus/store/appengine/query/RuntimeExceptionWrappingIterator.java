@@ -29,9 +29,9 @@ import java.util.Iterator;
  *
  * @author Max Ross <maxr@google.com>
  */
-final class RuntimeExceptionWrappingIterator implements Iterator<Entity> {
+class RuntimeExceptionWrappingIterator implements Iterator<Entity> {
 
-  private final Iterator<Entity> inner;
+  final Iterator<Entity> inner;
 
   RuntimeExceptionWrappingIterator(Iterator<Entity> inner) {
     this.inner = inner;

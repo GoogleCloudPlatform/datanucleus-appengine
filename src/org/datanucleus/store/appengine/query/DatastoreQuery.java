@@ -84,6 +84,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -241,7 +242,7 @@ public class DatastoreQuery implements Serializable {
         JoinHelper joinHelper = new JoinHelper();
         return wrapEntityQueryResult(
             joinHelper.executeJoinQuery(qd, this, ds, opts),
-            qd.resultTransformer, ds, mconn, CursorProvider.NO_CURSOR);
+            qd.resultTransformer, ds, mconn, null);
       } else {
         latestDatastoreQuery = qd.primaryDatastoreQuery;
         Transaction txn = null;
@@ -307,7 +308,7 @@ public class DatastoreQuery implements Serializable {
       if (qd.resultType == ResultType.COUNT) {
         return Collections.singletonList(entities.size());
       }
-      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, CursorProvider.NO_CURSOR);
+      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
     }
   }
 
@@ -344,55 +345,31 @@ public class DatastoreQuery implements Serializable {
     return Collections.singletonList(preparedQuery.countEntities());
   }
 
-  private CursorProvider buildCursorProvider(final QueryResultList<Entity> entities) {
-    return new CursorProvider() {
-      public Cursor get() {
-        return entities.getCursor();
-      }
-    };
-  }
-
-  private CursorProvider buildCursorProvider(final QueryResultIterable<Entity> entities) {
-    return new CursorProvider() {
-      public Cursor get() {
-        QueryResultIterator<Entity> iter = entities.iterator();
-        while(iter.hasNext()) {
-          iter.next();
-        }
-        return iter.getCursor();
-      }
-    };
-  }
-
   private Object fulfillEntityQuery(
       PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer,
       DatastoreService ds, ManagedConnection mconn) {
-    CursorProvider cursorProvider;
+    Cursor endCursor = null;
     Iterable<Entity> entityIterable;
     if (opts != null) {
       if (opts.getLimit() != null) {
         QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
-        cursorProvider = buildCursorProvider(entities);
+        endCursor = entities.getCursor();
         entityIterable = entities;
       } else {
-        QueryResultIterable<Entity> entities = preparedQuery.asQueryResultIterable(opts);
-        cursorProvider = buildCursorProvider(entities);
-        entityIterable = entities;
+        entityIterable = preparedQuery.asQueryResultIterable(opts);
       }
     } else {
-      QueryResultIterable<Entity> entities = preparedQuery.asQueryResultIterable();
-      cursorProvider = buildCursorProvider(entities);
-      entityIterable = entities;
+      entityIterable = preparedQuery.asQueryResultIterable();
     }
-    return wrapEntityQueryResult(entityIterable, resultTransformer, ds, mconn, cursorProvider);
+    return wrapEntityQueryResult(entityIterable, resultTransformer, ds, mconn, endCursor);
   }
 
   private Object wrapEntityQueryResult(Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
-      DatastoreService ds, ManagedConnection mconn, CursorProvider cursorProvider) {
+      DatastoreService ds, ManagedConnection mconn, Cursor endCursor) {
     if (isBulkDelete()) {
       return deleteEntityQueryResult(entities, ds);
     }
-    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, cursorProvider);
+    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, endCursor);
   }
 
   private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds) {
@@ -406,9 +383,20 @@ public class DatastoreQuery implements Serializable {
 
   private List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
-      final ManagedConnection mconn, CursorProvider cursorProvider) {
-    final StreamingQueryResult qr = new StreamingQueryResult(
-        query, new RuntimeExceptionWrappingIterable(entities), resultTransformer, cursorProvider);
+      final ManagedConnection mconn, Cursor endCursor) {
+    RuntimeExceptionWrappingIterable iterable;
+    if (entities instanceof QueryResultIterable) {
+      // need to wrap it in a specialization so that CursorHelper can reach in
+      iterable = new RuntimeExceptionWrappingIterable((QueryResultIterable<Entity>) entities) {
+        @Override
+        Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
+          return new RuntimeExceptionWrappingQueryResultIterator((QueryResultIterator<Entity>) innerIter);
+        }
+      };
+    } else {
+      iterable = new RuntimeExceptionWrappingIterable(entities);
+    }
+    final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
     // Add a listener to the connection so we can get a callback when the connection is
     // flushed.
     ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {

@@ -45,7 +45,8 @@ class StreamingQueryResult extends AbstractQueryResult {
 
   private boolean loadResultsAtCommit = true;
 
-  private final CursorProvider cursorProvider;
+  private final Cursor endCursor;
+
   /**
    * Constructs a StreamingQueryResult
    *
@@ -53,14 +54,14 @@ class StreamingQueryResult extends AbstractQueryResult {
    * @param lazyEntities The result of the query.
    * @param entityToPojoFunc A function that can convert a {@link Entity}
    * into a pojo.
-   * @param cursorProvider Provides a cursor that points to the end of the
-   * result set.
+   * @param endCursor Provides a cursor that points to the end of the
+   * result set.  Can be null.
    */
   public StreamingQueryResult(Query query, Iterable<Entity> lazyEntities,
-      Function<Entity, Object> entityToPojoFunc, CursorProvider cursorProvider) {
+      Function<Entity, Object> entityToPojoFunc, Cursor endCursor) {
     super(query);
     this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc);
-    this.cursorProvider = cursorProvider;
+    this.endCursor = endCursor;
     // Process any supported extensions
     String ext = (String) query.getExtension("datanucleus.query.loadResultsAtCommit");
     if (ext != null) {
@@ -75,7 +76,6 @@ class StreamingQueryResult extends AbstractQueryResult {
       try {
         // If we are still open, force consumption of the rest of the results
         lazyResult.resolveAll();
-        size();
       } catch (NucleusUserException jpue) {
         // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
         NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + jpue.getMessage());
@@ -124,8 +124,8 @@ class StreamingQueryResult extends AbstractQueryResult {
     return lazyResult.size();
   }
 
-  Cursor getCursor() {
-    return cursorProvider.get();
+  Cursor getEndCursor() {
+    return endCursor;
   }
-  
+
 }

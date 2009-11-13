@@ -14,6 +14,7 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=25
 - Support != queries
 
 - Support IN queries
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=39
 
 - Support datastore cursors
 

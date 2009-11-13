@@ -102,24 +102,7 @@ class LazyResult<T> implements Iterable<T> {
     if (!lazyEntityIterator.hasNext()) {
       return resolvedPojos.listIterator();
     }
-    return new AbstractListIterator() {
-      // The index member in our parent means something slightly different
-      // so we maintain our own.
-      private int curIndex = 0;
-      @Override
-      protected T computeNext() {
-        if (curIndex >= resolvedPojos.size()) {
-          // We have not yet resolved an Entity at the current index
-          if (!lazyEntityIterator.hasNext()) {
-            // There are no more entities to resolve, so we're done.
-            endOfData();
-            return null;
-          }
-          resolveNext();
-        }
-        return resolvedPojos.get(curIndex++);
-      }
-    };
+    return new LazyAbstractListIterator();
   }
 
   public int size() {
@@ -137,7 +120,7 @@ class LazyResult<T> implements Iterable<T> {
   /**
    * {@link AbstractListIterator implementation that uses the Iterator
    * and the list of resolved pojos that belong to the enclosing member
-   * to implement the {@link java.util.ListIterator} interface.
+   * to implement the {@link ListIterator} interface.
    */
   private abstract class AbstractListIterator
       extends AbstractIterator<T> implements ListIterator<T> {
@@ -212,6 +195,30 @@ class LazyResult<T> implements Iterable<T> {
 
     public void add(Object o) {
       throw new UnsupportedOperationException();
+    }
+  }
+
+  final class LazyAbstractListIterator extends AbstractListIterator {
+    // The index member in our parent means something slightly different
+    // so we maintain our own.
+    private int curIndex = 0;
+
+    @Override
+    protected T computeNext() {
+      if (curIndex >= resolvedPojos.size()) {
+        // We have not yet resolved an Entity at the current index
+        if (!lazyEntityIterator.hasNext()) {
+          // There are no more entities to resolve, so we're done.
+          endOfData();
+          return null;
+        }
+        resolveNext();
+      }
+      return resolvedPojos.get(curIndex++);
+    }
+
+    Iterator<?> getInnerIterator() {
+      return lazyEntityIterator;
     }
   }
 }

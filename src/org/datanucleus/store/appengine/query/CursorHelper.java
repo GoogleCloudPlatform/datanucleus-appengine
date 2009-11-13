@@ -16,12 +16,13 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Cursor;
+import com.google.appengine.api.datastore.QueryResultIterator;
 
+import java.util.Iterator;
 import java.util.List;
 
 /**
- * Utilities for working with {@link Cursor} through the JDO and JPA
- * Query apis.
+ * Utilities for extracting {@link Cursor Cursors} from query results.
  *
  * @author Max Ross <max.ross@gmail.com>
  */
@@ -31,10 +32,46 @@ class CursorHelper {
 
   CursorHelper() {}
 
+  /**
+   * Extract a {@link Cursor} from the provided {@link List}.  The Cursor
+   * points to the last element in the list.  A query that
+   * is executed using the returned Cursor will start scanning directly after
+   * the last element in the list.
+   * <b>
+   * A Cursor will only be available if the List is a query result and the
+   * query had a limit set.
+   *
+   * @param list The {@link List} from which to extract a {@link Cursor}.
+   * @return The {@link Cursor}, or {@code null} if no Cursor is available for
+   * the provided list.
+   */
   public static Cursor getCursor(List<?> list) {
     if (list instanceof StreamingQueryResult) {
       StreamingQueryResult sqr = (StreamingQueryResult) list;
-      return sqr.getCursor();
+      return sqr.getEndCursor();
+    }
+    return null;
+  }
+
+  /**
+   * Extract a {@link Cursor} from the provided {@link Iterator}.  The Cursor
+   * points to the element most recently returned by the iterator.  A query
+   * that is executed using the returned Cursor will start scanning directly
+   * after this element.
+   * <b>
+   * A Cursor will only be available if the Iterator was created from a query
+   * result and the query did not have a limit set.
+   *
+   * @param iter The {@link Iterator} from which to extract a {@link Cursor}.
+   * @return The {@link Cursor}, or {@code null} if no Cursor is available for
+   * the provided cursor.
+   */
+  public static Cursor getCursor(Iterator<?> iter) {
+    if (iter instanceof LazyResult.LazyAbstractListIterator) {
+      Iterator<?> innerIter = ((LazyResult.LazyAbstractListIterator) iter).getInnerIterator();
+      if (innerIter instanceof QueryResultIterator) {
+        return ((QueryResultIterator) innerIter).getCursor();
+      }
     }
     return null;
   }
