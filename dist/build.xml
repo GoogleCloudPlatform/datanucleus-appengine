@@ -414,7 +414,9 @@
       <copy  todir="../lib" verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.lib.path}" includes="appengine-tools-api.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/impl" includes = "*.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/impl/agent" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/shared" includes = "appengine*.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/agent" includes = "*.jar"/>
       </copy>
       <copy  todir="." verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.config.path}/user" includes="ant-macros.xml"/>
