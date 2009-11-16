@@ -45,6 +45,9 @@ public class HasOneToOneJDO {
   @Persistent(dependent = "true")
   private HasOneToOneParentKeyPkJDO hasParentKeyPK;
 
+  @Persistent
+  private HasEncodedStringPkJDO notDependent;
+
   public String getId() {
     return id;
   }
@@ -83,5 +86,13 @@ public class HasOneToOneJDO {
 
   public void setHasParentKeyPK(HasOneToOneParentKeyPkJDO hasParentKeyPK) {
     this.hasParentKeyPK = hasParentKeyPK;
+  }
+
+  public HasEncodedStringPkJDO getNotDependent() {
+    return notDependent;
+  }
+
+  public void setNotDependent(HasEncodedStringPkJDO notDependent) {
+    this.notDependent = notDependent;
   }
 }

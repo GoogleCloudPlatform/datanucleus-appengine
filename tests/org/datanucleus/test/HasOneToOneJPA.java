@@ -53,6 +53,10 @@ public class HasOneToOneJPA {
   @JoinColumn(name = "hasparentkeypk_id")
   private HasOneToOneParentKeyPkJPA hasParentKeyPK;
 
+  @OneToOne(cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH}, fetch = FetchType.LAZY)
+  @JoinColumn(name = "notdependent_id")
+  private HasEncodedStringPkJPA notDependent;
+
   public String getId() {
     return id;
   }
@@ -87,5 +91,13 @@ public class HasOneToOneJPA {
 
   public void setHasParentKeyPK(HasOneToOneParentKeyPkJPA hasParentKeyPK) {
     this.hasParentKeyPK = hasParentKeyPK;
+  }
+
+  public HasEncodedStringPkJPA getNotDependent() {
+    return notDependent;
+  }
+
+  public void setNotDependent(HasEncodedStringPkJPA notDependent) {
+    this.notDependent = notDependent;
   }
 }

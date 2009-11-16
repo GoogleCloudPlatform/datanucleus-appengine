@@ -54,9 +54,11 @@ public class HasOneToManyListJDO implements HasOneToManyJDO, Serializable {
   @Element(dependent = "true")
   private List<BidirectionalChildListJDO> bidirChildren = new ArrayList<BidirectionalChildListJDO>();
 
+  @Persistent
   @Element(dependent = "true")
   private List<Flight> flights = new ArrayList<Flight>();
 
+  @Persistent
   @Element(dependent = "true")
   private List<HasKeyPkJDO> hasKeyPks = new ArrayList<HasKeyPkJDO>();
 

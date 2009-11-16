@@ -24,6 +24,7 @@ import com.google.appengine.api.datastore.Transaction;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentNull;
 import org.datanucleus.test.Book;
+import org.datanucleus.test.HasEncodedStringPkJPA;
 import org.datanucleus.test.HasKeyPkJPA;
 import org.datanucleus.test.HasOneToOneChildAtMultipleLevelsJPA;
 import org.datanucleus.test.HasOneToOneJPA;
@@ -52,6 +53,7 @@ public class JPAOneToOneTest extends JPATestCase {
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
     HasOneToOneParentKeyPkJPA hasParentKeyPk = new HasOneToOneParentKeyPkJPA();
+    HasEncodedStringPkJPA notDependent = new HasEncodedStringPkJPA();
 
     HasOneToOneJPA pojo = new HasOneToOneJPA();
     pojo.setBook(b);
@@ -60,6 +62,7 @@ public class JPAOneToOneTest extends JPATestCase {
     hasParent.setParent(pojo);
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
+    pojo.setNotDependent(notDependent);
 
     beginTxn();
     em.persist(pojo);
@@ -69,6 +72,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasKeyPk.getId());
     assertNotNull(hasParent.getId());
     assertNotNull(hasParentKeyPk.getId());
+    assertNotNull(notDependent.getId());
     assertNotNull(pojo.getId());
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
@@ -94,10 +98,14 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(hasParentKeyPk.getId(), hasParentKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
+    Entity notDependentEntity = ldth.ds.get(KeyFactory.stringToKey(notDependent.getId()));
+    assertNotNull(notDependentEntity);
+
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
 
     assertCountsInDatastore(1, 1);
+    assertEquals(1, countForClass(notDependent.getClass()));
   }
 
   private void persistInTxn(Object obj) {
@@ -559,11 +567,15 @@ public class JPAOneToOneTest extends JPATestCase {
     hasParentPkEntity.setProperty("str", "yag");
     ldth.ds.put(hasParentPkEntity);
 
+    Entity notDependentEntity = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), pojoEntity.getKey());
+    ldth.ds.put(notDependentEntity);
+
     beginTxn();
     HasOneToOneJPA pojo = em.find(HasOneToOneJPA.class, KeyFactory.keyToString(pojoEntity.getKey()));
     em.remove(pojo);
     commitTxn();
     assertCountsInDatastore(0, 0);
+    assertEquals(1, countForClass(HasEncodedStringPkJPA.class));
   }
 
   public void testChangeParent() {

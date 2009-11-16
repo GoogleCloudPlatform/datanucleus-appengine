@@ -24,6 +24,7 @@ import com.google.appengine.api.datastore.Transaction;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.Flight;
+import org.datanucleus.test.HasEncodedStringPkJDO;
 import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToOneChildAtMultipleLevelsJDO;
 import org.datanucleus.test.HasOneToOneJDO;
@@ -52,6 +53,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
+    HasEncodedStringPkJDO notDependent = new HasEncodedStringPkJDO();
 
     HasOneToOneJDO pojo = new HasOneToOneJDO();
     pojo.setFlight(f);
@@ -60,6 +62,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     hasParent.setParent(pojo);
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
+    pojo.setNotDependent(notDependent);
 
     makePersistentInTxn(pojo);
 
@@ -67,6 +70,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(hasKeyPk.getKey());
     assertNotNull(hasParent.getKey());
     assertNotNull(hasParentKeyPk.getKey());
+    assertNotNull(notDependent.getId());
     assertNotNull(pojo.getId());
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
@@ -95,10 +99,14 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(hasParentKeyPk.getKey(), hasParentKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getKey());
 
+    Entity notDependentEntity = ldth.ds.get(KeyFactory.stringToKey(notDependent.getId()));
+    assertNotNull(notDependentEntity);
+
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
 
     assertCountsInDatastore(1, 1);
+    assertEquals(1, countForClass(notDependent.getClass()));
   }
 
   public void testInsert_NewParentExistingChild_Unidirectional() throws EntityNotFoundException {
@@ -550,11 +558,15 @@ public class JDOOneToOneTest extends JDOTestCase {
     hasParentPkEntity.setProperty("str", "yag");
     ldth.ds.put(hasParentPkEntity);
 
+    Entity notDependentEntity = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), pojoEntity.getKey());
+    ldth.ds.put(notDependentEntity);
+
     beginTxn();
     HasOneToOneJDO pojo = pm.getObjectById(HasOneToOneJDO.class, KeyFactory.keyToString(pojoEntity.getKey()));
     pm.deletePersistent(pojo);
     commitTxn();
     assertCountsInDatastore(0, 0);
+    assertEquals(1, countForClass(HasEncodedStringPkJDO.class));
   }
 
   public void testNonTransactionalUpdate() throws EntityNotFoundException {
