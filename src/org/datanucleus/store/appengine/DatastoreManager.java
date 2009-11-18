@@ -370,8 +370,10 @@ public class DatastoreManager extends MappedStoreManager {
       "Found inheritance strategy '%s' on %s.  This strategy is not supported in this context.  "
       + "Please see the documentation for information on using inheritance with %s: %s";
 
-  private static final String JPA_INHERITANCE_DOCS_URL = "todo";
-  private static final String JDO_INHERITANCE_DOCS_URL = "todo";
+  private static final String JPA_INHERITANCE_DOCS_URL =
+      "http://code.google.com/appengine/docs/java/datastore/usingjpa.html#Inheritance";
+  private static final String JDO_INHERITANCE_DOCS_URL =
+      "http://code.google.com/appengine/docs/java/datastore/dataclasses.html#Inheritance";
 
   private String buildUnsupportedInheritanceStrategyMessage(ClassMetaData cmd) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
