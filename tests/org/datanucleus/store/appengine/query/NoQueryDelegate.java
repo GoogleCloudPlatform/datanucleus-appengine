@@ -18,6 +18,8 @@ package org.datanucleus.store.appengine.query;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
 
+import java.util.concurrent.Future;
+
 /**
  * A delegate that throws a {@link RuntimeException} whenever RunQuery is
  * invoked on the datastore service.
@@ -32,6 +34,14 @@ public class NoQueryDelegate implements ApiProxy.Delegate {
       throw new RuntimeException("boom");
     }
     return original.makeSyncCall(environment, pkg, method, bytes);
+  }
+
+  public Future makeAsyncCall(ApiProxy.Environment environment, String pkg, String method, byte[] bytes,
+                              ApiProxy.ApiConfig apiConfig) {
+    if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
+      throw new RuntimeException("boom");
+    }
+    return original.makeAsyncCall(environment, pkg, method, bytes, apiConfig);
   }
 
   public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {

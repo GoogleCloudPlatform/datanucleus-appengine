@@ -20,7 +20,9 @@ import com.google.appengine.tools.development.ApiProxyLocalImpl;
 import com.google.apphosting.api.ApiProxy;
 
 import java.io.File;
-import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.Future;
 
 /**
  * {@link DatastoreDelegate} implementation that integrates with the stub
@@ -59,8 +61,8 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
       return "";
     }
 
-    public Map<String, Object> getAttributes() {
-      return Utils.newHashMap();
+    public ConcurrentMap<String, Object> getAttributes() {
+      return new ConcurrentHashMap<String, Object>();
     }
   };
 
@@ -94,6 +96,11 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
   public byte[] makeSyncCall(ApiProxy.Environment environment, String packageName,
       String methodName, byte[] request) throws ApiProxy.ApiProxyException {
     return localProxy.makeSyncCall(environment, packageName, methodName, request);
+  }
+
+  public Future<byte[]> makeAsyncCall(ApiProxy.Environment environment, String s, String s1,
+                                             byte[] bytes, ApiProxy.ApiConfig apiConfig) {
+    return localProxy.makeAsyncCall(environment, s, s1, bytes, apiConfig);
   }
 
   public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
