@@ -52,7 +52,9 @@ public class JDOTestCase extends TestCase {
     try {
       if (pmf == null) {
         pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
-        pmfCache.put(getPersistenceManagerFactoryName(), pmf);
+        if (cacheManagers()) {
+          pmfCache.put(getPersistenceManagerFactoryName(), pmf);
+        }
       }
       pm = pmf.getPersistenceManager();
       success = true;
@@ -102,6 +104,9 @@ public class JDOTestCase extends TestCase {
           pmfCache.remove(entry.getKey());
         }
       }
+      if (!cacheManagers() && !pmf.isClosed()) {
+        pmf.close();
+      }
       pmf = null;
     } finally {
       ldth.tearDown(throwIfActiveTxn);
@@ -140,6 +145,9 @@ public class JDOTestCase extends TestCase {
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
     pm.close();
+    if (!cacheManagers() && !pmf.isClosed()) {
+      pmf.close();
+    }
     pmf = JDOHelper.getPersistenceManagerFactory(name.name());
     pm = pmf.getPersistenceManager();
   }
@@ -163,5 +171,9 @@ public class JDOTestCase extends TestCase {
   
   protected ObjectManager getObjectManager() {
     return ((JDOPersistenceManager)pm).getObjectManager();
+  }
+
+  private boolean cacheManagers() {
+    return !Boolean.valueOf(System.getProperty("do.not.cache.managers"));
   }
 }

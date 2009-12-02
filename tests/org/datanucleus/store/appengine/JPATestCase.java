@@ -63,7 +63,9 @@ public class JPATestCase extends TestCase {
     try {
       if (emf == null) {
         emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
-        emfCache.put(getEntityManagerFactoryName(), emf);
+        if (cacheManagers()) {
+          emfCache.put(getEntityManagerFactoryName(), emf);
+        }
       }
       em = emf.createEntityManager();
       success = true;
@@ -112,6 +114,9 @@ public class JPATestCase extends TestCase {
           emfCache.remove(entry.getKey());
         }
       }
+      if (!cacheManagers() && emf.isOpen()) {
+        emf.close();
+      }
       emf = null;
     } finally {
       ldth.tearDown(throwIfActiveTxn);
@@ -134,6 +139,9 @@ public class JPATestCase extends TestCase {
 
   protected void switchDatasource(EntityManagerFactoryName name) {
     em.close();
+    if (!cacheManagers() && emf.isOpen()) {
+      emf.close();
+    }
     emf = Persistence.createEntityManagerFactory(name.name());
     em = emf.createEntityManager();
   }
@@ -156,5 +164,9 @@ public class JPATestCase extends TestCase {
 
   protected String kindForObject(Object obj) {
     return kindForClass(obj.getClass());
-  }  
+  }
+
+  private boolean cacheManagers() {
+    return !Boolean.valueOf(System.getProperty("do.not.cache.managers"));
+  }
 }

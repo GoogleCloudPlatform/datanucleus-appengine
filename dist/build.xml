@@ -111,6 +111,7 @@
       </classpath>
       <jvmarg value="-Dappengine.orm.disable.duplicate.pmf.exception"/>
       <jvmarg value="-Dappengine.orm.disable.duplicate.emf.exception"/>
+      <!--<jvmarg value="-Ddo.not.cache.managers=true"/>-->
       <formatter type="plain"/>
       <batchtest fork="yes" todir="${orm.testresults.dir}">
         <fileset dir="${plugin.test.dir}">
