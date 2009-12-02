@@ -107,7 +107,12 @@ public class JDOSequenceTest extends JDOTestCase {
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
   }
   
-  public void testDirectSequenceAccess() {
+  public void testDirectSequenceAccess() throws Exception {
+    // in order to make sure we get a fresh block of ids when we persist
+    // we need to make sure we don't reuse the pmf
+    pmf.close();
+    tearDown();
+    setUp();
     KeyRange range = ldth.ds.allocateIds("that", 1);
     HasSequenceWithSequenceGenerator pojo = new HasSequenceWithSequenceGenerator();
     beginTxn();

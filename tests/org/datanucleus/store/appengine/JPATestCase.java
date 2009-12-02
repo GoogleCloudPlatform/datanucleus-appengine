@@ -23,6 +23,8 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.metadata.MetaDataManager;
 
+import java.util.Map;
+
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
@@ -31,6 +33,9 @@ import javax.persistence.Persistence;
  * @author Max Ross <maxr@google.com>
  */
 public class JPATestCase extends TestCase {
+
+  private static
+  Map<EntityManagerFactoryName, EntityManagerFactory> emfCache = Utils.newHashMap();
 
   protected EntityManagerFactory emf;
   protected EntityManager em;
@@ -53,9 +58,13 @@ public class JPATestCase extends TestCase {
     super.setUp();
     ldth = new DatastoreTestHelper();
     ldth.setUp();
+    emf = emfCache.get(getEntityManagerFactoryName());
     boolean success = false;
     try {
-      emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
+      if (emf == null) {
+        emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
+        emfCache.put(getEntityManagerFactoryName(), emf);
+      }
       em = emf.createEntityManager();
       success = true;
     } finally {
@@ -96,7 +105,13 @@ public class JPATestCase extends TestCase {
         em.close();
       }
       em = null;
-      emf.close();
+      // see if anybody closed any of our pms just remove them from the cache -
+      // we'll rebuild it the next time it's needed.
+      for (Map.Entry<EntityManagerFactoryName, EntityManagerFactory> entry : emfCache.entrySet()) {
+        if (!entry.getValue().isOpen()) {
+          emfCache.remove(entry.getKey());
+        }
+      }
       emf = null;
     } finally {
       ldth.tearDown(throwIfActiveTxn);
@@ -119,7 +134,6 @@ public class JPATestCase extends TestCase {
 
   protected void switchDatasource(EntityManagerFactoryName name) {
     em.close();
-    emf.close();
     emf = Persistence.createEntityManagerFactory(name.name());
     em = emf.createEntityManager();
   }

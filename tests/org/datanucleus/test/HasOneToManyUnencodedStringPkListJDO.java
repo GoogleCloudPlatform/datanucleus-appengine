@@ -23,6 +23,7 @@ import java.util.List;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -37,6 +38,7 @@ public class HasOneToManyUnencodedStringPkListJDO implements HasOneToManyUnencod
   private String key;
 
   @Element(dependent = "true")
+  @Order(column = "flights_INTEGER_IDX_unencodedstringpk")
   private List<Flight> flights = Utils.newArrayList();
 
   @Persistent(mappedBy = "parent")

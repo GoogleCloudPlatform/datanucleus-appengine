@@ -25,6 +25,7 @@ import java.util.List;
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
+import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -40,6 +41,7 @@ public class HasOneToManyKeyPkListJDO implements HasOneToManyKeyPkJDO {
   private Key key;
 
   @Element(dependent = "true")
+  @Order(column = "flights_INTEGER_IDX_keypk")
   private List<Flight> flights = Utils.newArrayList();
 
   public void addFlight(Flight flight) {

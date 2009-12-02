@@ -21,6 +21,8 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.metadata.MetaDataManager;
 
+import java.util.Map;
+
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
@@ -31,6 +33,8 @@ import javax.jdo.PersistenceManagerFactory;
  * @author Max Ross <maxr@google.com>
  */
 public class JDOTestCase extends TestCase {
+
+  private static Map<PersistenceManagerFactoryName, PersistenceManagerFactory> pmfCache = Utils.newHashMap();
 
   protected PersistenceManagerFactory pmf;
   protected PersistenceManager pm;
@@ -44,8 +48,12 @@ public class JDOTestCase extends TestCase {
     ldth = new DatastoreTestHelper();
     ldth.setUp();
     boolean success = false;
+    pmf = pmfCache.get(getPersistenceManagerFactoryName());
     try {
-      pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
+      if (pmf == null) {
+        pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
+        pmfCache.put(getPersistenceManagerFactoryName(), pmf);
+      }
       pm = pmf.getPersistenceManager();
       success = true;
     } finally {
@@ -87,8 +95,12 @@ public class JDOTestCase extends TestCase {
         pm.close();
       }
       pm = null;
-      if (!pmf.isClosed()) {
-        pmf.close();
+      // see if anybody closed any of our pms just remove them from the cache -
+      // we'll rebuild it the next time it's needed.
+      for (Map.Entry<PersistenceManagerFactoryName, PersistenceManagerFactory> entry : pmfCache.entrySet()) {
+        if (entry.getValue().isClosed()) {
+          pmfCache.remove(entry.getKey());
+        }
       }
       pmf = null;
     } finally {
@@ -128,7 +140,6 @@ public class JDOTestCase extends TestCase {
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
     pm.close();
-    pmf.close();
     pmf = JDOHelper.getPersistenceManagerFactory(name.name());
     pm = pmf.getPersistenceManager();
   }
@@ -153,5 +164,4 @@ public class JDOTestCase extends TestCase {
   protected ObjectManager getObjectManager() {
     return ((JDOPersistenceManager)pm).getObjectManager();
   }
-
 }

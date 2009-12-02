@@ -52,6 +52,12 @@ import javax.jdo.ObjectState;
  */
 abstract class JDOOneToManyTestCase extends JDOTestCase {
 
+  @Override
+  protected void tearDown() throws Exception {
+    pmf.close();
+    super.tearDown();
+  }
+
   void testInsert_NewParentAndChild(HasOneToManyJDO parent,
       BidirectionalChildJDO bidirChild) throws EntityNotFoundException {
     bidirChild.setChildVal("yam");
@@ -1070,8 +1076,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
     if (isIndexed()) {
-      assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX"));
-      assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX"));
+      assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_longpk"));
+      assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_longpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
       assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
     }
@@ -1138,8 +1144,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
     if (isIndexed()) {
-      assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX"));
-      assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX"));
+      assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
+      assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
       assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
     }

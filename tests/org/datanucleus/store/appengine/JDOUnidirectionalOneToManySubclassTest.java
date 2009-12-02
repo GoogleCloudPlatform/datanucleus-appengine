@@ -229,23 +229,23 @@ public class JDOUnidirectionalOneToManySubclassTest extends JDOTestCase {
     rollbackTxn();
   }
 
-  public void testWrongChildType_Update() throws IllegalAccessException, InstantiationException {
+  public void testWrongChildType_Update() throws InstantiationException, IllegalAccessException {
+    // need a non-txn datasource so we can access multiple entity groups
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
     SubChild child = SubChild.class.newInstance();
     SuperParentWithSuperChild parent = new SuperParentWithSuperChild();
     parent.setSuperParentString("a string");
     beginTxn();
     pm.makePersistent(parent);
     commitTxn();
-    beginTxn();
     parent = pm.getObjectById(parent.getClass(), parent.getId());
 
     parent.getSuperParentSuperChildren().add(child);
     try {
-      commitTxn();
+      pm.close();
       fail("expected exception");
     } catch (UnsupportedOperationException uoe) {
       // good
     }
   }
-
 }

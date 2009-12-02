@@ -1065,7 +1065,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(bidirEntity2.getKey(), KeyFactory.stringToKey(result.get(1).getId()));
   }
 
-  public void testFilterByParentLongObjectId() {
+  public void testFilterByParentLongObjectId() throws Exception {
     Entity parentEntity = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
     ldth.ds.put(parentEntity);
     Entity bidirEntity = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
