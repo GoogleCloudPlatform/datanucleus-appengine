@@ -34,6 +34,7 @@ import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasOneToOneAndOneToManyOfSameType;
+import org.datanucleus.test.IllegalMappingsJDO.HasTwoOneToOnesWithSharedBaseClass;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.LongParent;
@@ -280,6 +281,12 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     assertMetaDataException(new Has2CollectionsOfSameTypeChild());
     assertMetaDataException(new Has2CollectionsOfAssignableType());
     assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
+  }
+
+  public void testHasTwoOneToOnesWithSharedBaseClass() throws Exception {
+    beginTxn();
+    pm.makePersistent(new HasTwoOneToOnesWithSharedBaseClass());
+    commitTxn();
   }
 
   private void assertMetaDataException(Object pojo) {

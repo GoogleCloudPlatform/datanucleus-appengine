@@ -489,4 +489,53 @@ public class IllegalMappingsJDO {
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
   }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class HasTwoOneToOnesWithSharedBaseClass {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Long id;
+
+    @Persistent
+    private HasSharedBaseClass1 hsbc1;
+
+    @Persistent
+    private HasSharedBaseClass2 hsbc2;
+
+    public HasSharedBaseClass1 getHsbc1() {
+      return hsbc1;
+    }
+
+    public void setHsbc1(HasSharedBaseClass1 hsbc1) {
+      this.hsbc1 = hsbc1;
+    }
+
+    public HasSharedBaseClass2 getHsbc2() {
+      return hsbc2;
+    }
+
+    public void setHsbc2(HasSharedBaseClass2 hsbc2) {
+      this.hsbc2 = hsbc2;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public abstract static class SharedBaseClass {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class HasSharedBaseClass1 extends SharedBaseClass {
+    private String str;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Inheritance(customStrategy = "complete-table")
+  public static class HasSharedBaseClass2 extends SharedBaseClass {
+    private String str;
+  }
 }

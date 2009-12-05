@@ -27,6 +27,7 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.util.NucleusLogger;
 
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -132,7 +133,7 @@ public class MetaDataValidator {
 
   private void validateFields(AbstractMemberMetaData pkMemberMetaData) {
     Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
-    Set<String> nonRepeatableRelationTypes = Utils.newHashSet();
+    Map<Class<?>, String> nonRepeatableRelationTypes = Utils.newHashMap();
     Class<?> pkClass = pkMemberMetaData.getType();
 
     // the constraints that we check across all fields apply to the entire
@@ -151,7 +152,7 @@ public class MetaDataValidator {
 
   private void validateField(AbstractMemberMetaData pkMemberMetaData,
                              Class<?> pkClass, Set<String> foundOneOrZeroExtensions,
-                             Set<String> nonRepeatableRelationTypes, AbstractMemberMetaData ammd) {
+                             Map<Class<?>, String> nonRepeatableRelationTypes, AbstractMemberMetaData ammd) {
     // can only have one field with this extension
     for (String extension : ONE_OR_ZERO_EXTENSIONS) {
       if (ammd.hasExtension(extension)) {
@@ -247,30 +248,25 @@ public class MetaDataValidator {
       } else if (ammd.getEmbeddedMetaData() == null &&
                  NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
                  !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE)) {
-        String relationClassString;
+        Class<?> relationClass;
         if (ammd.getCollection() != null) {
-          relationClassString = ammd.getCollection().getElementType();
+          relationClass = clr.classForName(ammd.getCollection().getElementType());
         } else if (ammd.getArray() != null) {
-          relationClassString = ammd.getArray().getElementType();
+          relationClass = clr.classForName(ammd.getArray().getElementType());
         } else {
-          relationClassString = ammd.getTypeName();
+          relationClass = clr.classForName(ammd.getTypeName());
         }
-        // We need to check the entire class hierarchy all the way up to
-        // Object because any field that is assignable from objects of type
-        // relationClassString are ambiguous and therefore not supported.
-        do {
-          if (!nonRepeatableRelationTypes.add(relationClassString)) {
-            throw new DatastoreMetaDataException(
-                acmd, ammd, "Class " + acmd.getFullClassName() + " has multiple relationship fields of type " + relationClassString
-                            + ".  This is not yet supported.");
+
+        // Add the actual type of the field to the list of types that can't
+        // repeat.  If that type was already present, problem.
+        for (Class<?> existingRelationClass : nonRepeatableRelationTypes.keySet()) {
+          if (existingRelationClass.isAssignableFrom(relationClass) ||
+              relationClass.isAssignableFrom(existingRelationClass)) {
+            throw newMultipleRelationshipFieldsOfSameType(
+                ammd, relationClass, ammd.getName(), nonRepeatableRelationTypes.get(existingRelationClass));
           }
-          Class<?> superclass = clr.classForName(relationClassString).getSuperclass();
-          if (superclass.equals(Object.class)) {
-            relationClassString = null;
-          } else {
-            relationClassString = superclass.getName();
-          }
-        } while (relationClassString != null);
+        }
+        nonRepeatableRelationTypes.put(relationClass, ammd.getName());
       }
     }
 
@@ -282,6 +278,13 @@ public class MetaDataValidator {
             "The first value for this sequence will be 1.");
       }
     }
+  }
+
+  private DatastoreMetaDataException newMultipleRelationshipFieldsOfSameType(
+      AbstractMemberMetaData ammd, Class<?> relationClass, String field1, String field2) {
+    return new DatastoreMetaDataException(
+        acmd, ammd, "Class " + acmd.getFullClassName() + " has multiple relationship fields of type "
+                    + relationClass.getName() + ": " + field1 + " and " + field2 + ".  This is not yet supported.");
   }
 
   boolean isJPA() {
