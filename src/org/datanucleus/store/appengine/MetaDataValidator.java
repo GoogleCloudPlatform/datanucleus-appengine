@@ -233,8 +233,8 @@ public class MetaDataValidator {
         // We have separate error messages for JPA vs JDO because eagerness is configured
         // differently between the two.
         String msg = isJPA() ?
-                     "The datastore does not support joins and therefore cannot honor requests to eagerly load child objects." :
-                     "The datastore does not support joins and therefore cannot honor requests to place child objects in the default fetch group.";
+                     "The datastore does not support joins and therefore cannot honor requests to eagerly load related objects." :
+                     "The datastore does not support joins and therefore cannot honor requests to place related objects in the default fetch group.";
         handleIgnorableMapping(ammd, msg, "The field will be fetched lazily on first access.");
       }
 

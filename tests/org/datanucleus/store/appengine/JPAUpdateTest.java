@@ -101,8 +101,15 @@ public class JPAUpdateTest extends JPATestCase {
     hv.setValue("value");
     commitTxn();
     assertEquals(2L, hv.getVersion());
+
+    beginTxn();
+    hv = em.find(HasVersionJPA.class, keyStr);
+    hv.setValue("a different value");
+    commitTxn();
+    assertEquals(3L, hv.getVersion());
+
     // make sure the version gets bumped
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
+    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 4L);
 
     beginTxn();
     hv = em.find(HasVersionJPA.class, keyStr);
@@ -118,7 +125,7 @@ public class JPAUpdateTest extends JPATestCase {
       assertTrue(re.getCause() instanceof OptimisticLockException);
     }
     // make sure the version didn't change on the model object
-    assertEquals(2L, JDOHelper.getVersion(hv));
+    assertEquals(3L, JDOHelper.getVersion(hv));
   }
 
   public void testOptimisticLocking_Merge() {

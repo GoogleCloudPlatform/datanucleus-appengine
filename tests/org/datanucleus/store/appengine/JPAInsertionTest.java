@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasKeyPkJPA;
+import org.datanucleus.test.HasVersionJPA;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -112,5 +113,21 @@ public class JPAInsertionTest extends JPATestCase {
     em.flush();
     assertNotNull(b1.getId());
     commitTxn();
+  }
+
+  private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
+
+  public void testVersionInsert() throws EntityNotFoundException {
+    HasVersionJPA hv = new HasVersionJPA();
+    beginTxn();
+    hv.setValue("yarg");
+    em.persist(hv);
+    commitTxn();
+    assertEquals(1L, hv.getVersion());
+
+    Entity entity = ldth.ds.get(
+        KeyFactory.createKey(HasVersionJPA.class.getSimpleName(), hv.getId()));
+    assertNotNull(entity);
+    assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
   }
 }
