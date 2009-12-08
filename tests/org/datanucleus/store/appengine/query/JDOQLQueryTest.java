@@ -900,6 +900,24 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(0).getId());
   }
 
+  public void testExecuteWithArray() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
+                             + "(name == :p1 || name == :p2) && "
+                             + "(origin == :p3 || origin == :p4)");
+    Map<String, String> paramMap = Utils.newHashMap();
+    paramMap.put("p1", "name1");
+    paramMap.put("p2", "name3");
+    paramMap.put("p3", "bos3");
+    paramMap.put("p4", "bos2");
+    List<Flight> flights = (List<Flight>) q.executeWithArray("name1", "name3", "bos3", "bos2");
+    assertEquals(1, flights.size());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(0).getId());
+  }
+
   public void testIsNullChild() {
     Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(e);
