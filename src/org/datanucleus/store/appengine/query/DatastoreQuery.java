@@ -382,8 +382,14 @@ public class DatastoreQuery implements Serializable {
   }
 
   private List<?> newStreamingQueryResultForEntities(
+      Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
+      ManagedConnection mconn, Cursor endCursor) {
+    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, endCursor, query);
+  }
+
+  public static List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
-      final ManagedConnection mconn, Cursor endCursor) {
+      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query) {
     RuntimeExceptionWrappingIterable iterable;
     if (entities instanceof QueryResultIterable) {
       // need to wrap it in a specialization so that CursorHelper can reach in
@@ -487,7 +493,7 @@ public class DatastoreQuery implements Serializable {
 
   private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
       ClassLoaderResolver clr, DatastoreManager storeMgr, FetchPlan fp) {
-    return entityToPojo(entity, acmd, clr, storeMgr, getObjectManager(), query.getIgnoreCache(), fp);
+    return entityToPojo(entity, acmd, clr, getObjectManager(), query.getIgnoreCache(), fp);
   }
 
   /**
@@ -496,15 +502,16 @@ public class DatastoreQuery implements Serializable {
    * @param entity The entity to convert
    * @param acmd The meta data for the pojo class
    * @param clr The classloader resolver
-   * @param storeMgr The store manager
    * @param om The object manager
    * @param ignoreCache Whether or not the cache should be ignored when the
    * object manager attempts to find the pojo
+   * @param fetchPlan the fetch plan to use
    * @return The pojo that corresponds to the provided entity.
    */
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om,
+      final ClassLoaderResolver clr, ObjectManager om,
       boolean ignoreCache, final FetchPlan fetchPlan) {
+    final DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
     storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {

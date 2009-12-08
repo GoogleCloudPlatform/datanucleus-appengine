@@ -127,6 +127,8 @@ public class AllTests {
     suite.addTestSuite(JPQLQueryJoinTest.class);
     suite.addTestSuite(JDOQLCursorTest.class);
     suite.addTestSuite(JPQLCursorTest.class);
+    suite.addTestSuite(JDODatastoreBridgeTest.class);
+    suite.addTestSuite(JPADatastoreBridgeTest.class);
     return suite;
   }
 }

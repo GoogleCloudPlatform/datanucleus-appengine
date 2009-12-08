@@ -100,7 +100,7 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       // We only want direct children
       if (parentKey.equals(e.getKey().getParent())) {
         numChildren++;
-        result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, storeMgr, om, false, om.getFetchPlan()));
+        result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, om, false, om.getFetchPlan()));
         if (logger.isDebugEnabled()) {
           logger.debug("Retrieved entity with key " + e.getKey());
         }
