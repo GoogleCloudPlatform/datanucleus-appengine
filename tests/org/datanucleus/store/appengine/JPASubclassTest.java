@@ -26,6 +26,7 @@ import org.datanucleus.test.IsEmbeddedWithEmbeddedSuperclass2;
 import org.datanucleus.test.SubclassesJPA;
 import org.datanucleus.test.SubclassesJPA.Child;
 import org.datanucleus.test.SubclassesJPA.ChildEmbeddedInTablePerClass;
+import org.datanucleus.test.SubclassesJPA.DurableChild;
 import org.datanucleus.test.SubclassesJPA.Grandchild;
 import org.datanucleus.test.SubclassesJPA.Joined;
 import org.datanucleus.test.SubclassesJPA.JoinedChild;
@@ -264,6 +265,17 @@ public class JPASubclassTest extends JPATestCase {
     } catch (EntityNotFoundException enfe) {
       // good
     }
+  }
+
+  public void testNondurableParent() {
+    DurableChild dc = new DurableChild();
+    dc.setStr("yar");
+    beginTxn();
+    em.persist(dc);
+    commitTxn();
+    beginTxn();
+    dc = em.find(DurableChild.class, dc.getId());
+    assertEquals("yar", dc.getStr());
   }
 
   // This is absurd, but if the signature of this method and the one below

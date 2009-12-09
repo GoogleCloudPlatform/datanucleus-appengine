@@ -857,4 +857,53 @@ public class SubclassesJDO {
       }
     }
   }
+
+  public static class NondurableParent {
+    private Long id;
+
+    private String str;
+
+    public Long getId() {
+      return id;
+    }
+
+    public void setId(Long id) {
+      this.id = id;
+    }
+
+    public String getStr() {
+      return str;
+    }
+
+    public void setStr(String str) {
+      this.str = str;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class DurableChild extends NondurableParent {
+
+    @Override
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    public Long getId() {
+      return super.getId();
+    }
+
+    @Override
+    @Persistent
+    public String getStr() {
+      return super.getStr();
+    }
+
+    @Override
+    public void setId(Long id) {
+      super.setId(id);
+    }
+
+    @Override
+    public void setStr(String str) {
+      super.setStr(str);
+    }
+  }
 }

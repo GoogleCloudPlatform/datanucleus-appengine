@@ -425,7 +425,12 @@ public class DatastoreTable implements DatastoreClass {
     Class curClass = clr.classForName(cmd.getFullClassName()).getSuperclass();
     // see if any of our superclasses have a parentMappingField
     while (!Object.class.equals(curClass)) {
-      DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
+      DatastoreTable dt = null;
+      try {
+        dt = (DatastoreTable) storeMgr.getDatastoreClass(curClass.getName(), clr);
+      } catch (NoTableManagedException ntme) {
+        // this is ok, not all parent classes need to be managed
+      }
       // sometimes the parent table is not yet initialized
       if (dt != null) {
         // inherit the parentMappingField

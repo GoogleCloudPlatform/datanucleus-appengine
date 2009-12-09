@@ -321,4 +321,53 @@ public class SubclassesJPA {
       this.val0 = val0;
     }
   }
+
+  public static class NondurableParent {
+    private Long id;
+
+    private String str;
+
+    public Long getId() {
+      return id;
+    }
+
+    public void setId(Long id) {
+      this.id = id;
+    }
+
+    public String getStr() {
+      return str;
+    }
+
+    public void setStr(String str) {
+      this.str = str;
+    }
+  }
+
+  @Entity
+  public static class DurableChild extends NondurableParent {
+
+    @Override
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    public Long getId() {
+      return super.getId();
+    }
+
+    @Override
+    public String getStr() {
+      return super.getStr();
+    }
+
+    @Override
+    public void setId(Long id) {
+      super.setId(id);
+    }
+
+    @Override
+    public void setStr(String str) {
+      super.setStr(str);
+    }
+  }
+
 }

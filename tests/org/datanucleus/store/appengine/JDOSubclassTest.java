@@ -27,6 +27,7 @@ import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithCompleteTableCh
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithEmbedded;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithNewTableChild;
 import org.datanucleus.test.SubclassesJDO.CompleteTableParentWithSubclassTableChild;
+import org.datanucleus.test.SubclassesJDO.DurableChild;
 import org.datanucleus.test.SubclassesJDO.Grandchild;
 import org.datanucleus.test.SubclassesJDO.NewTableParentWithCompleteTableChild;
 import org.datanucleus.test.SubclassesJDO.NewTableParentWithNewTableChild;
@@ -269,6 +270,17 @@ public class JDOSubclassTest extends JDOTestCase {
     } catch (EntityNotFoundException enfe) {
       // good
     }
+  }
+
+  public void testNondurableParent() {
+    DurableChild dc = new DurableChild();
+    dc.setStr("yar");
+    beginTxn();
+    pm.makePersistent(dc);
+    commitTxn();
+    beginTxn();
+    dc = pm.getObjectById(DurableChild.class, dc.getId());
+    assertEquals("yar", dc.getStr());
   }
 
   // This is absurd, but if the signature of this method and the one below
