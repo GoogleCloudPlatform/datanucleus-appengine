@@ -98,7 +98,7 @@ public class MetaDataValidator {
   );
 
   private static final String ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE =
-      "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors";
+      "datanucleus.appengine.allowMultipleRelationsOfSameType";
 
   private final AbstractClassMetaData acmd;
   private final MetaDataManager metaDataManager;
@@ -222,9 +222,7 @@ public class MetaDataValidator {
       }
     }
 
-    if (noParentAllowed) {
-      checkForIllegalChildField(ammd);
-    }
+    checkForIllegalChildField(ammd);
 
     if (ammd.getRelationType(clr) != Relation.NONE) {
       // Look for "eager" relationships.  Not supported but not necessarily an error
@@ -368,8 +366,8 @@ public class MetaDataValidator {
     int pkPos = pkPositions[0];
     AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
     Class<?> pkType = pkMemberMetaData.getType();
-    if (pkType.equals(Long.class) ||
-        (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK))) {
+    if (noParentAllowed && (pkType.equals(Long.class) ||
+        (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)))) {
       throw new DatastoreMetaDataException(
           childAcmd, pkMemberMetaData,
           "Cannot have a " + pkType.getName() + " primary key and be a child object "
