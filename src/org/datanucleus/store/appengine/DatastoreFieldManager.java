@@ -1039,7 +1039,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
 
     if (emd != null) {
-      DatastoreTable parentTable = getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), clr);
+      DatastoreTable parentTable = getDatastoreTable();
       AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
       EmbeddedMapping embeddedMapping =
           (EmbeddedMapping) parentTable.getMappingForFullFieldName(parentField.getFullFieldName());
@@ -1084,6 +1084,10 @@ public class DatastoreFieldManager implements FieldManager {
 
   Integer getPkIdPos() {
     return pkIdPos;
+  }
+
+  DatastoreTable getDatastoreTable() {
+    return storeManager.getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
 
   /**

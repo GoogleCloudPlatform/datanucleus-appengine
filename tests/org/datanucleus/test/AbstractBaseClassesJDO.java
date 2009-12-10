@@ -15,6 +15,11 @@
  */
 package org.datanucleus.test;
 
+import com.google.appengine.api.datastore.Key;
+
+import java.util.List;
+
+import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Inheritance;
@@ -39,6 +44,13 @@ public class AbstractBaseClassesJDO {
 
     private String base1Str;
 
+    @Persistent(dependent = "true")
+    private Concrete3 concrete3;
+
+    @Persistent
+    @Element(dependent = "true")
+    private List<Concrete4> concrete4;
+
     public Long getId() {
       return id;
     }
@@ -53,6 +65,22 @@ public class AbstractBaseClassesJDO {
 
     public void setBase1Str(String base1Str) {
       this.base1Str = base1Str;
+    }
+
+    public Concrete3 getConcrete3() {
+      return concrete3;
+    }
+
+    public void setConcrete3(Concrete3 concrete3) {
+      this.concrete3 = concrete3;
+    }
+
+    public List<Concrete4> getConcrete4() {
+      return concrete4;
+    }
+
+    public void setConcrete4(List<Concrete4> concrete4) {
+      this.concrete4 = concrete4;
     }
   }
 
@@ -93,6 +121,50 @@ public class AbstractBaseClassesJDO {
 
     public void setConcrete2Str(String concrete2Str) {
       this.concrete2Str = concrete2Str;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Concrete3 {
+
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    private String str;
+
+    public Key getId() {
+      return id;
+    }
+
+    public String getStr() {
+      return str;
+    }
+
+    public void setStr(String str) {
+      this.str = str;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class Concrete4 {
+
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    private String str;
+
+    public Key getId() {
+      return id;
+    }
+
+    public String getStr() {
+      return str;
+    }
+
+    public void setStr(String str) {
+      this.str = str;
     }
   }
 }

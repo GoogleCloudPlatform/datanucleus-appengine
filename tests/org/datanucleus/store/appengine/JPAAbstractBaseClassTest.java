@@ -19,7 +19,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import org.datanucleus.test.AbstractBaseClassesJPA;
+import org.datanucleus.test.AbstractBaseClassesJPA.Concrete1;
+import org.datanucleus.test.AbstractBaseClassesJPA.Concrete2;
+import org.datanucleus.test.AbstractBaseClassesJPA.Concrete3;
+import org.datanucleus.test.AbstractBaseClassesJPA.Concrete4;
 
 /**
  * @author Max Ross <max.ross@gmail.com>
@@ -27,9 +30,17 @@ import org.datanucleus.test.AbstractBaseClassesJPA;
 public class JPAAbstractBaseClassTest extends JPATestCase {
 
   public void testConcrete() throws EntityNotFoundException {
-    AbstractBaseClassesJPA.Concrete1 concrete = new AbstractBaseClassesJPA.Concrete1();
+    Concrete1 concrete = new Concrete1();
     concrete.setBase1Str("base 1");
     concrete.setConcrete1Str("concrete");
+    Concrete3 concrete3 = new Concrete3();
+    concrete3.setStr("str3");
+    concrete.setConcrete3(concrete3);
+    Concrete4 concrete4a = new Concrete4();
+    concrete4a.setStr("str4a");
+    Concrete4 concrete4b = new Concrete4();
+    concrete4b.setStr("str4b");
+    concrete.setConcrete4(Utils.newArrayList(concrete4a, concrete4b));
 
     beginTxn();
     em.persist(concrete);
@@ -40,13 +51,35 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     assertEquals("base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("concrete", concreteEntity.getProperty("concrete1Str"));
 
+    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
+    assertEquals(1, concrete3Entity.getProperties().size());
+    assertEquals("str3", concrete3Entity.getProperty("str"));
+
+    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    assertEquals(1, concrete4aEntity.getProperties().size());
+    assertEquals("str4a", concrete4aEntity.getProperty("str"));
+
+    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+    assertEquals(1, concrete4bEntity.getProperties().size());
+    assertEquals("str4b", concrete4bEntity.getProperty("str"));
+
     beginTxn();
     concrete = em.find(concrete.getClass(), concrete.getId());
     assertEquals("base 1", concrete.getBase1Str());
     assertEquals("concrete", concrete.getConcrete1Str());
+    assertEquals(concrete3.getId(), concrete.getConcrete3().getId());
+    assertEquals(concrete3.getStr(), concrete.getConcrete3().getStr());
+    assertEquals(2, concrete.getConcrete4().size());
+    assertEquals(concrete4a.getId(), concrete.getConcrete4().get(0).getId());
+    assertEquals(concrete4a.getStr(), concrete.getConcrete4().get(0).getStr());
+    assertEquals(concrete4b.getId(), concrete.getConcrete4().get(1).getId());
+    assertEquals(concrete4b.getStr(), concrete.getConcrete4().get(1).getStr());
 
     concrete.setBase1Str("not base 1");
     concrete.setConcrete1Str("not concrete");
+
+    concrete.getConcrete3().setStr("blam3");
+    concrete.getConcrete4().get(0).setStr("blam4");
     commitTxn();
 
     concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
@@ -54,10 +87,27 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("not concrete", concreteEntity.getProperty("concrete1Str"));
 
+    concrete3Entity = ldth.ds.get(concrete3.getId());
+    assertEquals(1, concrete3Entity.getProperties().size());
+    assertEquals("blam3", concrete3Entity.getProperty("str"));
+
+    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    assertEquals(1, concrete4aEntity.getProperties().size());
+    assertEquals("blam4", concrete4aEntity.getProperty("str"));
+    try {
+      ldth.ds.get(concrete4b.getId());
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
     beginTxn();
     concrete = em.find(concrete.getClass(), concrete.getId());
     assertEquals("not base 1", concrete.getBase1Str());
     assertEquals("not concrete", concrete.getConcrete1Str());
+    assertEquals(concrete3.getId(), concrete.getConcrete3().getId());
+    assertEquals("blam3", concrete.getConcrete3().getStr());
+    assertEquals(2, concrete.getConcrete4().size());
+    assertEquals(concrete4a.getId(), concrete.getConcrete4().get(0).getId());
+    assertEquals("blam4", concrete.getConcrete4().get(0).getStr());
 
     assertNotNull(em.createQuery(
         "select from " + concrete.getClass().getName() + " where base1Str = 'not base 1'").getSingleResult());
@@ -68,13 +118,26 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     commitTxn();
 
     assertEquals(0, countForClass(concrete.getClass()));
+    assertEquals(0, countForClass(concrete3.getClass()));
+    assertEquals(0, countForClass(concrete4a.getClass()));
   }
 
+  // This test fails under the runtime enhancer when run right after the test
+  // above.  It does fine when run on its own and under the compile-time
+  // enhancer.  Sadness.
   public void testConcrete2() throws EntityNotFoundException {
-    AbstractBaseClassesJPA.Concrete2 concrete = new AbstractBaseClassesJPA.Concrete2();
+    Concrete2 concrete = new Concrete2();
     concrete.setBase1Str("base 1");
     concrete.setBase2Str("base 2");
     concrete.setConcrete2Str("concrete");
+    Concrete3 concrete3 = new Concrete3();
+    concrete3.setStr("str3");
+    concrete.setConcrete3(concrete3);
+    Concrete4 concrete4a = new Concrete4();
+    concrete4a.setStr("str4a");
+    Concrete4 concrete4b = new Concrete4();
+    concrete4b.setStr("str4b");
+    concrete.setConcrete4(Utils.newArrayList(concrete4a, concrete4b));
 
     beginTxn();
     em.persist(concrete);
@@ -86,15 +149,38 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     assertEquals("base 2", concreteEntity.getProperty("base2Str"));
     assertEquals("concrete", concreteEntity.getProperty("concrete2Str"));
 
+    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
+    assertEquals(1, concrete3Entity.getProperties().size());
+    assertEquals("str3", concrete3Entity.getProperty("str"));
+
+    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    assertEquals(1, concrete4aEntity.getProperties().size());
+    assertEquals("str4a", concrete4aEntity.getProperty("str"));
+
+    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+    assertEquals(1, concrete4bEntity.getProperties().size());
+    assertEquals("str4b", concrete4bEntity.getProperty("str"));
+
     beginTxn();
     concrete = em.find(concrete.getClass(), concrete.getId());
     assertEquals("base 1", concrete.getBase1Str());
     assertEquals("base 2", concrete.getBase2Str());
     assertEquals("concrete", concrete.getConcrete2Str());
 
+    assertEquals(concrete3.getId(), concrete.getConcrete3().getId());
+    assertEquals(concrete3.getStr(), concrete.getConcrete3().getStr());
+    assertEquals(2, concrete.getConcrete4().size());
+    assertEquals(concrete4a.getId(), concrete.getConcrete4().get(0).getId());
+    assertEquals(concrete4a.getStr(), concrete.getConcrete4().get(0).getStr());
+    assertEquals(concrete4b.getId(), concrete.getConcrete4().get(1).getId());
+    assertEquals(concrete4b.getStr(), concrete.getConcrete4().get(1).getStr());
+
     concrete.setBase1Str("not base 1");
     concrete.setBase2Str("not base 2");
     concrete.setConcrete2Str("not concrete");
+
+    concrete.getConcrete3().setStr("blam3");
+    concrete.getConcrete4().get(0).setStr("blam4");
     commitTxn();
 
     concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
@@ -102,12 +188,29 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("not base 2", concreteEntity.getProperty("base2Str"));
     assertEquals("not concrete", concreteEntity.getProperty("concrete2Str"));
+    concrete3Entity = ldth.ds.get(concrete3.getId());
+    assertEquals(1, concrete3Entity.getProperties().size());
+    assertEquals("blam3", concrete3Entity.getProperty("str"));
+
+    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    assertEquals(1, concrete4aEntity.getProperties().size());
+    assertEquals("blam4", concrete4aEntity.getProperty("str"));
+    try {
+      ldth.ds.get(concrete4b.getId());
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
 
     beginTxn();
     concrete = em.find(concrete.getClass(), concrete.getId());
     assertEquals("not base 1", concrete.getBase1Str());
     assertEquals("not base 2", concrete.getBase2Str());
     assertEquals("not concrete", concrete.getConcrete2Str());
+    assertEquals(concrete3.getId(), concrete.getConcrete3().getId());
+    assertEquals("blam3", concrete.getConcrete3().getStr());
+    assertEquals(2, concrete.getConcrete4().size());
+    assertEquals(concrete4a.getId(), concrete.getConcrete4().get(0).getId());
+    assertEquals("blam4", concrete.getConcrete4().get(0).getStr());
 
     assertNotNull(em.createQuery(
         "select from " + concrete.getClass().getName() + " where base1Str = 'not base 1'").getSingleResult());
@@ -120,5 +223,7 @@ public class JPAAbstractBaseClassTest extends JPATestCase {
     commitTxn();
 
     assertEquals(0, countForClass(concrete.getClass()));
+    assertEquals(0, countForClass(concrete3.getClass()));
+    assertEquals(0, countForClass(concrete4a.getClass()));
   }
 }

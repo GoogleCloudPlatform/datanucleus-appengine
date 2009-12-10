@@ -226,7 +226,7 @@ public class DatastoreTable implements DatastoreClass {
       JavaTypeMapping mapping, MetaData colmd) {
 
     if (hasColumnName(name)) {
-      throw new NucleusException("Duplicate property name: " + name);
+      throw new NucleusException("Duplicate property name on class " + getType() + " : " + name);
     }
 
     // Create the column
@@ -385,7 +385,8 @@ public class DatastoreTable implements DatastoreClass {
 
                   // Run callbacks for each of the element classes.
                   for (AbstractClassMetaData elementCmd1 : elementCmds) {
-                    callbacks.put(elementCmd1.getFullClassName(), new CallBack(fmd));
+                    callbacks.put(elementCmd1.getFullClassName(),
+                                  new CallBack(fmd, cmd.getFullClassName()));
                     DatastoreTable dt =
                         (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
                     dt.runCallBacks();
@@ -1021,7 +1022,7 @@ public class DatastoreTable implements DatastoreClass {
           addOrderMapping(ownerFmd, null);
         } else {
           // Unidirectional (element knows nothing about the owner)
-          String ownerClassName = ownerFmd.getAbstractClassMetaData().getFullClassName();
+          String ownerClassName = callback.ownerClassName;
           JavaTypeMapping fkMapping = new PersistenceCapableMapping();
           fkMapping.initialize(dba, ownerClassName);
           JavaTypeMapping orderMapping = null;
@@ -1189,8 +1190,13 @@ public class DatastoreTable implements DatastoreClass {
           FieldRole.ROLE_INDEX);
     }
 
-    DatastoreField column =
-        addDatastoreField(indexType.getName(), indexColumnName, indexMapping, colmd);
+    // if the relationship is in a base class with multiple subclasses, each
+    // subclass will try to add the index column.  We need to avoid adding
+    // the same column twice.
+    DatastoreField column = datastorePropertiesByName.get(indexColumnName.getIdentifierName());
+    if (column == null) {
+      column = addDatastoreField(indexType.getName(), indexColumnName, indexMapping, colmd);
+    }
     if (colmd == null || (colmd.getAllowsNull() == null) ||
         (colmd.getAllowsNull() != null && colmd.isAllowsNull())) {
       // User either wants it nullable, or havent specified anything, so make it nullable
@@ -1224,14 +1230,17 @@ public class DatastoreTable implements DatastoreClass {
   private static class CallBack {
 
     final AbstractMemberMetaData fmd;
+    final String ownerClassName;
 
     /**
      * Default constructor
      *
      * @param fmd The FieldMetaData
+     * @param ownerClassName The concrete type of the relationship
      */
-    public CallBack(AbstractMemberMetaData fmd) {
+    public CallBack(AbstractMemberMetaData fmd, String ownerClassName) {
       this.fmd = fmd;
+      this.ownerClassName = ownerClassName;
     }
   }
 

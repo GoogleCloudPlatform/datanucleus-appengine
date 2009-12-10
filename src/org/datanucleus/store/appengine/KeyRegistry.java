@@ -25,7 +25,6 @@ import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
-import org.datanucleus.store.mapped.MappedStoreManager;
 
 import java.util.Arrays;
 import java.util.IdentityHashMap;
@@ -59,10 +58,9 @@ class KeyRegistry {
    * and if it has we use that Key as the parent key for the new Entity we
    * are creating.
    */
-  void registerKey(MappedStoreManager storeMgr, StateManager stateMgr,
+  void registerKey(StateManager stateMgr,
       DatastoreFieldManager fieldMgr) {
-    DatastoreTable dt = (DatastoreTable) storeMgr.getDatastoreClass(
-        fieldMgr.getClassMetaData().getFullClassName(), fieldMgr.getClassLoaderResolver());
+    DatastoreTable dt = fieldMgr.getDatastoreTable();
     SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();
     for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {

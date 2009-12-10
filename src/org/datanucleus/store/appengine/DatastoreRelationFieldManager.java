@@ -31,7 +31,6 @@ import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.appengine.query.DatastoreQuery;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
-import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -73,7 +72,7 @@ class DatastoreRelationFieldManager {
       return;
     }
     if (fieldManager.getEntity().getKey() != null) {
-      keyRegistry.registerKey(getStoreManager(), getStateManager(), fieldManager);
+      keyRegistry.registerKey(getStateManager(), fieldManager);
     }
     for (StoreRelationEvent event : storeRelationEvents) {
       event.apply();
@@ -90,9 +89,7 @@ class DatastoreRelationFieldManager {
                           final boolean isInsert, final InsertMappingConsumer consumer) {
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
-        DatastoreTable table = getStoreManager().getDatastoreClass(
-            acmd.getFullClassName(),
-            fieldManager.getClassLoaderResolver());
+        DatastoreTable table = fieldManager.getDatastoreTable();
 
         StateManager sm = getStateManager();
         int fieldNumber = ammd.getAbsoluteFieldNumber();
@@ -232,11 +229,9 @@ class DatastoreRelationFieldManager {
     }
   }
 
-  Object fetchRelationField(
-      ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
-    DatastoreClass dc = getStoreManager().getDatastoreClass(
-        ammd.getAbstractClassMetaData().getFullClassName(), fieldManager.getClassLoaderResolver());
-    JavaTypeMapping mapping = dc.getMemberMappingInDatastoreClass(ammd);
+  Object fetchRelationField(ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
+    DatastoreTable dt = fieldManager.getDatastoreTable();
+    JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(ammd);
     // Based on ResultSetGetter
     Object value;
     if (mapping instanceof EmbeddedPCMapping ||
@@ -274,9 +269,7 @@ class DatastoreRelationFieldManager {
         // bidirectional 1 to 1 and we want the parent.  In that scenario
         // the key of the parent is part of the child's key so we can just
         // issue a fetch using the parent's key.
-        DatastoreTable table = getStoreManager().getDatastoreClass(
-            ammd.getAbstractClassMetaData().getFullClassName(),
-            fieldManager.getClassLoaderResolver());
+        DatastoreTable table = fieldManager.getDatastoreTable();
         if (table.isParentKeyProvider(ammd)) {
           // bidir 1 to 1 and we are the child
           value = lookupParent(ammd, mapping);
