@@ -18,7 +18,6 @@ package org.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Inheritance;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -29,7 +28,7 @@ import javax.jdo.annotations.PrimaryKey;
  */
 public class UnidirectionalOneToOneSubclassesJDO {
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperParentWithSuperChild {
     @PrimaryKey
@@ -66,7 +65,7 @@ public class UnidirectionalOneToOneSubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperParentWithSubChild {
     @PrimaryKey
@@ -103,7 +102,7 @@ public class UnidirectionalOneToOneSubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubParentWithSuperChild extends SuperParentWithSuperChild {
     private String subParentString;
 
@@ -116,7 +115,7 @@ public class UnidirectionalOneToOneSubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubParentWithSubChild extends SuperParentWithSubChild {
 
     private String subParentString;
@@ -130,7 +129,7 @@ public class UnidirectionalOneToOneSubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperChild {
     @PrimaryKey
@@ -156,7 +155,7 @@ public class UnidirectionalOneToOneSubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubChild extends SuperChild {
 
     private String bString;

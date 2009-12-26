@@ -18,7 +18,6 @@ package org.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Inheritance;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -45,7 +44,7 @@ import javax.jdo.annotations.PrimaryKey;
 public class BidirectionalOneToOneSubclassesJDO {
 
   public static class Example1 {
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class A {
       @PrimaryKey
@@ -82,7 +81,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class B extends A {
       private String bString;
 
@@ -95,7 +94,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class X {
       @PrimaryKey
@@ -124,13 +123,13 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class Y extends X {
     }
   }
 
   public static class Example2 {
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class A {
       @PrimaryKey
@@ -156,7 +155,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class B extends A {
 
       @Persistent(dependent = "true")
@@ -181,7 +180,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class X {
       @PrimaryKey
@@ -207,7 +206,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class Y extends X{
       private String yString;
 
@@ -233,7 +232,7 @@ public class BidirectionalOneToOneSubclassesJDO {
   }
 
   public static class Example3 {
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class A {
       @PrimaryKey
@@ -270,7 +269,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class B extends A {
       private String bString;
 
@@ -283,7 +282,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     @Inheritance(customStrategy = "complete-table")
     public static class X {
       @PrimaryKey
@@ -316,7 +315,7 @@ public class BidirectionalOneToOneSubclassesJDO {
       }
     }
 
-    @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+    @PersistenceCapable(detachable = "true")
     public static class Y extends X {
       private String yString;
 

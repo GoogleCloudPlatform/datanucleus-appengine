@@ -24,7 +24,6 @@ import java.util.List;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -34,7 +33,7 @@ import javax.jdo.annotations.PrimaryKey;
  */
 public class JoinsJDO {
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class Student {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -96,7 +95,7 @@ public class JoinsJDO {
     }
   }
   
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class Course {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -140,7 +139,7 @@ public class JoinsJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class Major {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

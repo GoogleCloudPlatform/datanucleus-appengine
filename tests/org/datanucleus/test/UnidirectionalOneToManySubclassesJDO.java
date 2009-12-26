@@ -23,7 +23,6 @@ import java.util.List;
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.Inheritance;
 import javax.jdo.annotations.Order;
 import javax.jdo.annotations.PersistenceCapable;
@@ -35,7 +34,7 @@ import javax.jdo.annotations.PrimaryKey;
  */
 public class UnidirectionalOneToManySubclassesJDO {
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperParentWithSuperChild {
     @PrimaryKey
@@ -74,7 +73,7 @@ public class UnidirectionalOneToManySubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperParentWithSubChild {
     @PrimaryKey
@@ -113,7 +112,7 @@ public class UnidirectionalOneToManySubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubParentWithSuperChild extends SuperParentWithSuperChild {
     private String subParentString;
 
@@ -126,7 +125,7 @@ public class UnidirectionalOneToManySubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubParentWithSubChild extends SuperParentWithSubChild {
     
     private String subParentString;
@@ -140,7 +139,7 @@ public class UnidirectionalOneToManySubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   @Inheritance(customStrategy = "complete-table")
   public static class SuperChild {
     @PrimaryKey
@@ -166,7 +165,7 @@ public class UnidirectionalOneToManySubclassesJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+  @PersistenceCapable(detachable = "true")
   public static class SubChild extends SuperChild {
 
     private String bString;

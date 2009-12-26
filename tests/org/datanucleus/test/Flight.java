@@ -23,7 +23,6 @@ import java.io.Serializable;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -33,7 +32,7 @@ import javax.jdo.annotations.VersionStrategy;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+@PersistenceCapable(detachable = "true")
 @Version(strategy = VersionStrategy.VERSION_NUMBER)
 public class Flight implements Serializable {
   private String id;
