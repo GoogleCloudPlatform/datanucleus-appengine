@@ -66,10 +66,12 @@ class DatastoreRelationFieldManager {
 
   /**
    * Applies all the relation events that have been built up.
+   * @return {@code true} if the relations changed in a way that
+   * requires an update to the relation owner, {@code false} otherwise.
    */
-  void storeRelations(KeyRegistry keyRegistry) {
+  boolean storeRelations(KeyRegistry keyRegistry) {
     if (storeRelationEvents.isEmpty()) {
-      return;
+      return false;
     }
     if (fieldManager.getEntity().getKey() != null) {
       keyRegistry.registerKey(getStateManager(), fieldManager);
@@ -78,6 +80,7 @@ class DatastoreRelationFieldManager {
       event.apply();
     }
     storeRelationEvents.clear();
+    return keyRegistry.parentNeedsUpdate(fieldManager.getEntity().getKey());
   }
 
   private DatastoreManager getStoreManager() {
@@ -154,11 +157,7 @@ class DatastoreRelationFieldManager {
     // entity group we need the parent's key.  In order to get the parent's key
     // we must save the parent before we save the child.  In order to avoid
     // saving the child until after we've saved the parent we register an event
-    // that we will apply later.  Note that for one-to-many we need to apply
-    // the event after the parent has been saved whether the relationship is
-    // dependent or not because we need the parent key in the child table.
-    // TODO(maxr) Support storing child keys in the parent table as a list
-    // property.
+    // that we will apply later.
     storeRelationEvents.add(event);
   }
 

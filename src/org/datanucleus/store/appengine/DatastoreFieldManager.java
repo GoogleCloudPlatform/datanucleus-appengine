@@ -41,6 +41,8 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
 import java.lang.reflect.Field;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -48,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.jdo.spi.JDOImplHelper;
+import javax.jdo.spi.PersistenceCapable;
 
 // TODO(maxr): Make this a base class and extract 2 subclasses - one for
 // reads and one for writes.
@@ -111,6 +114,7 @@ public class DatastoreFieldManager implements FieldManager {
   private boolean parentAlreadySet = false;
   private boolean keyAlreadySet = false;
   private Integer pkIdPos = null;
+  private boolean extractRelationKeys = false;
 
   private static final String PARENT_ALREADY_SET =
       "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
@@ -118,6 +122,16 @@ public class DatastoreFieldManager implements FieldManager {
             + "and leave the primary key field blank.  If you wish to "
             + "provide a named key, leave the parent pk field blank and set the primary key to be a "
             + "Key object made up of both the parent key and the named child.";
+
+  /**
+   * Relation types where we want to store child keys on the parent
+   */
+  private static final Set<Integer> PARENT_RELATION_TYPES =
+      Collections.synchronizedSet(Utils.newHashSet(
+          Relation.ONE_TO_MANY_BI,
+          Relation.ONE_TO_MANY_UNI,
+          Relation.ONE_TO_ONE_BI,
+          Relation.ONE_TO_ONE_UNI));
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
       DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
@@ -769,6 +783,10 @@ public class DatastoreFieldManager implements FieldManager {
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+      if (extractRelationKeys && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
+        // nothing for us to store
+        return;
+      }
       if (value != null ) {
         if (ammd.isSerialized()) {
           // If the field is serialized we don't need to apply
@@ -784,13 +802,30 @@ public class DatastoreFieldManager implements FieldManager {
       }
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, fieldNumber, value);
-      } else if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
-        relationFieldManager.storeRelationField(
-            getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
       } else {
-        // unwrap SCO values so that the datastore api doesn't
-        // honk on unknown types
-        value = unwrapSCOField(fieldNumber, value);
+        if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized() && !extractRelationKeys) {
+          // register a callback for later
+          relationFieldManager.storeRelationField(
+              getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+          DatastoreTable table = getDatastoreTable();
+          if (table != null && table.isParentKeyProvider(ammd)) {
+            // a parent key provider is either a many-to-one or the child side of a
+            // one-to-one.  Either way we don't want the entity to have a property
+            // corresponding to this field because this information is available in
+            // the key itself
+            return;
+          }
+          // We still want to write the entity property
+          // with a null value
+          value = null;
+        }
+        if (extractRelationKeys) {
+          value = extractRelationKeys(value);
+        } else {
+          // unwrap SCO values so that the datastore api doesn't
+          // honk on unknown types
+          value = unwrapSCOField(fieldNumber, value);
+        }
         String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
         if (isUnindexedProperty(ammd)) {
           datastoreEntity.setUnindexedProperty(propName, value);
@@ -801,6 +836,49 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
+  private Object extractRelationKeys(Object value) {
+    if (value instanceof Collection) {
+      return extractRelationKeys((Collection) value);
+    }
+    return extractKey(value);
+  }
+
+  private List<Key> extractRelationKeys(Collection<?> values) {
+    List<Key> keys = Utils.newArrayList();
+    for (Object obj : values) {
+      Key key = extractKey(obj);
+      if (key != null) {
+        keys.add(extractKey(obj));
+      }
+    }
+    return keys;
+  }
+
+  /**
+   * @param value The object from which to extract a key.
+   * @return The key of the object.  Returns {@code null} if the object is
+   * being deleted.
+   */
+  private Key extractKey(Object value) {
+    if (value == null) {
+      return null;
+    }
+    StateManager sm = getObjectManager().findStateManager(value);
+    if (sm == null) {
+      // boom
+      throw new NullPointerException("Could not locate a state manager for " + value);
+    }
+    if (sm.isDeleted((PersistenceCapable) sm.getObject()) ) {
+      return null;
+    }
+    Key key = EntityUtils.getPrimaryKeyAsKey(storeManager.getApiAdapter(), sm);
+    if (key == null) {
+      // boom
+      throw new NullPointerException("Could not extract a key from " + value);
+    }
+    return key;
+  }
+
   Object unwrapSCOField(int fieldNumber, Object value) {
     return getStateManager().unwrapSCOField(fieldNumber, value, false);
   }
@@ -808,8 +886,8 @@ public class DatastoreFieldManager implements FieldManager {
   /**
    * @see DatastoreRelationFieldManager#storeRelations
    */
-  void storeRelations() {
-    relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getObjectManager()));
+  boolean storeRelations() {
+    return relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getObjectManager()));
   }
 
   ClassLoaderResolver getClassLoaderResolver() {
@@ -1039,7 +1117,7 @@ public class DatastoreFieldManager implements FieldManager {
     }
 
     if (emd != null) {
-      DatastoreTable parentTable = getDatastoreTable();
+      DatastoreTable parentTable = getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), clr);
       AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
       EmbeddedMapping embeddedMapping =
           (EmbeddedMapping) parentTable.getMappingForFullFieldName(parentField.getFullFieldName());
@@ -1086,10 +1164,14 @@ public class DatastoreFieldManager implements FieldManager {
     return pkIdPos;
   }
 
+  public void setExtractRelationKeys(boolean extractRelationKeys) {
+    this.extractRelationKeys = extractRelationKeys;
+  }
+
   DatastoreTable getDatastoreTable() {
     return storeManager.getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
-
+  
   /**
    * Translates field numbers into {@link AbstractMemberMetaData}.
    */

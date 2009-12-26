@@ -27,8 +27,10 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * A registry for the keys of objects that have been inserted as part of a
@@ -45,6 +47,13 @@ class KeyRegistry {
    * equality.
    */
   private final Map<Object, Key> parentKeyMap = new IdentityHashMap<Object, Key>();
+
+  /**
+   * Set is used to pass messages between child and parent during
+   * cascades.  The entity uniquely identified by Any {@link Key}
+   * in this set needs to have its relation fields re-persisted.
+   */
+  private final Set<Key> modifiedParentSet = new HashSet<Key>();
 
   /**
    * In order to automatically assign children to the same entity groups as
@@ -136,5 +145,17 @@ class KeyRegistry {
     StoreManager storeManager = om.getStoreManager();
     ManagedConnection mconn = storeManager.getConnection(om);
     return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
+  }
+
+  void registerModifiedParent(Key key) {
+    modifiedParentSet.add(key);
+  }
+
+  void clearModifiedParent(Key key) {
+    modifiedParentSet.remove(key);
+  }
+
+  boolean parentNeedsUpdate(Key key) {
+    return modifiedParentSet.contains(key);
   }
 }

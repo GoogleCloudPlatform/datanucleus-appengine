@@ -105,7 +105,7 @@ public class BidirectionalOneToOneSubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
-      @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+      @OneToOne(fetch = FetchType.LAZY, mappedBy = "child")
       private A parent;
 
       private String xString;
@@ -214,7 +214,7 @@ public class BidirectionalOneToOneSubclassesJPA {
     public static class Y extends X{
       private String yString;
 
-      @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+      @OneToOne(fetch = FetchType.LAZY, mappedBy = "child")
       private B parent;
 
       public String getYString() {
@@ -293,7 +293,7 @@ public class BidirectionalOneToOneSubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
-      @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
+      @OneToOne(fetch = FetchType.LAZY, mappedBy = "child")
       private A parent;
 
       private String xString;

@@ -49,20 +49,23 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     commitTxn();
 
     Entity concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    assertEquals(2, concreteEntity.getProperties().size());
-    assertEquals("base 1", concreteEntity.getProperty("base1Str"));
-    assertEquals("concrete", concreteEntity.getProperty("concrete1Str"));
-
     Entity concrete3Entity = ldth.ds.get(concrete3.getId());
+    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+
+    assertEquals(4, concreteEntity.getProperties().size());
+    assertEquals("base 1", concreteEntity.getProperty("base1Str"));
+    assertEquals(concrete3Entity.getKey(), concreteEntity.getProperty("concrete3_id_OID"));
+    assertEquals(Utils.newArrayList(concrete4aEntity.getKey(), concrete4bEntity.getKey()),
+                 concreteEntity.getProperty("concrete4"));
+
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("str3", concrete3Entity.getProperty("str"));
 
-    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
     assertEquals(2, concrete4aEntity.getProperties().size());
     assertEquals("str4a", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
 
-    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
     assertEquals(2, concrete4bEntity.getProperties().size());
     assertEquals("str4b", concrete4bEntity.getProperty("str"));
     assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
@@ -88,15 +91,18 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     commitTxn();
 
     concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    assertEquals(2, concreteEntity.getProperties().size());
+    concrete3Entity = ldth.ds.get(concrete3.getId());
+    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+
+    assertEquals(4, concreteEntity.getProperties().size());
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("not concrete", concreteEntity.getProperty("concrete1Str"));
+    assertEquals(concrete3Entity.getKey(), concreteEntity.getProperty("concrete3_id_OID"));
+    assertEquals(Utils.newArrayList(concrete4aEntity.getKey()), concreteEntity.getProperty("concrete4"));
 
-    concrete3Entity = ldth.ds.get(concrete3.getId());
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("blam3", concrete3Entity.getProperty("str"));
 
-    concrete4aEntity = ldth.ds.get(concrete4a.getId());
     assertEquals(2, concrete4aEntity.getProperties().size());
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
@@ -151,21 +157,25 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     commitTxn();
 
     Entity concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    assertEquals(3, concreteEntity.getProperties().size());
+    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
+    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+
+    assertEquals(5, concreteEntity.getProperties().size());
     assertEquals("base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("base 2", concreteEntity.getProperty("base2Str"));
     assertEquals("concrete", concreteEntity.getProperty("concrete2Str"));
+    assertEquals(concrete3Entity.getKey(), concreteEntity.getProperty("concrete3_id_OID"));
+    assertEquals(Utils.newArrayList(concrete4aEntity.getKey(), concrete4bEntity.getKey()),
+                 concreteEntity.getProperty("concrete4"));
 
-    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("str3", concrete3Entity.getProperty("str"));
 
-    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
     assertEquals(2, concrete4aEntity.getProperties().size());
     assertEquals("str4a", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
 
-    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
     assertEquals(2, concrete4bEntity.getProperties().size());
     assertEquals("str4b", concrete4bEntity.getProperty("str"));
     assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
@@ -194,16 +204,20 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     commitTxn();
 
     concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    assertEquals(3, concreteEntity.getProperties().size());
+    concrete3Entity = ldth.ds.get(concrete3.getId());
+    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+
+    assertEquals(5, concreteEntity.getProperties().size());
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
     assertEquals("not base 2", concreteEntity.getProperty("base2Str"));
     assertEquals("not concrete", concreteEntity.getProperty("concrete2Str"));
+    assertEquals(concrete3Entity.getKey(), concreteEntity.getProperty("concrete3_id_OID"));
+    assertEquals(Utils.newArrayList(concrete4aEntity.getKey()),
+                 concreteEntity.getProperty("concrete4"));
 
-    concrete3Entity = ldth.ds.get(concrete3.getId());
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("blam3", concrete3Entity.getProperty("str"));
 
-    concrete4aEntity = ldth.ds.get(concrete4a.getId());
     assertEquals(2, concrete4aEntity.getProperties().size());
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));

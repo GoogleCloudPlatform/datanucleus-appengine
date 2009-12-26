@@ -54,6 +54,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
+    if (pm.currentTransaction().isActive() && failed) {
+      pm.currentTransaction().rollback();
+    }
     pmf.close();
     super.tearDown();
   }
@@ -112,8 +115,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Utils.newArrayList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(flightEntity.getKey()), parentEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(parent.getClass(), bidirChild.getClass(), 1, 1);
   }
@@ -133,7 +139,14 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("flights"));
+    assertNull(pojoEntity.getProperty("flights"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
+
     commitTxn();
     beginTxn();
     Flight f = newFlight();
@@ -187,8 +200,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Utils.newArrayList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(flightEntity.getKey()), parentEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidirChild.getClass(), 1, 1);
   }
@@ -241,7 +257,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertEquals(Utils.newArrayList(KeyFactory.stringToKey(bidir2.getId())), pojoEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(KeyFactory.stringToKey(f2.getId())), pojoEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(hasKeyPk2.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
     commitTxn();
 
@@ -294,8 +313,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Utils.newArrayList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(flightEntity.getKey()), parentEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir2.getClass(), 1, 1);
   }
@@ -353,7 +375,16 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(bidir2.getId()),
+        KeyFactory.stringToKey(bidir3.getId())), pojoEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(f2.getId()),
+        KeyFactory.stringToKey(f3.getId())), pojoEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(
+        hasKeyPk2.getKey(),
+        hasKeyPk3.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
     commitTxn();
 
@@ -435,8 +466,17 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(bidir2.getId()),
+        KeyFactory.stringToKey(bidir3.getId())), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(f2.getId()),
+        KeyFactory.stringToKey(f3.getId())), parentEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(
+        hasKeyPk2.getKey(),
+        hasKeyPk3.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir2.getClass(), 1, 2);
   }
@@ -486,7 +526,16 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(bidir2.getId()),
+        KeyFactory.stringToKey(bidir1.getId())), pojoEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(f2.getId()),
+        KeyFactory.stringToKey(f.getId())), pojoEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(
+        hasKeyPk2.getKey(),
+        hasKeyPk.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
     commitTxn();
 
@@ -524,8 +573,17 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(bidir2.getId()),
+        KeyFactory.stringToKey(bidir1.getId())), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Utils.newArrayList(
+        KeyFactory.stringToKey(f2.getId()),
+        KeyFactory.stringToKey(f.getId())), parentEntity.getProperty("flights"));
+    assertEquals(Utils.newArrayList(
+        hasKeyPk2.getKey(),
+        hasKeyPk.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir2.getClass(), 1, 2);
   }
@@ -685,7 +743,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("flights"));
+    assertNull(pojoEntity.getProperty("flights"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
@@ -737,7 +801,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("flights"));
+    assertNull(pojoEntity.getProperty("flights"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
@@ -745,7 +815,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDO> pojoClass)
       throws EntityNotFoundException {
     getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
-        "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors", true);
+        "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 

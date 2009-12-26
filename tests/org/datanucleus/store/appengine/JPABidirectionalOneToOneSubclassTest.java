@@ -43,10 +43,11 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(2, parentEntity.getProperties().size());
+    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals("b string", parentEntity.getProperty("bString"));
-    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(childEntity.getKey(), parentEntity.getProperty("child_id"));
     assertEquals(1, childEntity.getProperties().size());
     assertEquals("x string", childEntity.getProperty("xString"));
 
@@ -86,9 +87,10 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(1, parentEntity.getProperties().size());
-    assertEquals("a string", parentEntity.getProperty("aString"));
     Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(2, parentEntity.getProperties().size());
+    assertEquals("a string", parentEntity.getProperty("aString"));
+    assertEquals(childEntity.getKey(), parentEntity.getProperty("child_id"));
     assertEquals(1, childEntity.getProperties().size());
     assertEquals("x string", childEntity.getProperty("xString"));
 
@@ -129,10 +131,11 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(2, parentEntity.getProperties().size());
+    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals("b string", parentEntity.getProperty("bString"));
-    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(childEntity.getKey(), parentEntity.getProperty("child_id"));
     assertEquals(2, childEntity.getProperties().size());
     assertEquals("x string", childEntity.getProperty("xString"));
     assertEquals("y string", childEntity.getProperty("yString"));
@@ -203,10 +206,11 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(2, parentEntity.getProperties().size());
+    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals("b string", parentEntity.getProperty("bString"));
-    Entity childEntity = ldth.ds.get(child.getId());
+    assertEquals(childEntity.getKey(), parentEntity.getProperty("child_id"));
     assertEquals(2, childEntity.getProperties().size());
     assertEquals("x string", childEntity.getProperty("xString"));
     assertEquals("y string", childEntity.getProperty("yString"));
@@ -244,8 +248,10 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(2, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
+    assertTrue(parentEntity.hasProperty("child_id"));
+    assertNull(parentEntity.getProperty("child_id"));
 
     // lookup
     beginTxn();

@@ -35,6 +35,7 @@ import org.datanucleus.test.HasOneToManyUnencodedStringPkJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.easymock.EasyMock;
 
+import java.util.Collections;
 import java.util.List;
 
 import javax.persistence.PersistenceException;
@@ -89,9 +90,12 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
-
+    assertEquals(Collections.singletonList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Collections.singletonList(bookEntity.getKey()), parentEntity.getProperty("books"));
+    assertEquals(Collections.singletonList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
+    
     assertCountsInDatastore(parent.getClass(), bidirChild.getClass(), 1, 1);
   }
 
@@ -109,7 +113,13 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("books"));
+    assertNull(pojoEntity.getProperty("books"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
 
     beginTxn();
     Book b = newBook();
@@ -152,8 +162,11 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Collections.singletonList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Collections.singletonList(bookEntity.getKey()), parentEntity.getProperty("books"));
+    assertEquals(Collections.singletonList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidirChild.getClass(), 1, 1);
   }
@@ -291,7 +304,13 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     }
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("books"));
+    assertNull(pojoEntity.getProperty("books"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
@@ -341,7 +360,13 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     }
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertTrue(pojoEntity.hasProperty("bidirChildren"));
+    assertNull(pojoEntity.getProperty("bidirChildren"));
+    assertTrue(pojoEntity.hasProperty("books"));
+    assertNull(pojoEntity.getProperty("books"));
+    assertTrue(pojoEntity.hasProperty("hasKeyPks"));
+    assertNull(pojoEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
@@ -349,7 +374,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
   void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJPA> pojoClass)
       throws EntityNotFoundException {
     getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
-        "datanucleus.appengine.multipleRelationsOfSameTypeAreErrors", true);
+        "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
 
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
@@ -587,7 +612,10 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
-    assertEquals(1, pojoEntity.getProperties().size());
+    assertEquals(4, pojoEntity.getProperties().size());
+    assertEquals(Collections.singletonList(KeyFactory.stringToKey(bidir2.getId())), pojoEntity.getProperty("bidirChildren"));
+    assertEquals(Collections.singletonList(KeyFactory.stringToKey(b2.getId())), pojoEntity.getProperty("books"));
+    assertEquals(Collections.singletonList(hasKeyPk2.getId()), pojoEntity.getProperty("hasKeyPks"));
 
     commitTxn();
 
@@ -631,8 +659,11 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Collections.singletonList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Collections.singletonList(bookEntity.getKey()), parentEntity.getProperty("books"));
+    assertEquals(Collections.singletonList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 1);
   }

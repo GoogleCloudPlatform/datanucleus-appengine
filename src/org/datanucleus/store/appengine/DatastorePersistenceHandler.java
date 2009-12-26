@@ -285,8 +285,15 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       if (pkIdPos != null) {
         setPostStorePkId(putState.sm, pkIdPos, putState.entity);
       }
-      putState.fieldMgr.storeRelations();
 
+      storeRelations(putState.fieldMgr, putState.sm, putState.entity);
+
+      if (putState.entity.getParent() != null) {
+        // We inserted a new child.  Register the parent key so we know we need
+        // to update the parent.
+        KeyRegistry.getKeyRegistry(putState.sm.getObjectManager())
+            .registerModifiedParent(putState.entity.getParent());
+      }
       if (storeMgr.getRuntimeManager() != null) {
         storeMgr.getRuntimeManager().incrementInsertCount();
       }
@@ -491,10 +498,33 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT, "updating");
     put(sm, entity);
 
-    fieldMgr.storeRelations();
+    storeRelations(fieldMgr, sm, entity);
+
+    if (entity.getParent() != null) {
+      // We updated a child.  Register the parent key so we know we need
+      // to update the parent.
+      KeyRegistry.getKeyRegistry(sm.getObjectManager())
+          .registerModifiedParent(entity.getParent());
+    }
 
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementUpdateCount();
+    }
+  }
+
+  private void storeRelations(DatastoreFieldManager fieldMgr, StateManager sm, Entity entity) {
+    if (fieldMgr.storeRelations()) {
+      // Return value of true means that storing the relations resulted in
+      // changes that need to be reflected on the current object.
+      // That means we need to re-save.
+      ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+      try {
+        fieldMgr.setExtractRelationKeys(true);
+        sm.provideFields(sm.getClassMetaData().getRelationMemberPositions(clr), fieldMgr);
+      } finally {
+        fieldMgr.setExtractRelationKeys(false);
+      }
+      put(sm, entity);
     }
   }
 
@@ -549,6 +579,12 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       return;
     }
     delete(txn, Collections.singletonList(keyToDelete));
+
+    if (entity.getParent() != null) {
+      // We deleted a child.  Register the parent key so we know we need
+      // to update the parent.
+      KeyRegistry.getKeyRegistry(sm.getObjectManager()).registerModifiedParent(entity.getParent());
+    }
   }
 
   public void locateObject(StateManager sm) {

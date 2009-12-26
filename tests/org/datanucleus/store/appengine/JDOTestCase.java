@@ -40,7 +40,7 @@ public class JDOTestCase extends TestCase {
   protected PersistenceManager pm;
 
   protected DatastoreTestHelper ldth;
-  private boolean failed = false;
+  protected boolean failed = false;
 
   @Override
   protected void setUp() throws Exception {

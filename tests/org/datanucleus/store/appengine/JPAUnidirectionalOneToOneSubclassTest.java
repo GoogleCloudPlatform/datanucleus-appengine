@@ -46,11 +46,12 @@ public class JPAUnidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(2, parentEntity.getProperties().size());
+    Entity superParentSubChildEntity = ldth.ds.get(subChild.getId());
+    assertEquals(3, parentEntity.getProperties().size());
     assertEquals("super parent string", parentEntity.getProperty("superParentString"));
     assertEquals("sub parent string", parentEntity.getProperty("subParentString"));
-
-    Entity superParentSubChildEntity = ldth.ds.get(subChild.getId());
+    assertEquals(superParentSubChildEntity.getKey(), parentEntity.getProperty("subChild_id"));
+    
     assertEquals(2, superParentSubChildEntity.getProperties().size());
     assertEquals("a string", superParentSubChildEntity.getProperty("aString"));
     assertEquals("b string", superParentSubChildEntity.getProperty("bString"));
@@ -93,11 +94,12 @@ public class JPAUnidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(2, parentEntity.getProperties().size());
+    Entity superParentSuperChildEntity = ldth.ds.get(superChild.getId());
+    assertEquals(3, parentEntity.getProperties().size());
     assertEquals("super parent string", parentEntity.getProperty("superParentString"));
     assertEquals("sub parent string", parentEntity.getProperty("subParentString"));
+    assertEquals(superParentSuperChildEntity.getKey(), parentEntity.getProperty("superChild_id"));
 
-    Entity superParentSuperChildEntity = ldth.ds.get(superChild.getId());
     assertEquals(1, superParentSuperChildEntity.getProperties().size());
     assertEquals("a string", superParentSuperChildEntity.getProperty("aString"));
 
@@ -137,9 +139,10 @@ public class JPAUnidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(1, parentEntity.getProperties().size());
-    assertEquals("super parent string", parentEntity.getProperty("superParentString"));
     Entity superParentSuperChildEntity = ldth.ds.get(superChild.getId());
+    assertEquals(2, parentEntity.getProperties().size());
+    assertEquals("super parent string", parentEntity.getProperty("superParentString"));
+    assertEquals(superParentSuperChildEntity.getKey(), parentEntity.getProperty("superChild_id"));
     assertEquals(1, superParentSuperChildEntity.getProperties().size());
     assertEquals("a string", superParentSuperChildEntity.getProperty("aString"));
 
@@ -179,10 +182,11 @@ public class JPAUnidirectionalOneToOneSubclassTest extends JPATestCase {
     commitTxn();
     Entity parentEntity =
         ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    assertEquals(1, parentEntity.getProperties().size());
-    assertEquals("super parent string", parentEntity.getProperty("superParentString"));
-
     Entity superParentSubChildEntity = ldth.ds.get(subChild.getId());
+    assertEquals(2, parentEntity.getProperties().size());
+    assertEquals("super parent string", parentEntity.getProperty("superParentString"));
+    assertEquals(superParentSubChildEntity.getKey(), parentEntity.getProperty("subChild_id"));
+
     assertEquals(2, superParentSubChildEntity.getProperties().size());
     assertEquals("a string", superParentSubChildEntity.getProperty("aString"));
     assertEquals("b string", superParentSubChildEntity.getProperty("bString"));

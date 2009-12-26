@@ -18,6 +18,7 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.repackaged.com.google.common.collect.Lists;
 
 import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildJDO;
@@ -238,8 +239,11 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
     Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Lists.newArrayList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Lists.newArrayList(flightEntity.getKey()), parentEntity.getProperty("flights"));
+    assertEquals(Lists.newArrayList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertEquals(HasOneToManyLongPkListJDO.class.getName(), 1, countForClass(HasOneToManyLongPkListJDO.class));
     assertEquals(BidirectionalChildLongPkListJDO.class.getName(), 1, countForClass(
@@ -304,8 +308,11 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
     Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
-    assertEquals(1, parentEntity.getProperties().size());
+    assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
+    assertEquals(Lists.newArrayList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
+    assertEquals(Lists.newArrayList(flightEntity.getKey()), parentEntity.getProperty("flights"));
+    assertEquals(Lists.newArrayList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
 
     assertEquals(HasOneToManyStringPkListJDO.class.getName(), 1, countForClass(
         HasOneToManyStringPkListJDO.class));
