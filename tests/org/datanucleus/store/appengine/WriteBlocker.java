@@ -15,54 +15,21 @@
  **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.DatastoreService;
-
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
-import java.lang.reflect.Proxy;
 
 /**
- * Utility for disabling datastore writes.  Useful for proving
+ * Policy for disabling datastore writes.  Useful for proving
  * that operations that shouldn't write to the datastore aren't
  * actually writing to the datastore.
  *
- * If you call
- * {@link #installNoWritesDatastoreService()} make sure you call
- * {@link #uninstallNoWritesDatastoreService()} in a finally block.
- *
  * @author Max Ross <maxr@google.com>
  */
-public final class WriteBlocker {
+public final class WriteBlocker implements DatastoreServiceInterceptor.Policy {
 
-  private static DatastoreService ORIGINAL_DATASTORE_SERVICE;
-
-  private static final class Handler implements InvocationHandler {
-    private final DatastoreService delegate;
-
-    private Handler(DatastoreService delegate) throws NoSuchMethodException {
-      this.delegate = delegate;
+  public void intercept(Object o, Method method, Object[] params) {
+    if (method.getName().equals("put") || method.getName().equals("delete")) {
+      throw new RuntimeException("Detected a write: " + method);
     }
-
-    public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
-      if (method.getName().equals("put") || method.getName().equals("delete")) {
-        throw new RuntimeException("Detected a write: " + method);
-      }
-      return method.invoke(delegate, objects);
-    }
-  }
-
-  public static void installNoWritesDatastoreService()
-      throws NoSuchMethodException {
-    ORIGINAL_DATASTORE_SERVICE = DatastoreServiceFactoryInternal.getDatastoreService();
-    Handler handler = new Handler(ORIGINAL_DATASTORE_SERVICE);
-    DatastoreService ds = (DatastoreService) Proxy.newProxyInstance(
-        WriteBlocker.class.getClassLoader(),
-        new Class[] {DatastoreService.class}, handler);
-    DatastoreServiceFactoryInternal.setDatastoreService(ds);
-  }
-
-  public static void uninstallNoWritesDatastoreService() {
-    DatastoreServiceFactoryInternal.setDatastoreService(ORIGINAL_DATASTORE_SERVICE);
   }
 }
 

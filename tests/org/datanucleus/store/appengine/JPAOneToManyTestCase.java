@@ -35,6 +35,7 @@ import org.datanucleus.test.HasOneToManyUnencodedStringPkJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.easymock.EasyMock;
 
+import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 
@@ -860,6 +861,94 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
+  }
+
+  private static final class PutPolicy implements DatastoreServiceInterceptor.Policy {
+    private final List<Object[]> putParamList = Utils.newArrayList();
+    public void intercept(Object o, Method method, Object[] params) {
+      if (method.getName().equals("put")) {
+        putParamList.add(params);
+      }
+    }
+  }
+
+  PutPolicy setupPutPolicy(HasOneToManyJPA pojo, BidirectionalChildJPA bidir) throws Throwable {
+    PutPolicy policy = new PutPolicy();
+    DatastoreServiceInterceptor.install(policy);
+    try {
+      emf.close();
+      switchDatasource(getEntityManagerFactoryName());
+      Book book = new Book();
+      pojo.getBooks().add(book);
+      pojo.getBidirChildren().add(bidir);
+      HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
+      pojo.getHasKeyPks().add(hasKeyPk);
+
+      beginTxn();
+      em.persist(pojo);
+      commitTxn();
+      // 1 put for the parent, 3 puts for the children, 1 more put
+      // to add the child keys back on the parent
+      assertEquals(5, policy.putParamList.size());
+      policy.putParamList.clear();
+      return policy;
+    } catch (Throwable t) {
+      DatastoreServiceInterceptor.uninstall();
+      throw t;
+    }
+  }
+
+  void testOnlyOnePutOnChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.getBooks().iterator().next().setTitle("some author");
+      pojo.getBidirChildren().iterator().next().setChildVal("blarg");
+      pojo.getHasKeyPks().iterator().next().setStr("double blarg");
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for each child update
+    assertEquals(3, policy.putParamList.size());
+  }
+
+  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.setVal("another val");
+      pojo.getBooks().iterator().next().setTitle("some author");
+      pojo.getBidirChildren().iterator().next().setChildVal("blarg");
+      pojo.getHasKeyPks().iterator().next().setStr("double blarg");
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update, 1 put for each child update
+    assertEquals(4, policy.putParamList.size());
+  }
+
+  void testOnlyOneParentPutOnChildDelete(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.setVal("another val");
+      pojo.getBooks().clear();
+      pojo.getBidirChildren().clear();
+      pojo.getHasKeyPks().clear();
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update to remove the keys
+    assertEquals(2, policy.putParamList.size());
   }
 
   void assertCountsInDatastore(Class<? extends HasOneToManyJPA> pojoClass,

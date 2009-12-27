@@ -452,6 +452,18 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     commitTxn();
   }
 
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return true;

@@ -102,4 +102,17 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
     testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
   }
+
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  }
+
 }

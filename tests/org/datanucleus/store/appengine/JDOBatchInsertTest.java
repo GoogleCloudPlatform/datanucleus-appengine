@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
@@ -142,7 +144,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(0, batchRecorder.batchOps);
   }
 
-  public void testMakePersistentAll_CascadeInsert_OneToOne_NoTxn() {
+  public void testMakePersistentAll_CascadeInsert_OneToOne_NoTxn() throws EntityNotFoundException {
     switchDatasource(JDOTestCase.PersistenceManagerFactoryName.nontransactional);
     Flight f1 = newFlight();
     Flight f2 = newFlight();
@@ -154,6 +156,31 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
+
+    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    assertEquals(5, parent1Entity.getProperties().size());
+    assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
+    assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
+    assertTrue(parent1Entity.hasProperty("hasParent_key_OID"));
+    assertNull(parent1Entity.getProperty("hasParent_key_OID"));
+    assertTrue(parent1Entity.hasProperty("hasParentKeyPK_key_OID"));
+    assertNull(parent1Entity.getProperty("hasParentKeyPK_key_OID"));
+    assertTrue(parent1Entity.hasProperty("notDependent_id_OID"));
+    assertNull(parent1Entity.getProperty("notDependent_id_OID"));
+    assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
+    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    assertEquals(5, parent2Entity.getProperties().size());
+    assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
+    assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
+    assertTrue(parent2Entity.hasProperty("hasParent_key_OID"));
+    assertNull(parent2Entity.getProperty("hasParent_key_OID"));
+    assertTrue(parent2Entity.hasProperty("hasParentKeyPK_key_OID"));
+    assertNull(parent2Entity.getProperty("hasParentKeyPK_key_OID"));
+    assertTrue(parent2Entity.hasProperty("notDependent_id_OID"));
+    assertNull(parent2Entity.getProperty("notDependent_id_OID"));
+    assertEquals(flight2Entity.getKey(), parent2Entity.getProperty("flight_id_OID"));
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToOne_MultipleEntityGroups_Txn() {
@@ -173,7 +200,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     }
   }
 
-  public void testMakePersistentAll_CascadeInsert_OneToOne_OneEntityGroup_Txn() {
+  public void testMakePersistentAll_CascadeInsert_OneToOne_OneEntityGroup_Txn()
+      throws EntityNotFoundException {
     switchDatasource(JDOTestCase.PersistenceManagerFactoryName.transactional);
     Flight f1 = newFlight();
     Flight f2 = newFlight();
@@ -189,9 +217,34 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
+
+    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    assertEquals(5, parent1Entity.getProperties().size());
+    assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
+    assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
+    assertTrue(parent1Entity.hasProperty("hasParent_key_OID"));
+    assertNull(parent1Entity.getProperty("hasParent_key_OID"));
+    assertTrue(parent1Entity.hasProperty("hasParentKeyPK_key_OID"));
+    assertNull(parent1Entity.getProperty("hasParentKeyPK_key_OID"));
+    assertTrue(parent1Entity.hasProperty("notDependent_id_OID"));
+    assertNull(parent1Entity.getProperty("notDependent_id_OID"));
+    assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
+    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    assertEquals(5, parent2Entity.getProperties().size());
+    assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
+    assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
+    assertTrue(parent2Entity.hasProperty("hasParent_key_OID"));
+    assertNull(parent2Entity.getProperty("hasParent_key_OID"));
+    assertTrue(parent2Entity.hasProperty("hasParentKeyPK_key_OID"));
+    assertNull(parent2Entity.getProperty("hasParentKeyPK_key_OID"));
+    assertTrue(parent2Entity.hasProperty("notDependent_id_OID"));
+    assertNull(parent2Entity.getProperty("notDependent_id_OID"));
+    assertEquals(flight2Entity.getKey(), parent2Entity.getProperty("flight_id_OID"));
   }
 
-  public void testMakePersistentAll_CascadeInsert_OneToMany_NoTxn() {
+  public void testMakePersistentAll_CascadeInsert_OneToMany_NoTxn() throws EntityNotFoundException {
     switchDatasource(JDOTestCase.PersistenceManagerFactoryName.nontransactional);
     Flight f1 = newFlight();
     Flight f2 = newFlight();
@@ -209,13 +262,43 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     HasOneToManyListJDO parent2 = new HasOneToManyListJDO();
     parent2.getFlights().add(f3);
     parent2.getFlights().add(f4);
-    parent1.getBidirChildren().add(bidirChild3);
-    parent1.getBidirChildren().add(bidirChild4);
+    parent2.getBidirChildren().add(bidirChild3);
+    parent2.getBidirChildren().add(bidirChild4);
     pm.makePersistentAll(parent1, parent2);
     assertEquals(2, countForClass(HasOneToManyListJDO.class));
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
     assertEquals(1, batchRecorder.batchOps);
+
+    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flight3Entity = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity flight4Entity = ldth.ds.get(KeyFactory.stringToKey(f4.getId()));
+    Entity bidir1Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
+    Entity bidir2Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
+    Entity bidir3Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
+    Entity bidir4Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
+    assertEquals(4, parent1Entity.getProperties().size());
+    assertTrue(parent1Entity.hasProperty("hasKeyPks"));
+    assertNull(parent1Entity.getProperty("hasKeyPks"));
+    assertEquals(
+        Utils.newArrayList(flight1Entity.getKey(), flight2Entity.getKey()),
+        parent1Entity.getProperty("flights"));
+    assertEquals(
+        Utils.newArrayList(bidir1Entity.getKey(), bidir2Entity.getKey()),
+        parent1Entity.getProperty("bidirChildren"));
+
+    assertEquals(4, parent2Entity.getProperties().size());
+    assertTrue(parent2Entity.hasProperty("hasKeyPks"));
+    assertNull(parent2Entity.getProperty("hasKeyPks"));
+    assertEquals(
+        Utils.newArrayList(flight3Entity.getKey(), flight4Entity.getKey()),
+        parent2Entity.getProperty("flights"));
+    assertEquals(
+        Utils.newArrayList(bidir3Entity.getKey(), bidir4Entity.getKey()),
+        parent2Entity.getProperty("bidirChildren"));
   }
 
   public void testMakePersistentAll_CascadeInsert_OneToMany_MultipleEntityGroups_Txn() {
@@ -236,8 +319,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     HasOneToManyListJDO parent2 = new HasOneToManyListJDO();
     parent2.getFlights().add(f3);
     parent2.getFlights().add(f4);
-    parent1.getBidirChildren().add(bidirChild3);
-    parent1.getBidirChildren().add(bidirChild4);
+    parent2.getBidirChildren().add(bidirChild3);
+    parent2.getBidirChildren().add(bidirChild4);
     beginTxn();
     try {
       pm.makePersistentAll(parent1, parent2);
@@ -247,7 +330,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     }
   }
 
-  public void testMakePersistentAll_CascadeInsert_OneToMany_OneEntityGroup_Txn() {
+  public void testMakePersistentAll_CascadeInsert_OneToMany_OneEntityGroup_Txn()
+      throws EntityNotFoundException {
     switchDatasource(JDOTestCase.PersistenceManagerFactoryName.transactional);
     Flight f1 = newFlight();
     Flight f2 = newFlight();
@@ -267,8 +351,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     parent2.setId(new KeyFactory.Builder("Yar", 43).addChild(HasOneToManyListJDO.class.getSimpleName(), "k2").getString());
     parent2.getFlights().add(f3);
     parent2.getFlights().add(f4);
-    parent1.getBidirChildren().add(bidirChild3);
-    parent1.getBidirChildren().add(bidirChild4);
+    parent2.getBidirChildren().add(bidirChild3);
+    parent2.getBidirChildren().add(bidirChild4);
     beginTxn();
     pm.makePersistentAll(parent1, parent2);
     commitTxn();
@@ -276,6 +360,36 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
     assertEquals(1, batchRecorder.batchOps);
+
+    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flight3Entity = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity flight4Entity = ldth.ds.get(KeyFactory.stringToKey(f4.getId()));
+    Entity bidir1Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
+    Entity bidir2Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
+    Entity bidir3Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
+    Entity bidir4Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
+    assertEquals(4, parent1Entity.getProperties().size());
+    assertTrue(parent1Entity.hasProperty("hasKeyPks"));
+    assertNull(parent1Entity.getProperty("hasKeyPks"));
+    assertEquals(
+        Utils.newArrayList(flight1Entity.getKey(), flight2Entity.getKey()),
+        parent1Entity.getProperty("flights"));
+    assertEquals(
+        Utils.newArrayList(bidir1Entity.getKey(), bidir2Entity.getKey()),
+        parent1Entity.getProperty("bidirChildren"));
+
+    assertEquals(4, parent2Entity.getProperties().size());
+    assertTrue(parent2Entity.hasProperty("hasKeyPks"));
+    assertNull(parent2Entity.getProperty("hasKeyPks"));
+    assertEquals(
+        Utils.newArrayList(flight3Entity.getKey(), flight4Entity.getKey()),
+        parent2Entity.getProperty("flights"));
+    assertEquals(
+        Utils.newArrayList(bidir3Entity.getKey(), bidir4Entity.getKey()),
+        parent2Entity.getProperty("bidirChildren"));
   }
 
   public void testCombineInsertAndUpdate_NoTxn() {

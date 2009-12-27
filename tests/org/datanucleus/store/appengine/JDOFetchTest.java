@@ -40,7 +40,7 @@ public class JDOFetchTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    WriteBlocker.installNoWritesDatastoreService();
+    DatastoreServiceInterceptor.install(new WriteBlocker());
     beginTxn();
   }
 
@@ -52,7 +52,7 @@ public class JDOFetchTest extends JDOTestCase {
     try {
       super.tearDown();
     } finally {
-      WriteBlocker.uninstallNoWritesDatastoreService();
+      DatastoreServiceInterceptor.uninstall();
     }
   }
 

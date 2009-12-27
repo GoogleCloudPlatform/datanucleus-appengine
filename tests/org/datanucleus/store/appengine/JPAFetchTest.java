@@ -30,7 +30,7 @@ public class JPAFetchTest extends JPATestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    WriteBlocker.installNoWritesDatastoreService();
+    DatastoreServiceInterceptor.install(new WriteBlocker());
   }
 
   @Override
@@ -38,7 +38,7 @@ public class JPAFetchTest extends JPATestCase {
     try {
       super.tearDown();
     } finally {
-      WriteBlocker.uninstallNoWritesDatastoreService();
+      DatastoreServiceInterceptor.uninstall();
     }
   }
 

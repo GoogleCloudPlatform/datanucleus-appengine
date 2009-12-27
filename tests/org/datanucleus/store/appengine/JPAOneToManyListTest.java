@@ -624,4 +624,16 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     em.remove(parent);
     commitTxn();
   }
+
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+  }
 }

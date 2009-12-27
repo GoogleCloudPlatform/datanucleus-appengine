@@ -33,6 +33,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.appengine.DatastoreServiceInterceptor;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JDOTestCase;
 import org.datanucleus.store.appengine.PrimitiveArrays;
@@ -128,7 +129,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    WriteBlocker.installNoWritesDatastoreService();
+    DatastoreServiceInterceptor.install(new WriteBlocker());
     beginTxn();
   }
 
@@ -140,7 +141,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       super.tearDown();
     } finally {
-      WriteBlocker.uninstallNoWritesDatastoreService();
+      DatastoreServiceInterceptor.uninstall();
     }
   }
 

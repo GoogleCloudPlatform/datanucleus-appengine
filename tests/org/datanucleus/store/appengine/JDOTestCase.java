@@ -144,7 +144,9 @@ public class JDOTestCase extends TestCase {
   }
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
-    pm.close();
+    if (!pm.isClosed()) {
+      pm.close();
+    }
     if (!cacheManagers() && !pmf.isClosed()) {
       pmf.close();
     }

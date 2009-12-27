@@ -153,6 +153,18 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testReplaceBidirColl(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), childSet);
   }
 
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return false;

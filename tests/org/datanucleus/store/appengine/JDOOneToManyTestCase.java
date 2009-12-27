@@ -38,6 +38,7 @@ import org.datanucleus.test.HasOneToManyUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
 import org.easymock.EasyMock;
 
+import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
@@ -1456,6 +1457,93 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(2, countForClass(newColl.iterator().next().getClass()));
   }
 
+  private static final class PutPolicy implements DatastoreServiceInterceptor.Policy {
+    private final List<Object[]> putParamList = Utils.newArrayList();
+    public void intercept(Object o, Method method, Object[] params) {
+      if (method.getName().equals("put")) {
+        putParamList.add(params);
+      }
+    }
+  }
+
+  PutPolicy setupPutPolicy(HasOneToManyJDO pojo, BidirectionalChildJDO bidir) throws Throwable {
+    PutPolicy policy = new PutPolicy();
+    DatastoreServiceInterceptor.install(policy);
+    try {
+      pmf.close();
+      switchDatasource(PersistenceManagerFactoryName.transactional);
+      Flight flight = new Flight();
+      pojo.addFlight(flight);
+      pojo.addBidirChild(bidir);
+      HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+      pojo.addHasKeyPk(hasKeyPk);
+
+      beginTxn();
+      pm.makePersistent(pojo);
+      commitTxn();
+      // 1 put for the parent, 3 puts for the children, 1 more put
+      // to add the child keys back on the parent
+      assertEquals(5, policy.putParamList.size());
+      policy.putParamList.clear();
+      return policy;
+    } catch (Throwable t) {
+      DatastoreServiceInterceptor.uninstall();
+      throw t;
+    }
+  }
+
+  void testOnlyOnePutOnChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.getFlights().iterator().next().setMe(88);
+      pojo.getBidirChildren().iterator().next().setChildVal("blarg");
+      pojo.getHasKeyPks().iterator().next().setStr("double blarg");
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for each child update
+    assertEquals(3, policy.putParamList.size());
+  }
+
+  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.setVal("another val");
+      pojo.getFlights().iterator().next().setMe(88);
+      pojo.getBidirChildren().iterator().next().setChildVal("blarg");
+      pojo.getHasKeyPks().iterator().next().setStr("double blarg");
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update, 1 put for each child update
+    assertEquals(4, policy.putParamList.size());
+  }
+
+  void testOnlyOneParentPutOnChildDelete(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+      throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    try {
+      beginTxn();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.setVal("another val");
+      pojo.nullFlights();
+      pojo.nullBidirChildren();
+      pojo.nullHasKeyPks();
+      commitTxn();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update to remove the keys
+    assertEquals(2, policy.putParamList.size());
+  }
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
 //                   BidirectionalChildJDO bidir3) {

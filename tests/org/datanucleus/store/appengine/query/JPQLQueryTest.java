@@ -32,6 +32,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.appengine.DatastoreServiceInterceptor;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.PrimitiveArrays;
@@ -122,7 +123,7 @@ public class JPQLQueryTest extends JPATestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    WriteBlocker.installNoWritesDatastoreService();
+    DatastoreServiceInterceptor.install(new WriteBlocker());
   }
 
   @Override
@@ -130,7 +131,7 @@ public class JPQLQueryTest extends JPATestCase {
     try {
       super.tearDown();
     } finally {
-      WriteBlocker.uninstallNoWritesDatastoreService();
+      DatastoreServiceInterceptor.uninstall();
     }
   }
 

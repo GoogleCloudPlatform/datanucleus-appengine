@@ -500,13 +500,6 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
 
     storeRelations(fieldMgr, sm, entity);
 
-    if (entity.getParent() != null) {
-      // We updated a child.  Register the parent key so we know we need
-      // to update the parent.
-      KeyRegistry.getKeyRegistry(sm.getObjectManager())
-          .registerModifiedParent(entity.getParent());
-    }
-
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementUpdateCount();
     }
