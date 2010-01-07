@@ -61,8 +61,8 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
       ElementContainerStore ecs, Object obj) {
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     JavaTypeMapping orderMapping = ecs.getOrderMapping();
+    ObjectManager om = ownerSm.getObjectManager();
     if (orderMapping != null) {
-      ObjectManager om = ownerSm.getObjectManager();
       StateManager childSm = om.findStateManager(element);
       // See DatastoreFieldManager.handleIndexFields for info on why this
       // absurdity is necessary.
@@ -78,6 +78,10 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
     if (ecs.getOwnerMemberMetaData().getCollection().isDependentElement() &&
         allowDependentField && obj != null) {
       ownerSm.getObjectManager().deleteObjectInternal(obj);
+    }
+    if (!om.getTransaction().isActive()) {
+      om.getTransaction().addTransactionEventListener(
+          new ForceFlushPreCommitTransactionEventListener(ownerSm));
     }
     return obj;
   }

@@ -114,7 +114,7 @@ public class DatastoreFieldManager implements FieldManager {
   private boolean parentAlreadySet = false;
   private boolean keyAlreadySet = false;
   private Integer pkIdPos = null;
-  private boolean extractRelationKeys = false;
+  private boolean registerRelationCallbacks = true;
 
   private static final String PARENT_ALREADY_SET =
       "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
@@ -264,7 +264,7 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private boolean fieldIsOfTypeLong(int fieldNumber) {
-    // Integer is final so we don't need to worry about checking for subclasses.
+    // Long is final so we don't need to worry about checking for subclasses.
     return getMetaData(fieldNumber).getType().equals(Long.class);
   }
 
@@ -783,7 +783,7 @@ public class DatastoreFieldManager implements FieldManager {
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      if (extractRelationKeys && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
+      if (!registerRelationCallbacks && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
         // nothing for us to store
         return;
       }
@@ -803,10 +803,12 @@ public class DatastoreFieldManager implements FieldManager {
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, fieldNumber, value);
       } else {
-        if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized() && !extractRelationKeys) {
-          // register a callback for later
-          relationFieldManager.storeRelationField(
-              getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+        if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
+          if (registerRelationCallbacks) {
+            // register a callback for later
+            relationFieldManager.storeRelationField(
+                getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+          }
           DatastoreTable table = getDatastoreTable();
           if (table != null && table.isParentKeyProvider(ammd)) {
             // a parent key provider is either a many-to-one or the child side of a
@@ -816,16 +818,11 @@ public class DatastoreFieldManager implements FieldManager {
             return;
           }
           // We still want to write the entity property
-          // with a null value
-          value = null;
-        }
-        if (extractRelationKeys) {
           value = extractRelationKeys(value);
-        } else {
-          // unwrap SCO values so that the datastore api doesn't
-          // honk on unknown types
-          value = unwrapSCOField(fieldNumber, value);
         }
+        // unwrap SCO values so that the datastore api doesn't
+        // honk on unknown types
+        value = unwrapSCOField(fieldNumber, value);
         String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
         if (isUnindexedProperty(ammd)) {
           datastoreEntity.setUnindexedProperty(propName, value);
@@ -857,23 +854,29 @@ public class DatastoreFieldManager implements FieldManager {
   /**
    * @param value The object from which to extract a key.
    * @return The key of the object.  Returns {@code null} if the object is
-   * being deleted.
+   * being deleted or the object does not yet have a key.
    */
   private Key extractKey(Object value) {
     if (value == null) {
       return null;
     }
-    StateManager sm = getObjectManager().findStateManager(value);
+    ObjectManager om = getObjectManager();
+    StateManager sm = om.findStateManager(value);
     if (sm == null) {
-      // boom
-      throw new NullPointerException("Could not locate a state manager for " + value);
+      // that's fine, it just means the object hasn't been saved yet
+      return null;
     }
     if (sm.isDeleted((PersistenceCapable) sm.getObject()) ) {
       return null;
     }
+    Object primaryKey = storeManager.getApiAdapter().getTargetKeyForSingleFieldIdentity(
+        sm.getInternalObjectId());
+    if (primaryKey == null) {
+      // this is ok, it just means the object has not yet been persisted
+      return null;
+    }
     Key key = EntityUtils.getPrimaryKeyAsKey(storeManager.getApiAdapter(), sm);
     if (key == null) {
-      // boom
       throw new NullPointerException("Could not extract a key from " + value);
     }
     return key;
@@ -1164,8 +1167,8 @@ public class DatastoreFieldManager implements FieldManager {
     return pkIdPos;
   }
 
-  public void setExtractRelationKeys(boolean extractRelationKeys) {
-    this.extractRelationKeys = extractRelationKeys;
+  public void setRegisterRelationCallbacks(boolean registerRelationCallbacks) {
+    this.registerRelationCallbacks = registerRelationCallbacks;
   }
 
   DatastoreTable getDatastoreTable() {

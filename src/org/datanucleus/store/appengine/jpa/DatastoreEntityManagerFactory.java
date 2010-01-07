@@ -137,4 +137,8 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
       }
     }
   }
+
+  public PersistenceManagerFactory getPersistenceManagerFactory() {
+    return pmf;
+  }
 }

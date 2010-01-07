@@ -46,8 +46,9 @@ import javax.persistence.PersistenceException;
  */
 abstract class JPAOneToManyTestCase extends JPATestCase {
 
-  void testInsert_NewParentAndChild(BidirectionalChildJPA bidirChild, HasOneToManyJPA parent)
-      throws EntityNotFoundException {
+  void testInsert_NewParentAndChild(BidirectionalChildJPA bidirChild, HasOneToManyJPA parent,
+                                    StartEnd startEnd)
+      throws Exception {
     bidirChild.setChildVal("yam");
 
     Book b = newBook();
@@ -61,9 +62,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     parent.getHasKeyPks().add(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     em.persist(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(b.getId());
@@ -96,17 +97,17 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(Collections.singletonList(bidirChildEntity.getKey()), parentEntity.getProperty("bidirChildren"));
     assertEquals(Collections.singletonList(bookEntity.getKey()), parentEntity.getProperty("books"));
     assertEquals(Collections.singletonList(hasKeyPkEntity.getKey()), parentEntity.getProperty("hasKeyPks"));
-    
+
     assertCountsInDatastore(parent.getClass(), bidirChild.getClass(), 1, 1);
   }
 
-  void testInsert_ExistingParentNewChild(BidirectionalChildJPA bidirChild, HasOneToManyJPA pojo)
-      throws EntityNotFoundException {
+  void testInsert_ExistingParentNewChild(BidirectionalChildJPA bidirChild, HasOneToManyJPA pojo,
+                                         StartEnd startEnd) throws Exception {
     pojo.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
     assertNotNull(pojo.getId());
     assertTrue(pojo.getBooks().isEmpty());
     assertTrue(pojo.getHasKeyPks().isEmpty());
@@ -122,7 +123,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertTrue(pojoEntity.hasProperty("hasKeyPks"));
     assertNull(pojoEntity.getProperty("hasKeyPks"));
 
-    beginTxn();
+    startEnd.start();
     Book b = newBook();
     pojo.getBooks().add(b);
 
@@ -134,7 +135,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidirChild);
 
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(bidirChild.getParent());
@@ -172,8 +173,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidirChild.getClass(), 1, 1);
   }
 
-  void testUpdate_UpdateChildWithMerge(BidirectionalChildJPA bidir, HasOneToManyJPA pojo)
-      throws EntityNotFoundException {
+  void testUpdate_UpdateChildWithMerge(BidirectionalChildJPA bidir, HasOneToManyJPA pojo,
+      StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
 
@@ -182,21 +183,21 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
     assertNotNull(bidir.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     b.setIsbn("yam");
     hasKeyPk.setStr("yar");
     bidir.setChildVal("yap");
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -216,8 +217,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
   }
 
-  void testUpdate_UpdateChild(BidirectionalChildJPA bidir, HasOneToManyJPA pojo)
-      throws EntityNotFoundException {
+  void testUpdate_UpdateChild(BidirectionalChildJPA bidir, HasOneToManyJPA pojo,
+                              StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
 
@@ -226,21 +227,21 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
     assertNotNull(bidir.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     pojo.getBooks().iterator().next().setIsbn("yam");
     pojo.getHasKeyPks().iterator().next().setStr("yar");
     pojo.getBidirChildren().iterator().next().setChildVal("yap");
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -260,8 +261,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
   }
 
-  void testUpdate_NullOutChildren(BidirectionalChildJPA bidir, HasOneToManyJPA pojo)
-      throws EntityNotFoundException {
+  void testUpdate_NullOutChildren(BidirectionalChildJPA bidir, HasOneToManyJPA pojo,
+                                  StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
 
@@ -270,18 +271,18 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo.nullBooks();
     pojo.nullHasKeyPks();
     pojo.nullBidirChildren();
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(b.getId()));
@@ -316,8 +317,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
 
-  void testUpdate_ClearOutChildren(BidirectionalChildJPA bidir, HasOneToManyJPA pojo)
-      throws EntityNotFoundException {
+  void testUpdate_ClearOutChildren(BidirectionalChildJPA bidir, HasOneToManyJPA pojo,
+                                   StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
 
@@ -326,18 +327,18 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo.getBooks().clear();
     pojo.getHasKeyPks().clear();
     pojo.getBidirChildren().clear();
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(b.getId()));
@@ -372,8 +373,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
 
-  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJPA> pojoClass)
-      throws EntityNotFoundException {
+  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJPA> pojoClass,
+                           StartEnd startEnd) throws Exception {
     getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
         "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
 
@@ -389,7 +390,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     Entity bookEntity3 = Book.newBookEntity(pojoEntity.getKey(), "auth1", "22221", "title 0");
     ldth.ds.put(bookEntity3);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyWithOrderByJPA pojo =
         em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
@@ -411,11 +412,12 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals("title 1", pojo.getBooksByAuthorAndId().get(1).getTitle());
     assertEquals("title 0", pojo.getBooksByAuthorAndId().get(2).getTitle());
 
-    commitTxn();
+    startEnd.end();
   }
 
   void testFind(Class<? extends HasOneToManyJPA> pojoClass,
-                Class<? extends BidirectionalChildJPA> bidirClass) throws EntityNotFoundException {
+                Class<? extends BidirectionalChildJPA> bidirClass,
+                StartEnd startEnd) throws Exception {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -430,7 +432,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     bidirEntity.setProperty("childVal", "yap");
     ldth.ds.put(bidirEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyJPA pojo = em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
     assertNotNull(pojo.getBooks());
@@ -442,11 +444,12 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertNotNull(pojo.getBidirChildren());
     assertEquals("yap", pojo.getBidirChildren().iterator().next().getChildVal());
     assertEquals(pojo, pojo.getBidirChildren().iterator().next().getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   void testQuery(Class<? extends HasOneToManyJPA> pojoClass,
-                 Class<? extends BidirectionalChildJPA> bidirClass) throws EntityNotFoundException {
+                 Class<? extends BidirectionalChildJPA> bidirClass,
+                 StartEnd startEnd) throws Exception {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -464,7 +467,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + pojoClass.getName() + " where id = :key");
     q.setParameter("key", KeyFactory.keyToString(pojoEntity.getKey()));
-    beginTxn();
+    startEnd.start();
     @SuppressWarnings("unchecked")
     List<HasOneToManyJPA> result = (List<HasOneToManyJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -480,7 +483,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(1, pojo.getBidirChildren().size());
     assertEquals("yap", pojo.getBidirChildren().iterator().next().getChildVal());
     assertEquals(pojo, pojo.getBidirChildren().iterator().next().getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJPA> pojoClass,
@@ -533,8 +536,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
   }
 
   void testDeleteParentDeletesChild(Class<? extends HasOneToManyJPA> pojoClass,
-                                    Class<? extends BidirectionalChildJPA> bidirClass)
-      throws EntityNotFoundException {
+                                    Class<? extends BidirectionalChildJPA> bidirClass,
+                                    StartEnd startEnd) throws Exception {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -549,10 +552,10 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     bidirEntity.setProperty("childVal", "yap");
     ldth.ds.put(bidirEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyJPA pojo = em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     em.remove(pojo);
-    commitTxn();
+    startEnd.end();
     assertCountsInDatastore(pojoClass, bidirClass, 0, 0);
   }
 
@@ -563,7 +566,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
   }
 
   public void testRemoveObject(HasOneToManyJPA pojo, BidirectionalChildJPA bidir1,
-                               BidirectionalChildJPA bidir2) throws EntityNotFoundException {
+                               BidirectionalChildJPA bidir2,
+                               StartEnd startEnd) throws Exception {
     pojo.setVal("yar");
     bidir1.setChildVal("yam1");
     bidir2.setChildVal("yam2");
@@ -580,9 +584,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidir1);
     pojo.getBidirChildren().add(bidir2);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 2);
 
@@ -593,11 +597,11 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBooks().remove(b1);
     pojo.getHasKeyPks().remove(hasKeyPk1);
 
-    beginTxn();
+    startEnd.start();
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertNotNull(pojo.getId());
     assertEquals(1, pojo.getBooks().size());
@@ -618,7 +622,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(Collections.singletonList(KeyFactory.stringToKey(b2.getId())), pojoEntity.getProperty("books"));
     assertEquals(Collections.singletonList(hasKeyPk2.getId()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
@@ -669,33 +673,35 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 1);
   }
 
-  void testChangeParent(HasOneToManyJPA pojo, HasOneToManyJPA pojo2) {
+  void testChangeParent(HasOneToManyJPA pojo, HasOneToManyJPA pojo2,
+                        StartEnd startEnd) throws Exception {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Book b1 = new Book();
     pojo.getBooks().add(b1);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo2.getBooks().add(b1);
     em.persist(pojo2);
     try {
-      commitTxn();
+      startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
       rollbackTxn();
     }
   }
 
-  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJPA pojo) throws EntityNotFoundException {
+  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJPA pojo,
+                                             StartEnd startEnd) throws Exception {
     Book b1 = new Book("named key");
     pojo.getBooks().add(b1);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
     assertEquals("named key", bookEntity.getKey().getName());
@@ -745,54 +751,57 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(0, pojo.getBooks().size());
   }
 
-  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJPA pojo) {
-    beginTxn();
+  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJPA pojo,
+                                           StartEnd startEnd) throws Exception {
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getBooks().size());
-    commitTxn();
+    startEnd.end();
   }
 
-  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJPA pojo) {
-    beginTxn();
+  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJPA pojo,
+                                            StartEnd startEnd) throws Exception {
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getBooks().size());
-    commitTxn();
+    startEnd.end();
   }
 
-  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJPA pojo) {
+  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJPA pojo,
+                                                       StartEnd startEnd) throws Exception {
     pojo.setId("yar");
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getBooks().size());
-    commitTxn();
+    startEnd.end();
   }
 
   void testAddChildToOneToManyParentWithLongPk(
-      HasOneToManyLongPkJPA pojo, BidirectionalChildLongPkJPA bidirChild)
-      throws EntityNotFoundException {
-    beginTxn();
+      HasOneToManyLongPkJPA pojo, BidirectionalChildLongPkJPA bidirChild,
+      StartEnd startEnd) throws Exception {
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     Book b = new Book();
     pojo.getBooks().add(b);
     pojo.getBidirChildren().add(bidirChild);
     bidirChild.setParent(pojo);
-    commitTxn();
+    startEnd.end();
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -801,19 +810,19 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
   }
 
   void testAddChildToOneToManyParentWithUnencodedStringPk(
-      HasOneToManyUnencodedStringPkJPA pojo, BidirectionalChildUnencodedStringPkJPA bidirChild)
-      throws EntityNotFoundException {
+      HasOneToManyUnencodedStringPkJPA pojo, BidirectionalChildUnencodedStringPkJPA bidirChild,
+      StartEnd startEnd) throws Exception {
     pojo.setId("yar");
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     Book b = new Book();
     pojo.getBooks().add(b);
     pojo.getBidirChildren().add(bidirChild);
-    commitTxn();
+    startEnd.end();
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -821,43 +830,43 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddQueriedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
-      throws EntityNotFoundException {
-    beginTxn();
+  void testAddQueriedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                                        StartEnd startEnd) throws Exception {
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
     bidir.setParent(pojo);
     em.persist(bidir);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
-    commitTxn();
+    startEnd.end();
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddFetchedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
-      throws EntityNotFoundException {
-    beginTxn();
+  void testAddFetchedParentToBidirChild(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                                        StartEnd startEnd) throws Exception {
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
 //    pojo = (HasOneToManyJDO) pm.getObjectById(pojo.getClass(), pojo.getId());
 
     pojo = em.find(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
     em.persist(bidir);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName()).getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
-    commitTxn();
+    startEnd.end();
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
@@ -872,7 +881,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     }
   }
 
-  PutPolicy setupPutPolicy(HasOneToManyJPA pojo, BidirectionalChildJPA bidir) throws Throwable {
+  PutPolicy setupPutPolicy(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                           StartEnd startEnd) throws Throwable {
     PutPolicy policy = new PutPolicy();
     DatastoreServiceInterceptor.install(policy);
     try {
@@ -884,9 +894,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
       HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
       pojo.getHasKeyPks().add(hasKeyPk);
 
-      beginTxn();
+      startEnd.start();
       em.persist(pojo);
-      commitTxn();
+      startEnd.end();
       // 1 put for the parent, 3 puts for the children, 1 more put
       // to add the child keys back on the parent
       assertEquals(5, policy.putParamList.size());
@@ -898,16 +908,16 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     }
   }
 
-  void testOnlyOnePutOnChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
-      throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+  void testOnlyOnePutOnChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                                   StartEnd startEnd) throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = em.find(pojo.getClass(), pojo.getId());
       pojo.getBooks().iterator().next().setTitle("some author");
       pojo.getBidirChildren().iterator().next().setChildVal("blarg");
       pojo.getHasKeyPks().iterator().next().setStr("double blarg");
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
@@ -915,17 +925,17 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(3, policy.putParamList.size());
   }
 
-  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
-      throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                                                  StartEnd startEnd) throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = em.find(pojo.getClass(), pojo.getId());
       pojo.setVal("another val");
       pojo.getBooks().iterator().next().setTitle("some author");
       pojo.getBidirChildren().iterator().next().setChildVal("blarg");
       pojo.getHasKeyPks().iterator().next().setStr("double blarg");
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
@@ -933,22 +943,22 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     assertEquals(4, policy.putParamList.size());
   }
 
-  void testOnlyOneParentPutOnChildDelete(HasOneToManyJPA pojo, BidirectionalChildJPA bidir)
-      throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+  void testOnlyOneParentPutOnChildDelete(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
+                                         StartEnd startEnd,
+                                         int expectedUpdatePuts) throws Throwable {
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = em.find(pojo.getClass(), pojo.getId());
       pojo.setVal("another val");
       pojo.getBooks().clear();
       pojo.getBidirChildren().clear();
       pojo.getHasKeyPks().clear();
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
-    // 1 put for the parent update to remove the keys
-    assertEquals(2, policy.putParamList.size());
+    assertEquals(expectedUpdatePuts, policy.putParamList.size());
   }
 
   void assertCountsInDatastore(Class<? extends HasOneToManyJPA> pojoClass,

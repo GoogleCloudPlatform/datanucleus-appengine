@@ -42,6 +42,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
+import javax.jdo.spi.PersistenceCapable;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -291,8 +293,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       if (putState.entity.getParent() != null) {
         // We inserted a new child.  Register the parent key so we know we need
         // to update the parent.
-        KeyRegistry.getKeyRegistry(putState.sm.getObjectManager())
-            .registerModifiedParent(putState.entity.getParent());
+        KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.sm.getObjectManager());
+        keyReg.registerModifiedParent(putState.entity.getParent());
       }
       if (storeMgr.getRuntimeManager() != null) {
         storeMgr.getRuntimeManager().incrementInsertCount();
@@ -481,6 +483,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   public void updateObject(StateManager sm, int fieldNumbers[]) {
+    if (sm.isDeleted((PersistenceCapable) sm.getObject())) {
+      // don't perform updates on objects that are already deleted -
+      // this will cause them to be recreated
+      return;
+    }
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(sm);
 
@@ -512,10 +519,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       // That means we need to re-save.
       ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
       try {
-        fieldMgr.setExtractRelationKeys(true);
+        fieldMgr.setRegisterRelationCallbacks(false);
         sm.provideFields(sm.getClassMetaData().getRelationMemberPositions(clr), fieldMgr);
       } finally {
-        fieldMgr.setExtractRelationKeys(false);
+        fieldMgr.setRegisterRelationCallbacks(true);
       }
       put(sm, entity);
     }
@@ -576,7 +583,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     if (entity.getParent() != null) {
       // We deleted a child.  Register the parent key so we know we need
       // to update the parent.
-      KeyRegistry.getKeyRegistry(sm.getObjectManager()).registerModifiedParent(entity.getParent());
+      KeyRegistry keyReg = KeyRegistry.getKeyRegistry(sm.getObjectManager());
+      keyReg.registerModifiedParent(entity.getParent());
     }
   }
 

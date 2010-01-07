@@ -1,4 +1,4 @@
-/**********************************************************************
+/*********************b*************************************************
 Copyright (c) 2009 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
@@ -19,9 +19,13 @@ import com.google.appengine.api.datastore.Query;
 
 import junit.framework.TestCase;
 
+import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
+import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactory;
+import org.datanucleus.store.mapped.MappedStoreManager;
 
 import java.util.Map;
 
@@ -152,10 +156,16 @@ public class JPATestCase extends TestCase {
   }
 
   protected String kindForClass(Class<?> clazz) {
-    ObjectManager om = getObjectManager();
-    MetaDataManager mdm = om.getMetaDataManager();
+    JDOPersistenceManagerFactory pmf = (JDOPersistenceManagerFactory) ((DatastoreEntityManagerFactory)emf)
+        .getPersistenceManagerFactory();
+    OMFContext omfContext = pmf.getOMFContext();
+    MetaDataManager mdm = omfContext.getMetaDataManager();
+    MappedStoreManager storeMgr = (MappedStoreManager) pmf.getStoreManager();
     return EntityUtils.determineKind(
-        mdm.getMetaDataForClass(clazz, om.getClassLoaderResolver()), om);
+        mdm.getMetaDataForClass(
+            clazz,
+            omfContext.getClassLoaderResolver(getClass().getClassLoader())),
+        storeMgr.getIdentifierFactory());
   }
 
   protected ObjectManager getObjectManager() {
@@ -169,4 +179,31 @@ public class JPATestCase extends TestCase {
   private boolean cacheManagers() {
     return !Boolean.valueOf(System.getProperty("do.not.cache.managers"));
   }
+
+  interface StartEnd {
+    void start();
+    void end();
+  }
+
+  final StartEnd TXN_START_END = new StartEnd() {
+    public void start() {
+      beginTxn();
+    }
+
+    public void end() {
+      commitTxn();
+    }
+  };
+
+  final StartEnd NEW_EM_START_END = new StartEnd() {
+    public void start() {
+      if (!em.isOpen()) {
+        em = emf.createEntityManager();
+      }
+    }
+
+    public void end() {
+      em.close();
+    }
+  };
 }

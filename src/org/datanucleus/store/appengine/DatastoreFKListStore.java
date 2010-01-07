@@ -27,6 +27,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.store.mapped.scostore.FKListStore;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.ListIterator;
 
@@ -137,4 +138,14 @@ public class DatastoreFKListStore extends FKListStore {
     return ((DatastoreTable) containerTable).getDatastoreField(propertyName).isPrimaryKey();
   }
 
+  @Override
+  protected boolean internalAdd(final StateManager sm, int startAt, boolean atEnd, Collection c, int size) {
+    ObjectManager om = sm.getObjectManager();
+    if (super.internalAdd(sm, startAt, atEnd, c, size) && !om.getTransaction().isActive()) {
+      om.getTransaction().addTransactionEventListener(
+          new ForceFlushPreCommitTransactionEventListener(sm));
+      return true;
+    }
+    return false;
+  }
 }

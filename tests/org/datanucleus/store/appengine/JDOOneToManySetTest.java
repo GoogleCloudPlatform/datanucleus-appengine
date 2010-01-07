@@ -165,6 +165,10 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
     testOnlyOneParentPutOnChildDelete(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
   }
 
+  public void testNonTxnAddOfChildToParentFailsPartwayThrough() throws Throwable {
+    testNonTxnAddOfChildToParentFailsPartwayThrough(new HasOneToManySetJDO());
+  }
+  
   @Override
   boolean isIndexed() {
     return false;

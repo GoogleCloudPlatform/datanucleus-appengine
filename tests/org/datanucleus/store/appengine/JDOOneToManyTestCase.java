@@ -41,6 +41,7 @@ import org.easymock.EasyMock;
 import java.lang.reflect.Method;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
 
@@ -1541,8 +1542,48 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
-    // 1 put for the parent update to remove the keys
+    // 1 put for the parent update and 1 to remove the keys
     assertEquals(2, policy.putParamList.size());
+  }
+
+  void testNonTxnAddOfChildToParentFailsPartwayThrough(HasOneToManyJDO pojo)
+      throws Throwable {
+    Flight flight1 = new Flight();
+    pojo.addFlight(flight1);
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+    final String kind = kindForObject(pojo);
+    DatastoreServiceInterceptor.Policy policy = new DatastoreServiceInterceptor.Policy() {
+      private boolean alreadyPutPojo = false;
+      public void intercept(Object o, Method method, Object[] params) {
+        if (method.getName().equals("put") && ((Entity) params[0]).getKind().equals(kind)) {
+          throw new ConcurrentModificationException("kaboom");
+        }
+      }
+    };
+    DatastoreServiceInterceptor.install(policy);
+    Flight flight2 = new Flight();
+    try {
+      pmf.close();
+      switchDatasource(PersistenceManagerFactoryName.nontransactional);
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.addFlight(flight2);
+      pm.close();
+      fail("expected exception");
+    } catch (ConcurrentModificationException cme) {
+      // good
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // prove that the book entity exists
+    ldth.ds.get(KeyFactory.stringToKey(flight2.getId()));
+    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    // the parent has a reference to the first book that was already there
+    // but no reference to the second book
+    assertEquals(
+        Collections.singletonList(KeyFactory.stringToKey(flight1.getId())),
+        pojoEntity.getProperty("flights"));
   }
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,

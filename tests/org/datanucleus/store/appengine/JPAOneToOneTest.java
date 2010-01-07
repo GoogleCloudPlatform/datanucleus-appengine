@@ -48,7 +48,13 @@ import javax.persistence.PersistenceException;
  */
 public class JPAOneToOneTest extends JPATestCase {
 
-  public void testInsert_NewParentAndChild() throws EntityNotFoundException {
+  public void testInsert_NewParentAndChild() throws Exception {
+    testInsert_NewParentAndChild(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_NoTxn() throws Exception {
+    testInsert_NewParentAndChild(NEW_EM_START_END);
+  }
+  private void testInsert_NewParentAndChild(StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
@@ -64,9 +70,9 @@ public class JPAOneToOneTest extends JPATestCase {
     hasParentKeyPk.setParent(pojo);
     pojo.setNotDependent(notDependent);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -103,18 +109,31 @@ public class JPAOneToOneTest extends JPATestCase {
 
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
+    assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
+    assertEquals(hasParentEntity.getKey(), pojoEntity.getProperty("hasparent_id"));
+    assertEquals(hasParentKeyPkEntity.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
+    assertEquals(notDependentEntity.getKey(), pojoEntity.getProperty("notdependent_id"));
 
     assertCountsInDatastore(1, 1);
     assertEquals(1, countForClass(notDependent.getClass()));
   }
 
-  private void persistInTxn(Object obj) {
-    beginTxn();
+  private void persistInTxn(Object obj, StartEnd startEnd) {
+    startEnd.start();
     em.persist(obj);
-    commitTxn();
+    startEnd.end();
   }
 
-  public void testInsert_NewParentExistingChild() throws EntityNotFoundException {
+  public void testInsert_NewParentExistingChild() throws Exception {
+    testInsert_NewParentExistingChild(TXN_START_END);
+  }
+  public void testInsert_NewParentExistingChild_NoTxn() throws Exception {
+    testInsert_NewParentExistingChild(NEW_EM_START_END);
+  }
+
+  private void testInsert_NewParentExistingChild(StartEnd startEnd)
+      throws Exception {
     // this can only work on a nontransactional datasource
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
 
@@ -123,10 +142,10 @@ public class JPAOneToOneTest extends JPATestCase {
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
     HasOneToOneParentKeyPkJPA hasParentKeyPk = new HasOneToOneParentKeyPkJPA();
 
-    persistInTxn(b);
-    persistInTxn(hasKeyPk);
-    persistInTxn(hasParent);
-    persistInTxn(hasParentKeyPk);
+    persistInTxn(b, startEnd);
+    persistInTxn(hasKeyPk, startEnd);
+    persistInTxn(hasParent, startEnd);
+    persistInTxn(hasParentKeyPk, startEnd);
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -139,13 +158,15 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParent(hasParent);
     pojo.setHasParentKeyPK(hasParentKeyPk);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
     try {
-      commitTxn();
+      startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
-      rollbackTxn();
+      if (em.getTransaction().isActive()) {
+        rollbackTxn();
+      }
     }
 
     assertNotNull(pojo.getId());
@@ -172,12 +193,19 @@ public class JPAOneToOneTest extends JPATestCase {
     assertCountsInDatastore(1, 1);
   }
 
-  public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
+  public void testInsert_ExistingParentNewChild() throws Exception {
+    testInsert_ExistingParentNewChild(TXN_START_END);
+  }
+  public void testInsert_ExistingParentNewChild_NoTxn() throws Exception {
+    testInsert_ExistingParentNewChild(NEW_EM_START_END);
+  }
+
+  private void testInsert_ExistingParentNewChild(StartEnd startEnd) throws Exception {
     HasOneToOneJPA pojo = new HasOneToOneJPA();
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
     assertNotNull(pojo.getId());
     assertNull(pojo.getBook());
     assertNull(pojo.getHasKeyPK());
@@ -187,7 +215,7 @@ public class JPAOneToOneTest extends JPATestCase {
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
 
-    beginTxn();
+    startEnd.start();
     Book b = newBook();
     pojo.setBook(b);
 
@@ -203,15 +231,12 @@ public class JPAOneToOneTest extends JPATestCase {
     hasParentKeyPk.setParent(pojo);
 
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
     assertNotNull(hasParent.getId());
     assertNotNull(hasParentKeyPk.getId());
-
-    pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertNotNull(pojoEntity);
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -229,10 +254,23 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPkEntity);
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
+    pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
+    assertEquals(hasParentEntity.getKey(), pojoEntity.getProperty("hasparent_id"));
+    assertEquals(hasParentKeyPkEntity.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
+    assertNotNull(pojoEntity);
+
     assertCountsInDatastore(1, 1);
   }
 
-  public void testUpdate_UpdateChildWithMerge() throws EntityNotFoundException {
+  public void testUpdate_UpdateChildWithMerge() throws Exception {
+    testUpdate_UpdateChildWithMerge(TXN_START_END);
+  }
+  public void testUpdate_UpdateChildWithMerge_NoTxn() throws Exception {
+    testUpdate_UpdateChildWithMerge(NEW_EM_START_END);
+  }
+  public void testUpdate_UpdateChildWithMerge(StartEnd startEnd) throws Exception {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
@@ -246,9 +284,9 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -256,13 +294,13 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPk.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     b.setIsbn("yam");
     hasKeyPk.setStr("yar");
     hasParent.setStr("yap");
     hasParentKeyPk.setStr("yag");
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -288,6 +326,13 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testUpdate_UpdateChild() throws EntityNotFoundException {
+    testUpdate_UpdateChild(TXN_START_END);
+  }
+  public void testUpdate_UpdateChild_NoTxn() throws EntityNotFoundException {
+    testUpdate_UpdateChild(NEW_EM_START_END);
+  }
+
+  private void testUpdate_UpdateChild(StartEnd startEnd) throws EntityNotFoundException {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
@@ -301,9 +346,9 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -311,13 +356,13 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPk.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(HasOneToOneJPA.class, pojo.getId());
     pojo.getBook().setIsbn("yam");
     pojo.getHasKeyPK().setStr("yar");
     pojo.getHasParent().setStr("yap");
     pojo.getHasParentKeyPK().setStr("yag");
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -342,7 +387,13 @@ public class JPAOneToOneTest extends JPATestCase {
     assertCountsInDatastore(1, 1);
   }
 
-  public void testUpdate_NullOutChild() throws EntityNotFoundException {
+  public void testUpdate_NullOutChild_Merge() throws EntityNotFoundException {
+    testUpdate_NullOutChild_Merge(TXN_START_END);
+  }
+  public void testUpdate_NullOutChild_Merge_NoTxn() throws EntityNotFoundException {
+    testUpdate_NullOutChild_Merge(TXN_START_END);
+  }
+  private void testUpdate_NullOutChild_Merge(StartEnd startEnd) throws EntityNotFoundException {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
@@ -356,17 +407,17 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo.setBook(null);
     pojo.setHasKeyPK(null);
     pojo.setHasParent(null);
     pojo.setHasParentKeyPK(null);
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(b.getId()));
@@ -396,24 +447,115 @@ public class JPAOneToOneTest extends JPATestCase {
       // good
     }
 
-    ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(5, parentEntity.getProperties().size());
+    assertTrue(parentEntity.hasProperty("book_id"));
+    assertNull(parentEntity.getProperty("book_id"));
+    assertTrue(parentEntity.hasProperty("haskeypk_id"));
+    assertNull(parentEntity.getProperty("haskeypk_id"));
+    assertTrue(parentEntity.hasProperty("hasparent_id"));
+    assertNull(parentEntity.getProperty("hasparent_id"));
+    assertTrue(parentEntity.hasProperty("hasparentkeypk_id"));
+    assertNull(parentEntity.getProperty("hasparentkeypk_id"));
+    assertTrue(parentEntity.hasProperty("notdependent_id"));
+    assertNull(parentEntity.getProperty("notdependent_id"));
+    assertCountsInDatastore(1, 0);
+  }
+  
+  public void testUpdate_NullOutChild_Update() throws EntityNotFoundException {
+    testUpdate_NullOutChild_Update(TXN_START_END);
+  }
+  public void testUpdate_NullOutChild_Update_NoTxn() throws EntityNotFoundException {
+    testUpdate_NullOutChild_Update(TXN_START_END);
+  }
+  private void testUpdate_NullOutChild_Update(StartEnd startEnd) throws EntityNotFoundException {
+    Book b = newBook();
+    HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
+    HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
+    HasOneToOneParentKeyPkJPA hasParentKeyPk = new HasOneToOneParentKeyPkJPA();
 
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    pojo.setBook(b);
+    pojo.setHasKeyPK(hasKeyPk);
+    pojo.setHasParent(hasParent);
+    hasParent.setParent(pojo);
+    pojo.setHasParentKeyPK(hasParentKeyPk);
+    hasParentKeyPk.setParent(pojo);
+
+    startEnd.start();
+    em.persist(pojo);
+    startEnd.end();
+
+    startEnd.start();
+    pojo = em.find(pojo.getClass(), pojo.getId());
+    pojo.setBook(null);
+    pojo.setHasKeyPK(null);
+    pojo.setHasParent(null);
+    pojo.setHasParentKeyPK(null);
+    startEnd.end();
+
+    try {
+      ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+
+    try {
+      ldth.ds.get(hasKeyPk.getId());
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+
+    try {
+      ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+
+    try {
+      ldth.ds.get(hasParentKeyPk.getId());
+      fail("expected enfe");
+    } catch (EntityNotFoundException enfe) {
+      // good
+    }
+
+    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertEquals(5, parentEntity.getProperties().size());
+    assertTrue(parentEntity.hasProperty("book_id"));
+    assertNull(parentEntity.getProperty("book_id"));
+    assertTrue(parentEntity.hasProperty("haskeypk_id"));
+    assertNull(parentEntity.getProperty("haskeypk_id"));
+    assertTrue(parentEntity.hasProperty("hasparent_id"));
+    assertNull(parentEntity.getProperty("hasparent_id"));
+    assertTrue(parentEntity.hasProperty("hasparentkeypk_id"));
+    assertNull(parentEntity.getProperty("hasparentkeypk_id"));
+    assertTrue(parentEntity.hasProperty("notdependent_id"));
+    assertNull(parentEntity.getProperty("notdependent_id"));
     assertCountsInDatastore(1, 0);
   }
 
   public void testUpdate_NullOutChild_NoDelete() throws EntityNotFoundException {
+    testUpdate_NullOutChild_NoDelete(TXN_START_END);
+  }
+  public void testUpdate_NullOutChild_NoDelete_NoTxn() throws EntityNotFoundException {
+    testUpdate_NullOutChild_NoDelete(NEW_EM_START_END);
+  }
+  private void testUpdate_NullOutChild_NoDelete(StartEnd startEnd) throws EntityNotFoundException {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Book b = newBook();
-    beginTxn();
+    startEnd.start();
     em.persist(b);
-    commitTxn();
+    startEnd.end();
     HasOneToOneWithNonDeletingCascadeJPA pojo = new HasOneToOneWithNonDeletingCascadeJPA();
     pojo.setBook(b);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
     try {
-      commitTxn();
+      startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -422,6 +564,12 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testFind() throws EntityNotFoundException {
+    testFind(TXN_START_END);
+  }
+  public void testFind_NoTxn() throws EntityNotFoundException {
+    testFind(NEW_EM_START_END);
+  }
+  private void testFind(StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -442,7 +590,7 @@ public class JPAOneToOneTest extends JPATestCase {
     hasParentKeyPkEntity.setProperty("str", "yag");
     ldth.ds.put(hasParentKeyPkEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToOneJPA pojo = em.find(HasOneToOneJPA.class, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
     assertNotNull(pojo.getBook());
@@ -453,10 +601,16 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testQuery() {
+    testQuery(TXN_START_END);
+  }
+  public void testQuery_NoTxn() {
+    testQuery(NEW_EM_START_END);
+  }
+  private void testQuery(StartEnd startEnd) {
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -480,7 +634,7 @@ public class JPAOneToOneTest extends JPATestCase {
     javax.persistence.Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where id = :key");
     q.setParameter("key", KeyFactory.keyToString(pojoEntity.getKey()));
-    beginTxn();
+    startEnd.start();
     @SuppressWarnings("unchecked")
     List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -493,7 +647,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testChildFetchedLazily() throws Exception {
@@ -551,6 +705,12 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testDeleteParentDeletesChild() {
+    testDeleteParentDeletesChild(TXN_START_END);
+  }
+  public void testDeleteParentDeletesChild_NoTxn() {
+    testDeleteParentDeletesChild(NEW_EM_START_END);
+  }
+  private void testDeleteParentDeletesChild(StartEnd startEnd) {
 
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
     ldth.ds.put(pojoEntity);
@@ -575,10 +735,17 @@ public class JPAOneToOneTest extends JPATestCase {
     Entity notDependentEntity = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), pojoEntity.getKey());
     ldth.ds.put(notDependentEntity);
 
-    beginTxn();
+    assertEquals(HasOneToOneJPA.class.getName(), 1, countForClass(HasOneToOneJPA.class));
+
+    startEnd.start();
     HasOneToOneJPA pojo = em.find(HasOneToOneJPA.class, KeyFactory.keyToString(pojoEntity.getKey()));
     em.remove(pojo);
-    commitTxn();
+    startEnd.end();
+    try {
+      pojoEntity = ldth.ds.get(pojoEntity.getKey());
+    } catch (EntityNotFoundException e) {
+      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+    }
     assertCountsInDatastore(0, 0);
     assertEquals(1, countForClass(HasEncodedStringPkJPA.class));
   }
@@ -607,18 +774,30 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testNewParentNewChild_SetNamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_SetNamedKeyOnChild(TXN_START_END);
+  }
+  public void testNewParentNewChild_SetNamedKeyOnChild_NoTxn() throws EntityNotFoundException {
+    testNewParentNewChild_SetNamedKeyOnChild(NEW_EM_START_END);
+  }
+  private void testNewParentNewChild_SetNamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToOneJPA pojo = new HasOneToOneJPA();
     Book b = newBook("named key");
     pojo.setBook(b);
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
     assertEquals("named key", bookEntity.getKey().getName());
   }
 
   public void testInsert_NewParentAndChild_LongKeyOnParent() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_LongKeyOnParent(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_LongKeyOnParent_NoTxn() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_LongKeyOnParent(NEW_EM_START_END);
+  }
+  private void testInsert_NewParentAndChild_LongKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneLongPkParentJPA hasParent = new HasOneToOneLongPkParentJPA();
@@ -632,9 +811,9 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -667,6 +846,10 @@ public class JPAOneToOneTest extends JPATestCase {
 
     Entity pojoEntity = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertNotNull(pojoEntity);
+    assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
+    assertEquals(hasParentEntity.getKey(), pojoEntity.getProperty("hasparent_id"));
+    assertEquals(hasParentKeyPkEntity.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
 
     assertEquals(HasOneToOneLongPkJPA.class.getName(), 1, countForClass(HasOneToOneLongPkJPA.class));
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
@@ -677,6 +860,12 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testInsert_NewParentAndChild_StringKeyOnParent() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_StringKeyOnParent(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_StringKeyOnParent_NoTxn() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_StringKeyOnParent(NEW_EM_START_END);
+  }
+  public void testInsert_NewParentAndChild_StringKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneStringPkParentJPA hasParent = new HasOneToOneStringPkParentJPA();
@@ -691,9 +880,9 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
@@ -726,6 +915,10 @@ public class JPAOneToOneTest extends JPATestCase {
 
     Entity pojoEntity = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertNotNull(pojoEntity);
+    assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
+    assertEquals(hasParentEntity.getKey(), pojoEntity.getProperty("hasparent_id"));
+    assertEquals(hasParentKeyPkEntity.getKey(), pojoEntity.getProperty("hasparentkeypk_id"));
 
     assertEquals(HasOneToOneStringPkJPA.class.getName(), 1, countForClass(HasOneToOneStringPkJPA.class));
     assertEquals(Book.class.getName(), 1, countForClass(Book.class));
@@ -781,7 +974,13 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNull(pojo.getBook());
   }
 
-  public void testChildAtMultipleLevels() {
+  public void testChildAtMultipleLevels() throws EntityNotFoundException {
+    testChildAtMultipleLevels(TXN_START_END);
+  }
+  public void testChildAtMultipleLevels_NoTxn() throws EntityNotFoundException {
+    testChildAtMultipleLevels(NEW_EM_START_END);
+  }
+  private void testChildAtMultipleLevels(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToOneChildAtMultipleLevelsJPA pojo = new HasOneToOneChildAtMultipleLevelsJPA();
     Book b1 = new Book();
     pojo.setBook(b1);
@@ -789,14 +988,21 @@ public class JPAOneToOneTest extends JPATestCase {
     Book b2 = new Book();
     child.setBook(b2);
     pojo.setChild(child);
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = em.find(HasOneToOneChildAtMultipleLevelsJPA.class, pojo.getId());
     assertEquals(child.getId(), pojo.getChild().getId());
     assertEquals(child.getBook(), b2);
-    commitTxn();
+    startEnd.end();
+
+    Entity pojoEntity = ldth.ds.get(pojo.getId());
+    Entity childEntity = ldth.ds.get(child.getId());
+    Entity book1Entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    Entity book2Entity = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    assertEquals(book1Entity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(book2Entity.getKey(), childEntity.getProperty("book_id"));
   }
 
   private Book newBook() {

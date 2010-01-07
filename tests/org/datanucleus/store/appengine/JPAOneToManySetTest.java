@@ -15,8 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.EntityNotFoundException;
-
 import org.datanucleus.test.BidirectionalChildLongPkSetJPA;
 import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.BidirectionalChildUnencodedStringPkSetJPA;
@@ -30,49 +28,102 @@ import org.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
  */
 public class JPAOneToManySetTest extends JPAOneToManyTestCase {
 
-  public void testInsert_NewParentAndChild() throws EntityNotFoundException {
-    testInsert_NewParentAndChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testInsert_NewParentAndChild() throws Exception {
+    testInsert_NewParentAndChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                 TXN_START_END);
   }
 
-  public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
-    testInsert_ExistingParentNewChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testInsert_NewParentAndChild_NoTxn() throws Exception {
+    testInsert_NewParentAndChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                 NEW_EM_START_END);
   }
 
-  public void testUpdate_UpdateChildWithMerge() throws EntityNotFoundException {
-    testUpdate_UpdateChildWithMerge(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testInsert_ExistingParentNewChild() throws Exception {
+    testInsert_ExistingParentNewChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                      TXN_START_END);
   }
 
-  public void testUpdate_UpdateChild() throws EntityNotFoundException {
-    testUpdate_UpdateChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testInsert_ExistingParentNewChild_NoTxn() throws Exception {
+    testInsert_ExistingParentNewChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                      NEW_EM_START_END);
   }
 
-  public void testUpdate_NullOutChildren() throws EntityNotFoundException {
-    testUpdate_NullOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testUpdate_UpdateChildWithMerge() throws Exception {
+    testUpdate_UpdateChildWithMerge(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                    TXN_START_END);
   }
-  public void testUpdate_ClearOutChildren() throws EntityNotFoundException {
-    testUpdate_ClearOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA());
+  public void testUpdate_UpdateChildWithMerge_NoTxn() throws Exception {
+    testUpdate_UpdateChildWithMerge(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                    NEW_EM_START_END);
   }
-  public void testFind() throws EntityNotFoundException {
-    testFind(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class);
+
+  public void testUpdate_UpdateChild() throws Exception {
+    testUpdate_UpdateChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                           TXN_START_END);
   }
-  public void testQuery() throws EntityNotFoundException {
-    testQuery(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class);
+  public void testUpdate_UpdateChild_NoTxn() throws Exception {
+    testUpdate_UpdateChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                           NEW_EM_START_END);
+  }
+
+  public void testUpdate_NullOutChildren() throws Exception {
+    testUpdate_NullOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                               TXN_START_END);
+  }
+  public void testUpdate_NullOutChildren_NoTxn() throws Exception {
+    testUpdate_NullOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                               NEW_EM_START_END);
+  }
+  public void testUpdate_ClearOutChildren() throws Exception {
+    testUpdate_ClearOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                TXN_START_END);
+  }
+  public void testUpdate_ClearOutChildren_NoTxn() throws Exception {
+    testUpdate_ClearOutChildren(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
+                                NEW_EM_START_END);
+  }
+  public void testFind() throws Exception {
+    testFind(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class, TXN_START_END);
+  }
+  public void testFind_NoTxn() throws Exception {
+    testFind(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class, NEW_EM_START_END);
+  }
+  public void testQuery() throws Exception {
+    testQuery(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class, TXN_START_END);
+  }
+  public void testQuery_NoTxn() throws Exception {
+    testQuery(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class, NEW_EM_START_END);
   }
   public void testChildFetchedLazily() throws Exception {
     testChildFetchedLazily(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class);
   }
-  public void testDeleteParentDeletesChild() throws EntityNotFoundException {
-    testDeleteParentDeletesChild(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class);
+  public void testDeleteParentDeletesChild() throws Exception {
+    testDeleteParentDeletesChild(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class,
+                                 TXN_START_END);
   }
-  public void testRemoveObject() throws EntityNotFoundException {
+  public void testDeleteParentDeletesChild_NoTxn() throws Exception {
+    testDeleteParentDeletesChild(HasOneToManySetJPA.class, BidirectionalChildSetJPA.class,
+                                 NEW_EM_START_END);
+  }
+  public void testRemoveObject() throws Exception {
     testRemoveObject(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(nextNamedKey()),
-        new BidirectionalChildSetJPA(nextNamedKey()));
+        new BidirectionalChildSetJPA(nextNamedKey()), TXN_START_END);
   }
-  public void testChangeParent() {
-    testChangeParent(new HasOneToManySetJPA(), new HasOneToManySetJPA());
+  public void testRemoveObject_NoTxn() throws Exception {
+    testRemoveObject(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(nextNamedKey()),
+        new BidirectionalChildSetJPA(nextNamedKey()), NEW_EM_START_END);
   }
-  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
-    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJPA());
+  public void testChangeParent() throws Exception {
+    testChangeParent(new HasOneToManySetJPA(), new HasOneToManySetJPA(), TXN_START_END);
+  }
+  public void testChangeParent_NoTxn() throws Exception {
+    testChangeParent(new HasOneToManySetJPA(), new HasOneToManySetJPA(), NEW_EM_START_END);
+  }
+  public void testNewParentNewChild_NamedKeyOnChild() throws Exception {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJPA(), TXN_START_END);
+  }
+  public void testNewParentNewChild_NamedKeyOnChild_NoTxn() throws Exception {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJPA(), NEW_EM_START_END);
   }
   public void testAddAlreadyPersistedChildToParent_NoTxnSameEm() {
     testAddAlreadyPersistedChildToParent_NoTxnSameEm(new HasOneToManySetJPA());
@@ -80,39 +131,90 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   public void testAddAlreadyPersistedChildToParent_NoTxnDifferentEm() {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManySetJPA());
   }
-  public void testFetchOfOneToManyParentWithKeyPk() {
-    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJPA());
+  public void testFetchOfOneToManyParentWithKeyPk() throws Exception {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJPA(), TXN_START_END);
   }
-  public void testFetchOfOneToManyParentWithLongPk() {
-    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA());
+  public void testFetchOfOneToManyParentWithKeyPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJPA(), NEW_EM_START_END);
   }
-  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
-    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA());
+  public void testFetchOfOneToManyParentWithLongPk() throws Exception {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), TXN_START_END);
   }
-  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), new BidirectionalChildLongPkSetJPA());
+  public void testFetchOfOneToManyParentWithLongPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), NEW_EM_START_END);
   }
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() throws Exception {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA(),
+                                                    TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithUnencodedStringPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJPA(),
+                                                    NEW_EM_START_END);
+  }
+  public void testAddChildToOneToManyParentWithLongPk() throws Exception {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), new BidirectionalChildLongPkSetJPA(),
+                                            TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithLongPk_NoTxn() throws Exception {
+    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJPA(), new BidirectionalChildLongPkSetJPA(),
+                                            NEW_EM_START_END);
+  }
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws Exception {
     testAddChildToOneToManyParentWithUnencodedStringPk(
-        new HasOneToManyUnencodedStringPkSetJPA(), new BidirectionalChildUnencodedStringPkSetJPA());
+        new HasOneToManyUnencodedStringPkSetJPA(), new BidirectionalChildUnencodedStringPkSetJPA(),
+        TXN_START_END);
   }
-  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  public void testAddChildToOneToManyParentWithUnencodedStringPk_NoTxn() throws Exception {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkSetJPA(), new BidirectionalChildUnencodedStringPkSetJPA(),
+        NEW_EM_START_END);
   }
-  public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
-    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  public void testAddQueriedParentToBidirChild() throws Exception {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     TXN_START_END);
+  }
+  public void testAddQueriedParentToBidirChild_NoTxn() throws Exception {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
+  }
+  public void testAddFetchedParentToBidirChild() throws Exception {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     TXN_START_END);
+  }
+  public void testAddFetchedParentToBidirChild_NoTxn() throws Exception {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
   }
 
   public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
-    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                               TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
   }
 
   public void testOnlyOnePutOnChildUpdate() throws Throwable {
-    testOnlyOnePutOnChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+    testOnlyOnePutOnChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                TXN_START_END);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
   }
 
   public void testOnlyOneParentPutOnChildDelete() throws Throwable {
-    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+    // 1 put for the parent update and 1 to remove the keys
+    int expectedUpdatePuts = 2;
+    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                      TXN_START_END, expectedUpdatePuts);
   }
-
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    // 1 put for the parent update and 1 to remove the keys, plus 1 more put
+    // that I don't understand that only happens without txns
+    int expectedUpdatePuts = 3;
+    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END, expectedUpdatePuts);
+  }
 }

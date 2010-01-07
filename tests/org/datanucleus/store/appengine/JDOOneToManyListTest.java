@@ -464,6 +464,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     testOnlyOneParentPutOnChildDelete(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
   }
 
+  public void testNonTxnAddOfChildToParentFailsPartwayThrough() throws Throwable {
+    testNonTxnAddOfChildToParentFailsPartwayThrough(new HasOneToManyListJDO());
+  }
+
   @Override
   boolean isIndexed() {
     return true;

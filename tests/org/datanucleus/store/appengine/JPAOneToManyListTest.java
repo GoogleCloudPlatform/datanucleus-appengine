@@ -48,45 +48,109 @@ import java.util.Collections;
  */
 public class JPAOneToManyListTest extends JPAOneToManyTestCase {
 
-  public void testInsert_NewParentAndChild() throws EntityNotFoundException {
-    testInsert_NewParentAndChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+  public void testInsert_NewParentAndChild() throws Exception {
+    testInsert_NewParentAndChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                 TXN_START_END);
   }
 
-  public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
-    testInsert_ExistingParentNewChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+  public void testInsert_NewParentAndChild_NoTxn() throws Exception {
+    testInsert_NewParentAndChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                 NEW_EM_START_END);
   }
 
-  public void testUpdate_UpdateChildWithMerge() throws EntityNotFoundException {
-    testUpdate_UpdateChildWithMerge(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+  public void testInsert_ExistingParentNewChild() throws Exception {
+    testInsert_ExistingParentNewChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      TXN_START_END);
   }
 
-  public void testUpdate_UpdateChild() throws EntityNotFoundException {
-    testUpdate_UpdateChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+  public void testInsert_ExistingParentNewChild_NoTxn() throws Exception {
+    testInsert_ExistingParentNewChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      NEW_EM_START_END);
   }
 
-  public void testUpdate_NullOutChildren() throws EntityNotFoundException {
-    testUpdate_NullOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+  public void testUpdate_UpdateChildWithMerge() throws Exception {
+    testUpdate_UpdateChildWithMerge(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      TXN_START_END);
   }
-  public void testUpdate_ClearOutChildren() throws EntityNotFoundException {
-    testUpdate_ClearOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA());
+
+  public void testUpdate_UpdateChildWithMerge_NoTxn() throws Exception {
+    testUpdate_UpdateChildWithMerge(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      NEW_EM_START_END);
   }
-  public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyWithOrderByJPA.class);
+
+  public void testUpdate_UpdateChild() throws Exception {
+    testUpdate_UpdateChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      TXN_START_END);
   }
-  public void testFind() throws EntityNotFoundException {
-    testFind(HasOneToManyListJPA.class, BidirectionalChildListJPA.class);
+
+  public void testUpdate_UpdateChild_NoTxn() throws Exception {
+    testUpdate_UpdateChild(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      NEW_EM_START_END);
   }
-  public void testQuery() throws EntityNotFoundException {
-    testQuery(HasOneToManyListJPA.class, BidirectionalChildListJPA.class);
+
+  public void testUpdate_NullOutChildren() throws Exception {
+    testUpdate_NullOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      TXN_START_END);
+  }
+
+  public void testUpdate_NullOutChildren_NoTxn() throws Exception {
+    testUpdate_NullOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      NEW_EM_START_END);
+  }
+
+  public void testUpdate_ClearOutChildren() throws Exception {
+    testUpdate_ClearOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      TXN_START_END);
+  }
+  public void testUpdate_ClearOutChildren_NoTxn() throws Exception {
+    testUpdate_ClearOutChildren(new BidirectionalChildListJPA(), new HasOneToManyListJPA(),
+                                      NEW_EM_START_END);
+  }
+  public void testFindWithOrderBy() throws Exception {
+    testFindWithOrderBy(HasOneToManyWithOrderByJPA.class,
+                                      TXN_START_END);
+  }
+  public void testFindWithOrderBy_NoTxn() throws Exception {
+    testFindWithOrderBy(HasOneToManyWithOrderByJPA.class,
+                                      NEW_EM_START_END);
+  }
+  public void testFind() throws Exception {
+    testFind(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      TXN_START_END);
+  }
+  public void testFind_NoTxn() throws Exception {
+    testFind(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      NEW_EM_START_END);
+  }
+  public void testQuery() throws Exception {
+    testQuery(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      TXN_START_END);
+  }
+  public void testQuery_NoTxn() throws Exception {
+    testQuery(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      NEW_EM_START_END);
   }
   public void testChildFetchedLazily() throws Exception {
     testChildFetchedLazily(HasOneToManyListJPA.class, BidirectionalChildListJPA.class);
   }
-  public void testDeleteParentDeletesChild() throws EntityNotFoundException {
-    testDeleteParentDeletesChild(HasOneToManyListJPA.class, BidirectionalChildListJPA.class);
+  public void testDeleteParentDeletesChild() throws Exception {
+    testDeleteParentDeletesChild(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      TXN_START_END);
+  }
+  public void testDeleteParentDeletesChild_NoTxn() throws Exception {
+    testDeleteParentDeletesChild(HasOneToManyListJPA.class, BidirectionalChildListJPA.class,
+                                      NEW_EM_START_END);
   }
 
-  public void testSwapAtPosition() throws EntityNotFoundException {
+  public void testSwapAtPosition() throws Exception {
+    testSwapAtPosition(TXN_START_END);
+  }
+
+  public void testSwapAtPosition_NoTxn() throws Exception {
+    testSwapAtPosition(NEW_EM_START_END);
+  }
+
+  private void testSwapAtPosition(StartEnd startEnd) throws Exception {
     HasOneToManyListJPA pojo = new HasOneToManyListJPA();
     pojo.setVal("yar");
     BidirectionalChildListJPA bidir1 = new BidirectionalChildListJPA();
@@ -100,13 +164,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo.getBidirChildren().add(bidir1);
     bidir1.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     String bidir1Id = pojo.getBidirChildren().get(0).getId();
     String bookId = pojo.getBooks().get(0).getId();
@@ -120,9 +184,9 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     HasKeyPkJPA hasKeyPk2 = new HasKeyPkJPA();
     hasKeyPk2.setStr("another str");
     pojo.getHasKeyPks().set(0, hasKeyPk2);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     assertNotNull(pojo.getId());
     assertEquals(1, pojo.getBooks().size());
     assertEquals(1, pojo.getHasKeyPks().size());
@@ -139,7 +203,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(Collections.singletonList(KeyFactory.stringToKey(b2.getId())), pojoEntity.getProperty("books"));
     assertEquals(Collections.singletonList(hasKeyPk2.getId()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
@@ -190,12 +254,25 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 1);
   }
 
-  public void testRemoveObject() throws EntityNotFoundException {
+  public void testRemoveObject() throws Exception {
     testRemoveObject(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
-        new BidirectionalChildListJPA());
+        new BidirectionalChildListJPA(), TXN_START_END);
   }
 
-  public void testRemoveAtPosition() throws EntityNotFoundException {
+  public void testRemoveObject_NoTxn() throws Exception {
+    testRemoveObject(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+        new BidirectionalChildListJPA(), NEW_EM_START_END);
+  }
+
+  public void testRemoveAtPosition() throws Exception {
+    testRemoveAtPosition(TXN_START_END);
+  }
+
+  public void testRemoveAtPosition_NoTxn() throws Exception {
+    testRemoveAtPosition(NEW_EM_START_END);
+  }
+
+  private void testRemoveAtPosition(StartEnd startEnd) throws Exception {
     HasOneToManyListJPA pojo = new HasOneToManyListJPA();
     pojo.setVal("yar");
     BidirectionalChildListJPA bidir1 = new BidirectionalChildListJPA();
@@ -215,9 +292,9 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo.getBidirChildren().add(bidir1);
     pojo.getBidirChildren().add(bidir2);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 2);
 
@@ -228,11 +305,11 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo.getBooks().remove(0);
     pojo.getHasKeyPks().remove(0);
 
-    beginTxn();
+    startEnd.start();
     em.merge(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     assertNotNull(pojo.getId());
     assertEquals(1, pojo.getBooks().size());
@@ -253,7 +330,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(Collections.singletonList(KeyFactory.stringToKey(b2.getId())), pojoEntity.getProperty("books"));
     assertEquals(Collections.singletonList(hasKeyPk2.getId()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
@@ -304,7 +381,14 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 1);
   }
 
-  public void testAddAtPosition() throws EntityNotFoundException {
+  public void testAddAtPosition() throws Exception {
+    testAddAtPosition(TXN_START_END);
+  }
+  public void testAddAtPosition_NoTxn() throws Exception {
+    testAddAtPosition(NEW_EM_START_END);
+  }
+
+  private void testAddAtPosition(StartEnd startEnd) throws Exception {
     HasOneToManyListJPA pojo = new HasOneToManyListJPA();
     pojo.setVal("yar");
     BidirectionalChildListJPA bidir1 = new BidirectionalChildListJPA();
@@ -321,13 +405,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo.getHasKeyPks().add(hasKeyPk1);
     pojo.getBidirChildren().add(bidir1);
 
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo = em.find(pojo.getClass(), pojo.getId());
     String bidir1Id = pojo.getBidirChildren().get(0).getId();
     String bookId = pojo.getBooks().get(0).getId();
@@ -335,9 +419,9 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     pojo.getBidirChildren().add(0, bidir2);
     pojo.getBooks().add(0, b2);
     pojo.getHasKeyPks().add(0, hasKeyPk2);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     assertNotNull(pojo.getId());
     assertEquals(2, pojo.getBooks().size());
     assertEquals(2, pojo.getHasKeyPks().size());
@@ -354,7 +438,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(Utils.newArrayList(KeyFactory.stringToKey(b2.getId()), KeyFactory.stringToKey(bookId)), pojoEntity.getProperty("books"));
     assertEquals(Utils.newArrayList(hasKeyPk2.getId(), hasKeyPk1Key), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
     ldth.ds.get(KeyFactory.stringToKey(bookId));
@@ -394,14 +478,27 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertCountsInDatastore(HasOneToManyListJPA.class, BidirectionalChildListJPA.class, 1, 2);
   }
 
-  public void testChangeParent() {
-    testChangeParent(new HasOneToManyListJPA(), new HasOneToManyListJPA());
+  public void testChangeParent() throws Exception {
+    testChangeParent(new HasOneToManyListJPA(), new HasOneToManyListJPA(), TXN_START_END);
   }
-  public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
-    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJPA());
+  public void testChangeParent_NoTxn() throws Exception {
+    testChangeParent(new HasOneToManyListJPA(), new HasOneToManyListJPA(), NEW_EM_START_END);
   }
 
-  public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
+  public void testNewParentNewChild_NamedKeyOnChild() throws Exception {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJPA(), TXN_START_END);
+  }
+  public void testNewParentNewChild_NamedKeyOnChild_NoTxn() throws Exception {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJPA(), NEW_EM_START_END);
+  }
+
+  public void testInsert_NewParentAndChild_LongPk() throws Exception {
+    testInsert_NewParentAndChild_LongPk(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_LongPk_NoTxn() throws Exception {
+    testInsert_NewParentAndChild_LongPk(NEW_EM_START_END);
+  }
+  private void testInsert_NewParentAndChild_LongPk(StartEnd startEnd) throws Exception {
     BidirectionalChildLongPkListJPA bidirChild = new BidirectionalChildLongPkListJPA();
     bidirChild.setChildVal("yam");
 
@@ -417,9 +514,9 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     parent.getHasKeyPks().add(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     em.persist(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(b.getId());
@@ -460,7 +557,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(HasKeyPkJPA.class.getName(), 1, countForClass(HasKeyPkJPA.class));
   }
 
-  public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
+  public void testInsert_NewParentAndChild_StringPk() throws Exception {
+    testInsert_NewParentAndChild_StringPk(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_StringPk_NoTxn() throws Exception {
+    testInsert_NewParentAndChild_StringPk(NEW_EM_START_END);
+  }
+  private void testInsert_NewParentAndChild_StringPk(StartEnd startEnd) throws Exception {
     BidirectionalChildStringPkListJPA bidirChild = new BidirectionalChildStringPkListJPA();
     bidirChild.setChildVal("yam");
 
@@ -477,9 +580,9 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     parent.getHasKeyPks().add(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     em.persist(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(b.getId());
@@ -529,59 +632,101 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     testAddAlreadyPersistedChildToParent_NoTxnDifferentEm(new HasOneToManyListJPA());
   }
 
-  public void testLongPkOneToManyBidirChildren() {
+  public void testLongPkOneToManyBidirChildren() throws Exception {
+    testLongPkOneToManyBidirChildren(TXN_START_END);
+  }
+  public void testLongPkOneToManyBidirChildren_NoTxn() throws Exception {
+    testLongPkOneToManyBidirChildren(NEW_EM_START_END);
+  }
+  private void testLongPkOneToManyBidirChildren(StartEnd startEnd)
+      throws Exception {
     HasLongPkOneToManyBidirChildrenJPA pojo = new HasLongPkOneToManyBidirChildrenJPA();
     HasLongPkOneToManyBidirChildrenJPA.ChildA
         a = new HasLongPkOneToManyBidirChildrenJPA.ChildA();
     pojo.setChildAList(Utils.newArrayList(a));
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = em.find(HasLongPkOneToManyBidirChildrenJPA.class, pojo.getId());
     assertEquals(1, pojo.getChildAList().size());
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+    startEnd.end();
   }
 
-  public void testUnencodedStringPkOneToManyBidirChildren() {
+  public void testUnencodedStringPkOneToManyBidirChildren() throws Exception {
+    testUnencodedStringPkOneToManyBidirChildren(TXN_START_END);
+  }
+  public void testUnencodedStringPkOneToManyBidirChildren_NoTxn() throws Exception {
+    testUnencodedStringPkOneToManyBidirChildren(NEW_EM_START_END);
+  }
+  private void testUnencodedStringPkOneToManyBidirChildren(StartEnd startEnd)
+      throws Exception {
     HasUnencodedStringPkOneToManyBidirChildrenJPA
         pojo = new HasUnencodedStringPkOneToManyBidirChildrenJPA();
     pojo.setId("yar");
     HasUnencodedStringPkOneToManyBidirChildrenJPA.ChildA
         a = new HasUnencodedStringPkOneToManyBidirChildrenJPA.ChildA();
     pojo.setChildAList(Utils.newArrayList(a));
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = em.find(HasUnencodedStringPkOneToManyBidirChildrenJPA.class, pojo.getId());
     assertEquals(1, pojo.getChildAList().size());
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
+    startEnd.end();
   }
 
-  public void testFetchOfOneToManyParentWithKeyPk() {
-    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJPA());
+  public void testFetchOfOneToManyParentWithKeyPk() throws Exception {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJPA(), TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithKeyPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJPA(), NEW_EM_START_END);
   }
 
-  public void testFetchOfOneToManyParentWithLongPk() {
-    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA());
+  public void testFetchOfOneToManyParentWithLongPk() throws Exception {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA(), TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithLongPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJPA(), NEW_EM_START_END);
   }
 
-  public void testFetchOfOneToManyParentWithUnencodedStringPk() {
-    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA());
+  public void testFetchOfOneToManyParentWithUnencodedStringPk() throws Exception {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA(), TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithUnencodedStringPk_NoTxn() throws Exception {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJPA(), NEW_EM_START_END);
   }
 
-  public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+  public void testAddChildToOneToManyParentWithLongPk() throws Exception {
     testAddChildToOneToManyParentWithLongPk(
-        new HasOneToManyLongPkListJPA(), new BidirectionalChildLongPkListJPA());
+        new HasOneToManyLongPkListJPA(), new BidirectionalChildLongPkListJPA(), TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithLongPk_NoTxn() throws Exception {
+    testAddChildToOneToManyParentWithLongPk(
+        new HasOneToManyLongPkListJPA(), new BidirectionalChildLongPkListJPA(), NEW_EM_START_END);
   }
 
-  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+  public void testAddChildToOneToManyParentWithUnencodedStringPk() throws Exception {
     testAddChildToOneToManyParentWithUnencodedStringPk(
-        new HasOneToManyUnencodedStringPkListJPA(), new BidirectionalChildUnencodedStringPkListJPA());
+        new HasOneToManyUnencodedStringPkListJPA(), new BidirectionalChildUnencodedStringPkListJPA(),
+        TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithUnencodedStringPk_NoTxn() throws Exception {
+    testAddChildToOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkListJPA(), new BidirectionalChildUnencodedStringPkListJPA(),
+    NEW_EM_START_END);
   }
 
-  public void testOneToManyChildAtMultipleLevels() {
+  public void testOneToManyChildAtMultipleLevels() throws Exception {
+    testOneToManyChildAtMultipleLevels(TXN_START_END);
+  }
+  public void testOneToManyChildAtMultipleLevels_NoTxn() throws Exception {
+    testOneToManyChildAtMultipleLevels(NEW_EM_START_END);
+  }
+  private void testOneToManyChildAtMultipleLevels(StartEnd startEnd)
+      throws Exception {
     HasOneToManyChildAtMultipleLevelsJPA pojo = new HasOneToManyChildAtMultipleLevelsJPA();
     Book b1 = new Book();
     pojo.setBooks(Utils.newArrayList(b1));
@@ -589,10 +734,10 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     Book b2 = new Book();
     child.setBooks(Utils.newArrayList(b2));
     pojo.setChild(child);
-    beginTxn();
+    startEnd.start();
     em.persist(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     assertEquals(2, countForClass(Book.class));
     pojo = em.find(HasOneToManyChildAtMultipleLevelsJPA.class, pojo.getId());
     assertEquals(child.getId(), pojo.getChild().getId());
@@ -600,40 +745,76 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(pojo.getBooks().get(0), b1);
     assertEquals(child.getBooks().get(0), b2);
     assertEquals(1, child.getBooks().size());
-    commitTxn();
+    startEnd.end();
   }
 
-  public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  public void testAddQueriedParentToBidirChild() throws Exception {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     TXN_START_END);
+  }
+  public void testAddQueriedParentToBidirChild_NoTxn() throws Exception {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
   }
 
-  public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
-    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA());
+  public void testAddFetchedParentToBidirChild() throws Exception {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     TXN_START_END);
+  }
+  public void testAddFetchedParentToBidirChild_NoTxn() throws Exception {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+                                     NEW_EM_START_END);
   }
 
-  public void testDeleteChildWithSeparateNameField() {
+  public void testDeleteChildWithSeparateNameField() throws Exception {
+    testDeleteChildWithSeparateNameField(TXN_START_END);
+  }
+  public void testDeleteChildWithSeparateNameField_NoTxn() throws Exception {
+    testDeleteChildWithSeparateNameField(TXN_START_END);
+  }
+  private void testDeleteChildWithSeparateNameField(StartEnd startEnd) throws Exception {
     HasChildWithSeparateNameFieldJPA parent = new HasChildWithSeparateNameFieldJPA();
     HasEncodedStringPkSeparateNameFieldJPA child = new HasEncodedStringPkSeparateNameFieldJPA();
     child.setName("the name");
     parent.getChildren().add(child);
-    beginTxn();
+    startEnd.start();
     em.persist(parent);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     parent = em.find(HasChildWithSeparateNameFieldJPA.class, parent.getId());
     em.remove(parent);
-    commitTxn();
+    startEnd.end();
   }
 
   public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
-    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                               TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                               NEW_EM_START_END);
   }
 
   public void testOnlyOnePutOnChildUpdate() throws Throwable {
-    testOnlyOnePutOnChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+    testOnlyOnePutOnChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                TXN_START_END);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                NEW_EM_START_END);
   }
 
   public void testOnlyOneParentPutOnChildDelete() throws Throwable {
-    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA());
+    // 1 put for the parent update and 1 to remove the keys
+    int expectedUpdatePuts = 2;
+    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                      TXN_START_END, expectedUpdatePuts);
+  }
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    // 1 put for the parent update and 1 to remove the keys, plus 1 more put
+    // that I don't understand that only happens without txns
+    int expectedUpdatePuts = 3;
+    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
+                                      NEW_EM_START_END, expectedUpdatePuts);
   }
 }
