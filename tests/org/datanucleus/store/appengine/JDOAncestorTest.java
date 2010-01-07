@@ -40,7 +40,7 @@ public class JDOAncestorTest extends JDOTestCase {
     ldth.ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(KeyFactory.keyToString(flightKey));
-    makePersistentInTxn(ha);
+    makePersistentInTxn(ha, TXN_START_END);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
@@ -57,7 +57,7 @@ public class JDOAncestorTest extends JDOTestCase {
     Key flightKey = flightEntity.getKey();
     Key key = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key", flightKey).getKey();
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(null, KeyFactory.keyToString(key));
-    makePersistentInTxn(ha);
+    makePersistentInTxn(ha, TXN_START_END);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertEquals(flightKey, keyWithParent.getParent());
     // now we'll issue an ancestor query directly against the datastore and see
@@ -116,7 +116,7 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testInsertWithNullAncestor() {
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(null);
-    makePersistentInTxn(ha);
+    makePersistentInTxn(ha, TXN_START_END);
     Key keyWithParent = KeyFactory.stringToKey(ha.getId());
     assertNull(keyWithParent.getParent());
   }

@@ -34,11 +34,11 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Simple() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1);
+    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2);
+    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
-    makePersistentInTxn(student);
+    makePersistentInTxn(student, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
         "select from " + Student.class.getName() + " where "
@@ -51,11 +51,11 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_LegalOrderBy() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1);
+    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2);
+    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
-    makePersistentInTxn(student);
+    makePersistentInTxn(student, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
         "select from " + Student.class.getName() + " where "
@@ -68,15 +68,15 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Offset() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1);
+    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2);
+    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
-    makePersistentInTxn(student);
+    makePersistentInTxn(student, TXN_START_END);
     Student student2 = newStudent(11, course1, course2);
-    makePersistentInTxn(student2);
+    makePersistentInTxn(student2, TXN_START_END);
     Student student3 = newStudent(10, course1, course2);
-    makePersistentInTxn(student3);
+    makePersistentInTxn(student3, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
         "select from " + Student.class.getName() + " where "
@@ -92,15 +92,15 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Limit() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1);
+    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2);
+    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
-    makePersistentInTxn(student);
+    makePersistentInTxn(student, TXN_START_END);
     Student student2 = newStudent(11, course1, course2);
-    makePersistentInTxn(student2);
+    makePersistentInTxn(student2, TXN_START_END);
     Student student3 = newStudent(10, course1, course2);
-    makePersistentInTxn(student3);
+    makePersistentInTxn(student3, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
         "select from " + Student.class.getName() + " where "
@@ -116,13 +116,13 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToOne_Simple() {
     Major major1 = newMajor("Liberal Arts");
-    makePersistentInTxn(major1);
+    makePersistentInTxn(major1, TXN_START_END);
     Major major2 = newMajor("Engineering");
-    makePersistentInTxn(major2);
+    makePersistentInTxn(major2, TXN_START_END);
     Student student1 = newStudent(10, major1);
     Student student2 = newStudent(10, major2);
-    makePersistentInTxn(student1);
-    makePersistentInTxn(student2);
+    makePersistentInTxn(student1, TXN_START_END);
+    makePersistentInTxn(student2, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
         "select from " + Student.class.getName() + " where "

@@ -37,7 +37,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
   public void testInsert() throws EntityNotFoundException {
     HasTableAndColumnsInMappingJDO htacim = new HasTableAndColumnsInMappingJDO();
     htacim.setFoo("foo val");
-    makePersistentInTxn(htacim);
+    makePersistentInTxn(htacim, TXN_START_END);
     assertNotNull(htacim.getId());
     Entity entity = ldth.ds.get(KeyFactory.createKey(
         HasTableAndColumnsInMappingJDO.TABLE_NAME, htacim.getId()));

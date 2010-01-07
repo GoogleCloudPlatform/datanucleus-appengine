@@ -837,15 +837,15 @@ public class DatastoreFieldManager implements FieldManager {
     if (value instanceof Collection) {
       return extractRelationKeys((Collection) value);
     }
-    return extractKey(value);
+    return extractChildKey(value);
   }
 
   private List<Key> extractRelationKeys(Collection<?> values) {
     List<Key> keys = Utils.newArrayList();
     for (Object obj : values) {
-      Key key = extractKey(obj);
+      Key key = extractChildKey(obj);
       if (key != null) {
-        keys.add(extractKey(obj));
+        keys.add(key);
       }
     }
     return keys;
@@ -856,14 +856,14 @@ public class DatastoreFieldManager implements FieldManager {
    * @return The key of the object.  Returns {@code null} if the object is
    * being deleted or the object does not yet have a key.
    */
-  private Key extractKey(Object value) {
+  private Key extractChildKey(Object value) {
     if (value == null) {
       return null;
     }
     ObjectManager om = getObjectManager();
     StateManager sm = om.findStateManager(value);
     if (sm == null) {
-      // that's fine, it just means the object hasn't been saved yet
+      // that's fine, it just means the object hasn't been saved or that it is detached
       return null;
     }
     if (sm.isDeleted((PersistenceCapable) sm.getObject()) ) {
@@ -878,6 +878,14 @@ public class DatastoreFieldManager implements FieldManager {
     Key key = EntityUtils.getPrimaryKeyAsKey(storeManager.getApiAdapter(), sm);
     if (key == null) {
       throw new NullPointerException("Could not extract a key from " + value);
+    }
+
+    // We only support owned relationships so this key should be a child
+    // of the entity we are persisting.
+    if (key.getParent() == null) {
+      throw new DatastoreRelationFieldManager.ChildWithoutParentException(datastoreEntity.getKey(), key);
+    } else if (!key.getParent().equals(datastoreEntity.getKey())) {
+      throw new DatastoreRelationFieldManager.ChildWithWrongParentException(datastoreEntity.getKey(), key);      
     }
     return key;
   }
@@ -1174,7 +1182,7 @@ public class DatastoreFieldManager implements FieldManager {
   DatastoreTable getDatastoreTable() {
     return storeManager.getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
-  
+
   /**
    * Translates field numbers into {@link AbstractMemberMetaData}.
    */

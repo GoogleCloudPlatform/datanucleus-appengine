@@ -141,7 +141,7 @@ public class JDOFetchGroupTest extends JDOTestCase {
   public void testFetchGroupOverridesCanBeManuallyUndone() {    
     HasFetchGroupsJDO pojo = new HasFetchGroupsJDO();
     pojo.setLink(new Link("blarg"));
-    makePersistentInTxn(pojo);
+    makePersistentInTxn(pojo, TXN_START_END);
     beginTxn();
     pojo = pm.detachCopy(pm.getObjectById(HasFetchGroupsJDO.class, pojo.getId()));
     commitTxn();

@@ -128,15 +128,15 @@ public class JDOTestCase extends TestCase {
     pm.currentTransaction().rollback();
   }
 
-  protected <T> T makePersistentInTxn(T obj) {
+  protected <T> T makePersistentInTxn(T obj, StartEnd startEnd) {
     boolean success = false;
-    beginTxn();
+    startEnd.start();
     try {
       pm.makePersistent(obj);
-      commitTxn();
+      startEnd.end();
       success = true;
     } finally {
-      if (!success) {
+      if (!success && pm.currentTransaction().isActive()) {
         rollbackTxn();
       }
     }
@@ -178,4 +178,31 @@ public class JDOTestCase extends TestCase {
   private boolean cacheManagers() {
     return !Boolean.valueOf(System.getProperty("do.not.cache.managers"));
   }
+
+  interface StartEnd {
+    void start();
+    void end();
+  }
+
+  public final StartEnd TXN_START_END = new StartEnd() {
+    public void start() {
+      beginTxn();
+    }
+
+    public void end() {
+      commitTxn();
+    }
+  };
+
+  public final StartEnd NEW_PM_START_END = new StartEnd() {
+    public void start() {
+      if (pm.isClosed()) {
+        pm = pmf.getPersistenceManager();
+      }
+    }
+
+    public void end() {
+      pm.close();
+    }
+  };
 }

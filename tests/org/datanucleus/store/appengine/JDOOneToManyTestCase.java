@@ -56,7 +56,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    if (pm.currentTransaction().isActive() && failed) {
+    if (!pm.isClosed() && pm.currentTransaction().isActive() && failed) {
       pm.currentTransaction().rollback();
     }
     pmf.close();
@@ -1274,20 +1274,18 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     f1 = pm.detachCopy(f1);
     pm.close();
     pm = pmf.getPersistenceManager();
+    f1 = pm.makePersistent(f1);
     pojo.addFlight(f1);
     try {
       pm.makePersistent(pojo);
-//      fail("expected exception");
+      fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
     }
     pm.close();
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Flight.class));
-    pm = pmf.getPersistenceManager();
-    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getFlights().size());
   }
 
   void testAddAlreadyPersistedChildToParent_NoTxnSamePm(HasOneToManyJDO pojo) {
@@ -1303,11 +1301,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
     pm.close();
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Flight.class));
-    pm = pmf.getPersistenceManager();
-    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getFlights().size());
   }
 
   void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJDO pojo) {

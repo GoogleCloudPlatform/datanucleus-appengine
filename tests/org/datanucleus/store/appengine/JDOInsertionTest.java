@@ -50,7 +50,7 @@ public class JDOInsertionTest extends JDOTestCase {
     f1.setYou(4);
     f1.setName("Harold");
     assertNull(f1.getId());
-    makePersistentInTxn(f1);
+    makePersistentInTxn(f1, TXN_START_END);
     assertNotNull(f1.getId());
     Entity entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     assertNotNull(entity);
@@ -67,7 +67,7 @@ public class JDOInsertionTest extends JDOTestCase {
     Flight f = new Flight();
     f.setId(KeyFactory.keyToString(KeyFactory.createKey(Flight.class.getSimpleName(), "foo")));
     assertNotNull(f.getId());
-    makePersistentInTxn(f);
+    makePersistentInTxn(f, TXN_START_END);
     Entity entity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(entity);
     assertEquals("foo", entity.getKey().getName());
@@ -76,7 +76,7 @@ public class JDOInsertionTest extends JDOTestCase {
   public void testKitchenSinkInsert() throws EntityNotFoundException {
     KitchenSink ks = KitchenSink.newKitchenSink();
     assertNull(ks.key);
-    makePersistentInTxn(ks);
+    makePersistentInTxn(ks, TXN_START_END);
     assertNotNull(ks.key);
 
     Entity entity = ldth.ds.get(KeyFactory.stringToKey(ks.key));
@@ -91,13 +91,13 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testKitchenSinkInsertWithNulls() throws EntityNotFoundException {
     KitchenSink allNulls = new KitchenSink();
-    makePersistentInTxn(allNulls);
+    makePersistentInTxn(allNulls, TXN_START_END);
     Entity entityWithNulls = ldth.ds.get(KeyFactory.stringToKey(allNulls.key));
     assertNotNull(entityWithNulls);
 
     // now create a KitchenSink with non-null values
     KitchenSink noNulls = KitchenSink.newKitchenSink();
-    makePersistentInTxn(noNulls);
+    makePersistentInTxn(noNulls, TXN_START_END);
     Entity entityWithoutNulls = ldth.ds.get(KeyFactory.stringToKey(noNulls.key));
     assertNotNull(entityWithoutNulls);
 
@@ -106,7 +106,7 @@ public class JDOInsertionTest extends JDOTestCase {
 
   public void testVersionInserts() throws EntityNotFoundException {
     HasVersionNoFieldJDO hv = new HasVersionNoFieldJDO();
-    makePersistentInTxn(hv);
+    makePersistentInTxn(hv, TXN_START_END);
 
     Entity entity = ldth.ds.get(
         KeyFactory.createKey(HasVersionNoFieldJDO.class.getSimpleName(), hv.getId()));
@@ -142,7 +142,7 @@ public class JDOInsertionTest extends JDOTestCase {
   public void testInsertWithNamedKeyPk() {
     HasKeyPkJDO hk = new HasKeyPkJDO();
     hk.setKey(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), "name"));
-    makePersistentInTxn(hk);
+    makePersistentInTxn(hk, TXN_START_END);
 
     assertNotNull(hk.getKey());
     assertEquals("name", hk.getKey().getName());
@@ -156,7 +156,7 @@ public class JDOInsertionTest extends JDOTestCase {
     p.setAnotherName(new Name());
     p.getAnotherName().setFirst("anotherjimmy");
     p.getAnotherName().setLast("anotherjam");
-    makePersistentInTxn(p);
+    makePersistentInTxn(p, TXN_START_END);
 
     assertNotNull(p.getId());
 
@@ -173,7 +173,7 @@ public class JDOInsertionTest extends JDOTestCase {
     p.setName(new Name());
     p.getName().setFirst("jimmy");
     p.getName().setLast("jam");
-    makePersistentInTxn(p);
+    makePersistentInTxn(p, TXN_START_END);
 
     assertNotNull(p.getId());
 

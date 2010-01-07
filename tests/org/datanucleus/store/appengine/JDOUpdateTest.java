@@ -705,7 +705,7 @@ public class JDOUpdateTest extends JDOTestCase {
     p.setAnotherName(new Name());
     p.getAnotherName().setFirst("anotherjimmy");
     p.getAnotherName().setLast("anotherjam");
-    makePersistentInTxn(p);
+    makePersistentInTxn(p, TXN_START_END);
 
     assertNotNull(p.getId());
 

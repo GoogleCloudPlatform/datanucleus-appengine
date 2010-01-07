@@ -191,7 +191,7 @@ class DatastoreRelationFieldManager {
     Object childKeyOrString =
         apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(child));
     if (childKeyOrString == null) {
-      // must be a new object
+      // must be a new object or transient
       return;
     }
     Key childKey = childKeyOrString instanceof Key
@@ -200,17 +200,9 @@ class DatastoreRelationFieldManager {
     Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentSM);
 
     if (childKey.getParent() == null) {
-      throw new FatalNucleusUserException(
-          "Detected attempt to establish " + parentKey + " as the "
-         + "parent of " + childKey + " but the entity identified by "
-         + childKey + " has already been persisted without a parent.  A parent cannot "
-         + "be established or changed once an object has been persisted.");
+      throw new ChildWithoutParentException(parentKey, childKey);
     } else if (!parentKey.equals(childKey.getParent())) {
-      throw new FatalNucleusUserException(
-          "Detected attempt to establish " + parentKey + " as the "
-         + "parent of " + childKey + " but the entity identified by "
-         + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
-         + "be established or changed once an object has been persisted.");
+      throw new ChildWithWrongParentException(parentKey, childKey);
     }
   }
 
@@ -337,5 +329,23 @@ class DatastoreRelationFieldManager {
    */
   private interface StoreRelationEvent {
     void apply();
+  }
+
+  static class ChildWithoutParentException extends FatalNucleusUserException {
+    public ChildWithoutParentException(Key parentKey, Key childKey) {
+      super("Detected attempt to establish " + parentKey + " as the "
+             + "parent of " + childKey + " but the entity identified by "
+             + childKey + " has already been persisted without a parent.  A parent cannot "
+             + "be established or changed once an object has been persisted.");
+    }
+  }
+
+  static class ChildWithWrongParentException extends FatalNucleusUserException {
+    public ChildWithWrongParentException(Key parentKey, Key childKey) {
+      super("Detected attempt to establish " + parentKey + " as the "
+         + "parent of " + childKey + " but the entity identified by "
+         + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
+         + "be established or changed once an object has been persisted.");
+    }
   }
 }

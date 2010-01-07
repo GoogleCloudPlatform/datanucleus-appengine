@@ -743,8 +743,9 @@ public class JPAOneToOneTest extends JPATestCase {
     startEnd.end();
     try {
       pojoEntity = ldth.ds.get(pojoEntity.getKey());
+      fail("expected enfe");
     } catch (EntityNotFoundException e) {
-      e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+      // good
     }
     assertCountsInDatastore(0, 0);
     assertEquals(1, countForClass(HasEncodedStringPkJPA.class));

@@ -49,6 +49,14 @@ import javax.jdo.Query;
 public class JDOOneToOneTest extends JDOTestCase {
 
   public void testInsert_NewParentAndChild() throws EntityNotFoundException {
+    testInsert_NewParentAndChild(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_NewParentAndChild(NEW_PM_START_END);
+  }
+  private void testInsert_NewParentAndChild(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
@@ -64,7 +72,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     hasParentKeyPk.setParent(pojo);
     pojo.setNotDependent(notDependent);
 
-    makePersistentInTxn(pojo);
+    makePersistentInTxn(pojo, startEnd);
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -110,25 +118,43 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testInsert_NewParentExistingChild_Unidirectional() throws EntityNotFoundException {
+    testInsert_NewParentExistingChild_Unidirectional(TXN_START_END);
+  }
+  public void testInsert_NewParentExistingChild_Unidirectional_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_NewParentExistingChild_Unidirectional(NEW_PM_START_END);
+  }
+  private void testInsert_NewParentExistingChild_Unidirectional(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
 
-    persistInTxn(f);
-    persistInTxn(hasKeyPk);
-    persistInTxn(hasParent);
-    persistInTxn(hasParentKeyPk);
+    startEnd.start();
+    pm.makePersistent(f);
+    startEnd.end();
+    startEnd.start();
+    pm.makePersistent(hasKeyPk);
+    startEnd.end();
+    startEnd.start();
+    pm.makePersistent(hasParent);
+    startEnd.end();
+    startEnd.start();
+    pm.makePersistent(hasParentKeyPk);
+    startEnd.end();
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
     assertNotNull(hasParent.getKey());
     assertNotNull(hasParentKeyPk.getKey());
 
     HasOneToOneJDO pojo = new HasOneToOneJDO();
+
+    startEnd.start();
+    f = pm.makePersistent(f);
+    hasKeyPk = pm.makePersistent(hasKeyPk);
     pojo.setFlight(f);
     pojo.setHasKeyPK(hasKeyPk);
-
-    beginTxn();
     try {
       // this fails because it attempts to establish a parent for an object
       // that was originally saved without a parent
@@ -136,23 +162,31 @@ public class JDOOneToOneTest extends JDOTestCase {
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      rollbackTxn();
+      if (pm.currentTransaction().isActive()) {
+        rollbackTxn();
+      }
     }
-    // can't assert this because the local datastore doesn't really support
-    // txns so the parent ends up actually being persisted
-    // assertCountsInDatastore(0, 1);
+    assertCountsInDatastore(0, 1);
   }
 
   public void testInsert_NewParentExistingChild_Bidirectional() throws EntityNotFoundException {
+    testInsert_NewParentExistingChild_Bidirectional(TXN_START_END);
+  }
+  public void testInsert_NewParentExistingChild_Bidirectional_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_NewParentExistingChild_Bidirectional(NEW_PM_START_END);
+  }
+  private void testInsert_NewParentExistingChild_Bidirectional(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
 
-    persistInTxn(f);
-    persistInTxn(hasKeyPk);
-    persistInTxn(hasParent);
-    persistInTxn(hasParentKeyPk);
+    makePersistentInTxn(f, startEnd);
+    makePersistentInTxn(hasKeyPk, startEnd);
+    makePersistentInTxn(hasParent, startEnd);
+    makePersistentInTxn(hasParentKeyPk, startEnd);
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
     assertNotNull(hasParent.getKey());
@@ -164,7 +198,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParent(hasParent);
     pojo.setHasParentKeyPK(hasParentKeyPk);
 
-    beginTxn();
+    startEnd.start();
     try {
       // this fails because it tries to establish a parent for an object that
       // was originally saved without a parent
@@ -172,21 +206,32 @@ public class JDOOneToOneTest extends JDOTestCase {
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      rollbackTxn();
+      if (pm.currentTransaction().isActive()) {
+        rollbackTxn();
+      }
     }
   }
 
   public void testInsert_ExistingParentNewChild() throws EntityNotFoundException {
+    testInsert_ExistingParentNewChild(TXN_START_END);
+  }
+  public void testInsert_ExistingParentNewChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_ExistingParentNewChild(NEW_PM_START_END);
+  }
+  private void testInsert_ExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToOneJDO pojo = new HasOneToOneJDO();
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
     assertNotNull(pojo.getId());
     assertNull(pojo.getFlight());
     assertNull(pojo.getHasKeyPK());
     assertNull(pojo.getHasParent());
     assertNull(pojo.getHasParentKeyPK());
-    commitTxn();
+    pojo = pm.detachCopy(pojo);
+    startEnd.end();
     
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
@@ -195,14 +240,84 @@ public class JDOOneToOneTest extends JDOTestCase {
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
     HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
-    beginTxn();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
     pojo.setFlight(f);
     pojo.setHasKeyPK(hasKeyPk);
     pojo.setHasParent(hasParent);
     hasParent.setParent(pojo);
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
-    commitTxn();
+    startEnd.end();
+
+    assertNotNull(f.getId());
+    assertNotNull(hasKeyPk.getKey());
+    assertNotNull(hasParent.getKey());
+    assertNotNull(hasParentKeyPk.getKey());
+    pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertNotNull(pojoEntity);
+
+    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    assertNotNull(flightEntity);
+    assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
+
+    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    assertNotNull(hasKeyPkEntity);
+    assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
+
+    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getKey()));
+    assertNotNull(hasParentEntity);
+    assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getKey());
+
+    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getKey());
+    assertNotNull(hasParentKeyPkEntity);
+    assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getKey());
+
+    assertCountsInDatastore(1, 1);
+  }
+
+  // These tests fail because we are inserting a new child object as part
+  // of attaching the parent.  Since we're attaching the parent, the children
+  // get inserted first, which associates the entity group of the children
+  // with the txn and then causes an exception when we go to update the
+  // parent.  We need some way to force the parent to update first.
+  public void fail_testInsert_ExistingParentNewChild_UpdateDetached() throws EntityNotFoundException {
+    testInsert_ExistingParentNewChild_UpdateDetached(TXN_START_END);
+  }
+  public void fail_testInsert_ExistingParentNewChild_UpdateDetached_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_ExistingParentNewChild_UpdateDetached(NEW_PM_START_END);
+  }
+  private void testInsert_ExistingParentNewChild_UpdateDetached(StartEnd startEnd) throws EntityNotFoundException {
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+
+    startEnd.start();
+    pm.makePersistent(pojo);
+    assertNotNull(pojo.getId());
+    assertNull(pojo.getFlight());
+    assertNull(pojo.getHasKeyPK());
+    assertNull(pojo.getHasParent());
+    assertNull(pojo.getHasParentKeyPK());
+    pojo = pm.detachCopy(pojo);
+    startEnd.end();
+
+    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    assertNotNull(pojoEntity);
+
+    Flight f = newFlight();
+    HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    HasOneToOneParentKeyPkJDO hasParentKeyPk = new HasOneToOneParentKeyPkJDO();
+    startEnd.start();
+    pojo.setFlight(f);
+    pojo.setHasKeyPK(hasKeyPk);
+    pojo.setHasParent(hasParent);
+    hasParent.setParent(pojo);
+    pojo.setHasParentKeyPK(hasParentKeyPk);
+    hasParent.setParent(pojo);
+    pojo = pm.makePersistent(pojo);
+    startEnd.end();
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -231,6 +346,14 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testUpdate_UpdateChildWithMerge() throws EntityNotFoundException {
+    testUpdate_UpdateChildWithMerge(TXN_START_END);
+  }
+  public void testUpdate_UpdateChildWithMerge_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdate_UpdateChildWithMerge(NEW_PM_START_END);
+  }
+  private void testUpdate_UpdateChildWithMerge(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
 
@@ -246,7 +369,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
 
     assertNotNull(f.getId());
@@ -254,13 +377,21 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(hasParent.getKey());
     assertNotNull(hasParentKeyPk.getKey());
     assertNotNull(pojo.getId());
-    commitTxn();
-    beginTxn();
+    f = pm.detachCopy(f);
+    hasKeyPk = pm.detachCopy(hasKeyPk);
+    hasParent = pm.detachCopy(hasParent);
+    hasParentKeyPk = pm.detachCopy(hasParentKeyPk);
+    startEnd.end();
+    startEnd.start();
     f.setOrigin("yam");
     hasKeyPk.setStr("yar");
     hasParent.setStr("yag");
     hasParentKeyPk.setStr("yap");
-    commitTxn();
+    f = pm.makePersistent(f);
+    hasKeyPk = pm.makePersistent(hasKeyPk);
+    hasParent = pm.makePersistent(hasParent);
+    hasParentKeyPk = pm.makePersistent(hasParentKeyPk);
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
@@ -286,6 +417,14 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testUpdate_UpdateChild() throws EntityNotFoundException {
+    testUpdate_UpdateChild(TXN_START_END);
+  }
+  public void testUpdate_UpdateChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdate_UpdateChild(NEW_PM_START_END);
+  }
+  public void testUpdate_UpdateChild(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
@@ -299,7 +438,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
 
     assertNotNull(f.getId());
@@ -307,15 +446,15 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertNotNull(hasParentKeyPk.getKey());
     assertNotNull(hasParent.getKey());
     assertNotNull(pojo.getId());
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(HasOneToOneJDO.class, pojo.getId());
     pojo.getFlight().setOrigin("yam");
     pojo.getHasKeyPK().setStr("yar");
     pojo.getHasParent().setStr("yag");
     pojo.getHasParentKeyPK().setStr("yap");
-    commitTxn();
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
@@ -341,6 +480,14 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testUpdate_NullOutChild() throws EntityNotFoundException {
+    testUpdate_NullOutChild(TXN_START_END);
+  }
+  public void testUpdate_NullOutChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdate_NullOutChild(NEW_PM_START_END);
+  }
+  private void testUpdate_NullOutChild(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
@@ -354,22 +501,23 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParent.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
     String flightId = f.getId();
     Key hasKeyPkKey = hasKeyPk.getKey();
     String hasParentKey = hasParent.getKey();
     Key hasParentKeyPkKey = hasParentKeyPk.getKey();
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     try {
+      pojo = pm.makePersistent(pojo);
       pojo.setFlight(null);
       pojo.setHasKeyPK(null);
       pojo.setHasParent(null);
       pojo.setHasParentKeyPK(null);
     } finally {
-      commitTxn();
+      startEnd.end();
     }
 
     try {
@@ -400,12 +548,19 @@ public class JDOOneToOneTest extends JDOTestCase {
       // good
     }
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-
+    ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertCountsInDatastore(1, 0);
   }
 
   public void testFind() throws EntityNotFoundException {
+    testFind(TXN_START_END);
+  }
+  public void testFind_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFind(NEW_PM_START_END);
+  }
+  private void testFind(StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -427,7 +582,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     hasParentKeyPkEntity.setProperty("str", "yag");
     ldth.ds.put(hasParentKeyPkEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToOneJDO pojo =
         pm.getObjectById(HasOneToOneJDO.class, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
@@ -442,10 +597,18 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(pojo, pojo.getHasParent().getParent());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
     assertEquals(pojo, pojo.getHasParentKeyPK().getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testQuery() {
+    testQuery(TXN_START_END);
+  }
+  public void testQuery_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testQuery(NEW_PM_START_END);
+  }
+  public void testQuery(StartEnd startEnd) {
     Entity pojoEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -469,7 +632,7 @@ public class JDOOneToOneTest extends JDOTestCase {
 
     Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName()
         + " where id == key parameters String key");
-    beginTxn();
+    startEnd.start();
     @SuppressWarnings("unchecked")
     List<HasOneToOneJDO> result =
         (List<HasOneToOneJDO>) q.execute(KeyFactory.keyToString(pojoEntity.getKey()));
@@ -483,7 +646,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals("yap", pojo.getHasParent().getStr());
     assertNotNull(pojo.getHasParentKeyPK());
     assertEquals("yag", pojo.getHasParentKeyPK().getStr());
-    commitTxn();
+    startEnd.end();
   }
 
 
@@ -544,6 +707,14 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testDeleteParentDeletesChild() {
+    testDeleteParentDeletesChild(TXN_START_END);
+  }
+  public void testDeleteParentDeletesChild_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testDeleteParentDeletesChild(NEW_PM_START_END);
+  }
+  private void testDeleteParentDeletesChild(StartEnd startEnd) {
     Entity pojoEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -566,10 +737,10 @@ public class JDOOneToOneTest extends JDOTestCase {
     Entity notDependentEntity = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), pojoEntity.getKey());
     ldth.ds.put(notDependentEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToOneJDO pojo = pm.getObjectById(HasOneToOneJDO.class, KeyFactory.keyToString(pojoEntity.getKey()));
     pm.deletePersistent(pojo);
-    commitTxn();
+    startEnd.end();
     assertCountsInDatastore(0, 0);
     assertEquals(1, countForClass(HasEncodedStringPkJDO.class));
   }
@@ -609,41 +780,67 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testChangeParent() {
+    testChangeParent(TXN_START_END);
+  }
+  public void testChangeParent_NoTxn() {
+    testChangeParent(NEW_PM_START_END);
+  }
+  private void testChangeParent(StartEnd startEnd) {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
     Flight f1 = newFlight();
 
     HasOneToOneJDO pojo = new HasOneToOneJDO();
     pojo.setFlight(f1);
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    f1 = pm.detachCopy(f1);
+    startEnd.end();
 
     HasOneToOneJDO pojo2 = new HasOneToOneJDO();
-    beginTxn();
+    startEnd.start();
     pojo2.setFlight(f1);
     try {
       pm.makePersistent(pojo2);
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      rollbackTxn();
+      if (pm.currentTransaction().isActive()) {
+        rollbackTxn();
+      }
     }
   }
 
   public void testNewParentNewChild_SetNamedKeyOnChild() throws EntityNotFoundException {
+    testNewParentNewChild_SetNamedKeyOnChild(TXN_START_END);
+  }
+  public void testNewParentNewChild_SetNamedKeyOnChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testNewParentNewChild_SetNamedKeyOnChild(NEW_PM_START_END);
+  }
+  private void testNewParentNewChild_SetNamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToOneJDO pojo = new HasOneToOneJDO();
     Flight f1 = newFlight();
     pojo.setFlight(f1);
     f1.setId(KeyFactory.keyToString(KeyFactory.createKey(Flight.class.getSimpleName(), "named key")));
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals("named key", flightEntity.getKey().getName());
   }
 
   public void testNewParentNewChild_LongKeyOnParent() throws EntityNotFoundException {
+    testNewParentNewChild_LongKeyOnParent(TXN_START_END);
+  }
+  public void testNewParentNewChild_LongKeyOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testNewParentNewChild_LongKeyOnParent(NEW_PM_START_END);
+  }
+  private void testNewParentNewChild_LongKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneLongPkParentJDO hasParent = new HasOneToOneLongPkParentJDO();
@@ -657,7 +854,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    makePersistentInTxn(pojo);
+    makePersistentInTxn(pojo, startEnd);
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -702,6 +899,14 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
 
   public void testNewParentNewChild_StringKeyOnParent() throws EntityNotFoundException {
+    testNewParentNewChild_StringKeyOnParent(TXN_START_END);
+  }
+  public void testNewParentNewChild_StringKeyOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testNewParentNewChild_StringKeyOnParent(NEW_PM_START_END);
+  }
+  private void testNewParentNewChild_StringKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     HasOneToOneStringPkParentJDO hasParent = new HasOneToOneStringPkParentJDO();
@@ -716,7 +921,7 @@ public class JDOOneToOneTest extends JDOTestCase {
     pojo.setHasParentKeyPK(hasParentKeyPk);
     hasParentKeyPk.setParent(pojo);
 
-    makePersistentInTxn(pojo);
+    makePersistentInTxn(pojo, startEnd);
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
@@ -798,14 +1003,20 @@ public class JDOOneToOneTest extends JDOTestCase {
     }
     pm.close();
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Flight.class));
-    pm = pmf.getPersistenceManager();
-    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-    assertNull(pojo.getFlight());
   }
 
   public void testChildAtMultipleLevels() {
+    testChildAtMultipleLevels(TXN_START_END);
+  }
+  public void testChildAtMultipleLevels_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    pm.getFetchPlan().setMaxFetchDepth(3);
+    testChildAtMultipleLevels(NEW_PM_START_END);
+  }
+  private void testChildAtMultipleLevels(StartEnd startEnd) {
     HasOneToOneChildAtMultipleLevelsJDO pojo = new HasOneToOneChildAtMultipleLevelsJDO();
     Flight f1 = new Flight();
     pojo.setFlight(f1);
@@ -813,14 +1024,14 @@ public class JDOOneToOneTest extends JDOTestCase {
     Flight f2 = new Flight();
     child.setFlight(f2);
     pojo.setChild(child);
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = pm.getObjectById(HasOneToOneChildAtMultipleLevelsJDO.class, pojo.getId());
     assertEquals(child.getId(), pojo.getChild().getId());
     assertEquals(child.getFlight(), f2);
-    commitTxn();
+    startEnd.end();
   }
 
   private Flight newFlight() {
@@ -840,12 +1051,6 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(expectedChildren, countForClass(HasKeyPkJDO.class));
     assertEquals(expectedChildren, countForClass(HasOneToOneParentJDO.class));
     assertEquals(expectedChildren, countForClass(HasOneToOneParentKeyPkJDO.class));
-  }
-
-  private void persistInTxn(Object obj) {
-    beginTxn();
-    pm.makePersistent(obj);
-    commitTxn();
   }
 
 }
