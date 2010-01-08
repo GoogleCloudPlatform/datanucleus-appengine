@@ -2400,6 +2400,32 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
   }
 
+  public void testMultipleIn_Params_KeyFilter() {
+    Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
+    Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
+    Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "id IN (:p1) AND isbn IN (:p2, :p3)");
+    q.setParameter("p1", e2.getKey());
+    q.setParameter("p2", "isbn2");
+    q.setParameter("p3", "isbn3");
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    assertEquals(1, books.size());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(0).getId());
+
+    q = em.createQuery("select from " + Book.class.getName() + " where "
+                             + "(id = :p1 or id = :p2) AND isbn IN (:p3, :p4)");
+    q.setParameter("p1", e2.getKey());
+    q.setParameter("p2", e3.getKey());
+    q.setParameter("p3", "isbn2");
+    q.setParameter("p4", "isbn3");
+    @SuppressWarnings("unchecked")
+    List<Book> books2 = (List<Book>) q.getResultList();
+    assertEquals(2, books2.size());
+  }
+
   public void testOr_Literals() {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", null);

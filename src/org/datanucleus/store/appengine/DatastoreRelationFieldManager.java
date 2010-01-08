@@ -80,7 +80,11 @@ class DatastoreRelationFieldManager {
       event.apply();
     }
     storeRelationEvents.clear();
-    return keyRegistry.parentNeedsUpdate(fieldManager.getEntity().getKey());
+    try {
+      return keyRegistry.parentNeedsUpdate(fieldManager.getEntity().getKey());
+    } finally {
+      keyRegistry.clearModifiedParent(fieldManager.getEntity().getKey());
+    }
   }
 
   private DatastoreManager getStoreManager() {

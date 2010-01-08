@@ -836,6 +836,26 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
   }
 
+  public void testMultipleIn_Params_KeyFilter() {
+    Entity e = Flight.newFlightEntity("name1", "mia1", "bos1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "mia2", "bos2", 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "mia3", "bos3", 27, 28);
+    ldth.ds.put(Arrays.asList(e, e2, e3));
+    Query q = pm.newQuery(
+        "select from " + Flight.class.getName() + " where :p1.contains(id) && :p2.contains(origin)");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute(
+        Utils.newArrayList(KeyFactory.keyToString(e2.getKey())), Utils.newArrayList("mia3", "mia2"));
+    assertEquals(1, flights.size());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(0).getId());
+
+    q = pm.newQuery(
+      "select from " + Flight.class.getName() + " where (id == :p1 || id ==:p2) && :p3.contains(origin)");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights2 = (List<Flight>) q.execute(
+        e2.getKey(), e3.getKey(), Utils.newArrayList("mia3", "dne"));
+    assertEquals(1, flights2.size());
+  }
 
   public void testOr_Literals() {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);

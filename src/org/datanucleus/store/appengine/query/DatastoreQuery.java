@@ -235,7 +235,11 @@ public class DatastoreQuery implements Serializable {
     // connection before we do anything that might require a txn.
     ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());
     try {
-      if (qd.batchGetKeys != null) {
+      if (qd.batchGetKeys != null &&
+          qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
+          qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
+        // only execute a batch get if there aren't any other
+        // filters or sorts
         return fulfillBatchGetQuery(ds, qd, mconn);
       } else if (qd.joinQuery != null) {
         FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
@@ -779,10 +783,6 @@ public class DatastoreQuery implements Serializable {
       } else {
         sortProp = determinePropertyName(ammd);
       }
-      if (qd.batchGetKeys != null) {
-        // Can't have any sort orders if doing a batch get
-        throwInvalidBatchLookupException();
-      }
       return sortProp;
     }
   }
@@ -1076,17 +1076,18 @@ public class DatastoreQuery implements Serializable {
       String datastorePropName;
       if (ammd.isPrimaryKey()) {
         if (value instanceof Collection) {
-          processAsBatchGet(datastoreQuery, qd, (Collection) value, acmd, op);
-          return;
+          processPotentialBatchGet(qd, (Collection) value, acmd, op);
+          List<Key> keys = Utils.newArrayList();
+          for (Object obj : ((Collection<?>) value)) {
+            keys.add(internalPkToKey(acmd, obj));
+          }
+          value = keys;
+        } else {
+          value = internalPkToKey(acmd, value);
         }
         datastorePropName = Entity.KEY_RESERVED_PROPERTY;
-        value = internalPkToKey(acmd, value);
       } else {
         datastorePropName = determinePropertyName(ammd);
-      }
-      if (qd.batchGetKeys != null) {
-        // can only do a batch get if no other filters defined
-        throwInvalidBatchLookupException();
       }
       value = pojoParamToDatastoreParam(value);
       if (qd.isOrExpression) {
@@ -1169,16 +1170,14 @@ public class DatastoreQuery implements Serializable {
     return query.getCompilation().getSymbolTable();
   }
 
-  private void processAsBatchGet(Query datastoreQuery, QueryData qd, Collection value,
+  private void processPotentialBatchGet(QueryData qd, Collection value,
                                  AbstractClassMetaData acmd, Query.FilterOperator op) {
-    // let's handle this as a batch get request
-    if (!datastoreQuery.getFilterPredicates().isEmpty()) {
-      // can only do a batch get if no other filters defined
-      throwInvalidBatchLookupException();
-    } else if (!op.equals(Query.FilterOperator.EQUAL)) {
+    if (!op.equals(Query.FilterOperator.EQUAL)) {
       throw new FatalNucleusUserException(
           "Batch lookup by primary key is only supported with the equality operator.");
     }
+    // If it turns out there aren't any other filters or sorts we'll fulfill
+    // the query using a batch get
     qd.batchGetKeys = Utils.newHashSet();
     for (Object obj : value) {
       qd.batchGetKeys.add(internalPkToKey(acmd, obj));
@@ -1202,11 +1201,6 @@ public class DatastoreQuery implements Serializable {
         + "Left: " + dyadic.getLeft().getClass().getName()
         + ", Op: " + dyadic.getOperator()
         + ", Right: " + dyadic.getRight());
-  }
-
-  private void throwInvalidBatchLookupException() {
-    throw new FatalNucleusUserException(
-        "Batch lookup by primary key is only supported if no other filters and no sort orders are defined.");
   }
 
   /**
