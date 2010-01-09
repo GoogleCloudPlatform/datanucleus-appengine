@@ -805,15 +805,15 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
   }
 
   public void testOnlyOneParentPutOnChildDelete() throws Throwable {
-    // 1 put for the parent update and 1 to remove the keys
-    int expectedUpdatePuts = 2;
+    // 1 put to remove the keys
+    int expectedUpdatePuts = 1;
     testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                       TXN_START_END, expectedUpdatePuts);
   }
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
-    // 1 put for the parent update and 1 to remove the keys, plus 1 more put
+    // 1 put to remove the keys, plus 1 more put
     // that I don't understand that only happens without txns
-    int expectedUpdatePuts = 3;
+    int expectedUpdatePuts = 2;
     testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                       NEW_EM_START_END, expectedUpdatePuts);
   }

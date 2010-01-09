@@ -38,6 +38,7 @@ import org.datanucleus.test.HasOneToOneStringPkParentJDO;
 import org.datanucleus.test.HasOneToOneStringPkParentKeyPkJDO;
 import org.easymock.EasyMock;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import javax.jdo.JDOFatalUserException;
@@ -1032,6 +1033,145 @@ public class JDOOneToOneTest extends JDOTestCase {
     assertEquals(child.getId(), pojo.getChild().getId());
     assertEquals(child.getFlight(), f2);
     startEnd.end();
+  }
+
+  private static final class PutPolicy implements DatastoreServiceInterceptor.Policy {
+    private final List<Object[]> putParamList = Utils.newArrayList();
+    public void intercept(Object o, Method method, Object[] params) {
+      if (method.getName().equals("put")) {
+        putParamList.add(params);
+      }
+    }
+  }
+
+  PutPolicy setupPutPolicy(HasOneToOneJDO pojo, HasOneToOneParentJDO hasParent, StartEnd startEnd,
+                           int expectedPuts)
+      throws Throwable {
+    PutPolicy policy = new PutPolicy();
+    DatastoreServiceInterceptor.install(policy);
+    try {
+      pmf.close();
+      switchDatasource(startEnd.getPmfName());
+      Flight flight = new Flight();
+      pojo.setFlight(flight);
+      pojo.setHasParent(hasParent);
+      HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
+      pojo.setHasKeyPK(hasKeyPk);
+
+      startEnd.start();
+      pm.makePersistent(pojo);
+      startEnd.end();
+      assertEquals(expectedPuts, policy.putParamList.size());
+      policy.putParamList.clear();
+      return policy;
+    } catch (Throwable t) {
+      DatastoreServiceInterceptor.uninstall();
+      throw t;
+    }
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent
+    int expectedPutsInSetup = 5;
+    testOnlyOnePutOnChildUpdate(TXN_START_END, expectedPutsInSetup);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent, and then 1 more put
+    // on HasOneToOneParentJDO that I can't explain
+    int expectedPutsInSetup = 6;
+    testOnlyOnePutOnChildUpdate(NEW_PM_START_END, expectedPutsInSetup);
+  }
+  private void testOnlyOnePutOnChildUpdate(StartEnd startEnd, int expectedPutsInSetup)
+      throws Throwable {
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd, expectedPutsInSetup);
+    try {
+      startEnd.start();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.getFlight().setMe(88);
+      pojo.getHasParent().setStr("blarg");
+      pojo.getHasKeyPK().setStr("double blarg");
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for each child update
+    assertEquals(3, policy.putParamList.size());
+  }
+
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent
+    int expectedPutsInSetup = 5;
+    testOnlyOneParentPutOnParentAndChildUpdate(TXN_START_END, expectedPutsInSetup);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent, and then 1 more put
+    // on HasOneToOneParentJDO that I can't explain
+    int expectedPutsInSetup = 6;
+    testOnlyOneParentPutOnParentAndChildUpdate(NEW_PM_START_END, expectedPutsInSetup);
+  }
+  private void testOnlyOneParentPutOnParentAndChildUpdate(StartEnd startEnd, int expectedPutsInSetup)
+      throws Throwable {
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd, expectedPutsInSetup);
+    try {
+      startEnd.start();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.setStr("another val");
+      pojo.getFlight().setMe(88);
+      pojo.getHasParent().setStr("blarg");
+      pojo.getHasKeyPK().setStr("double blarg");
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update, 1 put for each child update
+    assertEquals(4, policy.putParamList.size());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent
+    int expectedPutsInSetup = 5;
+    // 1 put per child that we blank out plus one more put that cascades
+    // from the HasOneToOneParentJDO up to the parent as part of the delete
+    int expectedPutsOnChildDelete = 3;
+    testOnlyOneParentPutOnChildDelete(TXN_START_END, expectedPutsInSetup, expectedPutsOnChildDelete);
+  }
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent, and then 1 more put
+    // on HasOneToOneParentJDO that I can't explain
+    int expectedPutsInSetup = 6;
+    // 1 put per child that we blank out
+    int expectedPutsOnChildDelete = 4;
+    testOnlyOneParentPutOnChildDelete(NEW_PM_START_END, expectedPutsInSetup, expectedPutsOnChildDelete);
+  }
+  private void testOnlyOneParentPutOnChildDelete(StartEnd startEnd, int expectedPutsOnSetup,
+                                                 int expectedPutsOnChildDelete)
+      throws Throwable {
+    HasOneToOneJDO pojo = new HasOneToOneJDO();
+    HasOneToOneParentJDO hasParent = new HasOneToOneParentJDO();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd, expectedPutsOnSetup);
+    try {
+      startEnd.start();
+      pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
+      pojo.setStr("another val");
+      pojo.setFlight(null);
+      pojo.setHasParent(null);
+      pojo.setHasKeyPK(null);
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // datanuc issues 1 put for each relation we blank out
+    assertEquals(expectedPutsOnChildDelete, policy.putParamList.size());
   }
 
   private Flight newFlight() {

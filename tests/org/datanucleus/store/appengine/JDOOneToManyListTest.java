@@ -49,73 +49,169 @@ import java.util.Collection;
 public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testInsertNewParentAndChild() throws EntityNotFoundException {
+    testInsertNewParentAndChild(TXN_START_END);
+  }
+  public void testInsertNewParentAndChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsertNewParentAndChild(NEW_PM_START_END);
+  }
+  private void testInsertNewParentAndChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidirChild = new BidirectionalChildListJDO();
-    testInsert_NewParentAndChild(parent, bidirChild);
+    testInsert_NewParentAndChild(parent, bidirChild, startEnd);
   }
 
   public void testInsertExistingParentNewChild() throws EntityNotFoundException {
+    testInsertExistingParentNewChild(TXN_START_END);
+  }
+  public void testInsertExistingParentNewChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsertExistingParentNewChild(NEW_PM_START_END);
+  }
+  private void testInsertExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidirChild = new BidirectionalChildListJDO();
-    testInsert_ExistingParentNewChild(parent, bidirChild);
+    testInsert_ExistingParentNewChild(parent, bidirChild, startEnd);
   }
 
   public void testSwapAtPosition() throws EntityNotFoundException {
+    testSwapAtPosition(TXN_START_END);
+  }
+  public void testSwapAtPosition_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testSwapAtPosition(NEW_PM_START_END);
+  }
+  private void testSwapAtPosition(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidirChild = new BidirectionalChildListJDO();
     BidirectionalChildListJDO bidirChild2 = new BidirectionalChildListJDO();
-    testSwapAtPosition(parent, bidirChild, bidirChild2);
+    testSwapAtPosition(parent, bidirChild, bidirChild2, startEnd);
   }
 
   public void testRemoveAtPosition() throws EntityNotFoundException {
+    testRemoveAtPosition(TXN_START_END);
+  }
+  public void testRemoveAtPosition_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAtPosition(NEW_PM_START_END);
+  }
+  private void testRemoveAtPosition(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidirChild = new BidirectionalChildListJDO();
     BidirectionalChildListJDO bidirChild2 = new BidirectionalChildListJDO();
     BidirectionalChildListJDO bidirChild3 = new BidirectionalChildListJDO();
-    testRemoveAtPosition(parent, bidirChild, bidirChild2, bidirChild3);
+    testRemoveAtPosition(parent, bidirChild, bidirChild2, bidirChild3, startEnd);
   }
 
   public void testAddAtPosition() throws EntityNotFoundException {
+    testAddAtPosition(TXN_START_END);
+  }
+  public void testAddAtPosition_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddAtPosition(NEW_PM_START_END);
+  }
+  private void testAddAtPosition(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO parent = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidirChild = new BidirectionalChildListJDO();
     BidirectionalChildListJDO bidirChild2 = new BidirectionalChildListJDO();
-    testAddAtPosition(parent, bidirChild, bidirChild2);
+    testAddAtPosition(parent, bidirChild, bidirChild2, startEnd);
   }
 
   public void testUpdateUpdateChildWithMerge() throws EntityNotFoundException {
+    testUpdateUpdateChildWithMerge(TXN_START_END);
+  }
+  public void testUpdateUpdateChildWithMerge_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateUpdateChildWithMerge(NEW_PM_START_END);
+  }
+  private void testUpdateUpdateChildWithMerge(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidir = new BidirectionalChildListJDO();
-    testUpdate_UpdateChildWithMerge(pojo, bidir);
+    testUpdate_UpdateChildWithMerge(pojo, bidir, startEnd);
   }
 
   public void testUpdateUpdateChild() throws EntityNotFoundException {
+    testUpdateUpdateChild(TXN_START_END);
+  }
+  public void testUpdateUpdateChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateUpdateChild(NEW_PM_START_END);
+  }
+  private void testUpdateUpdateChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidir = new BidirectionalChildListJDO();
-    testUpdate_UpdateChild(pojo, bidir);
+    testUpdate_UpdateChild(pojo, bidir, startEnd);
   }
 
   public void testUpdateNullOutChildren() throws EntityNotFoundException {
+    testUpdateNullOutChildren(TXN_START_END);
+  }
+  public void testUpdateNullOutChildren_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateNullOutChildren(NEW_PM_START_END);
+  }
+  private void testUpdateNullOutChildren(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidir = new BidirectionalChildListJDO();
-    testUpdate_NullOutChildren(pojo, bidir);
+    testUpdate_NullOutChildren(pojo, bidir, startEnd);
   }
 
   public void testUpdateClearOutChildren() throws EntityNotFoundException {
+    testUpdateClearOutChildren(TXN_START_END);
+  }
+  public void testUpdateClearOutChildren_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateClearOutChildren(NEW_PM_START_END);
+  }
+  private void testUpdateClearOutChildren(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidir = new BidirectionalChildListJDO();
-    testUpdate_ClearOutChildren(pojo, bidir);
+    testUpdate_ClearOutChildren(pojo, bidir, startEnd);
   }
 
   public void testFindWithOrderBy() throws EntityNotFoundException {
-    testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class);
+    testFindWithOrderBy(TXN_START_END);
+  }
+  public void testFindWithOrderBy_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFindWithOrderBy(NEW_PM_START_END);
+  }
+  private void testFindWithOrderBy(StartEnd startEnd) throws EntityNotFoundException {
+    testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class, startEnd);
   }
 
   public void testFind() throws EntityNotFoundException {
-    testFind(HasOneToManyListJDO.class, BidirectionalChildListJDO.class);
+    testFind(TXN_START_END);
+  }
+  public void testFind_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFind(NEW_PM_START_END);
+  }
+  private void testFind(StartEnd startEnd) throws EntityNotFoundException {
+    testFind(HasOneToManyListJDO.class, BidirectionalChildListJDO.class, startEnd);
   }
 
   public void testQuery() throws EntityNotFoundException {
-    testQuery(HasOneToManyListJDO.class, BidirectionalChildListJDO.class);
+    testQuery(TXN_START_END);
+  }
+  public void testQuery_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testQuery(NEW_PM_START_END);
+  }
+  private void testQuery(StartEnd startEnd) throws EntityNotFoundException {
+    testQuery(HasOneToManyListJDO.class, BidirectionalChildListJDO.class, startEnd);
   }
 
   public void testChildFetchedLazily() throws Exception {
@@ -123,10 +219,26 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
   }
 
   public void testDeleteParentDeletesChild() throws Exception {
-    testDeleteParentDeletesChild(HasOneToManyListJDO.class, BidirectionalChildListJDO.class);
+    testDeleteParentDeletesChild(TXN_START_END);
+  }
+  public void testDeleteParentDeletesChild_NoTxn() throws Exception {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testDeleteParentDeletesChild(NEW_PM_START_END);
+  }
+  private void testDeleteParentDeletesChild(StartEnd startEnd) throws Exception {
+    testDeleteParentDeletesChild(HasOneToManyListJDO.class, BidirectionalChildListJDO.class, startEnd);
   }
 
   public void testIndexOf() throws Exception {
+    testIndexOf(TXN_START_END);
+  }
+  public void testIndexOf_NoTxn() throws Exception {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testIndexOf(NEW_PM_START_END);
+  }
+  public void testIndexOf(StartEnd startEnd) throws Exception {
     HasOneToManyListJDO pojo = new HasOneToManyListJDO();
     BidirectionalChildListJDO bidir1 = new BidirectionalChildListJDO();
     BidirectionalChildListJDO bidir2 = new BidirectionalChildListJDO();
@@ -144,47 +256,103 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     pojo.addHasKeyPk(hasKeyPk1);
     pojo.addHasKeyPk(hasKeyPk2);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(HasOneToManyListJDO.class, pojo.getId());
+    bidir1 = pm.getObjectById(bidir1.getClass(), bidir1.getId());
+    bidir2 = pm.getObjectById(bidir2.getClass(), bidir2.getId());
+    f1 = pm.getObjectById(f1.getClass(), f1.getId());
+    f2 = pm.getObjectById(f2.getClass(), f2.getId());
+    hasKeyPk1 = pm.getObjectById(hasKeyPk1.getClass(), hasKeyPk1.getKey());
+    hasKeyPk2 = pm.getObjectById(hasKeyPk2.getClass(), hasKeyPk2.getKey());
     assertEquals(0, pojo.getBidirChildren().indexOf(bidir1));
     assertEquals(1, pojo.getBidirChildren().indexOf(bidir2));
     assertEquals(0, pojo.getFlights().indexOf(f1));
     assertEquals(1, pojo.getFlights().indexOf(f2));
     assertEquals(0, pojo.getHasKeyPks().indexOf(hasKeyPk1));
     assertEquals(1, pojo.getHasKeyPks().indexOf(hasKeyPk2));
-    commitTxn();
+    startEnd.end();
   }
 
   public void testRemoveAll() throws EntityNotFoundException {
+    testRemoveAll(TXN_START_END);
+  }
+  public void testRemoveAll_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll(NEW_PM_START_END);
+  }
+  private void testRemoveAll(StartEnd startEnd) throws EntityNotFoundException {
     testRemoveAll(new HasOneToManyListJDO(), new BidirectionalChildListJDO(),
-                  new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
+                  new BidirectionalChildListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testRemoveAll_LongPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_LongPkOnParent(TXN_START_END);
+  }
+  public void testRemoveAll_LongPkOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll_LongPkOnParent(NEW_PM_START_END);
+  }
+  private void testRemoveAll_LongPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
     testRemoveAll_LongPkOnParent(new HasOneToManyLongPkListJDO(), new BidirectionalChildLongPkListJDO(),
-                  new BidirectionalChildLongPkListJDO(), new BidirectionalChildLongPkListJDO());
+                  new BidirectionalChildLongPkListJDO(), new BidirectionalChildLongPkListJDO(),
+                  startEnd);
   }
 
   public void testRemoveAll_UnencodedStringPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_UnencodedStringPkOnParent(TXN_START_END);
+  }
+  public void testRemoveAll_UnencodedStringPkOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll_UnencodedStringPkOnParent(NEW_PM_START_END);
+  }
+  private void testRemoveAll_UnencodedStringPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyUnencodedStringPkListJDO parent = new HasOneToManyUnencodedStringPkListJDO();
     parent.setId("parent id");
     testRemoveAll_UnencodedStringPkOnParent(parent, new BidirectionalChildUnencodedStringPkListJDO(),
-                  new BidirectionalChildUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO());
+                  new BidirectionalChildUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO(),
+                  startEnd);
   }
 
   public void testChangeParent() {
-    testChangeParent(new HasOneToManyListJDO(), new HasOneToManyListJDO());
+    testChangeParent(TXN_START_END);
+  }
+  public void testChangeParent_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testChangeParent(NEW_PM_START_END);
+  }
+  private void testChangeParent(StartEnd startEnd) {
+    testChangeParent(new HasOneToManyListJDO(), new HasOneToManyListJDO(), startEnd);
   }
 
   public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
-    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJDO());
+    testNewParentNewChild_NamedKeyOnChild(TXN_START_END);
+  }
+  public void testNewParentNewChild_NamedKeyOnChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testNewParentNewChild_NamedKeyOnChild(NEW_PM_START_END);
+  }
+  private void testNewParentNewChild_NamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManyListJDO(), startEnd);
   }
 
   public void testInsert_NewParentAndChild_LongPk() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_LongPk(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_LongPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_NewParentAndChild_LongPk(NEW_PM_START_END);
+  }
+  private void testInsert_NewParentAndChild_LongPk(StartEnd startEnd) throws EntityNotFoundException {
     BidirectionalChildLongPkListJDO bidirChild = new BidirectionalChildLongPkListJDO();
     bidirChild.setChildVal("yam");
 
@@ -200,9 +368,9 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     parent.addHasKeyPk(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(f.getId());
@@ -253,6 +421,14 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
   }
 
   public void testInsert_NewParentAndChild_StringPk() throws EntityNotFoundException {
+    testInsert_NewParentAndChild_StringPk(TXN_START_END);
+  }
+  public void testInsert_NewParentAndChild_StringPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsert_NewParentAndChild_StringPk(NEW_PM_START_END);
+  }
+  private void testInsert_NewParentAndChild_StringPk(StartEnd startEnd) throws EntityNotFoundException {
     BidirectionalChildStringPkListJDO bidirChild = new BidirectionalChildStringPkListJDO();
     bidirChild.setChildVal("yam");
 
@@ -269,9 +445,9 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     parent.addHasKeyPk(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(f.getId());
@@ -331,59 +507,125 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
   }
 
   public void testLongPkOneToManyBidirChildren() {
+    testLongPkOneToManyBidirChildren(TXN_START_END);
+  }
+  public void testLongPkOneToManyBidirChildren_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testLongPkOneToManyBidirChildren(NEW_PM_START_END);
+  }
+  private void testLongPkOneToManyBidirChildren(StartEnd startEnd) {
     HasLongPkOneToManyBidirChildrenJDO pojo = new HasLongPkOneToManyBidirChildrenJDO();
     HasLongPkOneToManyBidirChildrenJDO.ChildA
         a = new HasLongPkOneToManyBidirChildrenJDO.ChildA();
     pojo.setChildAList(Utils.newArrayList(a));
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = pm.getObjectById(HasLongPkOneToManyBidirChildrenJDO.class, pojo.getId());
     assertEquals(1, pojo.getChildAList().size());
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testUnencodedStringPkOneToManyBidirChildren() {
+    testUnencodedStringPkOneToManyBidirChildren(TXN_START_END);
+  }
+  public void testUnencodedStringPkOneToManyBidirChildren_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUnencodedStringPkOneToManyBidirChildren(NEW_PM_START_END);
+  }
+  private void testUnencodedStringPkOneToManyBidirChildren(StartEnd startEnd) {
     HasUnencodedStringPkOneToManyBidirChildrenJDO pojo = new HasUnencodedStringPkOneToManyBidirChildrenJDO();
     pojo.setId("yar");
     HasUnencodedStringPkOneToManyBidirChildrenJDO.ChildA
         a = new HasUnencodedStringPkOneToManyBidirChildrenJDO.ChildA();
     pojo.setChildAList(Utils.newArrayList(a));
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = pm.getObjectById(HasUnencodedStringPkOneToManyBidirChildrenJDO.class, pojo.getId());
     assertEquals(1, pojo.getChildAList().size());
     assertEquals(pojo, pojo.getChildAList().get(0).getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testFetchOfOneToManyParentWithKeyPk() {
-    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJDO());
+    testFetchOfOneToManyParentWithKeyPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithKeyPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithKeyPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithKeyPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkListJDO(), startEnd);
   }
 
   public void testFetchOfOneToManyParentWithLongPk() {
-    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJDO());
+    testFetchOfOneToManyParentWithLongPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithLongPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithLongPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithLongPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkListJDO(), startEnd);
   }
 
   public void testFetchOfOneToManyParentWithUnencodedStringPk() {
-    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkListJDO());
+    testFetchOfOneToManyParentWithUnencodedStringPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithUnencodedStringPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithUnencodedStringPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithUnencodedStringPk(
+        new HasOneToManyUnencodedStringPkListJDO(), startEnd);
   }
 
   public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithLongPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddChildToOneToManyParentWithLongPk(NEW_PM_START_END);
+  }
+  private void testAddChildToOneToManyParentWithLongPk(StartEnd startEnd) throws EntityNotFoundException {
     testAddChildToOneToManyParentWithLongPk(
-        new HasOneToManyLongPkListJDO(), new BidirectionalChildLongPkListJDO());
+        new HasOneToManyLongPkListJDO(), new BidirectionalChildLongPkListJDO(), startEnd);
   }
 
   public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithUnencodedStringPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddChildToOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
+  }
+  private void testAddChildToOneToManyParentWithUnencodedStringPk(StartEnd startEnd) throws EntityNotFoundException {
     testAddChildToOneToManyParentWithUnencodedStringPk(
-        new HasOneToManyUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO());
+        new HasOneToManyUnencodedStringPkListJDO(), new BidirectionalChildUnencodedStringPkListJDO(),
+        startEnd);
   }
 
   public void testOneToManyChildAtMultipleLevels() {
+    testOneToManyChildAtMultipleLevels(TXN_START_END);
+  }
+  public void testOneToManyChildAtMultipleLevels_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOneToManyChildAtMultipleLevels(NEW_PM_START_END);
+  }
+  public void testOneToManyChildAtMultipleLevels(StartEnd startEnd) {
     HasOneToManyChildAtMultipleLevelsJDO pojo = new HasOneToManyChildAtMultipleLevelsJDO();
     Flight f1 = new Flight();
     pojo.setFlights(Utils.newArrayList(f1));
@@ -391,29 +633,55 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     Flight f2 = new Flight();
     child.setFlights(Utils.newArrayList(f2));
     pojo.setChild(child);
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     assertEquals(2, countForClass(Flight.class));
     pojo = pm.getObjectById(HasOneToManyChildAtMultipleLevelsJDO.class, pojo.getId());
     assertEquals(child.getId(), pojo.getChild().getId());
     assertEquals(1, pojo.getFlights().size());
-    assertEquals(pojo.getFlights().get(0), f1);
-    assertEquals(child.getFlights().get(0), f2);
+    assertTrue(pojo.getFlights().get(0).customEquals(f1));
+    assertTrue(child.getFlights().get(0).customEquals(f2));
     assertEquals(1, child.getFlights().size());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
-    testAddQueriedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+    testAddQueriedParentToBidirChild(TXN_START_END);
+  }
+  public void testAddQueriedParentToBidirChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddQueriedParentToBidirChild(NEW_PM_START_END);
+  }
+  private void testAddQueriedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
+    testAddQueriedParentToBidirChild(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
-    testAddFetchedParentToBidirChild(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+    testAddFetchedParentToBidirChild(TXN_START_END);
+  }
+  public void testAddFetchedParentToBidirChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddFetchedParentToBidirChild(NEW_PM_START_END);
+  }
+  private void testAddFetchedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
+    testAddFetchedParentToBidirChild(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testMultipleBidirChildren() {
+    testMultipleBidirChildren(TXN_START_END);
+  }
+  public void testMultipleBidirChildren_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testMultipleBidirChildren(NEW_PM_START_END);
+  }
+  private void testMultipleBidirChildren(StartEnd startEnd) {
     HasMultipleBidirChildrenJDO pojo = new HasMultipleBidirChildrenJDO();
 
     HasMultipleBidirChildrenJDO.BidirChild1 c1 = new HasMultipleBidirChildrenJDO.BidirChild1();
@@ -422,46 +690,90 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     pojo.getChild1().add(c1);
     pojo.getChild2().add(c2);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     pojo = pm.getObjectById(HasMultipleBidirChildrenJDO.class, pojo.getId());
     assertEquals(1, pojo.getChild1().size());
     assertEquals(1, pojo.getChild2().size());
-    commitTxn();
+    startEnd.end();
   }
 
   public void testReplaceBidirColl() {
+    testReplaceBidirColl(TXN_START_END);
+  }
+  public void testReplaceBidirColl_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testReplaceBidirColl(NEW_PM_START_END);
+  }
+  private void testReplaceBidirColl(StartEnd startEnd) {
     Collection<BidirectionalChildJDO> childList = Utils.<BidirectionalChildJDO>newArrayList(
         new BidirectionalChildListJDO(), new BidirectionalChildListJDO());
-    testReplaceBidirColl(new HasOneToManyListJDO(), new BidirectionalChildListJDO(), childList);
+    testReplaceBidirColl(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), childList, startEnd);
   }
 
   public void testDeleteChildWithSeparateNameField() {
+    testDeleteChildWithSeparateNameField(TXN_START_END);
+  }
+  public void testDeleteChildWithSeparateNameField_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testDeleteChildWithSeparateNameField(NEW_PM_START_END);
+  }
+  private void testDeleteChildWithSeparateNameField(StartEnd startEnd) {
     HasChildWithSeparateNameFieldJDO parent = new HasChildWithSeparateNameFieldJDO();
     HasEncodedStringPkSeparateNameFieldJDO child = new HasEncodedStringPkSeparateNameFieldJDO();
     child.setName("the name");
     parent.getChildren().add(child);
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(parent);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     parent = pm.getObjectById(HasChildWithSeparateNameFieldJDO.class, parent.getId());
     pm.deletePersistent(parent);
-    commitTxn();
+    startEnd.end();
   }
 
   public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
-    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+    testOnlyOneParentPutOnParentAndChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOneParentPutOnParentAndChildUpdate(NEW_PM_START_END);
+  }
+  private void testOnlyOneParentPutOnParentAndChildUpdate(StartEnd startEnd) throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testOnlyOnePutOnChildUpdate() throws Throwable {
-    testOnlyOnePutOnChildUpdate(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+    testOnlyOnePutOnChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOnePutOnChildUpdate(NEW_PM_START_END);
+  }
+  private void testOnlyOnePutOnChildUpdate(StartEnd startEnd) throws Throwable {
+    testOnlyOnePutOnChildUpdate(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testOnlyOneParentPutOnChildDelete() throws Throwable {
-    testOnlyOneParentPutOnChildDelete(new HasOneToManyListJDO(), new BidirectionalChildListJDO());
+    testOnlyOneParentPutOnChildDelete(TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOneParentPutOnChildDelete(NEW_PM_START_END);
+  }
+  private void testOnlyOneParentPutOnChildDelete(StartEnd startEnd) throws Throwable {
+    testOnlyOneParentPutOnChildDelete(
+        new HasOneToManyListJDO(), new BidirectionalChildListJDO(), startEnd);
   }
 
   public void testNonTxnAddOfChildToParentFailsPartwayThrough() throws Throwable {

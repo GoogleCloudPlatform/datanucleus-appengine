@@ -34,47 +34,111 @@ import java.util.Collection;
 public class JDOOneToManySetTest extends JDOOneToManyTestCase {
 
   public void testInsertNewParentAndChild() throws EntityNotFoundException {
+    testInsertNewParentAndChild(TXN_START_END);
+  }
+  public void testInsertNewParentAndChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsertNewParentAndChild(NEW_PM_START_END);
+  }
+  private void testInsertNewParentAndChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO parent = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidirChild = new BidirectionalChildSetJDO();
-    testInsert_NewParentAndChild(parent, bidirChild);
+    testInsert_NewParentAndChild(parent, bidirChild, startEnd);
   }
 
   public void testInsertExistingParentNewChild() throws EntityNotFoundException {
+    testInsertExistingParentNewChild(TXN_START_END);
+  }
+  public void testInsertExistingParentNewChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testInsertExistingParentNewChild(NEW_PM_START_END);
+  }
+  private void testInsertExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO parent = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidirChild = new BidirectionalChildSetJDO();
-    testInsert_ExistingParentNewChild(parent, bidirChild);
+    testInsert_ExistingParentNewChild(parent, bidirChild, startEnd);
   }
 
   public void testUpdateUpdateChildWithMerge() throws EntityNotFoundException {
+    testUpdateUpdateChildWithMerge(TXN_START_END);
+  }
+  public void testUpdateUpdateChildWithMerge_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateUpdateChildWithMerge(NEW_PM_START_END);
+  }
+  private void testUpdateUpdateChildWithMerge(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO pojo = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidir = new BidirectionalChildSetJDO();
-    testUpdate_UpdateChildWithMerge(pojo, bidir);
+    testUpdate_UpdateChildWithMerge(pojo, bidir, startEnd);
   }
 
   public void testUpdateUpdateChild() throws EntityNotFoundException {
+    testUpdateUpdateChild(TXN_START_END);
+  }
+  public void testUpdateUpdateChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateUpdateChild(NEW_PM_START_END);
+  }
+  private void testUpdateUpdateChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO pojo = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidir = new BidirectionalChildSetJDO();
-    testUpdate_UpdateChild(pojo, bidir);
+    testUpdate_UpdateChild(pojo, bidir, startEnd);
   }
 
   public void testUpdateNullOutChildren() throws EntityNotFoundException {
+    testUpdateNullOutChildren(TXN_START_END);
+  }
+  public void testUpdateNullOutChildren_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateNullOutChildren(NEW_PM_START_END);
+  }
+  private void testUpdateNullOutChildren(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO pojo = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidir = new BidirectionalChildSetJDO();
-    testUpdate_NullOutChildren(pojo, bidir);
+    testUpdate_NullOutChildren(pojo, bidir, startEnd);
   }
 
   public void testUpdateClearOutChildren() throws EntityNotFoundException {
+    testUpdateClearOutChildren(TXN_START_END);
+  }
+  public void testUpdateClearOutChildren_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testUpdateClearOutChildren(NEW_PM_START_END);
+  }
+  private void testUpdateClearOutChildren(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO pojo = new HasOneToManySetJDO();
     BidirectionalChildSetJDO bidir = new BidirectionalChildSetJDO();
-    testUpdate_ClearOutChildren(pojo, bidir);
+    testUpdate_ClearOutChildren(pojo, bidir, startEnd);
   }
 
   public void testFind() throws EntityNotFoundException {
-    testFind(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class);
+    testFind(TXN_START_END);
+  }
+  public void testFind_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFind(NEW_PM_START_END);
+  }
+  private void testFind(StartEnd startEnd) throws EntityNotFoundException {
+    testFind(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class, startEnd);
   }
 
   public void testQuery() throws EntityNotFoundException {
-    testQuery(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class);
+    testQuery(TXN_START_END);
+  }
+  public void testQuery_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testQuery(NEW_PM_START_END);
+  }
+  private void testQuery(StartEnd startEnd) throws EntityNotFoundException {
+    testQuery(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class, startEnd);
   }
 
   public void testChildFetchedLazily() throws Exception {
@@ -82,35 +146,86 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
   }
 
   public void testDeleteParentDeletesChild() throws Exception {
-    testDeleteParentDeletesChild(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class);
+    testDeleteParentDeletesChild(TXN_START_END);
+  }
+  public void testDeleteParentDeletesChild_NoTxn() throws Exception {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testDeleteParentDeletesChild(NEW_PM_START_END);
+  }
+  private void testDeleteParentDeletesChild(StartEnd startEnd) throws Exception {
+    testDeleteParentDeletesChild(HasOneToManySetJDO.class, BidirectionalChildSetJDO.class, startEnd);
   }
 
   public void testRemoveAll() throws EntityNotFoundException {
+    testRemoveAll(TXN_START_END);
+  }
+  public void testRemoveAll_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll(NEW_PM_START_END);
+  }
+  private void testRemoveAll(StartEnd startEnd) throws EntityNotFoundException {
     testRemoveAll(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(),
-                  new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
+                  new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testRemoveAll_LongPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_LongPkOnParent(TXN_START_END);
+  }
+  public void testRemoveAll_LongPkOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll_LongPkOnParent(NEW_PM_START_END);
+  }
+  private void testRemoveAll_LongPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
     testRemoveAll_LongPkOnParent(new HasOneToManyLongPkSetJDO(), new BidirectionalChildLongPkSetJDO(),
-                  new BidirectionalChildLongPkSetJDO(), new BidirectionalChildLongPkSetJDO());
+                  new BidirectionalChildLongPkSetJDO(), new BidirectionalChildLongPkSetJDO(), startEnd);
   }
 
   public void testRemoveAll_UnencodedStringPkOnParent() throws EntityNotFoundException {
+    testRemoveAll_UnencodedStringPkOnParent(TXN_START_END);
+  }
+  public void testRemoveAll_UnencodedStringPkOnParent_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testRemoveAll_UnencodedStringPkOnParent(NEW_PM_START_END);
+  }
+  private void testRemoveAll_UnencodedStringPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManyUnencodedStringPkSetJDO parent = new HasOneToManyUnencodedStringPkSetJDO();
     parent.setId("parent id");
     testRemoveAll_UnencodedStringPkOnParent(parent, new BidirectionalChildUnencodedStringPkSetJDO(),
-                  new BidirectionalChildUnencodedStringPkSetJDO(), new BidirectionalChildUnencodedStringPkSetJDO());
+                  new BidirectionalChildUnencodedStringPkSetJDO(),
+                  new BidirectionalChildUnencodedStringPkSetJDO(), startEnd);
   }
 
   public void testChangeParent() {
-    testChangeParent(new HasOneToManySetJDO(), new HasOneToManySetJDO());
+    testChangeParent(TXN_START_END);
+  }
+  public void testChangeParent_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testChangeParent(NEW_PM_START_END);
+  }
+  private void testChangeParent(StartEnd startEnd) {
+    testChangeParent(new HasOneToManySetJDO(), new HasOneToManySetJDO(), startEnd);
   }
 
   public void testNewParentNewChild_NamedKeyOnChild() throws EntityNotFoundException {
-    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJDO());
+    testNewParentNewChild_NamedKeyOnChild(TXN_START_END);
+  }
+  public void testNewParentNewChild_NamedKeyOnChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testNewParentNewChild_NamedKeyOnChild(NEW_PM_START_END);
+  }
+  private void testNewParentNewChild_NamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
+    testNewParentNewChild_NamedKeyOnChild(new HasOneToManySetJDO(), startEnd);
   }
 
   public void testAddAlreadyPersistedChildToParent_NoTxnSamePm() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
     testAddAlreadyPersistedChildToParent_NoTxnSamePm(new HasOneToManySetJDO());
   }
 
@@ -119,50 +234,141 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
   }
 
   public void testFetchOfOneToManyParentWithKeyPk() {
-    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJDO());
+    testFetchOfOneToManyParentWithKeyPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithKeyPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithKeyPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithKeyPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithKeyPk(new HasOneToManyKeyPkSetJDO(), startEnd);
   }
 
   public void testFetchOfOneToManyParentWithLongPk() {
-    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO());
+    testFetchOfOneToManyParentWithLongPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithLongPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithLongPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithLongPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO(), startEnd);
   }
 
   public void testFetchOfOneToManyParentWithUnencodedStringPk() {
-    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJDO());
+    testFetchOfOneToManyParentWithUnencodedStringPk(TXN_START_END);
+  }
+  public void testFetchOfOneToManyParentWithUnencodedStringPk_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testFetchOfOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
+  }
+  private void testFetchOfOneToManyParentWithUnencodedStringPk(StartEnd startEnd) {
+    testFetchOfOneToManyParentWithUnencodedStringPk(new HasOneToManyUnencodedStringPkSetJDO(), startEnd);
   }
 
   public void testAddChildToOneToManyParentWithLongPk() throws EntityNotFoundException {
-    testAddChildToOneToManyParentWithLongPk(new HasOneToManyLongPkSetJDO(), new BidirectionalChildLongPkSetJDO());
+    testAddChildToOneToManyParentWithLongPk(TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithLongPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddChildToOneToManyParentWithLongPk(NEW_PM_START_END);
+  }
+  private void testAddChildToOneToManyParentWithLongPk(StartEnd startEnd) throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithLongPk(
+        new HasOneToManyLongPkSetJDO(), new BidirectionalChildLongPkSetJDO(), startEnd);
   }
 
   public void testAddChildToOneToManyParentWithUnencodedStringPk() throws EntityNotFoundException {
+    testAddChildToOneToManyParentWithUnencodedStringPk(TXN_START_END);
+  }
+  public void testAddChildToOneToManyParentWithUnencodedStringPk_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddChildToOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
+  }
+  private void testAddChildToOneToManyParentWithUnencodedStringPk(StartEnd startEnd) throws EntityNotFoundException {
     testAddChildToOneToManyParentWithUnencodedStringPk(
-        new HasOneToManyUnencodedStringPkSetJDO(), new BidirectionalChildUnencodedStringPkSetJDO());
+        new HasOneToManyUnencodedStringPkSetJDO(), new BidirectionalChildUnencodedStringPkSetJDO(),
+        startEnd);
   }
 
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+    testAddQueriedParentToBidirChild(TXN_START_END);
+  }
+  public void testAddQueriedParentToBidirChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddQueriedParentToBidirChild(NEW_PM_START_END);
+  }
+  private void testAddQueriedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
+    testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(),
+                                     startEnd);
   }
 
   public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {
-    testAddFetchedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+    testAddFetchedParentToBidirChild(TXN_START_END);
+  }
+  public void testAddFetchedParentToBidirChild_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testAddFetchedParentToBidirChild(NEW_PM_START_END);
+  }
+  private void testAddFetchedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
+    testAddFetchedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testReplaceBidirColl() {
+    testReplaceBidirColl(TXN_START_END);
+  }
+  public void testReplaceBidirColl_NoTxn() {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testReplaceBidirColl(NEW_PM_START_END);
+  }
+  private void testReplaceBidirColl(StartEnd startEnd) {
     Collection<BidirectionalChildJDO> childSet = Utils.<BidirectionalChildJDO>newHashSet(
         new BidirectionalChildSetJDO(), new BidirectionalChildSetJDO());
-    testReplaceBidirColl(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), childSet);
+    testReplaceBidirColl(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), childSet, startEnd);
   }
 
   public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
-    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+    testOnlyOneParentPutOnParentAndChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOneParentPutOnParentAndChildUpdate(NEW_PM_START_END);
+  }
+  private void testOnlyOneParentPutOnParentAndChildUpdate(StartEnd startEnd) throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testOnlyOnePutOnChildUpdate() throws Throwable {
-    testOnlyOnePutOnChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+    testOnlyOnePutOnChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOnePutOnChildUpdate(NEW_PM_START_END);
+  }
+  private void testOnlyOnePutOnChildUpdate(StartEnd startEnd) throws Throwable {
+    testOnlyOnePutOnChildUpdate(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testOnlyOneParentPutOnChildDelete() throws Throwable {
-    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJDO(), new BidirectionalChildSetJDO());
+    testOnlyOneParentPutOnChildDelete(TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    getObjectManager().setDetachOnClose(true);
+    testOnlyOneParentPutOnChildDelete(NEW_PM_START_END);
+  }
+  private void testOnlyOneParentPutOnChildDelete(StartEnd startEnd) throws Throwable {
+    testOnlyOneParentPutOnChildDelete(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testNonTxnAddOfChildToParentFailsPartwayThrough() throws Throwable {

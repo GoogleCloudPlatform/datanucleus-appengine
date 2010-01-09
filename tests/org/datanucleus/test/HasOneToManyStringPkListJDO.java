@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -28,7 +27,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(detachable = "true")
 public class HasOneToManyStringPkListJDO {
 
   @PrimaryKey

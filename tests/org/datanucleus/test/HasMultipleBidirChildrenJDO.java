@@ -23,7 +23,6 @@ import java.util.List;
 
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -31,7 +30,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION)
+@PersistenceCapable(detachable = "true")
 public class HasMultipleBidirChildrenJDO {
 
   @PrimaryKey
@@ -66,7 +65,7 @@ public class HasMultipleBidirChildrenJDO {
     this.child2 = child2;
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @PersistenceCapable(detachable = "true")
   public static class BidirChild1 {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
@@ -84,7 +83,7 @@ public class HasMultipleBidirChildrenJDO {
     }
   }
 
-  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @PersistenceCapable(detachable = "true")
   public static class BidirChild2 {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

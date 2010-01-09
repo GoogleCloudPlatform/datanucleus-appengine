@@ -28,7 +28,7 @@ public interface HasOneToManyUnencodedStringPkJDO extends Serializable {
   void setId(String s);
   void addBidirChild(BidirectionalChildUnencodedStringPkJDO child);
   Collection<BidirectionalChildUnencodedStringPkJDO> getBidirChildren();
-  void removeFlights(Collection<Flight> flights);
-  void removeBidirChildren(
+  boolean removeFlights(Collection<Flight> flights);
+  boolean removeBidirChildren(
       Collection<BidirectionalChildUnencodedStringPkJDO> bidirectionalChildUnencodedStringPkJDOs);
 }

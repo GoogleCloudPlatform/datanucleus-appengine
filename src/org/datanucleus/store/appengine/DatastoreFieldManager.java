@@ -817,7 +817,7 @@ public class DatastoreFieldManager implements FieldManager {
             // the key itself
             return;
           }
-          // We still want to write the entity property
+          // We still want to write the entity property with the keys
           value = extractRelationKeys(value);
         }
         // unwrap SCO values so that the datastore api doesn't
@@ -834,10 +834,28 @@ public class DatastoreFieldManager implements FieldManager {
   }
 
   private Object extractRelationKeys(Object value) {
-    if (value instanceof Collection) {
-      return extractRelationKeys((Collection) value);
+    if (value == null) {
+      return null;
     }
-    return extractChildKey(value);
+    if (value instanceof Collection) {
+      Collection coll = (Collection) value;
+      int size = coll.size();
+      List<Key> keys = extractRelationKeys((Collection) value);
+      // if we have fewer keys than objects then there is at least one child
+      // object that still needs to be inserted.  communicate
+      // this upstream.
+      getStateManager().setAssociatedValue(
+          DatastorePersistenceHandler.MISSING_RELATION_KEY,
+          size != keys.size() ? true : null);
+      return keys;
+    }
+    Key key = extractChildKey(value);
+    // if we didn't come up with a key that there is a child object that
+    // still needs to be inserted.  communicate this upstream.
+    getStateManager().setAssociatedValue(
+        DatastorePersistenceHandler.MISSING_RELATION_KEY,
+        key == null ? true : null);
+    return key;
   }
 
   private List<Key> extractRelationKeys(Collection<?> values) {
@@ -885,7 +903,7 @@ public class DatastoreFieldManager implements FieldManager {
     if (key.getParent() == null) {
       throw new DatastoreRelationFieldManager.ChildWithoutParentException(datastoreEntity.getKey(), key);
     } else if (!key.getParent().equals(datastoreEntity.getKey())) {
-      throw new DatastoreRelationFieldManager.ChildWithWrongParentException(datastoreEntity.getKey(), key);      
+      throw new DatastoreRelationFieldManager.ChildWithWrongParentException(datastoreEntity.getKey(), key);
     }
     return key;
   }

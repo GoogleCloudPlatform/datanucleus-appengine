@@ -58,6 +58,14 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    */
   static final Object ENTITY_WRITE_DELAYED = "___entity_write_delayed___";
 
+  /**
+   * Magic property that we use to signal that an associated child object
+   * does not yet have a key.  This tells us that we can skip re-putting
+   * the parent entity because there are still children that need to be
+   * written first.
+   */
+  static final String MISSING_RELATION_KEY = "___missing_relation_key___";
+
   private final DatastoreService datastoreService =
       DatastoreServiceFactoryInternal.getDatastoreService();
   private final DatastoreManager storeMgr;
@@ -518,13 +526,28 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       // changes that need to be reflected on the current object.
       // That means we need to re-save.
       ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
+      boolean missingRelationKey = false;
       try {
         fieldMgr.setRegisterRelationCallbacks(false);
-        sm.provideFields(sm.getClassMetaData().getRelationMemberPositions(clr), fieldMgr);
+        AbstractClassMetaData acmd = sm.getClassMetaData();
+        for (int field : acmd.getRelationMemberPositions(clr)) {
+          sm.provideFields(new int[] {field}, fieldMgr);
+          if (sm.getAssociatedValue(MISSING_RELATION_KEY) != null) {
+            missingRelationKey = true;
+          }
+          sm.setAssociatedValue(MISSING_RELATION_KEY, null);
+        }
       } finally {
         fieldMgr.setRegisterRelationCallbacks(true);
       }
-      put(sm, entity);
+      // if none of the relation fields are missing relation keys then there is
+      // no need for any additional puts to write the relation keys
+      // we'll set a flag on the statemanager to let downstream writers know
+      // and then we'll do the put ourselves
+      if (!missingRelationKey) {
+        sm.setAssociatedValue(ForceFlushPreCommitTransactionEventListener.ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
+        put(sm, entity);
+      }
     }
   }
 
@@ -556,7 +579,11 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         return;
       }
       txn.addDeletedKey(entity.getKey());
+    } else if (Boolean.TRUE.equals(sm.getAssociatedValue("deleted"))) {
+      // same issue as above except we may not be in a txn
+      return;
     }
+    sm.setAssociatedValue("deleted", true);
 
     // first handle any dependent deletes
     DependentDeleteRequest req = new DependentDeleteRequest(dc, clr);
@@ -579,13 +606,6 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       return;
     }
     delete(txn, Collections.singletonList(keyToDelete));
-
-    if (entity.getParent() != null) {
-      // We deleted a child.  Register the parent key so we know we need
-      // to update the parent.
-      KeyRegistry keyReg = KeyRegistry.getKeyRegistry(sm.getObjectManager());
-      keyReg.registerModifiedParent(entity.getParent());
-    }
   }
 
   public void locateObject(StateManager sm) {

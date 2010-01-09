@@ -44,10 +44,9 @@ import java.util.Collections;
 import java.util.ConcurrentModificationException;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Set;
 
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOHelper;
-import javax.jdo.ObjectState;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -56,15 +55,18 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    if (!pm.isClosed() && pm.currentTransaction().isActive() && failed) {
-      pm.currentTransaction().rollback();
+    try {
+      if (!pm.isClosed() && pm.currentTransaction().isActive() && failed) {
+        pm.currentTransaction().rollback();
+      }
+      pmf.close();
+    } finally {
+      super.tearDown();
     }
-    pmf.close();
-    super.tearDown();
   }
 
   void testInsert_NewParentAndChild(HasOneToManyJDO parent,
-      BidirectionalChildJDO bidirChild) throws EntityNotFoundException {
+      BidirectionalChildJDO bidirChild, StartEnd startEnd) throws EntityNotFoundException {
     bidirChild.setChildVal("yam");
 
     Flight f = newFlight();
@@ -78,9 +80,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     parent.addHasKeyPk(hasKeyPk);
     parent.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(parent);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(bidirChild.getId());
     assertNotNull(f.getId());
@@ -127,13 +129,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testInsert_ExistingParentNewChild(HasOneToManyJDO pojo,
-      BidirectionalChildJDO bidirChild) throws EntityNotFoundException {
+      BidirectionalChildJDO bidirChild, StartEnd startEnd) throws EntityNotFoundException {
     pojo.setVal("yar");
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
     assertNotNull(pojo.getId());
     assertTrue(pojo.getFlights().isEmpty());
     assertTrue(pojo.getHasKeyPks().isEmpty());
@@ -142,6 +144,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
+    assertEquals("yar", pojoEntity.getProperty("val"));
     assertTrue(pojoEntity.hasProperty("bidirChildren"));
     assertNull(pojoEntity.getProperty("bidirChildren"));
     assertTrue(pojoEntity.hasProperty("flights"));
@@ -149,8 +152,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertTrue(pojoEntity.hasProperty("hasKeyPks"));
     assertNull(pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
+    assertEquals("yar", pojo.getVal());
     Flight f = newFlight();
     pojo.addFlight(f);
 
@@ -161,15 +166,14 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirChild.setChildVal("yam");
     pojo.addBidirChild(bidirChild);
 
-    pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     assertNotNull(bidirChild.getId());
     assertNotNull(bidirChild.getParent());
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
-    commitTxn();
+    startEnd.end();
     
     Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
@@ -213,7 +217,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testSwapAtPosition(HasOneToManyJDO pojo,
       BidirectionalChildJDO bidir1,
-      BidirectionalChildJDO bidir2) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir2, StartEnd startEnd) throws EntityNotFoundException {
     pojo.setVal("yar");
     bidir2.setChildVal("yam");
     Flight f = newFlight();
@@ -224,13 +228,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir1);
     bidir1.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
@@ -244,9 +248,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     HasKeyPkJDO hasKeyPk2 = new HasKeyPkJDO();
     hasKeyPk2.setStr("another str");
     pojo.addHasKeyPkAtPosition(hasKeyPk2, 0);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertNotNull(pojo.getId());
     assertEquals(1, pojo.getFlights().size());
@@ -264,7 +268,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(Utils.newArrayList(KeyFactory.stringToKey(f2.getId())), pojoEntity.getProperty("flights"));
     assertEquals(Utils.newArrayList(hasKeyPk2.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
@@ -327,7 +331,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   void testRemoveAtPosition(HasOneToManyJDO pojo,
       BidirectionalChildJDO bidir1,
       BidirectionalChildJDO bidir2,
-      BidirectionalChildJDO bidir3) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir3, StartEnd startEnd) throws EntityNotFoundException {
     pojo.setVal("yar");
     bidir2.setChildVal("another yam");
     bidir3.setChildVal("yet another yam");
@@ -352,24 +356,23 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir2);
     pojo.addBidirChild(bidir3);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 3);
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-    assertEquals(ObjectState.PERSISTENT_CLEAN, JDOHelper.getObjectState(pojo));
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
     Key hasKeyPk1Key = pojo.getHasKeyPks().iterator().next().getKey();
     pojo.removeBidirChildAtPosition(0);
     pojo.removeFlightAtPosition(0);
     pojo.removeHasKeyPkAtPosition(0);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     assertNotNull(pojo.getId());
     assertEquals(2, pojo.getFlights().size());
     assertEquals(2, pojo.getHasKeyPks().size());
@@ -388,7 +391,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
         hasKeyPk2.getKey(),
         hasKeyPk3.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
@@ -485,7 +488,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testAddAtPosition(HasOneToManyJDO pojo,
       BidirectionalChildJDO bidir1,
-      BidirectionalChildJDO bidir2) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir2, StartEnd startEnd) throws EntityNotFoundException {
     pojo.setVal("yar");
     bidir2.setChildVal("yam");
     Flight f = newFlight();
@@ -499,13 +502,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addHasKeyPk(hasKeyPk);
     pojo.addBidirChild(bidir1);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir1.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     String bidir1Id = pojo.getBidirChildren().iterator().next().getId();
     String flight1Id = pojo.getFlights().iterator().next().getId();
@@ -513,9 +516,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addAtPosition(0, bidir2);
     pojo.addAtPosition(0, f2);
     pojo.addAtPosition(0, hasKeyPk2);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertNotNull(pojo.getId());
     assertEquals(2, pojo.getFlights().size());
@@ -539,7 +542,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
         hasKeyPk2.getKey(),
         hasKeyPk.getKey()), pojoEntity.getProperty("hasKeyPks"));
 
-    commitTxn();
+    startEnd.end();
 
     ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
     ldth.ds.get(KeyFactory.stringToKey(flight1Id));
@@ -591,7 +594,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testUpdate_UpdateChildWithMerge(HasOneToManyJDO pojo,
-      BidirectionalChildJDO bidir) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir, StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
 
@@ -600,21 +603,21 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
     assertNotNull(bidir.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     f.setOrigin("yam");
     hasKeyPk.setStr("yar");
     bidir.setChildVal("yap");
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
@@ -644,7 +647,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testUpdate_UpdateChild(HasOneToManyJDO pojo,
-      BidirectionalChildJDO bidir) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir, StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
 
@@ -653,21 +656,21 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
     assertNotNull(bidir.getId());
     assertNotNull(pojo.getId());
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     pojo.getFlights().iterator().next().setOrigin("yam");
     pojo.getHasKeyPks().iterator().next().setStr("yar");
     pojo.getBidirChildren().iterator().next().setChildVal("yap");
-    commitTxn();
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
@@ -697,7 +700,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testUpdate_NullOutChildren(HasOneToManyJDO pojo,
-    BidirectionalChildJDO bidir) throws EntityNotFoundException {
+    BidirectionalChildJDO bidir, StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
 
@@ -706,13 +709,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
     String flightId = f.getId();
     Key hasKeyPkKey = hasKeyPk.getKey();
     String bidirChildId = bidir.getId();
@@ -721,7 +724,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.nullHasKeyPks();
     pojo.nullBidirChildren();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(flightId));
@@ -757,7 +760,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testUpdate_ClearOutChildren(HasOneToManyJDO pojo,
-      BidirectionalChildJDO bidir) throws EntityNotFoundException {
+      BidirectionalChildJDO bidir, StartEnd startEnd) throws EntityNotFoundException {
     Flight f = newFlight();
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
 
@@ -766,20 +769,20 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir);
     bidir.setParent(pojo);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
     String flightId = f.getId();
     Key hasKeyPkId = hasKeyPk.getKey();
     String bidirChildId = bidir.getId();
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 1);
 
-    beginTxn();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
     pojo.clearFlights();
     pojo.clearHasKeyPks();
     pojo.clearBidirChildren();
-    pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     try {
       ldth.ds.get(KeyFactory.stringToKey(flightId));
@@ -814,7 +817,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertCountsInDatastore(pojo.getClass(), bidir.getClass(), 1, 0);
   }
 
-  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDO> pojoClass)
+  void testFindWithOrderBy(Class<? extends HasOneToManyWithOrderByJDO> pojoClass, StartEnd startEnd)
       throws EntityNotFoundException {
     getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
         "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
@@ -854,7 +857,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     explicitIndexEntity3.setProperty("index", 1);
     ldth.ds.put(explicitIndexEntity3);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyWithOrderByJDO pojo = pm.getObjectById(
         pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
@@ -882,11 +885,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(explicitIndexEntity2.getKey(), pojo.getHasIndexColumn().get(1).getId());
     assertEquals(explicitIndexEntity1.getKey(), pojo.getHasIndexColumn().get(2).getId());
 
-    commitTxn();
+    startEnd.end();
   }
 
   void testFind(Class<? extends HasOneToManyJDO> pojoClass,
-      Class<? extends BidirectionalChildJDO> bidirClass) throws EntityNotFoundException {
+      Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -903,7 +906,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ldth.ds.put(bidirEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyJDO pojo =
         pm.getObjectById(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     assertNotNull(pojo);
@@ -917,11 +920,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(1, pojo.getBidirChildren().size());
     assertEquals("yap", pojo.getBidirChildren().iterator().next().getChildVal());
     assertEquals(pojo, pojo.getBidirChildren().iterator().next().getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   void testQuery(Class<? extends HasOneToManyJDO> pojoClass,
-      Class<? extends BidirectionalChildJDO> bidirClass) throws EntityNotFoundException {
+      Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -940,7 +943,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + pojoClass.getName() + " where id == key parameters String key");
-    beginTxn();
+    startEnd.start();
     @SuppressWarnings("unchecked")
     List<HasOneToManyListJDO> result =
         (List<HasOneToManyListJDO>) q.execute(KeyFactory.keyToString(pojoEntity.getKey()));
@@ -957,7 +960,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(1, pojo.getBidirChildren().size());
     assertEquals("yap", pojo.getBidirChildren().iterator().next().getChildVal());
     assertEquals(pojo, pojo.getBidirChildren().iterator().next().getParent());
-    commitTxn();
+    startEnd.end();
   }
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJDO> pojoClass,
@@ -1006,7 +1009,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testDeleteParentDeletesChild(Class<? extends HasOneToManyJDO> pojoClass,
-      Class<? extends BidirectionalChildJDO> bidirClass) throws Exception {
+      Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws Exception {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
     ldth.ds.put(pojoEntity);
 
@@ -1024,15 +1027,15 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ldth.ds.put(bidirEntity);
 
-    beginTxn();
+    startEnd.start();
     HasOneToManyJDO pojo = pm.getObjectById(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
     pm.deletePersistent(pojo);
-    commitTxn();
+    startEnd.end();
     assertCountsInDatastore(pojoClass, bidirClass, 0, 0);
   }
 
   void testRemoveAll(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1,
-                     BidirectionalChildJDO bidir2, BidirectionalChildJDO bidir3)
+                     BidirectionalChildJDO bidir2, BidirectionalChildJDO bidir3, StartEnd startEnd)
       throws EntityNotFoundException {
     Flight f1 = new Flight();
     Flight f2 = new Flight();
@@ -1045,35 +1048,36 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir2);
     pojo.addBidirChild(bidir3);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
     String f2Id = f2.getId();
     String bidir2Id = bidir2.getId();
     pojo.removeFlights(Collections.singleton(f2));
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
     pojo.removeBidirChildren(Collections.singleton(bidir2));
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
 
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
 
     assertEquals(2, pojo.getFlights().size());
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
+    Set<String> flightIds = Utils.newHashSet(f1.getId(), f2.getId(), f3.getId());
+    for (Flight f : pojo.getFlights()) {
+      flightIds.remove(f.getId());
+    }
+    assertEquals(1, flightIds.size());
+    assertEquals(f2.getId(), flightIds.iterator().next());
 
     assertEquals(2, pojo.getBidirChildren().size());
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
+    Set<String> bidirIds = Utils.newHashSet(bidir1.getId(), bidir2.getId(), bidir3.getId());
+    for (BidirectionalChildJDO b : pojo.getBidirChildren()) {
+      bidirIds.remove(b.getId());
+    }
+    assertEquals(1, bidirIds.size());
+    assertEquals(bidir2.getId(), bidirIds.iterator().next());
+    startEnd.end();
 
     Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
@@ -1100,7 +1104,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testRemoveAll_LongPkOnParent(HasOneToManyLongPkJDO pojo, BidirectionalChildLongPkJDO bidir1,
-                     BidirectionalChildLongPkJDO bidir2, BidirectionalChildLongPkJDO bidir3)
+                     BidirectionalChildLongPkJDO bidir2, BidirectionalChildLongPkJDO bidir3, StartEnd startEnd)
       throws EntityNotFoundException {
     Flight f1 = new Flight();
     Flight f2 = new Flight();
@@ -1113,35 +1117,35 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir2);
     pojo.addBidirChild(bidir3);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
     String f2Id = f2.getId();
     String bidir2Id = bidir2.getId();
     pojo.removeFlights(Collections.singleton(f2));
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
     pojo.removeBidirChildren(Collections.singleton(bidir2));
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
 
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-
     assertEquals(2, pojo.getFlights().size());
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
+    Set<String> flightIds = Utils.newHashSet(f1.getId(), f2.getId(), f3.getId());
+    for (Flight f : pojo.getFlights()) {
+      flightIds.remove(f.getId());
+    }
+    assertEquals(1, flightIds.size());
+    assertEquals(f2.getId(), flightIds.iterator().next());
 
     assertEquals(2, pojo.getBidirChildren().size());
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
+    Set<String> bidirIds = Utils.newHashSet(bidir1.getId(), bidir2.getId(), bidir3.getId());
+    for (BidirectionalChildLongPkJDO b : pojo.getBidirChildren()) {
+      bidirIds.remove(b.getId());
+    }
+    assertEquals(1, bidirIds.size());
+    assertEquals(bidir2.getId(), bidirIds.iterator().next());
+    startEnd.end();
 
     Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
@@ -1168,7 +1172,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testRemoveAll_UnencodedStringPkOnParent(HasOneToManyUnencodedStringPkJDO pojo, BidirectionalChildUnencodedStringPkJDO bidir1,
-                     BidirectionalChildUnencodedStringPkJDO bidir2, BidirectionalChildUnencodedStringPkJDO bidir3)
+                     BidirectionalChildUnencodedStringPkJDO bidir2, 
+                     BidirectionalChildUnencodedStringPkJDO bidir3, StartEnd startEnd)
       throws EntityNotFoundException {
     Flight f1 = new Flight();
     Flight f2 = new Flight();
@@ -1181,35 +1186,36 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addBidirChild(bidir2);
     pojo.addBidirChild(bidir3);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
+    pojo = pm.makePersistent(pojo);
     String f2Id = f2.getId();
     String bidir2Id = bidir2.getId();
     pojo.removeFlights(Collections.singleton(f2));
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
     pojo.removeBidirChildren(Collections.singleton(bidir2));
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
-    beginTxn();
+    startEnd.end();
+    startEnd.start();
 
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
 
     assertEquals(2, pojo.getFlights().size());
-    assertFalse(pojo.getFlights().contains(f2));
-    assertTrue(pojo.getFlights().contains(f1));
-    assertTrue(pojo.getFlights().contains(f3));
+    Set<String> flightIds = Utils.newHashSet(f1.getId(), f2.getId(), f3.getId());
+    for (Flight f : pojo.getFlights()) {
+      flightIds.remove(f.getId());
+    }
+    assertEquals(1, flightIds.size());
+    assertEquals(f2.getId(), flightIds.iterator().next());
 
     assertEquals(2, pojo.getBidirChildren().size());
-    assertFalse(pojo.getBidirChildren().contains(bidir2));
-    assertTrue(pojo.getBidirChildren().contains(bidir1));
-    assertTrue(pojo.getBidirChildren().contains(bidir3));
-    commitTxn();
+    Set<String> bidirIds = Utils.newHashSet(bidir1.getId(), bidir2.getId(), bidir3.getId());
+    for (BidirectionalChildUnencodedStringPkJDO b : pojo.getBidirChildren()) {
+      bidirIds.remove(b.getId());
+    }
+    assertEquals(1, bidirIds.size());
+    assertEquals(bidir2.getId(), bidirIds.iterator().next());
+    startEnd.end();
 
     Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
@@ -1235,33 +1241,35 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
   }
 
-  void testChangeParent(HasOneToManyJDO pojo, HasOneToManyJDO pojo2) {
+  void testChangeParent(HasOneToManyJDO pojo, HasOneToManyJDO pojo2, StartEnd startEnd) {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Flight f1 = new Flight();
     pojo.addFlight(f1);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo2.addFlight(f1);
     try {
       pm.makePersistent(pojo2);
       fail("expected exception");
     } catch (JDOFatalUserException e) {
-      rollbackTxn();
+      if (pm.currentTransaction().isActive()) {
+        rollbackTxn();
+      }
     }
   }
 
-  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJDO pojo) throws EntityNotFoundException {
+  void testNewParentNewChild_NamedKeyOnChild(HasOneToManyJDO pojo, StartEnd startEnd) throws EntityNotFoundException {
     Flight f1 = new Flight();
     pojo.addFlight(f1);
     f1.setId(KeyFactory.keyToString(
         KeyFactory.createKey(Flight.class.getSimpleName(), "named key")));
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals("named key", flightEntity.getKey().getName());
@@ -1305,53 +1313,53 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(1, countForClass(Flight.class));
   }
 
-  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJDO pojo) {
-    beginTxn();
+  void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJDO pojo, StartEnd startEnd) {
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getFlights().size());
-    commitTxn();
+    startEnd.end();
   }
 
-  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJDO pojo) {
-    beginTxn();
+  void testFetchOfOneToManyParentWithLongPk(HasOneToManyLongPkJDO pojo, StartEnd startEnd) {
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getFlights().size());
-    commitTxn();
+    startEnd.end();
   }
 
-  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJDO pojo) {
+  void testFetchOfOneToManyParentWithUnencodedStringPk(HasOneToManyUnencodedStringPkJDO pojo, StartEnd startEnd) {
     pojo.setId("yar");
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     assertEquals(0, pojo.getFlights().size());
-    commitTxn();
+    startEnd.end();
   }
 
   void testAddChildToOneToManyParentWithLongPk(
-      HasOneToManyLongPkJDO pojo, BidirectionalChildLongPkJDO bidirChild)
+      HasOneToManyLongPkJDO pojo, BidirectionalChildLongPkJDO bidirChild, StartEnd startEnd)
       throws EntityNotFoundException {
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     Flight f = new Flight();
     pojo.addFlight(f);
     pojo.addBidirChild(bidirChild);
-    commitTxn();
+    startEnd.end();
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -1360,19 +1368,20 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   }
 
   void testAddChildToOneToManyParentWithUnencodedStringPk(
-      HasOneToManyUnencodedStringPkJDO pojo, BidirectionalChildUnencodedStringPkJDO bidirChild)
+      HasOneToManyUnencodedStringPkJDO pojo, BidirectionalChildUnencodedStringPkJDO bidirChild, 
+      StartEnd startEnd)
       throws EntityNotFoundException {
     pojo.setId("yar");
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     Flight f = new Flight();
     pojo.addFlight(f);
     pojo.addBidirChild(bidirChild);
-    commitTxn();
+    startEnd.end();
     Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -1380,49 +1389,49 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddQueriedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+  void testAddQueriedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws EntityNotFoundException {
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     bidir.setParent(pojo);
     pm.makePersistent(bidir);
     pojo.getBidirChildren().add(bidir);
-    commitTxn();
+    startEnd.end();
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
-    beginTxn();
+    startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());
-    commitTxn();
+    startEnd.end();
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
-  void testAddFetchedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+  void testAddFetchedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws EntityNotFoundException {
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(pojo);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
     pm.makePersistent(bidir);
     pojo.getBidirChildren().add(bidir);
-    commitTxn();
+    startEnd.end();
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
-    beginTxn();
+    startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());
-    commitTxn();
+    startEnd.end();
     Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
@@ -1430,26 +1439,26 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testReplaceBidirColl(HasOneToManyJDO parent,
                             BidirectionalChildJDO bidir1,
-                            Collection<BidirectionalChildJDO> newColl) {
+                            Collection<BidirectionalChildJDO> newColl, StartEnd startEnd) {
     bidir1.setParent(parent);
     parent.addBidirChild(bidir1);
 
-    beginTxn();
+    startEnd.start();
     pm.makePersistent(parent);
-    commitTxn();
+    startEnd.end();
     String childKey = bidir1.getId();
-    beginTxn();
+    startEnd.start();
     parent = pm.getObjectById(parent.getClass(), KeyFactory.stringToKey(parent.getId()));
     parent.setBidirChildren(newColl);
-    commitTxn();
+    startEnd.end();
 
-    beginTxn();
+    startEnd.start();
     parent = pm.getObjectById(parent.getClass(), KeyFactory.stringToKey(parent.getId()));
     assertEquals(2, parent.getBidirChildren().size());
     Iterator<BidirectionalChildJDO> childIter = parent.getBidirChildren().iterator();
     assertFalse(childKey.equals(childIter.next().getId()));
     assertFalse(childKey.equals(childIter.next().getId()));
-    commitTxn();
+    startEnd.end();
     assertEquals(2, countForClass(newColl.iterator().next().getClass()));
   }
 
@@ -1462,21 +1471,22 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
   }
 
-  PutPolicy setupPutPolicy(HasOneToManyJDO pojo, BidirectionalChildJDO bidir) throws Throwable {
+  PutPolicy setupPutPolicy(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
+      throws Throwable {
     PutPolicy policy = new PutPolicy();
     DatastoreServiceInterceptor.install(policy);
     try {
       pmf.close();
-      switchDatasource(PersistenceManagerFactoryName.transactional);
+      switchDatasource(startEnd.getPmfName());
       Flight flight = new Flight();
       pojo.addFlight(flight);
       pojo.addBidirChild(bidir);
       HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
       pojo.addHasKeyPk(hasKeyPk);
 
-      beginTxn();
+      startEnd.start();
       pm.makePersistent(pojo);
-      commitTxn();
+      startEnd.end();
       // 1 put for the parent, 3 puts for the children, 1 more put
       // to add the child keys back on the parent
       assertEquals(5, policy.putParamList.size());
@@ -1488,16 +1498,16 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     }
   }
 
-  void testOnlyOnePutOnChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+  void testOnlyOnePutOnChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
       pojo.getFlights().iterator().next().setMe(88);
       pojo.getBidirChildren().iterator().next().setChildVal("blarg");
       pojo.getHasKeyPks().iterator().next().setStr("double blarg");
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
@@ -1505,17 +1515,17 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(3, policy.putParamList.size());
   }
 
-  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+  void testOnlyOneParentPutOnParentAndChildUpdate(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
       pojo.setVal("another val");
       pojo.getFlights().iterator().next().setMe(88);
       pojo.getBidirChildren().iterator().next().setChildVal("blarg");
       pojo.getHasKeyPks().iterator().next().setStr("double blarg");
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
@@ -1523,22 +1533,22 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(4, policy.putParamList.size());
   }
 
-  void testOnlyOneParentPutOnChildDelete(HasOneToManyJDO pojo, BidirectionalChildJDO bidir)
+  void testOnlyOneParentPutOnChildDelete(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws Throwable {
-    PutPolicy policy = setupPutPolicy(pojo, bidir);
+    PutPolicy policy = setupPutPolicy(pojo, bidir, startEnd);
     try {
-      beginTxn();
+      startEnd.start();
       pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
       pojo.setVal("another val");
       pojo.nullFlights();
       pojo.nullBidirChildren();
       pojo.nullHasKeyPks();
-      commitTxn();
+      startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
-    // 1 put for the parent update and 1 to remove the keys
-    assertEquals(2, policy.putParamList.size());
+    // 1 put to remove the keys
+    assertEquals(1, policy.putParamList.size());
   }
 
   void testNonTxnAddOfChildToParentFailsPartwayThrough(HasOneToManyJDO pojo)
@@ -1595,19 +1605,19 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 //    pojo.addBidirChild(bidir2);
 //    pojo.addBidirChild(bidir3);
 //
-//    beginTxn();
+//    startEnd.start();
 //    pm.makePersistent(pojo);
-//    commitTxn();
-//    beginTxn();
+//    startEnd.end();
+//    startEnd.start();
 //    assertEquals(0, pojo.indexOf(f1));
 //    assertEquals(1, pojo.indexOf(f2));
 //    assertEquals(2, pojo.indexOf(f3));
 //    assertEquals(0, pojo.indexOf(bidir1));
 //    assertEquals(1, pojo.indexOf(bidir2));
 //    assertEquals(2, pojo.indexOf(bidir3));
-//    commitTxn();
+//    startEnd.end();
 //
-//    beginTxn();
+//    startEnd.start();
 //    pojo = pm.getObjectById(pojo.getClass(), pojo.getKey());
 //    assertEquals(0, pojo.indexOf(f1));
 //    assertEquals(1, pojo.indexOf(f2));
@@ -1615,7 +1625,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 //    assertEquals(0, pojo.indexOf(bidir1));
 //    assertEquals(1, pojo.indexOf(bidir2));
 //    assertEquals(2, pojo.indexOf(bidir3));
-//    commitTxn();
+//    startEnd.end();
 //  }
 
   void assertCountsInDatastore(Class<? extends HasOneToManyJDO> parentClass,

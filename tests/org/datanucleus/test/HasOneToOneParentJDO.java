@@ -17,7 +17,6 @@ package org.datanucleus.test;
 
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -25,7 +24,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+@PersistenceCapable(detachable = "true")
 public class HasOneToOneParentJDO {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

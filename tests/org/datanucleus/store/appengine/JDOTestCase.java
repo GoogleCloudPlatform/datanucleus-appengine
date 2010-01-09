@@ -182,6 +182,7 @@ public class JDOTestCase extends TestCase {
   interface StartEnd {
     void start();
     void end();
+    PersistenceManagerFactoryName getPmfName();
   }
 
   public final StartEnd TXN_START_END = new StartEnd() {
@@ -191,6 +192,10 @@ public class JDOTestCase extends TestCase {
 
     public void end() {
       commitTxn();
+    }
+
+    public PersistenceManagerFactoryName getPmfName() {
+      return PersistenceManagerFactoryName.transactional;
     }
   };
 
@@ -203,6 +208,10 @@ public class JDOTestCase extends TestCase {
 
     public void end() {
       pm.close();
+    }
+
+    public PersistenceManagerFactoryName getPmfName() {
+      return PersistenceManagerFactoryName.nontransactional;
     }
   };
 }

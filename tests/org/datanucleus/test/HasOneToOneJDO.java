@@ -17,7 +17,6 @@ package org.datanucleus.test;
 
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
@@ -25,7 +24,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable(identityType = IdentityType.APPLICATION, detachable = "true")
+@PersistenceCapable(detachable = "true")
 public class HasOneToOneJDO {
 
   @PrimaryKey
@@ -47,6 +46,8 @@ public class HasOneToOneJDO {
 
   @Persistent
   private HasEncodedStringPkJDO notDependent;
+
+  @Persistent String str;
 
   public String getId() {
     return id;
@@ -94,5 +95,13 @@ public class HasOneToOneJDO {
 
   public void setNotDependent(HasEncodedStringPkJDO notDependent) {
     this.notDependent = notDependent;
+  }
+
+  public String getStr() {
+    return str;
+  }
+
+  public void setStr(String str) {
+    this.str = str;
   }
 }

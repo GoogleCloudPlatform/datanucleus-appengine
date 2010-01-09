@@ -39,6 +39,7 @@ import org.datanucleus.test.HasOneToOneStringPkParentKeyPkJPA;
 import org.datanucleus.test.HasOneToOneWithNonDeletingCascadeJPA;
 import org.easymock.EasyMock;
 
+import java.lang.reflect.Method;
 import java.util.List;
 
 import javax.persistence.PersistenceException;
@@ -448,7 +449,8 @@ public class JPAOneToOneTest extends JPATestCase {
     }
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(5, parentEntity.getProperties().size());
+    assertEquals(6, parentEntity.getProperties().size());
+    assertTrue(parentEntity.hasProperty("str"));
     assertTrue(parentEntity.hasProperty("book_id"));
     assertNull(parentEntity.getProperty("book_id"));
     assertTrue(parentEntity.hasProperty("haskeypk_id"));
@@ -523,7 +525,8 @@ public class JPAOneToOneTest extends JPATestCase {
     }
 
     Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertEquals(5, parentEntity.getProperties().size());
+    assertEquals(6, parentEntity.getProperties().size());
+    assertTrue(parentEntity.hasProperty("str"));
     assertTrue(parentEntity.hasProperty("book_id"));
     assertNull(parentEntity.getProperty("book_id"));
     assertTrue(parentEntity.hasProperty("haskeypk_id"));
@@ -1006,6 +1009,128 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(book2Entity.getKey(), childEntity.getProperty("book_id"));
   }
 
+  private static final class PutPolicy implements DatastoreServiceInterceptor.Policy {
+    private final List<Object[]> putParamList = Utils.newArrayList();
+    public void intercept(Object o, Method method, Object[] params) {
+      if (method.getName().equals("put")) {
+        putParamList.add(params);
+      }
+    }
+  }
+
+  PutPolicy setupPutPolicy(HasOneToOneJPA pojo, HasOneToOneParentJPA hasParent, StartEnd startEnd)
+      throws Throwable {
+    PutPolicy policy = new PutPolicy();
+    DatastoreServiceInterceptor.install(policy);
+    try {
+      emf.close();
+      switchDatasource(getEntityManagerFactoryName());
+      Book book = new Book();
+      pojo.setBook(book);
+      pojo.setHasParent(hasParent);
+      HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
+      pojo.setHasKeyPK(hasKeyPk);
+
+      startEnd.start();
+      em.persist(pojo);
+      startEnd.end();
+      // 1 put for the parent, 3 puts for the children, 1 more put
+      // to add the child keys back on the parent
+      assertEquals(5, policy.putParamList.size());
+      policy.putParamList.clear();
+      return policy;
+    } catch (Throwable t) {
+      DatastoreServiceInterceptor.uninstall();
+      throw t;
+    }
+  }
+
+  public void testOnlyOnePutOnChildUpdate() throws Throwable {
+    testOnlyOnePutOnChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
+    testOnlyOnePutOnChildUpdate(NEW_EM_START_END);
+  }
+  private void testOnlyOnePutOnChildUpdate(JPATestCase.StartEnd startEnd)
+      throws Throwable {
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd);
+    try {
+      startEnd.start();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.getBook().setIsbn("88");
+      pojo.getHasParent().setStr("blarg");
+      pojo.getHasKeyPK().setStr("double blarg");
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for each child update
+    assertEquals(3, policy.putParamList.size());
+  }
+
+  public void testOnlyOneParentPutOnParentAndChildUpdate() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(TXN_START_END);
+  }
+  public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
+    testOnlyOneParentPutOnParentAndChildUpdate(NEW_EM_START_END);
+  }
+  private void testOnlyOneParentPutOnParentAndChildUpdate(JPATestCase.StartEnd startEnd)
+      throws Throwable {
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd);
+    try {
+      startEnd.start();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.setStr("another val");
+      pojo.getBook().setIsbn("88");
+      pojo.getHasParent().setStr("blarg");
+      pojo.getHasKeyPK().setStr("double blarg");
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // 1 put for the parent update, 1 put for each child update
+    assertEquals(4, policy.putParamList.size());
+  }
+
+  public void testOnlyOneParentPutOnChildDelete() throws Throwable {
+    // 1 put for the parent, 3 puts for the children, 1 more put
+    // to add the child keys back on the parent
+    int expectedPutsInSetup = 5;
+    // 1 put per child that we blank out plus one more put that cascades
+    // from the HasOneToOneParentJPA up to the parent as part of the delete
+    int expectedPutsOnChildDelete = 3;
+    testOnlyOneParentPutOnChildDelete(TXN_START_END, expectedPutsOnChildDelete);
+  }
+  public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
+    // 1 put per child that we blank out
+    int expectedPutsOnChildDelete = 4;
+    testOnlyOneParentPutOnChildDelete(NEW_EM_START_END, expectedPutsOnChildDelete);
+  }
+  private void testOnlyOneParentPutOnChildDelete(JPATestCase.StartEnd startEnd,
+                                                 int expectedPutsOnChildDelete)
+      throws Throwable {
+    HasOneToOneJPA pojo = new HasOneToOneJPA();
+    HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
+    PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd);
+    try {
+      startEnd.start();
+      pojo = em.find(pojo.getClass(), pojo.getId());
+      pojo.setStr("another val");
+      pojo.setBook(null);
+      pojo.setHasParent(null);
+      pojo.setHasKeyPK(null);
+      startEnd.end();
+    } finally {
+      DatastoreServiceInterceptor.uninstall();
+    }
+    // datanuc issues 1 put for each relation we blank out
+    assertEquals(expectedPutsOnChildDelete, policy.putParamList.size());
+  }
+  
   private Book newBook() {
     return newBook(null);
   }

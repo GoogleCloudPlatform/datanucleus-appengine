@@ -159,7 +159,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
 
     Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
     Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    assertEquals(5, parent1Entity.getProperties().size());
+    assertEquals(6, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
     assertTrue(parent1Entity.hasProperty("hasParent_key_OID"));
@@ -171,7 +171,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
     Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
     Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
-    assertEquals(5, parent2Entity.getProperties().size());
+    assertEquals(6, parent2Entity.getProperties().size());
     assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
     assertTrue(parent2Entity.hasProperty("hasParent_key_OID"));
@@ -220,7 +220,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
 
     Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
     Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    assertEquals(5, parent1Entity.getProperties().size());
+    assertEquals(6, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
     assertTrue(parent1Entity.hasProperty("hasParent_key_OID"));
@@ -232,7 +232,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
     Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
     Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
-    assertEquals(5, parent2Entity.getProperties().size());
+    assertEquals(6, parent2Entity.getProperties().size());
     assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
     assertTrue(parent2Entity.hasProperty("hasParent_key_OID"));

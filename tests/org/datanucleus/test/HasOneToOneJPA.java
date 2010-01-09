@@ -57,6 +57,8 @@ public class HasOneToOneJPA {
   @JoinColumn(name = "notdependent_id")
   private HasEncodedStringPkJPA notDependent;
 
+  private String str;
+
   public String getId() {
     return id;
   }
@@ -99,5 +101,13 @@ public class HasOneToOneJPA {
 
   public void setNotDependent(HasEncodedStringPkJPA notDependent) {
     this.notDependent = notDependent;
+  }
+
+  public String getStr() {
+    return str;
+  }
+
+  public void setStr(String str) {
+    this.str = str;
   }
 }

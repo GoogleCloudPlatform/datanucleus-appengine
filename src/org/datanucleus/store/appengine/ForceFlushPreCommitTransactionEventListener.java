@@ -33,20 +33,20 @@ import org.datanucleus.StateManager;
  */
 class ForceFlushPreCommitTransactionEventListener extends BaseTransactionEventListener {
 
-  private static final String TXN_EVENT_LISTENER_KEY =
-      DatastoreFKListStore.class.getName() + ".txn_event_listener";
+  static final String ALREADY_PERSISTED_RELATION_KEYS_KEY =
+      ForceFlushPreCommitTransactionEventListener.class.getName() + ".already_persisted_relation_keys";
 
   private final StateManager sm;
 
   ForceFlushPreCommitTransactionEventListener(StateManager sm) {
     this.sm = sm;
-    // make sure we only force the repersist once
-    sm.setAssociatedValue(TXN_EVENT_LISTENER_KEY, null);
   }
 
   @Override
   public void transactionPreCommit() {
-    if (sm.getAssociatedValue(TXN_EVENT_LISTENER_KEY) == null) {
+    // make sure we only force the repersist once
+    if (sm.getAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY) == null) {
+      sm.setAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
       for (int pos : sm.getClassMetaData().getAllMemberPositions()) {
         sm.makeDirty(pos);
       }
