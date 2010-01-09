@@ -528,7 +528,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       ClassLoaderResolver clr = sm.getObjectManager().getClassLoaderResolver();
       boolean missingRelationKey = false;
       try {
-        fieldMgr.setRegisterRelationCallbacks(false);
+        fieldMgr.setRepersistingForChildKeys(true);
         AbstractClassMetaData acmd = sm.getClassMetaData();
         for (int field : acmd.getRelationMemberPositions(clr)) {
           sm.provideFields(new int[] {field}, fieldMgr);
@@ -538,7 +538,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
           sm.setAssociatedValue(MISSING_RELATION_KEY, null);
         }
       } finally {
-        fieldMgr.setRegisterRelationCallbacks(true);
+        fieldMgr.setRepersistingForChildKeys(false);
       }
       // if none of the relation fields are missing relation keys then there is
       // no need for any additional puts to write the relation keys

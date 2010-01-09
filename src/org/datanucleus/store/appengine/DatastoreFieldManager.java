@@ -114,7 +114,7 @@ public class DatastoreFieldManager implements FieldManager {
   private boolean parentAlreadySet = false;
   private boolean keyAlreadySet = false;
   private Integer pkIdPos = null;
-  private boolean registerRelationCallbacks = true;
+  private boolean repersistingForChildKeys = false;
 
   private static final String PARENT_ALREADY_SET =
       "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
@@ -783,7 +783,7 @@ public class DatastoreFieldManager implements FieldManager {
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      if (!registerRelationCallbacks && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
+      if (repersistingForChildKeys && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
         // nothing for us to store
         return;
       }
@@ -804,7 +804,7 @@ public class DatastoreFieldManager implements FieldManager {
         storeEmbeddedField(ammd, fieldNumber, value);
       } else {
         if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
-          if (registerRelationCallbacks) {
+          if (!repersistingForChildKeys) {
             // register a callback for later
             relationFieldManager.storeRelationField(
                 getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
@@ -846,7 +846,7 @@ public class DatastoreFieldManager implements FieldManager {
       // this upstream.
       getStateManager().setAssociatedValue(
           DatastorePersistenceHandler.MISSING_RELATION_KEY,
-          size != keys.size() ? true : null);
+           repersistingForChildKeys && size != keys.size() ? true : null);
       return keys;
     }
     Key key = extractChildKey(value);
@@ -854,7 +854,7 @@ public class DatastoreFieldManager implements FieldManager {
     // still needs to be inserted.  communicate this upstream.
     getStateManager().setAssociatedValue(
         DatastorePersistenceHandler.MISSING_RELATION_KEY,
-        key == null ? true : null);
+        repersistingForChildKeys && key == null ? true : null);
     return key;
   }
 
@@ -1193,8 +1193,8 @@ public class DatastoreFieldManager implements FieldManager {
     return pkIdPos;
   }
 
-  public void setRegisterRelationCallbacks(boolean registerRelationCallbacks) {
-    this.registerRelationCallbacks = registerRelationCallbacks;
+  void setRepersistingForChildKeys(boolean repersistingForChildKeys) {
+    this.repersistingForChildKeys = repersistingForChildKeys;
   }
 
   DatastoreTable getDatastoreTable() {

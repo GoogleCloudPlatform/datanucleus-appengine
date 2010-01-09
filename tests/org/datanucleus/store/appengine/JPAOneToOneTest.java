@@ -997,8 +997,10 @@ public class JPAOneToOneTest extends JPATestCase {
     startEnd.end();
     startEnd.start();
     pojo = em.find(HasOneToOneChildAtMultipleLevelsJPA.class, pojo.getId());
+    assertEquals(b1.getId(), pojo.getBook().getId());
     assertEquals(child.getId(), pojo.getChild().getId());
     assertEquals(child.getBook(), b2);
+    assertNull(child.getChild());
     startEnd.end();
 
     Entity pojoEntity = ldth.ds.get(pojo.getId());
@@ -1006,7 +1008,10 @@ public class JPAOneToOneTest extends JPATestCase {
     Entity book1Entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
     Entity book2Entity = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
     assertEquals(book1Entity.getKey(), pojoEntity.getProperty("book_id"));
+    assertEquals(childEntity.getKey(), pojoEntity.getProperty("child_id"));
     assertEquals(book2Entity.getKey(), childEntity.getProperty("book_id"));
+    assertTrue(childEntity.hasProperty("child_id"));
+    assertNull(childEntity.getProperty("child_id"));
   }
 
   private static final class PutPolicy implements DatastoreServiceInterceptor.Policy {
