@@ -17,11 +17,11 @@ package org.datanucleus.test;
 
 import com.google.appengine.api.datastore.Key;
 
-import org.datanucleus.store.appengine.Utils;
-
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -33,7 +33,7 @@ import javax.persistence.OneToOne;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JoinsJPA {
+public class OwnedJoinsJPA {
 
   @Entity
   public static class Student {
@@ -43,10 +43,10 @@ public class JoinsJPA {
 
     private int grade;
 
-    @OneToMany
+    @OneToMany(cascade = CascadeType.ALL)
     private List<Course> courses = new ArrayList<Course>();
 
-    @OneToOne(fetch = FetchType.LAZY)
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL)
     private Major major;
 
     public int getGrade() {
@@ -195,38 +195,29 @@ public class JoinsJPA {
     }
   }
 
-  public static com.google.appengine.api.datastore.Entity newStudentEntity(
-      int grade, com.google.appengine.api.datastore.Entity... courses) {
-    return newStudentEntity(null, grade, courses);
+  public static Student newStudent(int grade, Course... courses) {
+    return newStudent(grade, null, courses);
   }
 
-  public static com.google.appengine.api.datastore.Entity newStudentEntity(
-      com.google.appengine.api.datastore.Entity major, int grade, 
-      com.google.appengine.api.datastore.Entity... courses) {
-    com.google.appengine.api.datastore.Entity s =
-        new com.google.appengine.api.datastore.Entity("JoinsJPA$Student");
-    s.setProperty("grade", grade);
-    Key majorKey = major == null ? null : major.getKey();
-    s.setProperty("major_key", majorKey);
-    List<Key> courseKeys = Utils.newArrayList();
-    for (com.google.appengine.api.datastore.Entity course : courses) {
-      courseKeys.add(course.getKey());
+  public static Student newStudent(int grade, Major major, Course... courses) {
+    Student s = new Student();
+    s.setGrade(grade);
+    s.setCourses(Arrays.asList(courses));
+    if (major != null) {
+      s.setMajor(major);
     }
-    s.setProperty("courses", courseKeys);
     return s;
   }
 
-  public static com.google.appengine.api.datastore.Entity newCourseEntity(String dept) {
-    com.google.appengine.api.datastore.Entity c =
-        new com.google.appengine.api.datastore.Entity("JoinsJPA$Course");
-    c.setProperty("department", dept);
+  public static Course newCourse(String dept) {
+    Course c = new Course();
+    c.setDepartment(dept);
     return c;
   }
 
-  public static com.google.appengine.api.datastore.Entity newMajorEntity(String school) {
-    com.google.appengine.api.datastore.Entity m =
-        new com.google.appengine.api.datastore.Entity("JoinsJPA$Major");
-    m.setProperty("school", school);
+  public static Major newMajor(String school) {
+    Major m = new Major();
+    m.setSchool(school);
     return m;
   }
 }

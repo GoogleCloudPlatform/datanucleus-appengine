@@ -16,12 +16,12 @@ limitations under the License.
 package org.datanucleus.store.appengine.query;
 
 import org.datanucleus.store.appengine.JDOTestCase;
-import org.datanucleus.test.JoinsJDO.Course;
-import org.datanucleus.test.JoinsJDO.Major;
-import org.datanucleus.test.JoinsJDO.Student;
-import static org.datanucleus.test.JoinsJDO.newCourse;
-import static org.datanucleus.test.JoinsJDO.newMajor;
-import static org.datanucleus.test.JoinsJDO.newStudent;
+import org.datanucleus.test.OwnedJoinsJDO.Course;
+import org.datanucleus.test.OwnedJoinsJDO.Major;
+import org.datanucleus.test.OwnedJoinsJDO.Student;
+import static org.datanucleus.test.OwnedJoinsJDO.newCourse;
+import static org.datanucleus.test.OwnedJoinsJDO.newMajor;
+import static org.datanucleus.test.OwnedJoinsJDO.newStudent;
 
 import java.util.Collections;
 
@@ -30,13 +30,11 @@ import javax.jdo.Query;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JDOQLQueryJoinTest extends JDOTestCase {
+public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Simple() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
     makePersistentInTxn(student, TXN_START_END);
     beginTxn();
@@ -51,9 +49,7 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_LegalOrderBy() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2, TXN_START_END);
     Student student = newStudent(10, course1, course2);
     makePersistentInTxn(student, TXN_START_END);
     beginTxn();
@@ -68,14 +64,16 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Offset() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2, TXN_START_END);
+    Course course3 = newCourse("Biology");
+    Course course4 = newCourse("Not Biology");
+    Course course5 = newCourse("Biology");
+    Course course6 = newCourse("Not Biology");
     Student student = newStudent(10, course1, course2);
     makePersistentInTxn(student, TXN_START_END);
-    Student student2 = newStudent(11, course1, course2);
+    Student student2 = newStudent(11, course3, course4);
     makePersistentInTxn(student2, TXN_START_END);
-    Student student3 = newStudent(10, course1, course2);
+    Student student3 = newStudent(10, course5, course6);
     makePersistentInTxn(student3, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
@@ -92,14 +90,16 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToMany_Limit() {
     Course course1 = newCourse("Biology");
-    makePersistentInTxn(course1, TXN_START_END);
     Course course2 = newCourse("Not Biology");
-    makePersistentInTxn(course2, TXN_START_END);
+    Course course3 = newCourse("Biology");
+    Course course4 = newCourse("Not Biology");
+    Course course5 = newCourse("Biology");
+    Course course6 = newCourse("Not Biology");
     Student student = newStudent(10, course1, course2);
     makePersistentInTxn(student, TXN_START_END);
-    Student student2 = newStudent(11, course1, course2);
+    Student student2 = newStudent(11, course3, course4);
     makePersistentInTxn(student2, TXN_START_END);
-    Student student3 = newStudent(10, course1, course2);
+    Student student3 = newStudent(10, course5, course6);
     makePersistentInTxn(student3, TXN_START_END);
     beginTxn();
     Query q = pm.newQuery(
@@ -116,9 +116,7 @@ public class JDOQLQueryJoinTest extends JDOTestCase {
 
   public void testJoinOnOneToOne_Simple() {
     Major major1 = newMajor("Liberal Arts");
-    makePersistentInTxn(major1, TXN_START_END);
     Major major2 = newMajor("Engineering");
-    makePersistentInTxn(major2, TXN_START_END);
     Student student1 = newStudent(10, major1);
     Student student2 = newStudent(10, major2);
     makePersistentInTxn(student1, TXN_START_END);

@@ -15,82 +15,83 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
-import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.store.appengine.JPATestCase;
-import org.datanucleus.test.JoinsJPA.Student;
-import static org.datanucleus.test.JoinsJPA.newCourseEntity;
-import static org.datanucleus.test.JoinsJPA.newMajorEntity;
-import static org.datanucleus.test.JoinsJPA.newStudentEntity;
+import static org.datanucleus.test.OwnedJoinsJPA.Course;
+import static org.datanucleus.test.OwnedJoinsJPA.Major;
+import org.datanucleus.test.OwnedJoinsJPA.Student;
+import static org.datanucleus.test.OwnedJoinsJPA.newCourse;
+import static org.datanucleus.test.OwnedJoinsJPA.newMajor;
+import static org.datanucleus.test.OwnedJoinsJPA.newStudent;
 
 import java.util.Collections;
 
 import javax.persistence.Query;
 
 /**
- * The JPQL query compiler isn't as lenient as the JDOQL query compiler, and
- * as a result we can't trick JPA into supporting joins on Key and List<Key>
- * members.  That's fair, since it's non-standard, but it means we won't be
- * able to support joins in JPQL until we the next storage version, where
- * we store child keys on the parent entity.  The tests in this class set up
- * test data via the low-level api as if we already support storing child keys
- * on the parent entity.
- *
  * @author Max Ross <maxr@google.com>
  */
-public class JPQLQueryJoinTest extends JPATestCase {
+public class JPQLQueryOwnedJoinTest extends JPATestCase {
 
   public void testJoinOnOneToMany_Simple() {
-    Entity course1 = newCourseEntity("Biology");
-    ldth.ds.put(course1);
-    Entity course2 = newCourseEntity("Not Biology");
-    ldth.ds.put(course2);
-    Entity student = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student);
+    Course course1 = newCourse("Biology");
+    Course course2 = newCourse("Not Biology");
+    Student student = newStudent(10, course1, course2);
+    beginTxn();
+    em.persist(student);
+    commitTxn();
     beginTxn();
     Query q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
         + "s.grade = 10");
     
-    assertEquals(student.getKey().getId(), ((Student) q.getSingleResult()).getId().longValue());
+    assertEquals(student.getId(), ((Student) q.getSingleResult()).getId());
     commitTxn();
   }
 
   public void testJoinOnOneToMany_LegalOrderBy() {
-    Entity course1 = newCourseEntity("Biology");
-    ldth.ds.put(course1);
-    Entity course2 = newCourseEntity("Not Biology");
-    ldth.ds.put(course2);
-    Entity student = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student);
+    Course course1 = newCourse("Biology");
+    Course course2 = newCourse("Not Biology");
+    Student student = newStudent(10, course1, course2);
+    beginTxn();
+    em.persist(student);
+    commitTxn();
     beginTxn();
     Query q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
         + "s.grade = 10 order by s.courses asc");
-    assertEquals(student.getKey().getId(), ((Student) q.getSingleResult()).getId().longValue());
+    assertEquals(student.getId(), ((Student) q.getSingleResult()).getId());
     commitTxn();
   }
 
   public void testJoinOnOneToMany_Offset() {
-    Entity course1 = newCourseEntity("Biology");
-    ldth.ds.put(course1);
-    Entity course2 = newCourseEntity("Not Biology");
-    ldth.ds.put(course2);
-    Entity student = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student);
-    Entity student2 = newStudentEntity(11, course1, course2);
-    ldth.ds.put(student2);
-    Entity student3 = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student3);
+    Course course1 = newCourse("Biology");
+    Course course2 = newCourse("Not Biology");
+    Course course3 = newCourse("Biology");
+    Course course4 = newCourse("Not Biology");
+    Course course5 = newCourse("Biology");
+    Course course6 = newCourse("Not Biology");
+    Student student = newStudent(10, course1, course2);
+    Student student2 = newStudent(11, course3, course4);
+    Student student3 = newStudent(10, course5, course6);
+    beginTxn();
+    em.persist(student);
+    commitTxn();
+    beginTxn();
+    em.persist(student2);
+    commitTxn();
+    beginTxn();
+    em.persist(student3);
+    commitTxn();
     beginTxn();
     Query q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
         + "s.grade = 10");
     q.setFirstResult(1);
-    assertEquals(student3.getKey().getId(), ((Student) q.getSingleResult()).getId().longValue());
+    assertEquals(student3.getId(), ((Student) q.getSingleResult()).getId());
     q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
@@ -101,23 +102,31 @@ public class JPQLQueryJoinTest extends JPATestCase {
   }
 
   public void testJoinOnOneToMany_Limit() {
-    Entity course1 = newCourseEntity("Biology");
-    ldth.ds.put(course1);
-    Entity course2 = newCourseEntity("Not Biology");
-    ldth.ds.put(course2);
-    Entity student = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student);
-    Entity student2 = newStudentEntity(11, course1, course2);
-    ldth.ds.put(student2);
-    Entity student3 = newStudentEntity(10, course1, course2);
-    ldth.ds.put(student3);
+    Course course1 = newCourse("Biology");
+    Course course2 = newCourse("Not Biology");
+    Course course3 = newCourse("Biology");
+    Course course4 = newCourse("Not Biology");
+    Course course5 = newCourse("Biology");
+    Course course6 = newCourse("Not Biology");
+    Student student = newStudent(10, course1, course2);
+    Student student2 = newStudent(11, course3, course4);
+    Student student3 = newStudent(10, course5, course6);
+    beginTxn();
+    em.persist(student);
+    commitTxn();
+    beginTxn();
+    em.persist(student2);
+    commitTxn();
+    beginTxn();
+    em.persist(student3);
+    commitTxn();
     beginTxn();
     Query q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
         + "s.grade = 10");
     q.setMaxResults(1);
-    assertEquals(student.getKey().getId(), ((Student) q.getSingleResult()).getId().longValue());
+    assertEquals(student.getId(), ((Student) q.getSingleResult()).getId());
     q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.courses c where "
         + "c.department = 'Biology' and "
@@ -128,20 +137,22 @@ public class JPQLQueryJoinTest extends JPATestCase {
   }
 
   public void testJoinOnOneToOne_Simple() {
-    Entity major1 = newMajorEntity("Liberal Arts");
-    ldth.ds.put(major1);
-    Entity major2 = newMajorEntity("Engineering");
-    ldth.ds.put(major2);
-    Entity student1 = newStudentEntity(major1, 10);
-    Entity student2 = newStudentEntity(major2, 10);
-    ldth.ds.put(student1);
-    ldth.ds.put(student2);
+    Major major1 = newMajor("Liberal Arts");
+    Major major2 = newMajor("Engineering");
+    Student student1 = newStudent(10, major1);
+    Student student2 = newStudent(10, major2);
+    beginTxn();
+    em.persist(student1);
+    commitTxn();
+    beginTxn();
+    em.persist(student2);
+    commitTxn();
     beginTxn();
     Query q = em.createQuery(
         "select from " + Student.class.getName() + " s JOIN s.major m where "
         + "m.school = 'Liberal Arts' and "
         + "s.grade = 10");
-    assertEquals(student1.getKey().getId(), ((Student) q.getSingleResult()).getId().longValue());
+    assertEquals(student1.getId(), ((Student) q.getSingleResult()).getId());
     commitTxn();
   }
 

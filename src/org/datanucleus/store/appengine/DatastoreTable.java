@@ -225,7 +225,10 @@ public class DatastoreTable implements DatastoreClass {
   public DatastoreProperty addDatastoreField(String storedJavaType, DatastoreIdentifier name,
       JavaTypeMapping mapping, MetaData colmd) {
 
-    if (hasColumnName(name)) {
+    if (hasColumnName(name) &&
+        (colmd == null || !(colmd instanceof ColumnMetaData) ||
+         ((ColumnMetaData) colmd).getInsertable() || ((ColumnMetaData) colmd).getUpdateable())) {
+      // duplicate property names are ok if the field is neither insertable nor updatable
       throw new NucleusException("Duplicate property name on class " + getType() + " : " + name);
     }
 

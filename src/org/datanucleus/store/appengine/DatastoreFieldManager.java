@@ -29,6 +29,7 @@ import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
@@ -79,6 +80,8 @@ import javax.jdo.spi.PersistenceCapable;
  */
 public class DatastoreFieldManager implements FieldManager {
 
+  public enum Operation { INSERT, UPDATE, DELETE, READ };
+
   private static final String ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT =
       "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
           + "mapped to %s, which cannot accept null values.";
@@ -101,6 +104,8 @@ public class DatastoreFieldManager implements FieldManager {
   private final DatastoreRelationFieldManager relationFieldManager;
 
   private final SerializationManager serializationManager;
+
+  private final Operation operation;
 
   // Not final because we will reallocate if we hit a parent pk field
   // and the key of the current value does not have a parent, or if the pk
@@ -134,7 +139,7 @@ public class DatastoreFieldManager implements FieldManager {
           Relation.ONE_TO_ONE_UNI));
 
   private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
-      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
+      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
@@ -148,6 +153,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider, mappingConsumer, false));
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
     this.serializationManager = new SerializationManager();
+    this.operation = operation;
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
@@ -167,18 +173,18 @@ public class DatastoreFieldManager implements FieldManager {
    * been put into the datastore.
    */
   DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
-      Entity datastoreEntity, int[] fieldNumbers) {
-    this(stateManager, false, storeManager, datastoreEntity, fieldNumbers);
+      Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
+    this(stateManager, false, storeManager, datastoreEntity, fieldNumbers, operation);
   }
 
   public DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
-      Entity datastoreEntity) {
-    this(stateManager, false, storeManager, datastoreEntity, new int[0]);
+      Entity datastoreEntity, Operation operation) {
+    this(stateManager, false, storeManager, datastoreEntity, new int[0], operation);
   }
 
   DatastoreFieldManager(StateManager stateManager, String kind,
-      DatastoreManager storeManager) {
-    this(stateManager, true, storeManager, new Entity(kind), new int[0]);
+      DatastoreManager storeManager, Operation operation) {
+    this(stateManager, true, storeManager, new Entity(kind), new int[0], operation);
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -802,7 +808,8 @@ public class DatastoreFieldManager implements FieldManager {
       }
       if (ammd.getEmbeddedMetaData() != null) {
         storeEmbeddedField(ammd, fieldNumber, value);
-      } else {
+      } else if ((operation == Operation.INSERT && isInsertable(ammd)) ||
+                 (operation == Operation.UPDATE && isUpdatable(ammd))) {
         if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
           if (!repersistingForChildKeys) {
             // register a callback for later
@@ -831,6 +838,29 @@ public class DatastoreFieldManager implements FieldManager {
         }
       }
     }
+  }
+
+  private ColumnMetaData getColumnMetaData(AbstractMemberMetaData ammd) {
+    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+      return ammd.getColumnMetaData()[0];
+    }
+    // A OneToMany has its column metadata stored inside
+    // ElementMetaData so look there as well
+    if (ammd.getElementMetaData() != null &&
+        ammd.getElementMetaData().getColumnMetaData() != null &&
+        ammd.getElementMetaData().getColumnMetaData().length > 0) {
+      return ammd.getElementMetaData().getColumnMetaData()[0];
+    }
+    return null;
+  }
+  private boolean isInsertable(AbstractMemberMetaData ammd) {
+    ColumnMetaData cmd = getColumnMetaData(ammd);
+    return cmd == null || cmd.getInsertable();
+  }
+
+  private boolean isUpdatable(AbstractMemberMetaData ammd) {
+    ColumnMetaData cmd = getColumnMetaData(ammd);
+    return cmd == null || cmd.getUpdateable();
   }
 
   private Object extractRelationKeys(Object value) {

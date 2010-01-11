@@ -66,7 +66,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
     EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0],
+                                  DatastoreFieldManager.Operation.READ) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -207,7 +208,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
     EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(stateManagerMock, getStoreManager(), entity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), entity, new int[0],
+                                  DatastoreFieldManager.Operation.READ) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -281,7 +283,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(stateManagerMock.getObjectManager()).andReturn(jpm.getObjectManager());
     EasyMock.replay(stateManagerMock);
     DatastoreFieldManager fieldManager =
-        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0]) {
+        new DatastoreFieldManager(stateManagerMock, getStoreManager(), ksEntity, new int[0],
+                                  DatastoreFieldManager.Operation.INSERT) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -430,7 +433,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     EasyMock.expect(om.getClassLoaderResolver()).andReturn(clr).anyTimes();
     EasyMock.expect(om.getStoreManager()).andReturn(getStoreManager()).anyTimes();
     EasyMock.replay(om);
-    DatastoreFieldManager fieldManager = new DatastoreFieldManager(sm, getStoreManager(), entity, new int[0]) {
+    DatastoreFieldManager fieldManager = new DatastoreFieldManager(
+        sm, getStoreManager(), entity, new int[0], DatastoreFieldManager.Operation.INSERT) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;
@@ -456,7 +460,8 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     // now we create a field manager where we don't provide the entity
     // in the constructor
     fieldManager = new DatastoreFieldManager(
-        sm, HasStringAncestorStringPkJDO.class.getSimpleName(), getStoreManager()) {
+        sm, HasStringAncestorStringPkJDO.class.getSimpleName(), getStoreManager(),
+        DatastoreFieldManager.Operation.INSERT) {
       @Override
       AbstractClassMetaData getClassMetaData() {
         return acmd;

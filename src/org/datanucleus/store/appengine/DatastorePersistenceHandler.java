@@ -330,7 +330,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       // For inserts we let the field manager create the Entity and then
       // retrieve it afterwards.  We do this because the entity isn't
       // 'fixed' until after provideFields has been called.
-      DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, kind, storeMgr);
+      DatastoreFieldManager fieldMgr = new DatastoreFieldManager(
+          sm, kind, storeMgr, DatastoreFieldManager.Operation.INSERT);
       AbstractClassMetaData acmd = sm.getClassMetaData();
       sm.provideFields(acmd.getAllMemberPositions(), fieldMgr);
 
@@ -457,7 +458,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       Key pk = getPkAsKey(sm);
       entity = get(sm, pk);
     }
-    sm.replaceFields(fieldNumbers, new DatastoreFieldManager(sm, storeMgr, entity, fieldNumbers));
+    sm.replaceFields(fieldNumbers, new DatastoreFieldManager(
+        sm, storeMgr, entity, fieldNumbers, DatastoreFieldManager.Operation.READ));
 
     AbstractClassMetaData cmd = sm.getClassMetaData();
     if (cmd.hasVersionStrategy()) {
@@ -508,7 +510,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       Key key = getPkAsKey(sm);
       entity = get(sm, key);
     }
-    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(sm, storeMgr, entity, fieldNumbers);
+    DatastoreFieldManager fieldMgr = new DatastoreFieldManager(
+        sm, storeMgr, entity, fieldNumbers, DatastoreFieldManager.Operation.UPDATE);
     sm.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT, "updating");
     put(sm, entity);

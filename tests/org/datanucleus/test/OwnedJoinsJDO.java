@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.store.appengine.Utils;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.jdo.annotations.Element;
@@ -31,7 +32,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JoinsJDO {
+public class OwnedJoinsJDO {
 
   @PersistenceCapable(detachable = "true")
   public static class Student {
@@ -42,10 +43,10 @@ public class JoinsJDO {
     private int grade;
 
     @Element(dependent = "true")
-    private List<Key> courses = new ArrayList<Key>();
+    private List<Course> courses = new ArrayList<Course>();
 
     @Persistent
-    private Key major;
+    private Major major;
 
     public int getGrade() {
       return grade;
@@ -55,19 +56,19 @@ public class JoinsJDO {
       this.grade = grade;
     }
 
-    public List<Key> getCourses() {
+    public List<Course> getCourses() {
       return courses;
     }
 
-    public void setCourses(List<Key> courses) {
+    public void setCourses(List<Course> courses) {
       this.courses = courses;
     }
 
-    public Key getMajor() {
+    public Major getMajor() {
       return major;
     }
 
-    public void setMajor(Key major) {
+    public void setMajor(Major major) {
       this.major = major;
     }
 
@@ -94,7 +95,7 @@ public class JoinsJDO {
       return id != null ? id.hashCode() : 0;
     }
   }
-  
+
   @PersistenceCapable(detachable = "true")
   public static class Course {
     @PrimaryKey
@@ -200,9 +201,9 @@ public class JoinsJDO {
     for (Course c : courses) {
       courseKeys.add(c.getKey());
     }
-    s.setCourses(courseKeys);
+    s.setCourses(Arrays.asList(courses));
     if (major != null) {
-      s.setMajor(major.getKey());
+      s.setMajor(major);
     }
     return s;
   }

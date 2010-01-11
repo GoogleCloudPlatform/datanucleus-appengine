@@ -321,7 +321,7 @@ public class DatastoreQuery implements Serializable {
     Map extensions = query.getExtensions();
     if (extensions != null &&
         extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY) &&
-        (Boolean)extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
+        (Boolean) extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
       Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
       keysToDelete = getResult.keySet();
     }
@@ -520,11 +520,13 @@ public class DatastoreQuery implements Serializable {
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
         sm.replaceFields(
-            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+            acmd.getPKMemberPositions(),
+            new DatastoreFieldManager(sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
       }
       public void fetchNonLoadedFields(StateManager sm) {
         sm.replaceNonLoadedFields(
-            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+            acmd.getPKMemberPositions(),
+            new DatastoreFieldManager(sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
       }
       public FetchPlan getFetchPlanForLoading() {
         return fetchPlan;
@@ -561,7 +563,8 @@ public class DatastoreQuery implements Serializable {
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
         sm.replaceFields(
-            acmd.getPKMemberPositions(), new DatastoreFieldManager(sm, storeMgr, entity));
+            acmd.getPKMemberPositions(), new DatastoreFieldManager(
+                sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
       }
       public void fetchNonLoadedFields(StateManager sm) {
       }
@@ -1410,6 +1413,10 @@ public class DatastoreQuery implements Serializable {
       return ammd.getColumn();
     } else if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length != 0) {
       return ammd.getColumnMetaData()[0].getName();
+    } else if (ammd.getElementMetaData() != null &&
+               ammd.getElementMetaData().getColumnMetaData() != null  &&
+               ammd.getElementMetaData().getColumnMetaData().length != 0) {
+      return ammd.getElementMetaData().getColumnMetaData()[0].getName();
     } else {
       return getIdentifierFactory().newDatastoreFieldIdentifier(ammd.getName()).getIdentifierName();
     }

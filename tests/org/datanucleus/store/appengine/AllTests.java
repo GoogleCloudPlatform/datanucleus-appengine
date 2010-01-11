@@ -23,12 +23,14 @@ import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactoryTest;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandlerTest;
 import org.datanucleus.store.appengine.query.JDOQLCursorTest;
 import org.datanucleus.store.appengine.query.JDOQLDeleteTest;
-import org.datanucleus.store.appengine.query.JDOQLQueryJoinTest;
+import org.datanucleus.store.appengine.query.JDOQLQueryOwnedJoinTest;
 import org.datanucleus.store.appengine.query.JDOQLQueryTest;
+import org.datanucleus.store.appengine.query.JDOQLQueryUnownedJoinTest;
 import org.datanucleus.store.appengine.query.JPQLCursorTest;
 import org.datanucleus.store.appengine.query.JPQLDeleteTest;
-import org.datanucleus.store.appengine.query.JPQLQueryJoinTest;
+import org.datanucleus.store.appengine.query.JPQLQueryOwnedJoinTest;
 import org.datanucleus.store.appengine.query.JPQLQueryTest;
+import org.datanucleus.store.appengine.query.JPQLQueryUnownedJoinTest;
 import org.datanucleus.store.appengine.query.JoinHelperTest;
 import org.datanucleus.store.appengine.query.LazyResultTest;
 import org.datanucleus.store.appengine.query.SlicingIterableTest;
@@ -123,12 +125,15 @@ public class AllTests {
     suite.addTestSuite(JDOSequenceTest.class);
     suite.addTestSuite(JoinHelperTest.class);
     suite.addTestSuite(SlicingIterableTest.class);
-    suite.addTestSuite(JDOQLQueryJoinTest.class);
-    suite.addTestSuite(JPQLQueryJoinTest.class);
+    suite.addTestSuite(JDOQLQueryUnownedJoinTest.class);
+    suite.addTestSuite(JDOQLQueryOwnedJoinTest.class);
+    suite.addTestSuite(JPQLQueryUnownedJoinTest.class);
+    suite.addTestSuite(JPQLQueryOwnedJoinTest.class);
     suite.addTestSuite(JDOQLCursorTest.class);
     suite.addTestSuite(JPQLCursorTest.class);
     suite.addTestSuite(JDODatastoreBridgeTest.class);
     suite.addTestSuite(JPADatastoreBridgeTest.class);
+    suite.addTestSuite(JPANonWritableFieldsTest.class);
     return suite;
   }
 }
