@@ -2684,6 +2684,19 @@ public class JPQLQueryTest extends JPATestCase {
     assertTrue(result3.isEmpty());
   }
 
+  public void testLikeQuery_Literal2() {
+    for (int i = 0; i < 10; i++) {
+      Entity e1 = Book.newBookEntity("this", "that", "xxxx");
+      ldth.ds.put(e1);
+    }
+
+    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'x%'");
+    @SuppressWarnings("unchecked")
+    List<Book> result = q.getResultList();
+
+    assertEquals(10, result.size());
+  }
+
   public void testLikeQuery_Param() {
     Entity e1 = Book.newBookEntity("this", "that", "xxxx");
     ldth.ds.put(e1);

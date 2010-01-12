@@ -79,4 +79,8 @@ public class HasOneToManyArrayWithOrderByJDO implements HasOneToManyWithOrderByJ
   public List<HasExplicitIndexColumnJDO> getHasIndexColumn() {
     throw new UnsupportedOperationException();
   }
+
+  public List<HasPkWithOverriddenColumnJDO> getHasPkWithOverridenColumns() {
+    throw new UnsupportedOperationException();
+  }
 }

@@ -135,7 +135,9 @@ public class DatastoreFKListStore extends FKListStore {
   }
 
   boolean isPrimaryKey(String propertyName) {
-    return ((DatastoreTable) containerTable).getDatastoreField(propertyName).isPrimaryKey();
+    DatastoreTable table = (DatastoreTable) containerTable;
+    AbstractMemberMetaData ammd = table.getClassMetaData().getMetaDataForMember(propertyName);
+    return ammd.isPrimaryKey();
   }
 
   @Override

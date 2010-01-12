@@ -190,6 +190,17 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     testFindWithOrderBy(HasOneToManyListWithOrderByJDO.class, startEnd);
   }
 
+  public void testSaveWithOrderBy() throws EntityNotFoundException {
+    testSaveWithOrderBy(TXN_START_END);
+  }
+  public void testSaveWithOrderBy_NoTxn() throws EntityNotFoundException {
+    switchDatasource(PersistenceManagerFactoryName.nontransactional);
+    testSaveWithOrderBy(NEW_PM_START_END);
+  }
+  private void testSaveWithOrderBy(StartEnd startEnd) throws EntityNotFoundException {
+    testSaveWithOrderBy(new HasOneToManyListWithOrderByJDO(), startEnd);
+  }
+
   public void testFind() throws EntityNotFoundException {
     testFind(TXN_START_END);
   }
@@ -778,6 +789,53 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
 
   public void testNonTxnAddOfChildToParentFailsPartwayThrough() throws Throwable {
     testNonTxnAddOfChildToParentFailsPartwayThrough(new HasOneToManyListJDO());
+  }
+
+  public void xtestRemove2ObjectsAtIndex() {
+    testRemove2ObjectsAtIndex(TXN_START_END);
+  }
+  public void xtestRemove2ObjectsAtIndex_NoTxn() {
+    testRemove2ObjectsAtIndex(NEW_PM_START_END);
+  }
+  private void testRemove2ObjectsAtIndex(StartEnd startEnd) {
+    BidirectionalChildListJDO bidirChild1 = new BidirectionalChildListJDO();
+    BidirectionalChildListJDO bidirChild2 = new BidirectionalChildListJDO();
+    Flight f1 = newFlight();
+    Flight f2 = newFlight();
+
+    HasKeyPkJDO hasKeyPk1 = new HasKeyPkJDO();
+    HasKeyPkJDO hasKeyPk2 = new HasKeyPkJDO();
+
+    HasOneToManyListJDO parent = new HasOneToManyListJDO();
+    parent.addBidirChild(bidirChild1);
+    bidirChild1.setParent(parent);
+    parent.addBidirChild(bidirChild2);
+    bidirChild2.setParent(parent);
+    parent.addFlight(f1);
+    parent.addFlight(f2);
+    parent.addHasKeyPk(hasKeyPk1);
+    parent.addHasKeyPk(hasKeyPk2);
+
+    startEnd.start();
+    pm.makePersistent(parent);
+    startEnd.end();
+
+    startEnd.start();
+    parent = pm.getObjectById(parent.getClass(), parent.getId());
+    parent.getFlights().remove(0);
+    parent.getFlights().remove(0);
+//    parent.getBidirChildren().remove(0);
+//    parent.getBidirChildren().remove(0);
+//    parent.getHasKeyPks().remove(0);
+//    parent.getHasKeyPks().remove(0);
+    startEnd.end();
+
+    startEnd.start();
+    parent = pm.getObjectById(parent.getClass(), parent.getId());
+    assertTrue(parent.getFlights().isEmpty());
+//    assertTrue(parent.getBidirChildren().isEmpty());
+//    assertTrue(parent.getHasKeyPks().isEmpty());
+    startEnd.end();
   }
 
   @Override

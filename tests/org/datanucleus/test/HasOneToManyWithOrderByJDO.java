@@ -29,4 +29,6 @@ public interface HasOneToManyWithOrderByJDO {
   List<Flight> getFlightsByOrigAndId();
 
   List<HasExplicitIndexColumnJDO> getHasIndexColumn();
+
+  List<HasPkWithOverriddenColumnJDO> getHasPkWithOverridenColumns();
 }

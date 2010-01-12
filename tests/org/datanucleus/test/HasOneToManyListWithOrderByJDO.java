@@ -52,6 +52,10 @@ public class HasOneToManyListWithOrderByJDO implements HasOneToManyWithOrderByJD
   @Order(mappedBy="index")
   private List<HasExplicitIndexColumnJDO> hasIndexColumn = new ArrayList<HasExplicitIndexColumnJDO>();
 
+  @Element(dependent = "true")
+  @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="key ASC"))
+  List<HasPkWithOverriddenColumnJDO> hasOverridenPk = new ArrayList<HasPkWithOverriddenColumnJDO>();
+
   public Long getId() {
     return id;
   }
@@ -70,5 +74,9 @@ public class HasOneToManyListWithOrderByJDO implements HasOneToManyWithOrderByJD
 
   public List<HasExplicitIndexColumnJDO> getHasIndexColumn() {
     return hasIndexColumn;
+  }
+
+  public List<HasPkWithOverriddenColumnJDO> getHasPkWithOverridenColumns() {
+    return hasOverridenPk;
   }
 }

@@ -33,6 +33,7 @@ import org.datanucleus.test.HasKeyPkJDO;
 import org.datanucleus.test.HasOneToManyJDO;
 import org.datanucleus.test.HasOneToManyKeyPkJDO;
 import org.datanucleus.test.HasOneToManyListJDO;
+import org.datanucleus.test.HasOneToManyListWithOrderByJDO;
 import org.datanucleus.test.HasOneToManyLongPkJDO;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkJDO;
 import org.datanucleus.test.HasOneToManyWithOrderByJDO;
@@ -1589,6 +1590,16 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(
         Collections.singletonList(KeyFactory.stringToKey(flight1.getId())),
         pojoEntity.getProperty("flights"));
+  }
+
+
+  void testSaveWithOrderBy(HasOneToManyListWithOrderByJDO pojo, StartEnd startEnd)
+      throws EntityNotFoundException {
+    getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
+        "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
+    startEnd.start();
+    pm.makePersistent(pojo);
+    startEnd.end();
   }
 
 //  void testIndexOf(HasOneToManyJDO pojo, BidirectionalChildJDO bidir1, BidirectionalChildJDO bidir2,
