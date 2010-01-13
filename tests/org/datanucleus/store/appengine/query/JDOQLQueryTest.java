@@ -48,6 +48,8 @@ import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
 import org.datanucleus.test.HasEmbeddedJDO;
 import org.datanucleus.test.HasEncodedStringPkJDO;
+import org.datanucleus.test.HasEncodedStringPkSeparateIdFieldJDO;
+import org.datanucleus.test.HasEncodedStringPkSeparateNameFieldJDO;
 import org.datanucleus.test.HasEnumJDO;
 import org.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import org.datanucleus.test.HasKeyAncestorStringPkJDO;
@@ -644,6 +646,21 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, flights.size());
     assertEquals(flightEntity2.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
     assertEquals(flightEntity1.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
+  }
+
+  public void testKeyQuery_FilterAndSortByKeyComponent() {
+    // filter by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateIdFieldJDO.class.getName() + " where id == 4");
+    // sort by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateIdFieldJDO.class.getName() + " order by id");
+    // filter by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateNameFieldJDO.class.getName() + " where name == 4");
+    // sort by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateNameFieldJDO.class.getName() + " order by name");
   }
 
   public void testAncestorQueryWithStringAncestor() {

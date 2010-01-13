@@ -34,6 +34,7 @@ import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.appengine.DatastoreServiceInterceptor;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
+import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.appengine.JPATestCase;
 import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
@@ -47,7 +48,9 @@ import org.datanucleus.test.DetachableJPA;
 import org.datanucleus.test.Flight;
 import org.datanucleus.test.HasBytesJPA;
 import org.datanucleus.test.HasDoubleJPA;
-import org.datanucleus.test.HasEncodedStringPkJDO;
+import org.datanucleus.test.HasEncodedStringPkJPA;
+import org.datanucleus.test.HasEncodedStringPkSeparateIdFieldJPA;
+import org.datanucleus.test.HasEncodedStringPkSeparateNameFieldJPA;
 import org.datanucleus.test.HasEnumJPA;
 import org.datanucleus.test.HasKeyAncestorStringPkJPA;
 import org.datanucleus.test.HasKeyPkJPA;
@@ -196,11 +199,11 @@ public class JPQLQueryTest extends JPATestCase {
     // TODO(maxr) Make this pass against the real datastore.
     // We need to have it return BadRequest instead of NeedIndex for that to
     // happen.
-    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)");
+    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)", IllegalArgumentException.class);
     // inequality filter prop is not the same as the first order by prop
-    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn");
+    assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn", IllegalArgumentException.class);
     // gets split into multiple inequality props
-    assertQueryUnsupportedByDatastore(baseQuery + "title <> 2 AND isbn <> 4");
+    assertQueryUnsupportedByDatastore(baseQuery + "title <> 2 AND isbn <> 4", IllegalArgumentException.class);
     assertEquals(
         new HashSet<Expression.Operator>(Arrays.asList(Expression.OP_CONCAT, Expression.OP_COM,
                                                        Expression.OP_NEG, Expression.OP_IS,
@@ -564,6 +567,25 @@ public class JPQLQueryTest extends JPATestCase {
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(2, books.size());
     assertEquals(bookEntity2.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+  }
+
+  public void testKeyQuery_FilterAndSortByKeyComponent() {
+    // filter by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " where id = 4",
+        FatalNucleusUserException.class);
+    // sort by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " order by id",
+        FatalNucleusUserException.class);
+    // filter by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " where name = 4",
+        FatalNucleusUserException.class);
+    // sort by pk-id
+    assertQueryUnsupportedByDatastore(
+        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " order by name",
+        FatalNucleusUserException.class);
   }
 
   public void testAncestorQuery() {
@@ -1306,21 +1328,21 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testKeyQueryWithEncodedStringPk() {
-    Entity e = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), "yar");
+    Entity e = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), "yar");
     ldth.ds.put(e);
-    Query q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    Query q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getName());
-    HasEncodedStringPkJDO result = (HasEncodedStringPkJDO) q.getSingleResult();
+    HasEncodedStringPkJPA result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
 
-    q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey());
-    result = (HasEncodedStringPkJDO) q.getSingleResult();
+    result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
 
-    q = em.createQuery("select from " + HasEncodedStringPkJDO.class.getName() + " where id = :p");
+    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getName());
-    result = (HasEncodedStringPkJDO) q.getSingleResult();
+    result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
   }
 
@@ -2928,14 +2950,15 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  private void assertQueryUnsupportedByDatastore(String query) {
+  private void assertQueryUnsupportedByDatastore(String query, Class<?> expectedCauseClass) {
     Query q = em.createQuery(query);
     try {
       q.getResultList();
       fail("expected PersistenceException for query <" + query + ">");
     } catch (PersistenceException e) {
       // good
-      assertTrue(e.getCause().getMessage(), e.getCause() instanceof IllegalArgumentException);
+      assertTrue(e.getCause().getClass().getName() + ": " + e.getCause().getMessage(),
+                 expectedCauseClass.isAssignableFrom(e.getCause().getClass()));
     }
   }
 

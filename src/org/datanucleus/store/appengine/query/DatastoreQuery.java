@@ -1409,6 +1409,16 @@ public class DatastoreQuery implements Serializable {
   }
 
   private String determinePropertyName(AbstractMemberMetaData ammd) {
+    if (ammd.hasExtension(DatastoreManager.PK_ID) ||
+        ammd.hasExtension(DatastoreManager.PK_NAME)) {
+      // the datsatore doesn't support filtering or sorting by the individual
+      // components of the key, so if the field corresponds to one of these
+      // components it's a mistake by the user
+      throw new FatalNucleusUserException(query.getSingleStringQuery() + ": Field "
+        + ammd.getFullFieldName() + " is a sub-component of the primary key.  The "
+        + "datastore does not support filtering or sorting by primary key components, only the "
+        + "entire primary key.");
+    }
     if (ammd.getColumn() != null) {
       return ammd.getColumn();
     } else if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length != 0) {
