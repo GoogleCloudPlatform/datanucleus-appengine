@@ -34,6 +34,8 @@ import org.datanucleus.test.IllegalMappingsJDO.HasLongPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJDO.HasOneToOneAndOneToManyOfSameType;
+import org.datanucleus.test.IllegalMappingsJDO.HasPkIdSortOnOneToMany;
+import org.datanucleus.test.IllegalMappingsJDO.HasPkNameSortOnOneToMany;
 import org.datanucleus.test.IllegalMappingsJDO.HasTwoOneToOnesWithSharedBaseClass;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithKeyAncestor;
 import org.datanucleus.test.IllegalMappingsJDO.HasUnencodedStringPkWithStringAncestor;
@@ -283,6 +285,11 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
   }
 
+  public void testHasKeySubComponentSortOnOneToMany() {
+    assertMetaDataException(new HasPkIdSortOnOneToMany());
+    assertMetaDataException(new HasPkNameSortOnOneToMany());
+  }
+
   public void testHasTwoOneToOnesWithSharedBaseClass() throws Exception {
     beginTxn();
     pm.makePersistent(new HasTwoOneToOnesWithSharedBaseClass());
@@ -296,7 +303,8 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      assertTrue(e.getCause().getClass().getName(),
+                 e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
     }
   }

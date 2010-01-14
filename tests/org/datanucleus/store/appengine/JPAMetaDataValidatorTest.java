@@ -32,6 +32,8 @@ import org.datanucleus.test.IllegalMappingsJPA.HasLongPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkIdFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasMultiplePkNameFields;
 import org.datanucleus.test.IllegalMappingsJPA.HasOneToOneAndOneToManyOfSameType;
+import org.datanucleus.test.IllegalMappingsJPA.HasPkIdSortOnOneToMany;
+import org.datanucleus.test.IllegalMappingsJPA.HasPkNameSortOnOneToMany;
 import org.datanucleus.test.IllegalMappingsJPA.HasUnencodedStringPkWithStringAncestor;
 import org.datanucleus.test.IllegalMappingsJPA.LongParent;
 import org.datanucleus.test.IllegalMappingsJPA.ManyToMany1;
@@ -219,7 +221,8 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      assertTrue(e.getCause().getClass().getName(),
+                 e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
       rollbackTxn();
     }
   }
@@ -246,4 +249,10 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     assertMetaDataException(new Has2CollectionsOfAssignableType());
     assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
   }
+
+  public void testHasKeySubComponentSortOnOneToMany() {
+    assertMetaDataException(new HasPkIdSortOnOneToMany());
+    assertMetaDataException(new HasPkNameSortOnOneToMany());
+  }
+
 }

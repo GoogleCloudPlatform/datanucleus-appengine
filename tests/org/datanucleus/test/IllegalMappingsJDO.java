@@ -449,6 +449,9 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
+
+    @Persistent
+    private String name;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
@@ -537,5 +540,27 @@ public class IllegalMappingsJDO {
   @Inheritance(customStrategy = "complete-table")
   public static class HasSharedBaseClass2 extends SharedBaseClass {
     private String str;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class HasPkIdSortOnOneToMany {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="id"))
+    private List<HasEncodedStringPkSeparateIdFieldJDO> list;
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  public static class HasPkNameSortOnOneToMany {
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
+    private Key id;
+
+    @Persistent
+    @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name"))
+    private List<HasEncodedStringPkSeparateNameFieldJDO> list;
   }
 }

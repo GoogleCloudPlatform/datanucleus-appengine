@@ -35,6 +35,7 @@ import javax.persistence.ManyToMany;
 import javax.persistence.ManyToOne;
 import javax.persistence.OneToMany;
 import javax.persistence.OneToOne;
+import javax.persistence.OrderBy;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -452,5 +453,27 @@ public class IllegalMappingsJPA {
   public static class Has2CollectionsOfAssignableTypeSub extends Has2CollectionsOfAssignableTypeSuper {
     @OneToMany
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
+  }
+
+  @Entity
+  public static class HasPkIdSortOnOneToMany {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    @OrderBy("id")
+    private List<HasEncodedStringPkSeparateIdFieldJPA> list;
+  }
+
+  @Entity
+  public static class HasPkNameSortOnOneToMany {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Key id;
+
+    @OneToMany
+    @OrderBy("name")
+    private List<HasEncodedStringPkSeparateNameFieldJPA> list;
   }
 }

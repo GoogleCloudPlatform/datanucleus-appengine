@@ -23,6 +23,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.util.NucleusLogger;
@@ -349,6 +350,9 @@ public class MetaDataValidator {
         // don't know how to verify
         NucleusLogger.METADATA.warn("Unable to validate one-to-many relation " + ammd.getFullFieldName());
       }
+      if (ammd.getOrderMetaData() != null) {
+        verifyOneToManyOrderBy(ammd, childAcmd);
+      }
     } else if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
       childAcmd = metaDataManager.getMetaDataForClass(ammd.getType(), clr);
     }
@@ -372,6 +376,33 @@ public class MetaDataValidator {
           childAcmd, pkMemberMetaData,
           "Cannot have a " + pkType.getName() + " primary key and be a child object "
           + "(owning field is " + ammd.getFullFieldName() + ").");
+    }
+  }
+
+  private void verifyOneToManyOrderBy(AbstractMemberMetaData ammd, AbstractClassMetaData childAcmd) {
+    OrderMetaData omd = ammd.getOrderMetaData();
+    OrderMetaData.FieldOrder[] fieldOrders = omd.getFieldOrders();
+    if (fieldOrders == null) {
+      return;
+    }
+    for (OrderMetaData.FieldOrder fieldOrder : omd.getFieldOrders()) {
+      String propertyName = fieldOrder.getFieldName();
+      AbstractMemberMetaData orderField = childAcmd.getMetaDataForMember(propertyName);
+      if (orderField == null) {
+        // shouldn't happen since DataNuc does the same check in omd.getFieldOrders()
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "Order property " + propertyName + " could not be founcd on " + childAcmd.getFullClassName());
+      }
+
+      if (orderField.hasExtension(DatastoreManager.PK_ID) ||
+          orderField.hasExtension(DatastoreManager.PK_NAME)) {
+        throw new DatastoreMetaDataException(
+            acmd, ammd,
+            "Order property " + propertyName + " is a sub-component of the primary key.  The "
+            + "datastore does not support sorting by primary key components, only the "
+            + "entire primary key.");
+      }
     }
   }
 

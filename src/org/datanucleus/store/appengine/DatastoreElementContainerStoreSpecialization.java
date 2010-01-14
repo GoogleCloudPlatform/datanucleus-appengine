@@ -74,10 +74,14 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       Key parentKey,
       Iterable<FilterPredicate> filterPredicates,
       Iterable<SortPredicate> sortPredicates,
+      boolean keysOnly,
       ElementContainerStore ecs) {
     String kind = storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(
         ecs.getEmd()).getIdentifierName();
     Query q = new Query(kind, parentKey);
+    if (keysOnly) {
+      q.setKeysOnly();
+    }
     logger.debug("Preparing to query for all children of " + parentKey + " of kind " + kind);
     for (FilterPredicate fp : filterPredicates) {
       q.addFilter(fp.getPropertyName(), fp.getOperator(), fp.getValue());
@@ -96,7 +100,7 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       Iterable<SortPredicate> sortPredicates, ElementContainerStore ecs, ObjectManager om) {
     List<Object> result = new ArrayList<Object>();
     int numChildren = 0;
-    for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, ecs).asIterable()) {
+    for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, false, ecs).asIterable()) {
       // We only want direct children
       if (parentKey.equals(e.getKey().getParent())) {
         numChildren++;
@@ -114,7 +118,9 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
     Iterable<Entity> children = prepareChildrenQuery(
         parentKey,
         Collections.<FilterPredicate>emptyList(),
+        // we're just counting so sort isn't important
         Collections.<SortPredicate>emptyList(),
+        true,
         ecs).asIterable();
     int count = 0;
     for (Entity e : children) {
