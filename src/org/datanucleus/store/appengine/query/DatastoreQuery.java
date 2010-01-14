@@ -699,7 +699,7 @@ public class DatastoreQuery implements Serializable {
   // TODO(maxr) Split this out into a more generic utility if we start
   // handling other operators explicitly
   private boolean isCountOperation(String operation) {
-    if (DatastoreManager.isJPA(query.getObjectManager().getOMFContext())) {
+    if (getStoreManager().isJPA()) {
       // jpa keywords are case-insensitive
       return operation.toLowerCase().equals("count");
     } else {
@@ -921,7 +921,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private String getWildcardExpression() {
-    if (DatastoreManager.isJPA(query.getObjectManager().getOMFContext())) {
+    if (getStoreManager().isJPA()) {
       return "%";
     }
     return ".*";

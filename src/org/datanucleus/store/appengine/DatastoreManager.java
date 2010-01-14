@@ -150,6 +150,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
+  private final StorageVersion storageVersion;
 
   /**
    * Construct a DatsatoreManager
@@ -175,6 +176,7 @@ public class DatastoreManager extends MappedStoreManager {
     initialiseIdentifierFactory(omfContext);
     setCustomPluginManager();
     addTypeManagerMappings();
+    storageVersion = StorageVersion.fromConfig(omfContext.getPersistenceConfiguration());
     logConfiguration();
   }
 
@@ -377,7 +379,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   private String buildUnsupportedInheritanceStrategyMessage(ClassMetaData cmd) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
-    if (isJPA(omfContext)) {
+    if (isJPA()) {
       // make sure our exception msg has the jpa inheritance identifiers in it
       String jpaInheritanceType = getJPAInheritanceType(strat);
       return String.format(BAD_INHERITANCE_MESSAGE, jpaInheritanceType, cmd.getFullClassName(), "JPA", JPA_INHERITANCE_DOCS_URL);
@@ -695,10 +697,14 @@ public class DatastoreManager extends MappedStoreManager {
     super.close();
   }
 
-  public static boolean isJPA(OMFContext omfContext) {
+  public boolean isJPA() {
     return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
   }
 
+  public StorageVersion getStorageVersion() {
+    return storageVersion;
+  }
+  
   static final class UnsupportedInheritanceStrategyException extends FatalNucleusUserException {
     UnsupportedInheritanceStrategyException(String msg) {
       super(msg);

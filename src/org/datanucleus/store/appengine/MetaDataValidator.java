@@ -287,7 +287,8 @@ public class MetaDataValidator {
   }
 
   boolean isJPA() {
-    return DatastoreManager.isJPA(metaDataManager.getOMFContext());
+    DatastoreManager storeMgr = (DatastoreManager) metaDataManager.getOMFContext().getStoreManager();
+    return storeMgr.isJPA();
   }
 
   private boolean getBooleanConfigProperty(String configProperty) {

@@ -134,6 +134,8 @@ public class AllTests {
     suite.addTestSuite(JDODatastoreBridgeTest.class);
     suite.addTestSuite(JPADatastoreBridgeTest.class);
     suite.addTestSuite(JPANonWritableFieldsTest.class);
+    suite.addTestSuite(JDOStorageVersionTest.class);
+    suite.addTestSuite(JPAStorageVersionTest.class);
     return suite;
   }
 }
