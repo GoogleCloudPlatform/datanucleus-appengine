@@ -911,12 +911,20 @@ public class DatastoreQuery implements Serializable {
           + matchesExprObj.getClass().getName() + ").");
     }
     String matchesExpr = (String) matchesExprObj;
-    int wildcardIndex = matchesExpr.indexOf('%');
-    if (wildcardIndex != matchesExpr.length() - 1) {
+    String wildcardExpr = getWildcardExpression();
+    int wildcardIndex = matchesExpr.indexOf(wildcardExpr);
+    if (wildcardIndex == -1 || wildcardIndex != matchesExpr.length() - wildcardExpr.length()) {
       throw new UnsupportedDatastoreFeatureException(
           "Wildcard must appear at the end of the expression string (only prefix matches are supported)");
     }
     return matchesExpr.substring(0, wildcardIndex);
+  }
+
+  private String getWildcardExpression() {
+    if (DatastoreManager.isJPA(query.getObjectManager().getOMFContext())) {
+      return "%";
+    }
+    return ".*";
   }
 
   private void addPrefix(PrimaryExpression left, Expression right, String prefix, QueryData qd) {

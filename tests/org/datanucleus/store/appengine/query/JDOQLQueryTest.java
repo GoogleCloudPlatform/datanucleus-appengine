@@ -43,6 +43,7 @@ import org.datanucleus.store.appengine.WriteBlocker;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
+import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
 import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
@@ -2652,6 +2653,100 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     List<Flight> flights3 = (List<Flight>) q.execute("za");
     assertTrue(flights3.isEmpty());
+  }
+
+  public void testMatches_ImplicitParam() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ldth.ds.put(e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ldth.ds.put(e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ldth.ds.put(e3);
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.matches(:p)");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute("y.*");
+    assertEquals(2, flights.size());
+
+    List<Flight> flights2 = (List<Flight>) q.execute("ya.*");
+    assertEquals(1, flights2.size());
+
+    List<Flight> flights3 = (List<Flight>) q.execute("za.*");
+    assertTrue(flights3.isEmpty());
+  }
+
+  public void testMatchesQuery_InvalidLiteral() {
+    Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('.*y')");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*y')");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y')");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*') && author.matches('z.*')");
+    try {
+      q.execute();
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause().getClass().getName(), e.getCause() instanceof IllegalArgumentException);
+    }
+  }
+
+  public void testMatchesQuery_InvalidParameter() {
+    Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches(:p)");
+    try {
+      q.execute(".*y");
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    try {
+      q.execute("y.*y");
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    try {
+      q.execute("y");
+      fail("expected exception");
+    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
+      // good
+    }
+
+    try {
+      q.execute(23);
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+    }
+
+    q = pm.newQuery("select from " + Book.class.getName() + " where title.matches(:p) && author.matches(:q)");
+    try {
+      q.execute("y.*", "y.*");
+      fail("expected exception");
+    } catch (JDOFatalUserException e) {
+      // good
+      assertTrue(e.getCause().getClass().getName(), e.getCause() instanceof IllegalArgumentException);
+    }
   }
 
   public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
