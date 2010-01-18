@@ -501,6 +501,10 @@ public class DatastoreManager extends MappedStoreManager {
     return batchDeleteManager;
   }
 
+  public boolean storageVersionAtLeast(StorageVersion storageVersion) {
+    return getStorageVersion().ordinal() >= storageVersion.ordinal();
+  }
+
   /**
    * A {@link FieldManager} implementation that can only be used for managing
    * keys.  Everything else throws {@link UnsupportedOperationException}.

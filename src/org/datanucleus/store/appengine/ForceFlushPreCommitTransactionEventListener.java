@@ -44,8 +44,10 @@ class ForceFlushPreCommitTransactionEventListener extends BaseTransactionEventLi
 
   @Override
   public void transactionPreCommit() {
+    DatastoreManager storeMgr = (DatastoreManager) sm.getObjectManager().getStoreManager();
     // make sure we only force the repersist once
-    if (sm.getAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY) == null) {
+    if (storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS) &&
+        sm.getAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY) == null) {
       sm.setAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
       for (int pos : sm.getClassMetaData().getAllMemberPositions()) {
         sm.makeDirty(pos);

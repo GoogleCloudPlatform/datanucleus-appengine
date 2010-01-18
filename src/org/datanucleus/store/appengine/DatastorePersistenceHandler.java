@@ -524,7 +524,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   }
 
   private void storeRelations(DatastoreFieldManager fieldMgr, StateManager sm, Entity entity) {
-    if (fieldMgr.storeRelations()) {
+    if (fieldMgr.storeRelations() &&
+        storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
       // Return value of true means that storing the relations resulted in
       // changes that need to be reflected on the current object.
       // That means we need to re-save.

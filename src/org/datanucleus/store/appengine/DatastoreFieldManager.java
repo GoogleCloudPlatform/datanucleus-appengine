@@ -824,6 +824,12 @@ public class DatastoreFieldManager implements FieldManager {
             // the key itself
             return;
           }
+
+          if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+            // don't write child keys to the parent if the storage version isn't high enough
+            return;
+          }
+
           // We still want to write the entity property with the keys
           value = extractRelationKeys(value);
         }
