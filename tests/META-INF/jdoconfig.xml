@@ -21,6 +21,7 @@ limitations under the License.
         <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
     </persistence-manager-factory>
 
     <persistence-manager-factory name="nontransactional">
@@ -31,6 +32,7 @@ limitations under the License.
         <property name="javax.jdo.option.RetainValues" value="true"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
     </persistence-manager-factory>
 
 </jdoconfig>

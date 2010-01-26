@@ -39,7 +39,7 @@ public enum StorageVersion {
   PARENTS_DO_NOT_REFER_TO_CHILDREN,
 
   /**
-   * The default.  Now that the datastore supports multiple writes per entity
+   * Now that the datastore supports multiple writes per entity
    * per txn we can store child keys on the parent entity.  Apps that run
    * without any storage version specified in their config operate in this
    * mode.  This allows apps to start writing data in the new storage format
@@ -64,12 +64,18 @@ public enum StorageVersion {
    */
   static final String STORAGE_VERSION_PROPERTY = "datanucleus.appengine.storageVersion";
 
+  /**
+   * The default storage version.  If {@link #STORAGE_VERSION_PROPERTY} is not
+   * defined in the config, this is the storage version we use.
+   */
+  private static final StorageVersion DEFAULT = PARENTS_DO_NOT_REFER_TO_CHILDREN;
+
   static StorageVersion fromConfig(PersistenceConfiguration pc) {
     String val = pc.getStringProperty(STORAGE_VERSION_PROPERTY);
     // if the user hasn't specific a specific storage version we'll
     // use the default
     if (val == null) {
-      return WRITE_OWNED_CHILD_KEYS_TO_PARENTS;
+      return DEFAULT;
     }
     try {
       return StorageVersion.valueOf(val);

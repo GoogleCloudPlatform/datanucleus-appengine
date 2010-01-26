@@ -24,6 +24,7 @@ limitations under the License.
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
             <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+            <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
         </properties>
     </persistence-unit>
 
@@ -35,6 +36,7 @@ limitations under the License.
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
             <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+            <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
         </properties>
     </persistence-unit>
 
@@ -45,6 +47,7 @@ limitations under the License.
             <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
             <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+            <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
         </properties>
     </persistence-unit>
 
@@ -57,6 +60,7 @@ limitations under the License.
             <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
             <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+            <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
         </properties>
     </persistence-unit>
 
