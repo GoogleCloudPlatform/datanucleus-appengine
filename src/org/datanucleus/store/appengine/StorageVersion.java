@@ -34,7 +34,7 @@ public enum StorageVersion {
    * Write the parent to get the parent key, write the child passing the parent
    * key as the parent, update the parent with the child key - boom.  To work
    * around this we just did ancestor queries and then filtered by depth
-   * in-memory to resolve owned relationships (1-1 and 1-N)
+   * in-memory to resolve owned relationships (1-1 and 1-N).
    */
   PARENTS_DO_NOT_REFER_TO_CHILDREN,
 
@@ -45,17 +45,16 @@ public enum StorageVersion {
    * mode.  This allows apps to start writing data in the new storage format
    * even if they haven't migrated existing data to use the new format.  This
    * storage version is backwards compatible with
-   * {@link #PARENTS_DO_NOT_REFER_TO_CHILDREN}.  It is forwards compatible with
-   * {@link #READ_OWNED_CHILD_KEYS_FROM_PARENTS}, provided all data has been
-   * written under the WRITE_OWNED_CHILD_KEYS_TO_PARENTS storage
-   * version.
+   * {@link #PARENTS_DO_NOT_REFER_TO_CHILDREN}.
    */
   WRITE_OWNED_CHILD_KEYS_TO_PARENTS,
 
   /**
    * Storage version where we start to take advantage of the child keys on the
    * parent entity.  Users should not switch to this storage version until all
-   * parent entities have been updated with references to all children.
+   * parent entities have been updated with references to all children.  This
+   * storage version is backwards compatible with
+   * {@link #WRITE_OWNED_CHILD_KEYS_TO_PARENTS}.
    */
   READ_OWNED_CHILD_KEYS_FROM_PARENTS;
 

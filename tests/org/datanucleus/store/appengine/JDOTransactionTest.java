@@ -97,6 +97,7 @@ public class JDOTransactionTest extends TestCase {
         EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -139,6 +140,7 @@ public class JDOTransactionTest extends TestCase {
         EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -171,6 +173,7 @@ public class JDOTransactionTest extends TestCase {
         EasyMock.isA(Key.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 

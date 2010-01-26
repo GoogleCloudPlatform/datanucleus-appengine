@@ -18,6 +18,7 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.DatastoreService;
 
 import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
 
@@ -42,7 +43,15 @@ public final class DatastoreServiceInterceptor {
 
     public Object invoke(Object o, Method method, Object[] params) throws Throwable {
       policy.intercept(o, method, params);
-      return method.invoke(delegate, params);
+      try {
+        return method.invoke(delegate, params);
+      } catch (InvocationTargetException ite) {
+        if (ite.getTargetException() instanceof RuntimeException) {
+          throw (RuntimeException) ite.getTargetException();
+        } else {
+          throw ite;
+        }
+      }
     }
   }
 

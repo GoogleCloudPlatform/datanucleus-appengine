@@ -16,7 +16,9 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
-import com.google.appengine.tools.development.ApiProxyLocalImpl;
+import com.google.appengine.tools.development.ApiProxyLocal;
+import com.google.appengine.tools.development.ApiProxyLocalFactory;
+import com.google.appengine.tools.development.LocalServerEnvironment;
 import com.google.apphosting.api.ApiProxy;
 
 import java.io.File;
@@ -68,10 +70,26 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
 
   // Ok to reuse this across tests so long as we clear out the
   // datastore in tearDown()
-  private static final ApiProxyLocalImpl localProxy = createLocalProxy();
+  private static final ApiProxyLocal localProxy = createLocalProxy();
 
-  private static ApiProxyLocalImpl createLocalProxy() {
-    ApiProxyLocalImpl proxy = new ApiProxyLocalImpl(new File(".")){};
+  private static ApiProxyLocal createLocalProxy() {
+    LocalServerEnvironment lse = new LocalServerEnvironment() {
+      public File getAppDir() {
+        return new File(".");
+      }
+
+      public String getAddress() {
+        return null;
+      }
+
+      public int getPort() {
+        return 0;
+      }
+
+      public void waitForServerToStart() throws InterruptedException {
+      }
+    };
+    ApiProxyLocal proxy = new ApiProxyLocalFactory().create(lse);
     // run completely in-memory
     proxy.setProperty(LocalDatastoreService.NO_STORAGE_PROPERTY, Boolean.TRUE.toString());
     // don't expire queries - makes debugging easier
