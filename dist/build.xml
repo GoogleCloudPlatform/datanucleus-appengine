@@ -10,10 +10,12 @@
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
+  <property name="shadow.src.dir" value="../shadowsrc"/>
   <property name="plugin.src.dir" value="../src"/>
   <property name="plugin.test.dir" value="../tests"/>
   <property name="helloorm.src.dir" value="../demos/helloorm/src"/>
   <property name="orm.tmp.dir" value="/tmp/orm"/>
+  <property name="shadowcompile.dest.dir" value="${orm.tmp.dir}/shadowclasses"/>
   <property name="compile.dest.dir" value="${orm.tmp.dir}/classes"/>
   <property name="compile.tests.dest.dir" value="${orm.tmp.dir}/testclasses"/>
   <property name="orm.lib.dir" value="../lib"/>
@@ -38,6 +40,7 @@
     <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
     <pathelement location="${orm.lib.dir}/junit.jar"/>
     <pathelement location="${orm.lib.dir}/easymock.jar"/>
+    <pathelement location="${shadowcompile.dest.dir}"/>
   </path>
 
   <path id="helloorm.compile.deps">
@@ -75,7 +78,13 @@
         srcdir="${plugin.src.dir}" destdir="${compile.dest.dir}"/>
   </target>
 
-  <target name="compile-tests" depends="jar" description="compile the tests for the datanucleus appengine plugin">
+  <target name="shadowcompile" description="Compile the datanucleus appengine plugin">
+    <delete dir="${shadowcompile.dest.dir}"/>
+    <mkdir dir="${shadowcompile.dest.dir}"/>
+    <javac debug="on" source="1.5" target="1.5" srcdir="${shadow.src.dir}" destdir="${shadowcompile.dest.dir}"/>
+  </target>
+
+  <target name="compile-tests" depends="shadowcompile, jar" description="compile the tests for the datanucleus appengine plugin">
     <delete dir="${compile.tests.dest.dir}"/>
     <mkdir dir="${compile.tests.dest.dir}"/>
     <!--need to copy over all non-java resources-->
