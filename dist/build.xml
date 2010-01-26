@@ -3,8 +3,8 @@
 
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="4"/>
-  <property name="version.rc" value=".final"/>
+  <property name="version.point" value="5"/>
+  <property name="version.rc" value=".rc1"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
