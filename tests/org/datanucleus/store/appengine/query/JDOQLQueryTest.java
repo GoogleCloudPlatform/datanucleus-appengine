@@ -823,14 +823,14 @@ public class JDOQLQueryTest extends JDOTestCase {
     q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(dest)");
     flights = (List<Flight>) q.execute(Arrays.asList(null, "mia1"));
     assertEquals(2, flights.size());
-    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
-    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(1).getId());
 
     q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(dest) || :p2.contains(dest)");
     flights = (List<Flight>) q.execute(Arrays.asList(null, "mia1"), Arrays.asList("mia2"));
     assertEquals(3, flights.size());
-    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
-    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(1).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(2).getId());
   }
 
@@ -891,8 +891,8 @@ public class JDOQLQueryTest extends JDOTestCase {
                        " where dest == null || dest == 'mia1'");
     flights = (List<Flight>) q.execute();
     assertEquals(2, flights.size());
-    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
-    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), flights.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(1).getId());
   }
 
   public void testOr_Params() {

@@ -2327,8 +2327,8 @@ public class JPQLQueryTest extends JPATestCase {
     q = em.createQuery("select from " + Book.class.getName() + " where title IN (null, 'yar1')");
     books = q.getResultList();
     assertEquals(2, books.size());
-    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
-    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(1).getId());
   }
 
   public void testIn_Params() {
@@ -2464,8 +2464,8 @@ public class JPQLQueryTest extends JPATestCase {
                        " where title is null or title = 'yar1'");
     books = q.getResultList();
     assertEquals(2, books.size());
-    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
-    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(1).getId());
+    assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e.getKey()), books.get(1).getId());
   }
 
   public void testOr_Params() {
