@@ -118,13 +118,21 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
   }
 
   public Transaction getCurrentTransaction() {
-    recorder.getCurrentTransaction();
-    return delegate.getCurrentTransaction();
+    Transaction t1 = recorder.getCurrentTransaction();
+    Transaction t2 = delegate.getCurrentTransaction();
+    if (t1 == null) {
+      return null;
+    }
+    return new TransactionRecordingImpl(t1, t2);
   }
 
   public Transaction getCurrentTransaction(Transaction txn) {
-    recorder.getCurrentTransaction(txn);
-    return delegate.getCurrentTransaction(txn);
+    Transaction t1 = recorder.getCurrentTransaction(txn);
+    Transaction t2 = delegate.getCurrentTransaction(txn);
+    if (t1 == null) {
+      return null;
+    }
+    return new TransactionRecordingImpl(t1, t2);
   }
 
   public Collection<Transaction> getActiveTransactions() {

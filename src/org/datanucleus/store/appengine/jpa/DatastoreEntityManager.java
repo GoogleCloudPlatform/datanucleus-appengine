@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine.jpa;
 
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.EntityUtils;
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
 
@@ -33,6 +34,13 @@ public class DatastoreEntityManager extends EntityManagerImpl {
   public DatastoreEntityManager(EntityManagerFactory emf, PersistenceManagerFactory pmf,
       PersistenceContextType contextType) {
     super(emf, pmf, contextType);
+    if (tx != null) {
+      DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+      if (storeMgr.connectionFactoryIsTransactional()) {
+        // install our own transaction object
+        tx = new DatastoreEntityTransactionImpl(om);
+      }
+    }
   }
 
   /**

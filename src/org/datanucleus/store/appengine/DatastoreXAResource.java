@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.util.NucleusLogger;
 
@@ -60,9 +61,20 @@ class DatastoreXAResource extends EmulatedXAResource {
     // A transaction will only be started if non-transactional reads/writes
     // are turned off.
     if (currentTxn == null) {
-      currentTxn = new DatastoreTransaction(datastoreService.beginTransaction());
-      NucleusLogger.DATASTORE.debug(
-          "Started new datastore transaction: " + currentTxn.getInnerTxn().getId());
+      Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
+      // Typically the transaction will have been established when the user
+      // calls pm.currentTransaction().begin() or em.getTransaction().begin(),
+      // but if the datasource is non-transactional and the user is not
+      // demarcating transactions, the transaction can be started without
+      // going through the pm or em, which sidesteps our logic to aggressively
+      // start the transaction.  In this case we'll just start the transaction
+      // ourselves.  This isn't a problem for transactional tasks because
+      // the user isn't actually managing transactions, it's just DataNucleus
+      // doing it under the hood in order to force things to flush.
+      if (datastoreTxn == null) {
+        datastoreTxn = datastoreService.beginTransaction();
+      }
+      currentTxn = new DatastoreTransaction(datastoreTxn);
     } else {
       throw new XAException("Nested transactions are not supported");
     }

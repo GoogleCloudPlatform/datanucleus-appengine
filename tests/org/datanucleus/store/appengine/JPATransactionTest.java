@@ -94,6 +94,10 @@ public class JPATransactionTest extends TestCase {
   private void testWritePermutationWithExpectedDatastoreTxn(
       EntityManagerFactory emf, boolean explicitDemarcation) {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    if (explicitDemarcation) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    }
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
@@ -129,6 +133,10 @@ public class JPATransactionTest extends TestCase {
       EntityManagerFactory emf, boolean explicitDemarcation) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    if (explicitDemarcation) {
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
+    }
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
@@ -308,9 +316,11 @@ public class JPATransactionTest extends TestCase {
       QueryRunner queryRunner) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     }
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.prepare(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
@@ -322,6 +332,7 @@ public class JPATransactionTest extends TestCase {
     }
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -409,5 +420,44 @@ public class JPATransactionTest extends TestCase {
     testQueryPermutationWithoutExpectedDatastoreTxn(em, NO_EXPLICIT_DEMARCATION, NON_ANCESTOR);
     em.close();
     emf.close();
+  }
+
+  public void testEmptyTxnBlock_Txn() {
+    EntityManagerFactory emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    try {
+      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+      EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
+      mockTxn.commit();
+      EasyMock.expectLastCall();
+      EasyMock.replay(mockDatastoreService, mockTxn);
+      em.getTransaction().begin();
+      em.getTransaction().commit();
+      EasyMock.verify(mockDatastoreService, mockTxn);
+    } finally {
+      if (em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
+      em.close();
+      emf.close();
+    }
+  }
+
+  public void testEmptyTxnBlock_NoTxn() {
+    EntityManagerFactory emf = getEntityManagerFactory(nontransactional_ds_non_transactional_ops_allowed.name());
+    EntityManager em = emf.createEntityManager();
+    try {
+      EasyMock.replay(mockDatastoreService, mockTxn);
+      em.getTransaction().begin();
+      em.getTransaction().commit();
+      EasyMock.verify(mockDatastoreService, mockTxn);
+    } finally {
+      if (em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
+      em.close();
+      emf.close();
+    }
   }
 }

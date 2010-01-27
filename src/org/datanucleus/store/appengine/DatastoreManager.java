@@ -617,7 +617,7 @@ public class DatastoreManager extends MappedStoreManager {
    * Helper method to determine if the connection factory associated with this
    * manager is transactional.
    */
-  boolean connectionFactoryIsTransactional() {
+  public boolean connectionFactoryIsTransactional() {
     ConnectionFactoryRegistry registry = getOMFContext().getConnectionFactoryRegistry();
     DatastoreConnectionFactoryImpl connFactory =
         (DatastoreConnectionFactoryImpl) registry.lookupConnectionFactory(txConnectionFactoryName);

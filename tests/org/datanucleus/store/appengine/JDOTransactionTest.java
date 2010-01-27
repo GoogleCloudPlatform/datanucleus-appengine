@@ -71,6 +71,9 @@ public class JDOTransactionTest extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
+    if (ldth.ds.getCurrentTransaction(null) != null) {
+      ldth.ds.getCurrentTransaction().rollback();
+    }
     ldth.tearDown(true);
     ldth = null;
     DatastoreServiceFactoryInternal.setDatastoreService(null);
@@ -92,6 +95,8 @@ public class JDOTransactionTest extends TestCase {
       PersistenceManager pm, boolean explicitDemarcation,
       boolean nonTransactionalWrite) {
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
@@ -130,6 +135,8 @@ public class JDOTransactionTest extends TestCase {
     Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
     ldth.ds.put(flightEntity);
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(flightEntity);
@@ -168,6 +175,8 @@ public class JDOTransactionTest extends TestCase {
       boolean nonTransactionalRead) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
@@ -323,20 +332,23 @@ public class JDOTransactionTest extends TestCase {
       boolean nonTransactionalRead, QueryRunner queryRunner) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     }
+    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.prepare(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
           EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
+      EasyMock.expect(mockTxn.isActive()).andReturn(true).times(2);
     } else {
       EasyMock.expect(mockDatastoreService.prepare(
           (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),
           EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
     }
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
-    EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
+    EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
     mockTxn.commit();
     EasyMock.replay(mockDatastoreService, mockTxn);
 
@@ -620,5 +632,46 @@ public class JDOTransactionTest extends TestCase {
 
     pm.close();
     pmf.close();
+  }
+
+  public void testEmptyTxnBlock_Txn() {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.transactional.name());
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+      EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
+      mockTxn.commit();
+      EasyMock.expectLastCall();
+      EasyMock.replay(mockDatastoreService, mockTxn);
+      pm.currentTransaction().begin();
+      pm.currentTransaction().commit();
+      EasyMock.verify(mockDatastoreService, mockTxn);
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+      pm.close();
+      pmf.close();
+    }
+  }
+
+  public void testEmptyTxnBlock_NoTxn() {
+    PersistenceManagerFactory pmf = getPersistenceManagerFactory(
+        JDOTestCase.PersistenceManagerFactoryName.nontransactional.name());
+    PersistenceManager pm = pmf.getPersistenceManager();
+    try {
+      EasyMock.replay(mockDatastoreService, mockTxn);
+      pm.currentTransaction().begin();
+      pm.currentTransaction().commit();
+      EasyMock.verify(mockDatastoreService, mockTxn);
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+      pm.close();
+      pmf.close();
+    }
   }
 }

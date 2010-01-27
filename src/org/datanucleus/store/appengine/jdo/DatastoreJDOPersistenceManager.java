@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine.jdo;
 
 import com.google.appengine.api.datastore.Key;
 
+import org.datanucleus.Transaction;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
@@ -39,6 +40,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
 
   public DatastoreJDOPersistenceManager(JDOPersistenceManagerFactory apmf, String userName, String password) {
     super(apmf, userName, password);
+    setTransaction(objectMgr.getTransaction());
   }
 
   /**
@@ -125,6 +127,17 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
         batchMgr.finish(
             (DatastorePersistenceHandler) getObjectManager().getStoreManager().getPersistenceHandler());
       }
+    }
+  }
+
+  @Override
+  protected void setTransaction(Transaction tx) {
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    if (storeMgr.connectionFactoryIsTransactional()) {
+      // We need to install our own transaction object here.
+      jdotx = new DatastoreJDOTransaction(this, tx);
+    } else {
+      super.setTransaction(tx);
     }
   }
 
