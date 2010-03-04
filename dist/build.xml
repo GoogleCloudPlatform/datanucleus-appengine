@@ -113,7 +113,7 @@
   <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">
     <delete dir="${orm.testresults.dir}"/>
     <mkdir dir="${orm.testresults.dir}"/>
-    <junit printsummary="yes" fork="yes" haltonerror="no" haltonfailure="no">
+    <junit printsummary="yes" fork="yes" haltonerror="yes" haltonfailure="yes">
       <classpath>
         <path refid="appengine.plugin.test.compile.deps"/>
         <pathelement location="${compile.tests.dest.dir}"/>
