@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ManagedConnection;
@@ -41,9 +42,6 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
 
   private final OMFContext omfContext;
   private final boolean isTransactional;
-
-  private final DatastoreService datastoreService =
-      DatastoreServiceFactoryInternal.getDatastoreService();
 
   /**
    * Constructs a connection factory for the datastore.
@@ -113,6 +111,8 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
    * {@inheritDoc}
    */
   public ManagedConnection createManagedConnection(ObjectManager om, Map transactionOptions) {
+    DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfig();
+    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
     return new DatastoreManagedConnection(datastoreService, newXAResource());
   }
 
@@ -121,8 +121,13 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
   }
 
   private XAResource newXAResource() {
-    return isTransactional() ?
-        new DatastoreXAResource(datastoreService) : new EmulatedXAResource();
+    if (isTransactional()) {
+      DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfig();
+      DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      return new DatastoreXAResource(datastoreService);
+    } else {
+      return new EmulatedXAResource();
+    }
   }
 
   static class DatastoreManagedConnection implements ManagedConnection {

@@ -126,7 +126,7 @@ public class JPQLQueryTest extends JPATestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    DatastoreServiceInterceptor.install(new WriteBlocker());
+    DatastoreServiceInterceptor.install(getStoreManager(), new WriteBlocker());
   }
 
   @Override
@@ -1022,6 +1022,7 @@ public class JPQLQueryTest extends JPATestCase {
         + " where keyList MEMBER OF :p1 AND keyList MEMBER OF :p2");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
+    result = q.getResultList();
     assertEquals(1, result.size());
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be2"));
@@ -1057,12 +1058,20 @@ public class JPQLQueryTest extends JPATestCase {
         + " where :p1 MEMBER OF keyList AND :p2 MEMBER OF keyList");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
+    result = q.getResultList();
     assertEquals(1, result.size());
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be2"));
     @SuppressWarnings("unchecked")
     List<HasMultiValuePropsJPA> result3 = (List<HasMultiValuePropsJPA>) q.getResultList();
     assertEquals(0, result3.size());
+
+    // try one with a literal value
+    q = em.createQuery(
+        "select from " + HasMultiValuePropsJPA.class.getName()
+        + " where '1' MEMBER OF strList");
+    result = q.getResultList();
+    assertEquals(1, result.size());
   }
 
   public void testFilterByEmbeddedField() {

@@ -15,10 +15,12 @@
  */
 package org.datanucleus.store.appengine.jpa;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.jpa.EntityTransactionImpl;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.util.NucleusLogger;
 
@@ -34,21 +36,25 @@ import org.datanucleus.util.NucleusLogger;
  */
 public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
 
+  private final DatastoreServiceConfig config;
+
   public DatastoreEntityTransactionImpl(ObjectManager om) {
     super(om);
+    config = ((DatastoreManager) om.getStoreManager()).getDefaultDatastoreServiceConfig();
   }
 
   @Override
   public void begin() {
     super.begin();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().beginTransaction();
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).beginTransaction();
     NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
   }
 
   @Override
   public void commit() {
     super.commit();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config)
+        .getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was committed via the connection
     } else {
@@ -63,7 +69,8 @@ public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
   @Override
   public void rollback() {
     super.rollback();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config)
+        .getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was rolled back via the connection
     } else {

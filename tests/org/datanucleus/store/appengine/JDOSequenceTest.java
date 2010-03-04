@@ -15,6 +15,7 @@
  **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -41,8 +42,9 @@ public class JDOSequenceTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
     DatastoreServiceFactoryInternal.setDatastoreService(
-        new BaseDatastoreServiceDelegate(DatastoreServiceFactoryInternal.getDatastoreService()) {
+        new BaseDatastoreServiceDelegate(DatastoreServiceFactoryInternal.getDatastoreService(config)) {
       @Override
       public KeyRange allocateIds(String kind, long size) {
         sequenceNames.add(kind);

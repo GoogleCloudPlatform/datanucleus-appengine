@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -34,8 +35,8 @@ abstract class JDOBatchTestCase extends JDOTestCase {
     private final DatastoreService delegate;
     int batchOps = 0;
 
-    public BatchRecorder() {
-      this.delegate = DatastoreServiceFactoryInternal.getDatastoreService();
+    public BatchRecorder(DatastoreServiceConfig config) {
+      this.delegate = DatastoreServiceFactoryInternal.getDatastoreService(config);
     }
 
     public Object invoke(Object o, Method method, Object[] objects) throws Throwable {

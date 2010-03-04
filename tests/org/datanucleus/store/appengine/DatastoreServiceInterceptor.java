@@ -16,6 +16,7 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
@@ -55,8 +56,9 @@ public final class DatastoreServiceInterceptor {
     }
   }
 
-  public static void install(Policy policy) {
-    ORIGINAL_DATASTORE_SERVICE = DatastoreServiceFactoryInternal.getDatastoreService();
+  public static void install(DatastoreManager storeManager, Policy policy) {
+    DatastoreServiceConfig config = storeManager.getDefaultDatastoreServiceConfig();
+    ORIGINAL_DATASTORE_SERVICE = DatastoreServiceFactoryInternal.getDatastoreService(config);
     Handler handler = new Handler(ORIGINAL_DATASTORE_SERVICE, policy);
     DatastoreService ds = (DatastoreService) Proxy.newProxyInstance(
         DatastoreServiceInterceptor.class.getClassLoader(),

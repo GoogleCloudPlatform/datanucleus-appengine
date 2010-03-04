@@ -17,6 +17,7 @@ package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withCursor;
@@ -230,7 +231,8 @@ public class DatastoreQuery implements Serializable {
 
   private Object executeQuery(QueryData qd, long fromInclNo, long toExclNo) {
     processInFilters(qd);
-    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
     ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());

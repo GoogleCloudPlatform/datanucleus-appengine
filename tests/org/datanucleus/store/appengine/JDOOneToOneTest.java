@@ -1119,7 +1119,7 @@ public class JDOOneToOneTest extends JDOTestCase {
                            int expectedPuts)
       throws Throwable {
     PutPolicy policy = new PutPolicy();
-    DatastoreServiceInterceptor.install(policy);
+    DatastoreServiceInterceptor.install(getStoreManager(), policy);
     try {
       pmf.close();
       switchDatasource(startEnd.getPmfName());

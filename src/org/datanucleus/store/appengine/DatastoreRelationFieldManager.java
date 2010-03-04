@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -306,7 +307,8 @@ class DatastoreRelationFieldManager {
     // We're going to issue a query for all entities of the given kind with
     // the parent entity's key as their parent.  There should be only 1.
     Query q = new Query(kind, parentEntity.getKey());
-    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // We have to pull back all children because the datastore does not let us
     // filter ancestors by depth and an indirect child could come back before a
     // direct child.  eg:

@@ -214,4 +214,8 @@ public class JDOTestCase extends TestCase {
       return PersistenceManagerFactoryName.nontransactional;
     }
   };
+
+  protected DatastoreManager getStoreManager() {
+    return (DatastoreManager) getObjectManager().getStoreManager();
+  }
 }

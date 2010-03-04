@@ -40,7 +40,7 @@ public class JDOFetchTest extends JDOTestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    DatastoreServiceInterceptor.install(new WriteBlocker());
+    DatastoreServiceInterceptor.install(getStoreManager(), new WriteBlocker());
     beginTxn();
   }
 

@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine.valuegenerator;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -151,7 +152,8 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
       // shouldn't happen
       throw new IllegalStateException("sequence name is null");
     }
-    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfig();
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     KeyRange range = ds.allocateIds(sequenceName, size);
     // Too bad we can't pass an iterable and construct the ids
     // on demand.

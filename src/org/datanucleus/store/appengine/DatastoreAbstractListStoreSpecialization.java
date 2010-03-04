@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -63,7 +64,8 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
       throw new NucleusUserException("Collection element primary key does not have a parent.");
     }
 
-    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     try {
       Entity e = service.get(elementKey);
       return extractIndexProperty(e, ecs, elementSm.getObjectManager());
@@ -118,7 +120,8 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     q.addFilter(
         Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN_OR_EQUAL, keys.get(keys.size() - 1));
     q.addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING);
-    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     int[] indices = new int[keys.size()];
     int index = 0;
     for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
@@ -149,7 +152,8 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     if (orderMapping == null) {
       return null;
     }
-    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     AbstractClassMetaData acmd = ecs.getEmd();
     String kind =
         storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();

@@ -66,8 +66,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    */
   static final String MISSING_RELATION_KEY = "___missing_relation_key___";
 
-  private final DatastoreService datastoreService =
-      DatastoreServiceFactoryInternal.getDatastoreService();
+  private final DatastoreService datastoreService;
   private final DatastoreManager storeMgr;
 
   /**
@@ -77,6 +76,9 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    */
   public DatastorePersistenceHandler(StoreManager storeMgr) {
     this.storeMgr = (DatastoreManager) storeMgr;
+    datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(
+        this.storeMgr.getDefaultDatastoreServiceConfig());
+
   }
 
   private enum VersionBehavior { INCREMENT, NO_INCREMENT }

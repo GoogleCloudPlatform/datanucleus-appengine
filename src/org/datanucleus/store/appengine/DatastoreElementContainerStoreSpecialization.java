@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -92,7 +93,8 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       q.addSort(sp.getPropertyName(), sp.getDirection());
       logger.debug("  Added sort: " + sp.getPropertyName() + " " + sp.getDirection());
     }
-    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     return ds.prepare(q);
   }
 

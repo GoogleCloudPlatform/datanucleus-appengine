@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 
 /**
@@ -43,6 +44,7 @@ public final class DatastoreServiceFactoryInternal {
   private static DatastoreService datastoreServiceToReturn = null;
 
   /**
+   * @param config The config to use.
    * @return If a {@link DatastoreService} to return has been explicitly provided by a
    * call to
    * {@link #setDatastoreService(DatastoreService)},
@@ -51,24 +53,24 @@ public final class DatastoreServiceFactoryInternal {
    * {@link DatastoreServiceFactory#getDatastoreService()}
    * .
    */
-  public static DatastoreService getDatastoreService() {
+  public static DatastoreService getDatastoreService(DatastoreServiceConfig config) {
     if (datastoreServiceToReturn != null) {
       return datastoreServiceToReturn;
     }
     // Wrap the service in an impl that properly translates the runtime
     // exceptions thrown by the datastore api
     return new RuntimeExceptionWrappingDatastoreService(
-        DatastoreServiceFactory.getDatastoreService());
+        DatastoreServiceFactory.getDatastoreService(config));
   }
 
   /**
    * Provides a specific {@link DatastoreService} instance that will be the
-   * return value of all calls to {@link #getDatastoreService()}.  If
-   * {@code null} is provided, subsequent calls to {@link #getDatastoreService()}
-   * will return to its default behavior.
+   * return value of all calls to {@link #getDatastoreService(DatastoreServiceConfig)}.  If
+   * {@code null} is provided, subsequent calls to
+   * {@link #getDatastoreService(DatastoreServiceConfig)} will return to its default behavior.
    *
    * @param ds The {@link DatastoreService} to be returned by all calls to
-   * {@link #getDatastoreService()}.  Can be null.
+   * {@link #getDatastoreService(DatastoreServiceConfig)}.  Can be null.
    */
   public static void setDatastoreService(DatastoreService ds) {
     datastoreServiceToReturn = ds;

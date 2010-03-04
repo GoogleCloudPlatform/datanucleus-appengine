@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
@@ -149,7 +150,8 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         // now, if there is an order mapping, we need to shift
         // everyone down
         JavaTypeMapping orderMapping = fkListStore.getOrderMapping();
-        DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService();
+        DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+        DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
         AbstractClassMetaData acmd = fkListStore.getEmd();
         String kind =
             storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();

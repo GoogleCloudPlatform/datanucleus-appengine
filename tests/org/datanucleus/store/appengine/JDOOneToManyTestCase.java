@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -966,9 +967,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJDO> pojoClass,
       Class<? extends BidirectionalChildJDO> bidirClass) throws Exception {
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
     tearDown();
     DatastoreService ds = EasyMock.createMock(DatastoreService.class);
-    DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);
     DatastoreServiceFactoryInternal.setDatastoreService(ds);
     try {
       setUp();
@@ -1477,7 +1479,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   PutPolicy setupPutPolicy(HasOneToManyJDO pojo, BidirectionalChildJDO bidir, StartEnd startEnd)
       throws Throwable {
     PutPolicy policy = new PutPolicy();
-    DatastoreServiceInterceptor.install(policy);
+    DatastoreServiceInterceptor.install(getStoreManager(), policy);
     try {
       pmf.close();
       switchDatasource(startEnd.getPmfName());
@@ -1570,7 +1572,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
         }
       }
     };
-    DatastoreServiceInterceptor.install(policy);
+    DatastoreServiceInterceptor.install(getStoreManager(), policy);
     Flight flight2 = new Flight();
     try {
       pmf.close();

@@ -135,7 +135,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
     if (storeMgr.connectionFactoryIsTransactional()) {
       // We need to install our own transaction object here.
-      jdotx = new DatastoreJDOTransaction(this, tx);
+      jdotx = new DatastoreJDOTransaction(this, storeMgr, tx);
     } else {
       super.setTransaction(tx);
     }

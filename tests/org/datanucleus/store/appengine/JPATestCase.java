@@ -206,4 +206,8 @@ public class JPATestCase extends TestCase {
       em.close();
     }
   };
+
+  protected DatastoreManager getStoreManager() {
+    return (DatastoreManager) getObjectManager().getStoreManager();
+  }
 }

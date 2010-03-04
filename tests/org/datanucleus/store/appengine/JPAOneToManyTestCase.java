@@ -16,6 +16,7 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -488,12 +489,13 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJPA> pojoClass,
                               Class<? extends BidirectionalChildJPA> bidirClass) throws Exception {
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
     // force a new emf to get created after we've installed our own
     // DatastoreService mock
     emf.close();
     tearDown();
     DatastoreService ds = EasyMock.createMock(DatastoreService.class);
-    DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService();
+    DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);
     DatastoreServiceFactoryInternal.setDatastoreService(ds);
     try {
       setUp();
@@ -886,7 +888,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
   PutPolicy setupPutPolicy(HasOneToManyJPA pojo, BidirectionalChildJPA bidir,
                            StartEnd startEnd) throws Throwable {
     PutPolicy policy = new PutPolicy();
-    DatastoreServiceInterceptor.install(policy);
+    DatastoreServiceInterceptor.install(getStoreManager(), policy);
     try {
       emf.close();
       switchDatasource(getEntityManagerFactoryName());

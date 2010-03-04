@@ -15,6 +15,10 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
+import com.google.appengine.api.datastore.ReadPolicy;
+import com.google.appengine.api.datastore.ReadPolicy.Consistency;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ConnectionFactory;
 import org.datanucleus.ConnectionFactoryRegistry;
@@ -64,6 +68,7 @@ import org.datanucleus.util.NucleusLogger;
 
 import java.lang.reflect.Field;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Date;
@@ -121,6 +126,12 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
+  public static final String DEFAULT_DATASTORE_DEADLINE_PROPERTY =
+      "datanucleus.appengine.defaultDatastoreDeadlineMs";
+
+  public static final String DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY =
+      "datanucleus.appengine.defaultDatastoreReadConsistency";
+
   /**
    * The name of the extension that indicates the return value of the batch
    * delete query should be as accurate as possible at the expense of
@@ -151,6 +162,8 @@ public class DatastoreManager extends MappedStoreManager {
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
   private final StorageVersion storageVersion;
+  private final DatastoreServiceConfig defaultDatastoreServiceConfig;
+
 
   /**
    * Construct a DatsatoreManager
@@ -170,14 +183,36 @@ public class DatastoreManager extends MappedStoreManager {
     ClassUtils.assertClassForJarExistsInClasspath(
         clr, "com.google.appengine.api.datastore.DatastoreService", "appengine-api.jar");
 
+    defaultDatastoreServiceConfig = createDatastoreServiceConfig(omfContext.getPersistenceConfiguration());
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(omfContext);
     setCustomPluginManager();
     addTypeManagerMappings();
-    storageVersion = StorageVersion.fromConfig(omfContext.getPersistenceConfiguration());
+    PersistenceConfiguration persistenceConfig = omfContext.getPersistenceConfiguration();
+    storageVersion = StorageVersion.fromConfig(persistenceConfig);
     logConfiguration();
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfig(
+      PersistenceConfiguration persistenceConfiguration) {
+    DatastoreServiceConfig datastoreServiceConfig = DatastoreServiceConfig.Builder.withDefaults();
+    String defaultDeadlineStr = persistenceConfiguration.getStringProperty(DEFAULT_DATASTORE_DEADLINE_PROPERTY);
+    if (defaultDeadlineStr != null) {
+      datastoreServiceConfig.deadline(Double.parseDouble(defaultDeadlineStr));
+    }
+    String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY);
+    if (defaultReadConsistencyStr != null) {
+      try {
+        datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
+      } catch (IllegalArgumentException iae) {
+        throw new FatalNucleusUserException(
+            "Illegal value for " + DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY +
+            ".  Valid values are " + Arrays.toString(Consistency.values()));
+      }
+    }
+    return datastoreServiceConfig;
   }
 
   private void addTypeManagerMappings() throws NoSuchFieldException, IllegalAccessException {
@@ -713,5 +748,9 @@ public class DatastoreManager extends MappedStoreManager {
     UnsupportedInheritanceStrategyException(String msg) {
       super(msg);
     }
+  }
+
+  public DatastoreServiceConfig getDefaultDatastoreServiceConfig() {
+    return defaultDatastoreServiceConfig;
   }
 }

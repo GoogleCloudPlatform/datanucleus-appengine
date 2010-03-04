@@ -30,7 +30,6 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.test.HasStringAncestorStringPkJDO;
@@ -506,10 +505,5 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     public void remove() {
       throw new UnsupportedOperationException();
     }
-  }
-
-  private DatastoreManager getStoreManager() {
-    return
-        ((DatastoreManager)((JDOPersistenceManagerFactory)pmf).getOMFContext().getStoreManager());
   }
 }

@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -50,7 +51,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
   }
 
   BatchRecorder newBatchRecorder() {
-    return new BatchRecorder() {
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    return new BatchRecorder(config) {
       boolean isBatchMethod(Method method) {
         return method.getName().equals("put") && List.class.isAssignableFrom(method.getReturnType());
       }

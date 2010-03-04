@@ -15,9 +15,11 @@
  */
 package org.datanucleus.store.appengine.jdo;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.jdo.JDOTransaction;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.util.NucleusLogger;
 
@@ -35,21 +37,24 @@ import javax.jdo.PersistenceManager;
  */
 class DatastoreJDOTransaction extends JDOTransaction {
 
-  public DatastoreJDOTransaction(PersistenceManager pm, org.datanucleus.Transaction tx) {
+  private final DatastoreServiceConfig config;
+
+  public DatastoreJDOTransaction(PersistenceManager pm, DatastoreManager storeMgr, org.datanucleus.Transaction tx) {
     super(pm, tx);
+    config = storeMgr.getDefaultDatastoreServiceConfig();
   }
 
   @Override
   public void begin() {
     super.begin();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().beginTransaction();
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).beginTransaction();
     NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
   }
 
   @Override
   public void commit() {
     super.commit();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was committed via the connection
     } else {
@@ -64,7 +69,7 @@ class DatastoreJDOTransaction extends JDOTransaction {
   @Override
   public void rollback() {
     super.rollback();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService().getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was rolled back via the connection
     } else {
