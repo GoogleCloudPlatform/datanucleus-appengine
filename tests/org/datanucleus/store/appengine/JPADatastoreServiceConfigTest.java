@@ -30,24 +30,41 @@ public class JPADatastoreServiceConfigTest extends JPATestCase {
 
   public void testDefaultStorageVersion() {
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreServiceConfig defaultConfig = DatastoreServiceConfig.Builder.withDefaults();
     assertEquals(defaultConfig.getDeadline(), config.getDeadline());
     assertEquals(defaultConfig.getReadPolicy(), config.getReadPolicy());
   }
 
-  public void testNonDefaultStorageVersion() {
+  public void testNonDefaultValues() {
     em.close();
     emf.close();
     Map<String, String> props = Utils.newHashMap();
-    props.put(DatastoreManager.DEFAULT_DATASTORE_DEADLINE_PROPERTY, "3.34");
+    props.put("javax.persistence.query.timeout", "334");
+    props.put("datanucleus.datastoreWriteTimeout", "335");
     props.put(DatastoreManager.DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY, ReadPolicy.Consistency.EVENTUAL.name());
     emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
     em = emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
-    assertEquals(3.34d, config.getDeadline());
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(.334d, config.getDeadline());
     assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
+    assertEquals(.335d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+  }
+
+  public void testConflictingReadValues() {
+    em.close();
+    emf.close();
+    Map<String, String> props = Utils.newHashMap();
+    props.put(DatastoreManager.LEGACY_READ_TIMEOUT_PROPERTY, "333");
+    props.put("javax.persistence.query.timeout", "334");
+    emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
+    em = emf.createEntityManager();
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(.333d, config.getDeadline());
   }
 
   public void testUnknownReadPolicy() {

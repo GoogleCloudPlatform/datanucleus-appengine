@@ -16,12 +16,14 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreFailureException;
+import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
+import org.datanucleus.store.query.QueryTimeoutException;
 
 import java.util.ConcurrentModificationException;
 
@@ -57,5 +59,11 @@ public final class DatastoreExceptionTranslator {
       EntityNotFoundException e, Key key) {
     return new NucleusObjectNotFoundException(
         "Could not retrieve entity of kind " + key.getKind() + " with key " + key);
+  }
+
+  public static QueryTimeoutException wrapDatastoreTimeoutExceptionForQuery(DatastoreTimeoutException e) {
+    QueryTimeoutException qte = new QueryTimeoutException(e.getMessage());
+    qte.initCause(e);
+    return qte;
   }
 }

@@ -19,8 +19,11 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
+import org.datanucleus.store.query.QueryTimeoutException;
 
 import java.util.Map;
+
+import javax.jdo.JDOQueryTimeoutException;
 
 
 /**
@@ -82,7 +85,11 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       fromInclNo = Long.parseLong(fromTo[0].trim());
       toExclNo = Long.parseLong(fromTo[1].trim());
     }
-    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
+    try {
+      return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
+    } catch (QueryTimeoutException e) {
+      throw new JDOQueryTimeoutException(e.getMessage());
+    }
   }
 
   // Exposed for tests.

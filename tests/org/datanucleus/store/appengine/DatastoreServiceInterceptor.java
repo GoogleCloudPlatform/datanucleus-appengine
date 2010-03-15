@@ -57,7 +57,7 @@ public final class DatastoreServiceInterceptor {
   }
 
   public static void install(DatastoreManager storeManager, Policy policy) {
-    DatastoreServiceConfig config = storeManager.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeManager.getDefaultDatastoreServiceConfigForReads();
     ORIGINAL_DATASTORE_SERVICE = DatastoreServiceFactoryInternal.getDatastoreService(config);
     Handler handler = new Handler(ORIGINAL_DATASTORE_SERVICE, policy);
     DatastoreService ds = (DatastoreService) Proxy.newProxyInstance(

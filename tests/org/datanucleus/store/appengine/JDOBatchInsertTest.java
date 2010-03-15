@@ -51,7 +51,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
   }
 
   BatchRecorder newBatchRecorder() {
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     return new BatchRecorder(config) {
       boolean isBatchMethod(Method method) {
         return method.getName().equals("put") && List.class.isAssignableFrom(method.getReturnType());

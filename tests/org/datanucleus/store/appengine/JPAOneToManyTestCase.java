@@ -489,7 +489,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJPA> pojoClass,
                               Class<? extends BidirectionalChildJPA> bidirClass) throws Exception {
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     // force a new emf to get created after we've installed our own
     // DatastoreService mock
     emf.close();

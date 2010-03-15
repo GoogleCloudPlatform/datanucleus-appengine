@@ -30,23 +30,45 @@ public class JDODatastoreServiceConfigTest extends JDOTestCase {
 
   public void testDefaultStorageVersion() {
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreServiceConfig defaultConfig = DatastoreServiceConfig.Builder.withDefaults();
     assertEquals(defaultConfig.getDeadline(), config.getDeadline());
     assertEquals(defaultConfig.getReadPolicy(), config.getReadPolicy());
   }
 
-  public void testNonDefaultStorageVersion() {
+  public void testNonDefaultValuesWithStandardPropertyNames() {
     pm.close();
     pmf.close();
     Map<String, String> props = Utils.newHashMap();
-    props.put(DatastoreManager.DEFAULT_DATASTORE_DEADLINE_PROPERTY, "3.34");
+    props.put("javax.jdo.option.DatastoreReadTimeoutMillis", "334");
+    props.put("javax.jdo.option.DatastoreWriteTimeoutMillis", "335");
     props.put(DatastoreManager.DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY, ReadPolicy.Consistency.EVENTUAL.name());
     pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
     pm = pmf.getPersistenceManager();
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
-    assertEquals(3.34d, config.getDeadline());
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(.334d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
+    assertEquals(.335d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+  }
+
+  public void testNonDefaultValuesWithDataNucPropertyNames() {
+    pm.close();
+    pmf.close();
+    Map<String, String> props = Utils.newHashMap();
+    props.put("datanucleus.datastoreReadTimeout", "334");
+    props.put("datanucleus.datastoreWriteTimeout", "335");
+    props.put(DatastoreManager.DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY, ReadPolicy.Consistency.EVENTUAL.name());
+    pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
+    pm = pmf.getPersistenceManager();
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(.334d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
+    assertEquals(.335d, config.getDeadline());
     assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
   }
 

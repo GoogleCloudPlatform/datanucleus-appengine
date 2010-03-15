@@ -150,7 +150,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         // now, if there is an order mapping, we need to shift
         // everyone down
         JavaTypeMapping orderMapping = fkListStore.getOrderMapping();
-        DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+        DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
         DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
         AbstractClassMetaData acmd = fkListStore.getEmd();
         String kind =

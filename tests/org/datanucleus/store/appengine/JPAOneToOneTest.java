@@ -655,7 +655,7 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testChildFetchedLazily() throws Exception {
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     // force a new emf to get created after we've installed our own
     // DatastoreService mock
     emf.close();

@@ -307,7 +307,7 @@ class DatastoreRelationFieldManager {
     // We're going to issue a query for all entities of the given kind with
     // the parent entity's key as their parent.  There should be only 1.
     Query q = new Query(kind, parentEntity.getKey());
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // We have to pull back all children because the datastore does not let us
     // filter ancestors by depth and an indirect child could come back before a

@@ -16,9 +16,11 @@ limitations under the License.
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.DatastoreFailureException;
+import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
 
 import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
 import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 import java.util.Iterator;
@@ -42,6 +44,8 @@ class RuntimeExceptionWrappingIterable implements Iterable<Entity> {
       return newIterator(inner.iterator());
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
+    } catch (DatastoreTimeoutException e) {
+      throw wrapDatastoreTimeoutExceptionForQuery(e);
     } catch (DatastoreFailureException e) {
       throw wrapDatastoreFailureException(e);
     }

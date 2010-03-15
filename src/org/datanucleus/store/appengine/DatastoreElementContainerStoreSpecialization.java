@@ -93,7 +93,7 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       q.addSort(sp.getPropertyName(), sp.getDirection());
       logger.debug("  Added sort: " + sp.getPropertyName() + " " + sp.getDirection());
     }
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     return ds.prepare(q);
   }

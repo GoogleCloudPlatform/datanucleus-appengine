@@ -126,11 +126,29 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
-  public static final String DEFAULT_DATASTORE_DEADLINE_PROPERTY =
-      "datanucleus.appengine.defaultDatastoreDeadlineMs";
+  /**
+   * If the user sets javax.jdo.option.DatastoreReadTimeoutMillis it will be
+   * available via a config property with this name.
+   */
+  private static final String READ_TIMEOUT_PROPERTY = "datanucleus.datastoreReadTimeout";
 
-  public static final String DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY =
+  /**
+   * If the user sets javax.persistence.query.timeout it will be available via
+   * a config property with this name.
+   * TODO(maxr): Remove this when we upgrade to DataNuc 2.0
+   */
+  static final String LEGACY_READ_TIMEOUT_PROPERTY = "datanucleus.query.timeout";
+
+  /**
+   * If the user sets javax.jdo.option.DatastoreWriteTimeoutMillis it will be
+   * available via a config property with this name.
+   */
+  private static final String WRITE_TIMEOUT_PROPERTY = "datanucleus.datastoreWriteTimeout";
+
+  static final String DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY =
       "datanucleus.appengine.defaultDatastoreReadConsistency";
+
+  public static final String JPA_QUERY_TIMEOUT_PROPERTY = "javax.persistence.query.timeout";
 
   /**
    * The name of the extension that indicates the return value of the batch
@@ -162,7 +180,8 @@ public class DatastoreManager extends MappedStoreManager {
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
   private final StorageVersion storageVersion;
-  private final DatastoreServiceConfig defaultDatastoreServiceConfig;
+  private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
+  private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
 
 
   /**
@@ -183,7 +202,10 @@ public class DatastoreManager extends MappedStoreManager {
     ClassUtils.assertClassForJarExistsInClasspath(
         clr, "com.google.appengine.api.datastore.DatastoreService", "appengine-api.jar");
 
-    defaultDatastoreServiceConfig = createDatastoreServiceConfig(omfContext.getPersistenceConfiguration());
+    defaultDatastoreServiceConfigPrototypeForReads =
+        createDatastoreServiceConfigPrototypeForReads(omfContext.getPersistenceConfiguration());
+    defaultDatastoreServiceConfigPrototypeForWrites =
+        createDatastoreServiceConfigPrototypeForWrites(omfContext.getPersistenceConfiguration());
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
@@ -195,14 +217,29 @@ public class DatastoreManager extends MappedStoreManager {
     logConfiguration();
   }
 
-  private DatastoreServiceConfig createDatastoreServiceConfig(
-      PersistenceConfiguration persistenceConfiguration) {
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
+      PersistenceConfiguration persistenceConfig) {
+    return createDatastoreServiceConfigPrototype(
+        persistenceConfig, READ_TIMEOUT_PROPERTY, LEGACY_READ_TIMEOUT_PROPERTY);
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
+      PersistenceConfiguration persistenceConfig) {
+    return createDatastoreServiceConfigPrototype(persistenceConfig, WRITE_TIMEOUT_PROPERTY);
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototype(
+      PersistenceConfiguration persistenceConfiguration, String... timeoutProps) {
     DatastoreServiceConfig datastoreServiceConfig = DatastoreServiceConfig.Builder.withDefaults();
-    String defaultDeadlineStr = persistenceConfiguration.getStringProperty(DEFAULT_DATASTORE_DEADLINE_PROPERTY);
-    if (defaultDeadlineStr != null) {
-      datastoreServiceConfig.deadline(Double.parseDouble(defaultDeadlineStr));
+
+    for (String timeoutProp : timeoutProps) {
+      int defaultDeadline = persistenceConfiguration.getIntProperty(timeoutProp);
+      if (defaultDeadline > 0) {
+        datastoreServiceConfig.deadline(defaultDeadline / 1000d);
+      }
     }
-    String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY);
+    String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(
+        DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY);
     if (defaultReadConsistencyStr != null) {
       try {
         datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
@@ -750,7 +787,30 @@ public class DatastoreManager extends MappedStoreManager {
     }
   }
 
-  public DatastoreServiceConfig getDefaultDatastoreServiceConfig() {
-    return defaultDatastoreServiceConfig;
+  /**
+   * Returns a fresh instance so that callers can make changes without
+   * impacting global state.
+   */
+  public DatastoreServiceConfig getDefaultDatastoreServiceConfigForReads() {
+    return copyDatastoreServiceConfig(defaultDatastoreServiceConfigPrototypeForReads);
+  }
+
+  /**
+   * Returns a fresh instance so that callers can make changes without
+   * impacting global state.
+   */
+  public DatastoreServiceConfig getDefaultDatastoreServiceConfigForWrites() {
+    return copyDatastoreServiceConfig(defaultDatastoreServiceConfigPrototypeForWrites);
+  }
+
+  private static DatastoreServiceConfig copyDatastoreServiceConfig(DatastoreServiceConfig config) {
+    DatastoreServiceConfig newConfig = DatastoreServiceConfig.Builder.
+        withImplicitTransactionManagementPolicy(config.getImplicitTransactionManagementPolicy()).
+        readPolicy(config.getReadPolicy());
+
+    if (config.getDeadline() != null) {
+      newConfig.deadline(config.getDeadline());
+    }
+    return config;
   }
 }

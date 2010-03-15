@@ -40,7 +40,7 @@ public class JPASequenceTest extends JPATestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     DatastoreServiceFactoryInternal.setDatastoreService(
         new BaseDatastoreServiceDelegate(DatastoreServiceFactoryInternal.getDatastoreService(config)) {
       @Override

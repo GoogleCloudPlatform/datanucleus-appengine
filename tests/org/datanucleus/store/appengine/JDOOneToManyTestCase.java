@@ -967,7 +967,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
   void testChildFetchedLazily(Class<? extends HasOneToManyJDO> pojoClass,
       Class<? extends BidirectionalChildJDO> bidirClass) throws Exception {
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     tearDown();
     DatastoreService ds = EasyMock.createMock(DatastoreService.class);
     DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);

@@ -34,7 +34,9 @@ import java.util.concurrent.Future;
  */
 class LocalDatastoreDelegate implements DatastoreDelegate {
 
-  private static final ApiProxy.Environment ENV = new ApiProxy.Environment() {
+  private static final class LocalDatastoreDelegateEnv implements ApiProxy.Environment {
+    private final ConcurrentHashMap<String, Object> attributes = new ConcurrentHashMap<String, Object>();
+
     public String getAppId() {
       return "test";
     }
@@ -64,9 +66,9 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
     }
 
     public ConcurrentMap<String, Object> getAttributes() {
-      return new ConcurrentHashMap<String, Object>();
+      return attributes;
     }
-  };
+  }
 
   // Ok to reuse this across tests so long as we clear out the
   // datastore in tearDown()
@@ -102,7 +104,7 @@ class LocalDatastoreDelegate implements DatastoreDelegate {
   }
 
   public void setUp() {
-    ApiProxy.setEnvironmentForCurrentThread(ENV);
+    ApiProxy.setEnvironmentForCurrentThread(new LocalDatastoreDelegateEnv());
   }
 
   public void tearDown() throws Exception {

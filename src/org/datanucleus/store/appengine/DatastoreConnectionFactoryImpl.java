@@ -111,9 +111,7 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
    * {@inheritDoc}
    */
   public ManagedConnection createManagedConnection(ObjectManager om, Map transactionOptions) {
-    DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfig();
-    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    return new DatastoreManagedConnection(datastoreService, newXAResource());
+    return new DatastoreManagedConnection(newXAResource());
   }
 
   boolean isTransactional() {
@@ -122,7 +120,7 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
 
   private XAResource newXAResource() {
     if (isTransactional()) {
-      DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfig();
+      DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfigForWrites();
       DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
       return new DatastoreXAResource(datastoreService);
     } else {
@@ -135,16 +133,14 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
     private boolean locked = false;
     private final List<ManagedConnectionResourceListener> listeners =
         new ArrayList<ManagedConnectionResourceListener>();
-    protected final DatastoreService datastoreService;
     private final XAResource datastoreXAResource;
 
-    DatastoreManagedConnection(DatastoreService datastoreService, XAResource datastoreXAResource) {
-      this.datastoreService = datastoreService;
+    DatastoreManagedConnection(XAResource datastoreXAResource) {
       this.datastoreXAResource = datastoreXAResource;
     }
 
     public Object getConnection() {
-      return datastoreService;
+      return null;
     }
 
     public XAResource getXAResource() {

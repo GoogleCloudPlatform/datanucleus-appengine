@@ -66,7 +66,8 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    */
   static final String MISSING_RELATION_KEY = "___missing_relation_key___";
 
-  private final DatastoreService datastoreService;
+  private final DatastoreService datastoreServiceForReads;
+  private final DatastoreService datastoreServiceForWrites;
   private final DatastoreManager storeMgr;
 
   /**
@@ -76,8 +77,10 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
    */
   public DatastorePersistenceHandler(StoreManager storeMgr) {
     this.storeMgr = (DatastoreManager) storeMgr;
-    datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(
-        this.storeMgr.getDefaultDatastoreServiceConfig());
+    datastoreServiceForReads = DatastoreServiceFactoryInternal.getDatastoreService(
+        this.storeMgr.getDefaultDatastoreServiceConfigForReads());
+    datastoreServiceForWrites = DatastoreServiceFactoryInternal.getDatastoreService(
+        this.storeMgr.getDefaultDatastoreServiceConfigForWrites());
 
   }
 
@@ -88,9 +91,9 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     Entity entity;
     try {
       if (txn == null) {
-        entity = datastoreService.get(key);
+        entity = datastoreServiceForReads.get(key);
       } else {
-        entity = datastoreService.get(txn.getInnerTxn(), key);
+        entity = datastoreServiceForReads.get(txn.getInnerTxn(), key);
       }
       return entity;
     } catch (EntityNotFoundException e) {
@@ -174,16 +177,16 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     if (!putMe.isEmpty()) {
       if (txn == null) {
         if (putMe.size() == 1) {
-          datastoreService.put(putMe.get(0));
+          datastoreServiceForWrites.put(putMe.get(0));
         } else {
-          datastoreService.put(putMe);
+          datastoreServiceForWrites.put(putMe);
         }
       } else {
         Transaction innerTxn = txn.getInnerTxn();
         if (putMe.size() == 1) {
-          datastoreService.put(innerTxn, putMe.get(0));
+          datastoreServiceForWrites.put(innerTxn, putMe.get(0));
         } else {
-          datastoreService.put(innerTxn, putMe);
+          datastoreServiceForWrites.put(innerTxn, putMe);
         }
         txn.addPutEntities(putMe);
       }
@@ -195,16 +198,16 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     NucleusLogger.DATASTORE.debug("Deleting entities with keys " + keys);
     if (txn == null) {
       if (keys.size() == 1) {
-        datastoreService.delete(keys.get(0));
+        datastoreServiceForWrites.delete(keys.get(0));
       } else {
-        datastoreService.delete(keys);
+        datastoreServiceForWrites.delete(keys);
       }
     } else {
       Transaction innerTxn = txn.getInnerTxn();
       if (keys.size() == 1) {
-        datastoreService.delete(innerTxn, keys.get(0));
+        datastoreServiceForWrites.delete(innerTxn, keys.get(0));
       } else {
-        datastoreService.delete(innerTxn, keys);
+        datastoreServiceForWrites.delete(innerTxn, keys);
       }
     }
   }
@@ -386,7 +389,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         // the fetch outside a txn to guarantee that we see the latest version.
         Entity refreshedEntity;
         try {
-          refreshedEntity = datastoreService.get(entity.getKey());
+          refreshedEntity = datastoreServiceForReads.get(entity.getKey());
         } catch (EntityNotFoundException e) {
           // someone deleted out from under us
           throw newNucleusOptimisticException(

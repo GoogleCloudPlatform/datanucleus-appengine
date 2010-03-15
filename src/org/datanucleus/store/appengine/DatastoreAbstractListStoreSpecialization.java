@@ -64,7 +64,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
       throw new NucleusUserException("Collection element primary key does not have a parent.");
     }
 
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     try {
       Entity e = service.get(elementKey);
@@ -120,7 +120,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     q.addFilter(
         Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN_OR_EQUAL, keys.get(keys.size() - 1));
     q.addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING);
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     int[] indices = new int[keys.size()];
     int index = 0;
@@ -152,7 +152,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     if (orderMapping == null) {
       return null;
     }
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     AbstractClassMetaData acmd = ecs.getEmd();
     String kind =

@@ -152,7 +152,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
       // shouldn't happen
       throw new IllegalStateException("sequence name is null");
     }
-    DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     KeyRange range = ds.allocateIds(sequenceName, size);
     // Too bad we can't pass an iterable and construct the ids

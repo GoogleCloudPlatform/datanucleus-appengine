@@ -41,7 +41,7 @@ class DatastoreJDOTransaction extends JDOTransaction {
 
   public DatastoreJDOTransaction(PersistenceManager pm, DatastoreManager storeMgr, org.datanucleus.Transaction tx) {
     super(pm, tx);
-    config = storeMgr.getDefaultDatastoreServiceConfig();
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
   }
 
   @Override

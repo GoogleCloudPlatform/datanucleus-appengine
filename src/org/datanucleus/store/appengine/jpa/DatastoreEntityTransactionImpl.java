@@ -40,7 +40,7 @@ public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
 
   public DatastoreEntityTransactionImpl(ObjectManager om) {
     super(om);
-    config = ((DatastoreManager) om.getStoreManager()).getDefaultDatastoreServiceConfig();
+    config = ((DatastoreManager) om.getStoreManager()).getDefaultDatastoreServiceConfigForWrites();
   }
 
   @Override

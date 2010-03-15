@@ -16,6 +16,7 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.DatastoreFailureException;
+import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -24,6 +25,7 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
+import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
@@ -32,6 +34,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreServiceInterceptor;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
 import org.datanucleus.store.appengine.FatalNucleusUserException;
@@ -70,6 +73,7 @@ import org.datanucleus.test.HasUnencodedStringPkJPA;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.NullDataJPA;
 import org.datanucleus.test.Person;
+import org.easymock.EasyMock;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -87,6 +91,7 @@ import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
+import javax.persistence.QueryTimeoutException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -2956,6 +2961,67 @@ public class JPQLQueryTest extends JPATestCase {
       fail("expected nue");
     } catch (NucleusUserException nue) {
       // good
+    }
+  }
+
+  public void testQueryTimeout() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+    EasyMock.expect(delegate.makeSyncCall(DeadlineMatcher.eqDeadline(3.0),
+                              EasyMock.eq(LocalDatastoreService.PACKAGE),
+                              EasyMock.eq("RunQuery"),
+                              EasyMock.isA(byte[].class)))
+            .andThrow(new DatastoreTimeoutException("too long")).anyTimes();
+    EasyMock.replay(delegate);
+    ApiProxy.Delegate original = ApiProxy.getDelegate();
+    ApiProxy.setDelegate(delegate);
+
+    try {
+      Query q = em.createQuery("select from " + Book.class.getName());
+      q.setHint("javax.persistence.query.timeout", 3000);
+      try {
+        q.getResultList();
+        fail("expected exception");
+      } catch (QueryTimeoutException e) {
+        // good
+      }
+    } finally {
+      ApiProxy.setDelegate(original);
+    }
+    EasyMock.verify(delegate);
+  }
+
+  public void testQueryTimeoutWhileIterating() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+
+    // Need to have enough data to ensure a Next call
+    for (int i = 0; i < 21; i++) {
+      Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
+      ldth.ds.put(bookEntity);
+    }
+    ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
+        new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
+          boolean exploded = false;
+          protected void doIntercept(String methodName) {
+            if (!exploded && methodName.equals("Next")) {
+              exploded = true;
+              throw new DatastoreTimeoutException("boom: " + methodName);
+            }
+          }
+        };
+
+    ExceptionThrowingDatastoreDelegate dd =
+        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
+    ApiProxy.setDelegate(dd);
+
+    javax.persistence.Query q = em.createQuery(
+        "select from " + Book.class.getName());
+    @SuppressWarnings("unchecked")
+    List<Book> books = (List<Book>) q.getResultList();
+    try {
+      books.size();
+      fail("expected exception");
+    } catch (org.datanucleus.store.query.QueryTimeoutException qte) { // DataNuc bug - they should be wrapping with JPA exceptions
     }
   }
 

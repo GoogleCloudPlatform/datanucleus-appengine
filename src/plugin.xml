@@ -74,4 +74,18 @@ limitations under the License.
         <java-type name="com.google.appengine.api.users.User" persistent="true" dfg="true" embedded="true"/>
         <java-type name="[Lcom.google.appengine.api.users.User;" persistent="true" dfg="true" embedded="true"/>
     </extension>
+
+    <!-- TODO(maxr): Get rid of this when we upgrade to datanuc 2.0 -->
+    <extension point="org.datanucleus.persistence_properties">
+        <persistence-property name="datanucleus.datastoreReadTimeout"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+        <persistence-property name="datanucleus.datastoreWriteTimeout"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+        <persistence-property name="javax.jdo.option.DatastoreReadTimeoutMillis"
+            internal-name="datanucleus.datastoreReadTimeout" value="0"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+        <persistence-property name="javax.jdo.option.DatastoreWriteTimeoutMillis"
+            internal-name="datanucleus.datastoreWriteTimeout" value="0"
+            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+    </extension>
 </plugin>

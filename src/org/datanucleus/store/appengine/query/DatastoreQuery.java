@@ -226,12 +226,25 @@ public class DatastoreQuery implements Serializable {
     }
     addFilters(qd);
     addSorts(qd);
+    Map extensions = query.getExtensions();
+    if (extensions != null) {
+      // The only way to set a query timeout for jpa is with a hint.  It's our
+      // responsibility to translate the hint into an actual timeout
+      Integer queryTimeout = (Integer) extensions.get(DatastoreManager.JPA_QUERY_TIMEOUT_PROPERTY);
+      if (queryTimeout != null && queryTimeout > 0) {
+        query.setTimeoutMillis(queryTimeout);
+      }
+    }
     return executeQuery(qd, fromInclNo, toExclNo);
   }
 
   private Object executeQuery(QueryData qd, long fromInclNo, long toExclNo) {
     processInFilters(qd);
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfig();
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+    if (query.getTimeoutMillis() > 0) {
+      // config wants the timeout in seconds
+      config.deadline(query.getTimeoutMillis() / 1000);
+    }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
