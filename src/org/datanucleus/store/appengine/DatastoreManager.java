@@ -145,8 +145,8 @@ public class DatastoreManager extends MappedStoreManager {
    */
   private static final String WRITE_TIMEOUT_PROPERTY = "datanucleus.datastoreWriteTimeout";
 
-  static final String DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY =
-      "datanucleus.appengine.defaultDatastoreReadConsistency";
+  public static final String DATASTORE_READ_CONSISTENCY_PROPERTY =
+      "datanucleus.appengine.datastoreReadConsistency";
 
   public static final String JPA_QUERY_TIMEOUT_PROPERTY = "javax.persistence.query.timeout";
 
@@ -239,13 +239,13 @@ public class DatastoreManager extends MappedStoreManager {
       }
     }
     String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(
-        DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY);
+        DATASTORE_READ_CONSISTENCY_PROPERTY);
     if (defaultReadConsistencyStr != null) {
       try {
         datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
       } catch (IllegalArgumentException iae) {
         throw new FatalNucleusUserException(
-            "Illegal value for " + DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY +
+            "Illegal value for " + DATASTORE_READ_CONSISTENCY_PROPERTY +
             ".  Valid values are " + Arrays.toString(Consistency.values()));
       }
     }

@@ -30,6 +30,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.api.datastore.QueryResultList;
+import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Transaction;
 
@@ -245,6 +246,11 @@ public class DatastoreQuery implements Serializable {
       // config wants the timeout in seconds
       config.deadline(query.getTimeoutMillis() / 1000);
     }
+    Map extensions = query.getExtensions();
+    if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
+      config.readPolicy(new ReadPolicy(
+          ReadPolicy.Consistency.valueOf((String) extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY))));
+    }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
@@ -265,7 +271,6 @@ public class DatastoreQuery implements Serializable {
       } else {
         latestDatastoreQuery = qd.primaryDatastoreQuery;
         Transaction txn = null;
-        Map extensions = query.getExtensions();
         // give users a chance to opt-out of having their query execute in a txn
         if (extensions == null ||
             !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||

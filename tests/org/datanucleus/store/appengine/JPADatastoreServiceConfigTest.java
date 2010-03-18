@@ -42,7 +42,7 @@ public class JPADatastoreServiceConfigTest extends JPATestCase {
     Map<String, String> props = Utils.newHashMap();
     props.put("javax.persistence.query.timeout", "334");
     props.put("datanucleus.datastoreWriteTimeout", "335");
-    props.put(DatastoreManager.DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY, ReadPolicy.Consistency.EVENTUAL.name());
+    props.put(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY, ReadPolicy.Consistency.EVENTUAL.name());
     emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
     em = emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
@@ -71,7 +71,7 @@ public class JPADatastoreServiceConfigTest extends JPATestCase {
     em.close();
     emf.close();
     Map<String, String> props = Utils.newHashMap();
-    props.put(DatastoreManager.DEFAULT_DATASTORE_READ_CONSISTENCY_PROPERTY, "dne");
+    props.put(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY, "dne");
     try {
       emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
     } catch (PersistenceException e) {

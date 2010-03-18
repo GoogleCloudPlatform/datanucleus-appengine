@@ -2903,6 +2903,61 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testOverrideReadConsistency() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.Delegate original = ApiProxy.getDelegate();
+    try {
+      ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      ApiProxy.setDelegate(delegate);
+      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+      EasyMock.replay(delegate);
+      Query q = pm.newQuery(Flight.class);
+      q.execute();
+      EasyMock.verify(delegate);
+
+      delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      ApiProxy.setDelegate(delegate);
+      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+      EasyMock.replay(delegate);
+      q = pm.newQuery(Flight.class);
+      q.addExtension("datanucleus.appengine.datastoreReadConsistency", null);
+      q.execute();
+      EasyMock.verify(delegate);
+
+      delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      ApiProxy.setDelegate(delegate);
+      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+      EasyMock.replay(delegate);
+      q = pm.newQuery(Flight.class);
+      q.addExtension("datanucleus.appengine.datastoreReadConsistency", "STRONG");
+      q.execute();
+      EasyMock.verify(delegate);
+
+      delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      ApiProxy.setDelegate(delegate);
+      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                FailoverMsMatcher.eqFailoverMs(-1L))).andReturn(null);
+      EasyMock.replay(delegate);
+      q = pm.newQuery(Flight.class);
+      q.addExtension("datanucleus.appengine.datastoreReadConsistency", "EVENTUAL");
+      q.execute();
+      EasyMock.verify(delegate);
+    } finally {
+      ApiProxy.setDelegate(original);
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {

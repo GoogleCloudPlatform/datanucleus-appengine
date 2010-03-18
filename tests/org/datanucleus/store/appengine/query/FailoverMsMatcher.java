@@ -15,40 +15,40 @@
  */
 package org.datanucleus.store.appengine.query;
 
-import com.google.apphosting.api.ApiProxy;
+import com.google.apphosting.api.DatastorePb;
 
 import org.easymock.EasyMock;
 import org.easymock.IArgumentMatcher;
 
 /**
- * EasyMock matcher that verifies that the deadline of the current environment
- * matches the deadline of the provided environment.
+ * EasyMock matcher that verifies that the failoverMs property
+ * is properly set on a {@link DatastorePb.Query}.
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-final class DeadlineMatcher implements IArgumentMatcher {
-  private final Double expectedDeadline;
+final class FailoverMsMatcher implements IArgumentMatcher {
+  private final Long expectedFailoverMs;
 
-  DeadlineMatcher(Double expectedDeadline) {
-    this.expectedDeadline = expectedDeadline;
+  FailoverMsMatcher(Long expectedFailoverMs) {
+    this.expectedFailoverMs = expectedFailoverMs;
   }
 
   public boolean matches(Object argument) {
-    ApiProxy.Environment env = (ApiProxy.Environment) argument;
-    Double deadline =
-        (Double) env.getAttributes().get(ApiProxy.class.getName() + ".api_deadline_key");
-    if (deadline == null) {
-      return expectedDeadline == null;
+    DatastorePb.Query query = new DatastorePb.Query();
+    query.mergeFrom((byte[]) argument);
+    if (expectedFailoverMs == null) {
+      return !query.hasFailoverMs();
     }
-    return deadline.equals(expectedDeadline);
+    return expectedFailoverMs.equals(query.getFailoverMs());
   }
 
   public void appendTo(StringBuffer buffer) {
     buffer.append("Env Matcher");
   }
 
-  public static ApiProxy.Environment eqDeadline(Double expectedDeadline) {
-    EasyMock.reportMatcher(new DeadlineMatcher(expectedDeadline));
+  public static byte[] eqFailoverMs(Long failoverMs) {
+    EasyMock.reportMatcher(new FailoverMsMatcher(failoverMs));
     return null;
   }
+
 }
