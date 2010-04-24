@@ -15,14 +15,39 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.Version;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
-public interface HasVersionJPA {
+@Entity
+public class HasPrimitiveLongVersionJPA implements HasVersionJPA {
+  @Id
+  @GeneratedValue(strategy=GenerationType.IDENTITY)
+  private Long id;
 
-  void setValue(String s);
+  private String value;
 
-  Number getVersion();
+  @Version
+  private long version;
 
-  Long getId();
+  public String getValue() {
+    return value;
+  }
+
+  public void setValue(String value) {
+    this.value = value;
+  }
+
+  public Long getId() {
+    return id;
+  }
+
+  public Long getVersion() {
+    return version;
+  }
 }

@@ -72,6 +72,23 @@ public class JDODatastoreServiceConfigTest extends JDOTestCase {
     assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
   }
 
+  public void testNonDefaultValuesInConfigFile() {
+    pm.close();
+    pmf.close();
+
+    pmf = JDOHelper.getPersistenceManagerFactory("datastoreserviceconfigprops");
+    pm = pmf.getPersistenceManager();
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(5.0d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
+    assertEquals(10.0d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    pm.close();
+    pmf.close();
+  }
+
   public void testUnknownReadPolicy() {
     pm.close();
     pmf.close();

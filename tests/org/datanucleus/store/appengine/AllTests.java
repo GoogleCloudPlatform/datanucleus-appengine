@@ -138,6 +138,7 @@ public class AllTests {
     suite.addTestSuite(JPAStorageVersionTest.class);
     suite.addTestSuite(JDODatastoreServiceConfigTest.class);
     suite.addTestSuite(JDODatastoreServiceConfigTest.class);
+    suite.addTestSuite(JPAVersionTest.class);
     return suite;
   }
 }

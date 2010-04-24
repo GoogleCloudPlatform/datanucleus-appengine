@@ -22,7 +22,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.test.Book;
 import org.datanucleus.test.HasMultiValuePropsJPA;
-import org.datanucleus.test.HasVersionJPA;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -33,17 +32,11 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import javax.jdo.JDOHelper;
-import javax.persistence.OptimisticLockException;
-import javax.persistence.RollbackException;
-
 /**
  * @author Erick Armbrust <earmbrust@google.com>
  * @author Max Ross <maxr@google.com>
  */
 public class JPAUpdateTest extends JPATestCase {
-
-  private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
 
   public void testUpdateAfterFetch() throws EntityNotFoundException {
     Key key = ldth.ds.put(Book.newBookEntity("jimmy", "12345", "the title"));
@@ -87,101 +80,6 @@ public class JPAUpdateTest extends JPATestCase {
     assertEquals("max", bookCheck.getProperty("author"));
     assertEquals("22333", bookCheck.getProperty("isbn"));
     assertEquals("not yam", bookCheck.getProperty("title"));
-  }
-
-  public void testOptimisticLocking_Update() {
-    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
-
-    String keyStr = KeyFactory.keyToString(key);
-    beginTxn();
-    HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
-    hv.setValue("value");
-    commitTxn();
-    assertEquals(2L, hv.getVersion());
-
-    beginTxn();
-    hv = em.find(HasVersionJPA.class, keyStr);
-    hv.setValue("a different value");
-    commitTxn();
-    assertEquals(3L, hv.getVersion());
-
-    // make sure the version gets bumped
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 4L);
-
-    beginTxn();
-    hv = em.find(HasVersionJPA.class, keyStr);
-    hv.setValue("another value");
-    // we update the entity directly in the datastore right before commit
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
-    try {
-      commitTxn();
-      fail("expected optimistic exception");
-    } catch (RollbackException re) {
-      // good
-      assertTrue(re.getCause() instanceof OptimisticLockException);
-    }
-    // make sure the version didn't change on the model object
-    assertEquals(3L, JDOHelper.getVersion(hv));
-  }
-
-  public void testOptimisticLocking_Merge() {
-    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
-
-    String keyStr = KeyFactory.keyToString(key);
-    beginTxn();
-    HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
-    hv.setValue("value");
-    commitTxn();
-    assertEquals(2L, hv.getVersion());
-    // make sure the version gets bumped
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 3L);
-
-    beginTxn();
-    // we update the entity directly in the datastore right before commit
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
-    hv.setValue("another value");
-    em.merge(hv);
-    try {
-      commitTxn();
-      fail("expected optimistic exception");
-    } catch (RollbackException re) {
-      // good
-      assertTrue(re.getCause() instanceof OptimisticLockException);
-    }
-    // make sure the version didn't change on the model object
-    assertEquals(2L, JDOHelper.getVersion(hv));
-  }
-
-  public void testOptimisticLocking_Delete() {
-    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-    Entity entity = new Entity(HasVersionJPA.class.getSimpleName());
-    entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
-
-    String keyStr = KeyFactory.keyToString(key);
-    beginTxn();
-    HasVersionJPA hv = em.find(HasVersionJPA.class, keyStr);
-
-    // delete the entity in the datastore right before we commit
-    ldth.ds.delete(key);
-    hv.setValue("value");
-    try {
-      commitTxn();
-      fail("expected optimistic exception");
-    } catch (RollbackException re) {
-      // good
-      assertTrue(re.getCause() instanceof OptimisticLockException);
-    }
-    // make sure the version didn't change on the model object
-    assertEquals(1L, JDOHelper.getVersion(hv));
   }
 
   public void testUpdateList_Add() throws EntityNotFoundException {

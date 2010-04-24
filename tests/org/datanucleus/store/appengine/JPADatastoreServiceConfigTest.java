@@ -54,6 +54,22 @@ public class JPADatastoreServiceConfigTest extends JPATestCase {
     assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
   }
 
+  public void testNonDefaultValuesInConfigFile() {
+    em.close();
+    emf.close();
+    emf = Persistence.createEntityManagerFactory("datastoreserviceconfigprops");
+    em = emf.createEntityManager();
+    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    assertEquals(5.0d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
+    assertEquals(10.0d, config.getDeadline());
+    assertEquals(new ReadPolicy(ReadPolicy.Consistency.EVENTUAL), config.getReadPolicy());
+    em.close();
+    emf.close();
+  }
+
   public void testConflictingReadValues() {
     em.close();
     emf.close();

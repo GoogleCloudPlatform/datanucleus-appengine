@@ -64,4 +64,16 @@ limitations under the License.
         </properties>
     </persistence-unit>
 
+    <persistence-unit name="datastoreserviceconfigprops">
+        <provider>org.datanucleus.store.appengine.jpa.DatastorePersistenceProvider</provider>
+        <properties>
+            <property name="datanucleus.NontransactionalRead" value="true"/>
+            <property name="datanucleus.NontransactionalWrite" value="true"/>
+            <property name="datanucleus.ConnectionURL" value="appengine"/>
+            <property name="javax.persistence.query.timeout" value="5000"/>
+            <property name="datanucleus.datastoreWriteTimeout" value="10000"/>
+            <property name="datanucleus.appengine.datastoreReadConsistency" value="EVENTUAL"/>
+        </properties>
+    </persistence-unit>
+
 </persistence>

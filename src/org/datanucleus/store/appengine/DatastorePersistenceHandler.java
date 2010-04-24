@@ -412,6 +412,20 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       if (versionBehavior == VersionBehavior.INCREMENT && vmd.getFieldName() != null) {
         AbstractMemberMetaData verfmd =
             ((AbstractClassMetaData)vmd.getParent()).getMetaDataForMember(vmd.getFieldName());
+        if (nextVersion instanceof Number) {
+          // Version can be long, Long, int, Integer, short, Short, or
+          // Timestamp, but Timestamp is not yet supported.  DataNuc always
+          // returns a Long if the VersionStrategy is VERSION_NUMBER so we need
+          // to convert for other types.
+          Number nextNumber = (Number) nextVersion;
+          if (verfmd.getType().equals(Long.class) || verfmd.getType().equals(Long.TYPE)) {
+            nextVersion = nextNumber.longValue();
+          } else if (verfmd.getType().equals(Integer.class) || verfmd.getType().equals(Integer.TYPE)) {
+            nextVersion = nextNumber.intValue();
+          } else if (verfmd.getType().equals(Short.class) || verfmd.getType().equals(Short.TYPE)) {
+            nextVersion = nextNumber.shortValue();
+          }
+        }
         sm.replaceField(verfmd.getAbsoluteFieldNumber(), nextVersion, false);
       }
     }
