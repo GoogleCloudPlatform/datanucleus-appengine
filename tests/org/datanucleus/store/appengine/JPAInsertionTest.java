@@ -38,7 +38,7 @@ public class JPAInsertionTest extends JPATestCase {
     assertNull(b1.getId());
     commitTxn();
     assertNotNull(b1.getId());
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    Entity entity = ds.get(KeyFactory.stringToKey(b1.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
@@ -56,7 +56,7 @@ public class JPAInsertionTest extends JPATestCase {
     em.merge(b1);
     commitTxn();
     assertNotNull(b1.getId());
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    Entity entity = ds.get(KeyFactory.stringToKey(b1.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));
@@ -73,7 +73,7 @@ public class JPAInsertionTest extends JPATestCase {
     em.persist(b1);
     commitTxn();
     assertEquals("named key", KeyFactory.stringToKey(b1.getId()).getName());
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
+    Entity entity = ds.get(KeyFactory.stringToKey(b1.getId()));
     assertNotNull(entity);
     assertEquals("jimmy", entity.getProperty("author"));
     assertEquals("isbn", entity.getProperty("isbn"));

@@ -49,7 +49,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
   public void testFetching() {
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
-    ldth.ds.put(ksEntity);
+    ds.put(ksEntity);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
@@ -197,7 +197,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
   public void testFetchingNullsForNotNullFields() {
     Entity entity = new Entity(KitchenSink.class.getSimpleName());
-    ldth.ds.put(entity);
+    ds.put(entity);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
     final AbstractClassMetaData acmd =
@@ -271,7 +271,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
 
   public void testStorage() {
     Entity ksEntity = new Entity("KitchenSink");
-    ldth.ds.put(ksEntity);
+    ds.put(ksEntity);
 
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     final ClassLoaderResolver clr = new JDOClassLoaderResolver();
@@ -472,7 +472,7 @@ public class DatastoreFieldManagerTest extends JDOTestCase {
     assertNull(entity.getParent());
 
     Entity ksEntity = KitchenSink.newKitchenSinkEntity(null);
-    ldth.ds.put(ksEntity);
+    ds.put(ksEntity);
 
     // non-null value is ok
     fieldManager.storeStringField(ancestorPkFieldPos, KeyFactory.keyToString(ksEntity.getKey()));

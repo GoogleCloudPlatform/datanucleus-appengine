@@ -64,7 +64,7 @@ public class JPAUnindexedPropertiesTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertTrue(isUnindexedProperty(getRawProperty(e, "unindexedString")));
     assertTrue(isUnindexedProperty(getRawProperty(e, "unindexedList")));
     assertTrue(isUnindexedProperty(getRawProperty(e, "unindexedText")));

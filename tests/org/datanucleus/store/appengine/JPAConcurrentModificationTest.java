@@ -94,7 +94,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testUpdateCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd =
         new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
@@ -116,7 +116,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testUpdateOfDetachedCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
@@ -157,7 +157,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         };
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
@@ -204,7 +204,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         };
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Book b = em.find(Book.class, e.getKey());
     ExceptionThrowingDatastoreDelegate dd =
@@ -237,7 +237,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testDeleteCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
@@ -278,7 +278,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testUpdateCollides_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
@@ -297,7 +297,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
   public void testUpdateOfDetachedCollides_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     // DataNuc JPA impl won't detach the object unless you open and close a txn
     beginTxn();
     Book book = em.find(Book.class, e.getKey());
@@ -340,7 +340,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         };
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Book b = em.find(Book.class, e.getKey());
     commitTxn();
@@ -386,7 +386,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         };
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = em.find(Book.class, e.getKey());
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
@@ -420,7 +420,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 

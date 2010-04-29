@@ -32,7 +32,7 @@ public class JPADatastoreBridgeTest extends JPATestCase {
 
   public void testConvertQueryResultList_Empty() {
     QueryResultList<Entity> result =
-        ldth.ds.prepare(new Query("blarg")).asQueryResultList(FetchOptions.Builder.withLimit(10));
+        ds.prepare(new Query("blarg")).asQueryResultList(FetchOptions.Builder.withLimit(10));
 
     JPADatastoreBridge bridge = new JPADatastoreBridge();
     List<Book> books = bridge.toJPAResult(em, Book.class, result);
@@ -42,10 +42,10 @@ public class JPADatastoreBridgeTest extends JPATestCase {
   public void testConvertQueryResultList() {
     for (int i = 0; i < 5; i++) {
       Entity e = Book.newBookEntity("harold" + i, "isbn", "the title", 2004);
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultList<Entity> result =
-        ldth.ds.prepare(new Query("Book")).asQueryResultList(FetchOptions.Builder.withLimit(10));
+        ds.prepare(new Query("Book")).asQueryResultList(FetchOptions.Builder.withLimit(10));
 
     JPADatastoreBridge bridge = new JPADatastoreBridge();
     List<Book> books = bridge.toJPAResult(em, Book.class, result);
@@ -63,10 +63,10 @@ public class JPADatastoreBridgeTest extends JPATestCase {
   public void testConvertQueryResultIterable() {
     for (int i = 0; i < 5; i++) {
       Entity e = Book.newBookEntity("harold" + i, "isbn", "the title", 2004);
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultIterable<Entity> result =
-        ldth.ds.prepare(new Query("Book")).asQueryResultIterable();
+        ds.prepare(new Query("Book")).asQueryResultIterable();
 
     JPADatastoreBridge bridge = new JPADatastoreBridge();
     List<Book> books = bridge.toJPAResult(em, Book.class, result);
@@ -84,10 +84,10 @@ public class JPADatastoreBridgeTest extends JPATestCase {
   public void testAccessResultsAfterClose() {
     for (int i = 0; i < 3; i++) {
       Entity e = Book.newBookEntity("this", "that", "the other");
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultIterable<Entity> result =
-        ldth.ds.prepare(new Query("Book")).asQueryResultIterable();
+        ds.prepare(new Query("Book")).asQueryResultIterable();
     beginTxn();
     JPADatastoreBridge bridge = new JPADatastoreBridge();
     List<Book> books = bridge.toJPAResult(em, Book.class, result);

@@ -281,11 +281,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void test2Equals2OrderBy() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
-    ldth.ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
+    ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
@@ -303,11 +303,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testDefaultOrderingIsAsc() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
-    ldth.ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
+    ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
@@ -325,11 +325,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testLimitQuery() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
-    ldth.ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
+    ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
@@ -356,11 +356,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testOffsetQuery() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
-    ldth.ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
+    ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
                              " WHERE author = 'Joe Blow'" +
@@ -387,11 +387,11 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testOffsetLimitQuery() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
-    ldth.ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book"));
+    ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
+    ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
                              " WHERE author = 'Joe Blow'" +
@@ -466,7 +466,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQuery() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName() + " where id = :key");
@@ -488,8 +488,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testKeyQuery_KeyPk() {
     Entity entityWithName = new Entity(HasKeyPkJPA.class.getSimpleName(), "blarg");
     Entity entityWithId = new Entity(HasKeyPkJPA.class.getSimpleName());
-    ldth.ds.put(entityWithName);
-    ldth.ds.put(entityWithId);
+    ds.put(entityWithName);
+    ds.put(entityWithId);
 
     Query q = em.createQuery(
         "select from " + HasKeyPkJPA.class.getName() + " where id = :key");
@@ -515,7 +515,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQueryWithSorts() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
@@ -529,7 +529,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQuery_MultipleFilters() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
@@ -543,10 +543,10 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQuery_NonEqualityFilter() {
     Entity bookEntity1 = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity1);
+    ds.put(bookEntity1);
 
     Entity bookEntity2 = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity2);
+    ds.put(bookEntity2);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
@@ -560,10 +560,10 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQuery_SortByKey() {
     Entity bookEntity1 = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity1);
+    ds.put(bookEntity1);
 
     Entity bookEntity2 = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity2);
+    ds.put(bookEntity2);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
@@ -595,11 +595,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testAncestorQuery() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Entity
         hasAncestorEntity =
         new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), bookEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasStringAncestorStringPkJPA.class.getName()
@@ -621,11 +621,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIllegalAncestorQuery() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Entity
         hasAncestorEntity =
         new Entity(HasStringAncestorStringPkJPA.class.getName(), bookEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasStringAncestorStringPkJPA.class.getName()
@@ -640,9 +640,9 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testSortByFieldWithCustomColumn() {
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book", 2003));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book", 2002));
-    ldth.ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book", 2001));
+    ds.put(Book.newBookEntity("Joe Blow", "67890", "Bar Book", 2003));
+    ds.put(Book.newBookEntity("Joe Blow", "11111", "Bar Book", 2002));
+    ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book", 2001));
 
     Query q = em.createQuery("SELECT FROM " +
                              Book.class.getName() +
@@ -681,9 +681,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void testFilterByChildObject(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bookEntity = Book.newBookEntity(parentEntity.getKey(), "Joe Blow", "11111", "Bar Book", 1929);
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
@@ -701,9 +701,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void testFilterByChildObject_AdditionalFilterOnParent(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bookEntity = Book.newBookEntity(parentEntity.getKey(), "Joe Blow", "11111", "Bar Book", 1929);
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
@@ -728,9 +728,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void testFilterByChildObject_UnsupportedOperator(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bookEntity = Book.newBookEntity(parentEntity.getKey(), "Joe Blow", "11111", "Bar Book", 1929);
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
@@ -751,9 +751,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void testFilterByChildObject_ValueWithoutAncestor(BookProvider bp) {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bookEntity = Book.newBookEntity("Joe Blow", "11111", "Bar Book", 1929);
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
@@ -774,7 +774,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByChildObject_KeyIsWrongType() {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
 
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
@@ -800,9 +800,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByChildObject_ValueWithoutId() {
     Entity parentEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bookEntity = Book.newBookEntity("Joe Blow", "11111", "Bar Book", 1929);
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Book book = new Book();
     Query q = em.createQuery(
@@ -818,13 +818,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByParentObject() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bidirEntity =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
     Entity bidirEntity2 =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity2);
+    ds.put(bidirEntity2);
 
     HasOneToManyListJPA parent =
         em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -842,13 +842,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByParentLongObjectId() {
     Entity parentEntity = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bidirEntity =
         new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
     Entity bidirEntity2 =
         new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity2);
+    ds.put(bidirEntity2);
 
     HasOneToManyLongPkListJPA parent =
         em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -865,13 +865,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByParentIntObjectId() {
     Entity parentEntity = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity bidirEntity =
         new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
     Entity bidirEntity2 =
         new Entity(BidirectionalChildLongPkListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity2);
+    ds.put(bidirEntity2);
 
     HasOneToManyLongPkListJPA parent =
         em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -888,15 +888,15 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByParentObjectWhereParentIsAChild() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity childEntity = new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(childEntity);
+    ds.put(childEntity);
     Entity grandChildEntity1 =
         new Entity(BidirectionalGrandchildListJPA.class.getSimpleName(), childEntity.getKey());
-    ldth.ds.put(grandChildEntity1);
+    ds.put(grandChildEntity1);
     Entity grandChildEntity2 =
         new Entity(BidirectionalGrandchildListJPA.class.getSimpleName(), childEntity.getKey());
-    ldth.ds.put(grandChildEntity2);
+    ds.put(grandChildEntity2);
 
     BidirectionalChildListJPA child =
         em.find(BidirectionalChildListJPA.class, KeyFactory.keyToString(childEntity.getKey()));
@@ -911,15 +911,15 @@ public class JPQLQueryTest extends JPATestCase {
   }
   public void testFilterByParentId() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity
         bidirEntity =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
     Entity
         bidirEntity2 =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity2);
+    ds.put(bidirEntity2);
 
     HasOneToManyListJPA parent =
         em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -937,15 +937,15 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testFilterByParentKey() {
     Entity parentEntity = new Entity(HasOneToManyListJPA.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity
         bidirEntity =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
     Entity
         bidirEntity2 =
         new Entity(BidirectionalChildListJPA.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(bidirEntity2);
+    ds.put(bidirEntity2);
 
     Query q = em.createQuery("SELECT FROM " +
                              BidirectionalChildListJPA.class.getName() +
@@ -965,7 +965,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("keyList",
                        Utils.newArrayList(KeyFactory.createKey("be", "bo"),
                                           KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
@@ -1006,7 +1006,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("keyList",
                        Utils.newArrayList(KeyFactory.createKey("be", "bo"),
                                           KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
@@ -1042,7 +1042,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("keyList",
                        Utils.newArrayList(KeyFactory.createKey("be", "bo"),
                                           KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
@@ -1085,7 +1085,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName() + " where name.first = \"max\"");
@@ -1100,7 +1100,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
@@ -1116,7 +1116,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "max");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
@@ -1154,14 +1154,14 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max2");
     entity.setProperty("last", "ross2");
     entity.setProperty("anotherFirst", "notmax2");
     entity.setProperty("anotherLast", "notross2");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery("select from " + Person.class.getName() + " order by name.first desc");
     @SuppressWarnings("unchecked")
@@ -1177,14 +1177,14 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max2");
     entity.setProperty("last", "ross2");
     entity.setProperty("anotherFirst", "notmax2");
     entity.setProperty("anotherLast", "notross2");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q =
         em.createQuery("select from " + Person.class.getName() + " order by anotherName.last desc");
@@ -1201,21 +1201,21 @@ public class JPQLQueryTest extends JPATestCase {
     entity0.setProperty("last", "ross");
     entity0.setProperty("anotherFirst", "notmax");
     entity0.setProperty("anotherLast", "z");
-    ldth.ds.put(entity0);
+    ds.put(entity0);
 
     Entity entity1 = new Entity(Person.class.getSimpleName());
     entity1.setProperty("first", "max");
     entity1.setProperty("last", "ross2");
     entity1.setProperty("anotherFirst", "notmax2");
     entity1.setProperty("anotherLast", "notross2");
-    ldth.ds.put(entity1);
+    ds.put(entity1);
 
     Entity entity2 = new Entity(Person.class.getSimpleName());
     entity2.setProperty("first", "a");
     entity2.setProperty("last", "b");
     entity2.setProperty("anotherFirst", "c");
     entity2.setProperty("anotherLast", "d");
-    ldth.ds.put(entity2);
+    ds.put(entity2);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
@@ -1251,7 +1251,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testBigDecimalQuery() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(e);
+    ds.put(e);
 
     Query q = em.createQuery(
         "select from " + KitchenSink.class.getName() + " where bigDecimal = :bd");
@@ -1262,7 +1262,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testQueryWithNegativeLiteralLong() {
-    ldth.ds.put(Book.newBookEntity("auth", "123432", "title", -40));
+    ds.put(Book.newBookEntity("auth", "123432", "title", -40));
 
     Query q = em.createQuery(
         "select from " + Book.class.getName() + " where firstPublished = -40");
@@ -1279,7 +1279,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testQueryWithNegativeLiteralDouble() {
     Entity e = new Entity(HasDoubleJPA.class.getSimpleName());
     e.setProperty("aDouble", -2.23d);
-    ldth.ds.put(e);
+    ds.put(e);
 
     Query q = em.createQuery(
         "select from " + HasDoubleJPA.class.getName() + " where aDouble > -2.25");
@@ -1289,7 +1289,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testQueryWithNegativeParam() {
-    ldth.ds.put(Book.newBookEntity("auth", "123432", "title", -40));
+    ds.put(Book.newBookEntity("auth", "123432", "title", -40));
 
     Query q = em.createQuery(
         "select from " + Book.class.getName() + " where firstPublished = :p");
@@ -1301,7 +1301,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQueryWithUnencodedStringPk() {
     Entity e = new Entity(HasUnencodedStringPkJPA.class.getSimpleName(), "yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getName());
@@ -1323,7 +1323,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQueryWithLongPk() {
     Entity e = new Entity(HasLongPkJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + HasLongPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getId());
@@ -1343,7 +1343,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testKeyQueryWithEncodedStringPk() {
     Entity e = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), "yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
     q.setParameter("p", e.getKey().getName());
     HasEncodedStringPkJPA result = (HasEncodedStringPkJPA) q.getSingleResult();
@@ -1362,7 +1362,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQuerySingleResult_OneResult() {
     Entity e = Book.newBookEntity("max", "12345", "t1");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + Book.class.getName() + " where title = :p");
     q.setParameter("p", "t1");
@@ -1372,7 +1372,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQuerySingleResult_NoResult() {
     Entity e = Book.newBookEntity("max", "12345", "t1");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + Book.class.getName() + " where title = :p");
     q.setParameter("p", "not t1");
@@ -1387,8 +1387,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testQuerySingleResult_MultipleResults() {
     Entity e1 = Book.newBookEntity("max", "12345", "t1");
     Entity e2 = Book.newBookEntity("max", "12345", "t1");
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
+    ds.put(e1);
+    ds.put(e2);
     Query q = em.createQuery(
         "select from " + Book.class.getName() + " where title = :p");
     q.setParameter("p", "t1");
@@ -1414,7 +1414,7 @@ public class JPQLQueryTest extends JPATestCase {
     // Need to have enough data to ensure a Next call
     for (int i = 0; i < 21; i++) {
       Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-      ldth.ds.put(bookEntity);
+      ds.put(bookEntity);
     }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
@@ -1473,8 +1473,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testCountQuery() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
+    ds.put(e1);
+    ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName());
     assertEquals(2, q.getSingleResult());
 
@@ -1488,8 +1488,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testCountQueryWithFilter() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
+    ds.put(e1);
+    ds.put(e2);
     Query
         q =
         em.createQuery(
@@ -1500,8 +1500,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testCountQueryWithUnknownCountProp() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
+    ds.put(e1);
+    ds.put(e2);
     Query q = em.createQuery("select count(doesnotexist) from " + Book.class.getName());
     try {
       q.getSingleResult();
@@ -1514,8 +1514,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testCountQueryWithOffsetFails() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
-    ldth.ds.put(e1);
-    ldth.ds.put(e2);
+    ds.put(e1);
+    ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName());
     q.setFirstResult(1);
     try {
@@ -1535,7 +1535,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByEnum_ProvideStringExplicitly() {
     Entity e = new Entity(HasEnumJPA.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
     q.setParameter("p1", HasEnumJPA.MyEnum.V1.name());
     List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
@@ -1545,7 +1545,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByEnum_ProvideEnumExplicitly() {
     Entity e = new Entity(HasEnumJPA.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
     q.setParameter("p1", HasEnumJPA.MyEnum.V1);
     List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
@@ -1555,7 +1555,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByEnum_ProvideLiteral() {
     Entity e = new Entity(HasEnumJPA.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + HasEnumJPA.class.getName() + " where myEnum = '"
         + HasEnumJPA.MyEnum.V1.name() + "'");
@@ -1567,7 +1567,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasBytesJPA.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(e);
+    ds.put(e);
     Query
         q =
         em.createQuery("select from " + HasBytesJPA.class.getName() + " where shortBlob = :p1");
@@ -1580,7 +1580,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasBytesJPA.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("primBytes", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(e);
+    ds.put(e);
     Query
         q =
         em.createQuery("select from " + HasBytesJPA.class.getName() + " where primBytes = :p1");
@@ -1593,7 +1593,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasBytesJPA.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("bytes", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + HasBytesJPA.class.getName() + " where bytes = :p1");
     q.setParameter("p1", PrimitiveArrays.asList("short blob".getBytes()).toArray(new Byte[0]));
     List<HasBytesJPA> result = (List<HasBytesJPA>) q.getResultList();
@@ -1602,7 +1602,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testAliasedFilter() {
     Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName() + " b where b.id = :key");
@@ -1616,8 +1616,8 @@ public class JPQLQueryTest extends JPATestCase {
   public void testAliasedSort() {
     Entity bookEntity1 = Book.newBookEntity("Joe Blow", "67891", "Bar Book");
     Entity bookEntity2 = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-    ldth.ds.put(bookEntity1);
-    ldth.ds.put(bookEntity2);
+    ds.put(bookEntity1);
+    ds.put(bookEntity2);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName() + " b order by b.isbn");
@@ -1634,7 +1634,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName() + " p where p.name.first = \"max\"");
@@ -1649,13 +1649,13 @@ public class JPQLQueryTest extends JPATestCase {
     entity1.setProperty("last", "ross");
     entity1.setProperty("anotherFirst", "notmax2");
     entity1.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity1);
+    ds.put(entity1);
     Entity entity2 = new Entity(Person.class.getSimpleName());
     entity2.setProperty("first", "max");
     entity2.setProperty("last", "ross");
     entity2.setProperty("anotherFirst", "notmax1");
     entity2.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity2);
+    ds.put(entity2);
 
     Query q = em.createQuery(
         "select from " + Person.class.getName() + " p order by p.anotherName.first");
@@ -1669,7 +1669,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByNullValue_Literal() {
     Entity e = new Entity(NullDataJPA.class.getSimpleName());
     e.setProperty("string", null);
-    ldth.ds.put(e);
+    ds.put(e);
 
     Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = null");
     @SuppressWarnings("unchecked")
@@ -1680,7 +1680,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterByNullValue_Param() {
     Entity e = new Entity(NullDataJPA.class.getSimpleName());
     e.setProperty("string", null);
-    ldth.ds.put(e);
+    ds.put(e);
 
     Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = :p");
     q.setParameter("p", null);
@@ -1691,7 +1691,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManySetWithKeyPk() {
     Entity e = new Entity(HasOneToManyKeyPkSetJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyKeyPkSetJPA.class.getName());
@@ -1704,7 +1704,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManyListWithKeyPk() {
     Entity e = new Entity(HasOneToManyKeyPkListJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyKeyPkListJPA.class.getName());
@@ -1717,7 +1717,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManySetWithLongPk() {
     Entity e = new Entity(HasOneToManyLongPkSetJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyLongPkSetJPA.class.getName());
@@ -1730,7 +1730,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManyListWithLongPk() {
     Entity e = new Entity(HasOneToManyLongPkListJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyLongPkListJPA.class.getName());
@@ -1743,7 +1743,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManySetWithUnencodedStringPk() {
     Entity e = new Entity(HasOneToManyUnencodedStringPkSetJPA.class.getSimpleName(), "yar");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkSetJPA.class.getName());
@@ -1756,7 +1756,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryForOneToManyListWithUnencodedStringPk() {
     Entity e = new Entity(HasOneToManyUnencodedStringPkListJPA.class.getSimpleName(), "yar");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkListJPA.class.getName());
@@ -1770,11 +1770,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBatchGet_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -1796,11 +1796,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBatchGet_NoTxn_EncodedStringParam() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -1825,11 +1825,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBatchGet_NoTxn_In() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
@@ -1874,11 +1874,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBatchGet_Count_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
@@ -1895,11 +1895,11 @@ public class JPQLQueryTest extends JPATestCase {
   public void testBatchGet_Count_NoTxn_In() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
@@ -1922,11 +1922,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testBatchGet_Txn() {
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
@@ -1947,11 +1947,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testBatchGet_Txn_In() {
     Entity e1 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "auth", "123432", "title", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("auth", "123432", "title", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
@@ -2033,7 +2033,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createNamedQuery("namedQuery");
     assertTrue(q.getResultList().isEmpty());
     Entity e = Book.newBookEntity("author", "12345", "yam");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
   }
@@ -2050,7 +2050,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select title from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<String> titles = (List<String>) q.getResultList();
@@ -2058,7 +2058,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("the title", titles.get(0));
 
     Entity e2 = Book.newBookEntity("another author", "123456", "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     @SuppressWarnings("unchecked")
     List<String> titles2 = (List<String>) q.getResultList();
@@ -2069,10 +2069,10 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_OneIdField() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     Entity e2 = Book.newBookEntity("another author", "123456", "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     beginTxn();
     Query q = em.createQuery("select id from " + Book.class.getName());
@@ -2094,7 +2094,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_TwoFields() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select author, isbn from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2104,7 +2104,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("12345", results.get(0)[1]);
 
     Entity e2 = Book.newBookEntity("another author", null, "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.getResultList();
@@ -2119,7 +2119,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_TwoIdFields() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select id, id from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2129,7 +2129,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
 
     Entity e2 = Book.newBookEntity("another author", null, "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.getResultList();
@@ -2144,7 +2144,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_TwoIdFields_IdIsFirst() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select id, author from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2154,7 +2154,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals("author", results.get(0)[1]);
 
     Entity e2 = Book.newBookEntity("another author", null, "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.getResultList();
@@ -2169,7 +2169,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_TwoIdFields_IdIsSecond() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select author, id from " + Book.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2179,7 +2179,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
 
     Entity e2 = Book.newBookEntity("another author", null, "the other title");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     @SuppressWarnings("unchecked")
     List<Object[]> results2 = (List<Object[]>) q.getResultList();
@@ -2194,9 +2194,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_OneToOne() {
     Entity e1 = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "author", "12345", "the title");
-    ldth.ds.put(e2);
+    ds.put(e2);
     Query q = em.createQuery("select id, book from " + HasOneToOneJPA.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2209,9 +2209,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_OneToMany() {
     Entity e1 = new Entity(HasOneToManyListJPA.class.getSimpleName());
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "author", "12345", "the title");
-    ldth.ds.put(e2);
+    ds.put(e2);
     Query q = em.createQuery("select id, books from " + HasOneToManyListJPA.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
@@ -2226,7 +2226,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_AliasedField() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select b.isbn from " + Book.class.getName() + " b");
     @SuppressWarnings("unchecked")
     List<String> isbns = (List<String>) q.getResultList();
@@ -2236,7 +2236,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFieldsAndCount() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Query q = em.createQuery("select count(id), isbn from " + Book.class.getName());
     try {
       q.getResultList();
@@ -2260,7 +2260,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(entity);
+    ds.put(entity);
 
     Query q = em.createQuery("select name.first, anotherName.last from " + Person.class.getName());
     @SuppressWarnings("unchecked")
@@ -2270,7 +2270,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIsNull() {
     Entity e = Book.newBookEntity("author", null, "title");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + Book.class.getName() + " where isbn is NULL");
     @SuppressWarnings("unchecked")
     List<Book> books = q.getResultList();
@@ -2279,13 +2279,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIsNotNull() {
     Entity e = Book.newBookEntity("auth", "isbn", null);
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + Book.class.getName() + " where title is not null");
     assertTrue(q.getResultList().isEmpty());
     Query q2 = em.createQuery("select from " + Book.class.getName() + " where title <> null");
     assertTrue(q2.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not null");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not null", b.getTitle());
     b = (Book) q2.getSingleResult();
@@ -2294,35 +2294,35 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIsNotNull_Param() {
     Entity e = Book.newBookEntity("auth", "isbn", null);
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
     q.setParameter("p", null);
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not null");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not null", b.getTitle());
   }
 
   public void testNotEqual() {
     Entity e = Book.newBookEntity("auth", "isbn", "yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + Book.class.getName() + " where title <> 'yar'");
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not yar", b.getTitle());
   }
 
   public void testNotEqual_Param() {
     Entity e = Book.newBookEntity("auth", "isbn", "yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
     q.setParameter("p", "yar");
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not yar");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals("not yar", b.getTitle());
   }
@@ -2331,7 +2331,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where author IN ('auth1', 'auth3')");
     List<Book> books = q.getResultList();
     assertEquals(2, books.size());
@@ -2349,7 +2349,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1, :p2)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2372,7 +2372,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1)");
     q.setParameter("p1", Arrays.asList("auth1", "auth3"));
     List<Book> books = q.getResultList();
@@ -2394,7 +2394,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
                              + "author IN ('auth1', 'auth3') AND isbn IN ('isbn3', 'isbn2')");
     List<Book> books = q.getResultList();
@@ -2413,7 +2413,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
                              + "author IN (:p1, :p2) AND isbn IN (:p3, :p4)");
     q.setParameter("p1", "auth1");
@@ -2440,7 +2440,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
                              + "id IN (:p1) AND isbn IN (:p2, :p3)");
     q.setParameter("p1", e2.getKey());
@@ -2466,7 +2466,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() +
                              " where author = 'auth1' or author = 'auth3'");
     List<Book> books = q.getResultList();
@@ -2486,7 +2486,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() +
                              " where author = :p1 or author = :p2");
     q.setParameter("p1", "auth1");
@@ -2501,7 +2501,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
                              + "(author  = 'auth1' or author = 'auth3') AND "
                              + "(isbn = 'isbn3' or isbn = 'isbn2')");
@@ -2514,7 +2514,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("auth1", "isbn1", "yar1");
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
-    ldth.ds.put(Arrays.asList(e, e2, e3));
+    ds.put(Arrays.asList(e, e2, e3));
     Query q = em.createQuery("select from " + Book.class.getName() + " where "
                              + "(author = :p1 or author = :p2) AND "
                              + "(isbn = :p3 or isbn = :p4)");
@@ -2529,7 +2529,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIsNullChild() {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where book is null");
     try {
@@ -2542,9 +2542,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testIsNullParent() {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
-    Key key = ldth.ds.put(e);
+    Key key = ds.put(e);
     e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
-    ldth.ds.put(e);
+    ds.put(e);
     Query q = em.createQuery(
         "select from " + HasOneToOneParentJPA.class.getName() + " where parent is null");
     try {
@@ -2579,16 +2579,16 @@ public class JPQLQueryTest extends JPATestCase {
     assertTrue(q.getResultList().isEmpty());
 
     Entity e = Book.newBookEntity("author", "12345", "y");
-    ldth.ds.put(e);
+    ds.put(e);
     Book b = (Book) q.getSingleResult();
     assertEquals(e.getKey(), KeyFactory.stringToKey(b.getId()));
   }
 
   public void testSetFirstResultAfterSetParameter() {
     Entity e = Book.newBookEntity("author", "12345", "y");
-    ldth.ds.put(e);
+    ds.put(e);
     e = Book.newBookEntity("author", "12345", "y");
-    ldth.ds.put(e);
+    ds.put(e);
 
     Query query = em.createQuery("SELECT b FROM " + Book.class.getName() + " b WHERE b.title = :title");
     query.setParameter("title", "y");
@@ -2599,9 +2599,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSetMaxResultsAfterSetParameter() {
     Entity e = Book.newBookEntity("author", "12345", "y");
-    ldth.ds.put(e);
+    ds.put(e);
     Entity e2 = Book.newBookEntity("author", "12345", "y");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     Query query = em.createQuery("SELECT b FROM " + Book.class.getName() + " b WHERE b.title = :title");
     query.setParameter("title", "y");
@@ -2612,11 +2612,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSetFirstResultAfterSetPCParameter() {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
-    Key key = ldth.ds.put(e);
+    Key key = ds.put(e);
     e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
-    ldth.ds.put(e);
+    ds.put(e);
     e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
-    ldth.ds.put(e);
+    ds.put(e);
     HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
     Query q = em.createQuery(
         "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
@@ -2628,11 +2628,11 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSetMaxResultsAfterSetPCParameter() {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
-    Key key = ldth.ds.put(e);
+    Key key = ds.put(e);
     Entity child1 = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
-    ldth.ds.put(child1);
+    ds.put(child1);
     Entity child2 = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
-    ldth.ds.put(child2);
+    ds.put(child2);
     HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
     Query q = em.createQuery(
         "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
@@ -2645,7 +2645,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testAccessResultsAfterClose() {
     for (int i = 0; i < 3; i++) {
       Entity e = Book.newBookEntity("this", "that", "the other");
-      ldth.ds.put(e);
+      ds.put(e);
     }
     beginTxn();
     Query q = em.createQuery("select from " + Book.class.getName());
@@ -2663,7 +2663,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
     switchDatasource(EntityManagerFactoryName.transactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("this", "that", "the other");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     beginTxn();
     // Not used, but associates the txn with the book's entity group
@@ -2691,13 +2691,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testLikeQuery_Literal() {
     Entity e1 = Book.newBookEntity("this", "that", "xxxx");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("this", "that", "y");
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("this", "that", "yb");
-    ldth.ds.put(e3);
+    ds.put(e3);
     Entity e4 = Book.newBookEntity("this", "that", "z");
-    ldth.ds.put(e4);
+    ds.put(e4);
 
     Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%'");
     @SuppressWarnings("unchecked")
@@ -2723,7 +2723,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testLikeQuery_Literal2() {
     for (int i = 0; i < 10; i++) {
       Entity e1 = Book.newBookEntity("this", "that", "xxxx");
-      ldth.ds.put(e1);
+      ds.put(e1);
     }
 
     Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'x%'");
@@ -2735,13 +2735,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testLikeQuery_Param() {
     Entity e1 = Book.newBookEntity("this", "that", "xxxx");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("this", "that", "y");
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("this", "that", "yb");
-    ldth.ds.put(e3);
+    ds.put(e3);
     Entity e4 = Book.newBookEntity("this", "that", "z");
-    ldth.ds.put(e4);
+    ds.put(e4);
 
     Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
     q.setParameter("p", "y%");
@@ -2849,13 +2849,13 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testLikeQuery_Literal_CustomEscapeChar() {
     Entity e1 = Book.newBookEntity("this", "that", "xxxx");
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("this", "that", "%");
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("this", "that", "%a");
-    ldth.ds.put(e3);
+    ds.put(e3);
     Entity e4 = Book.newBookEntity("this", "that", "z");
-    ldth.ds.put(e4);
+    ds.put(e4);
 
     Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE '%^' ESCAPE '^'");
     try {
@@ -2899,7 +2899,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testCurrentDateFuncs() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(e);
+    ds.put(e);
 
     for (String dateFunc : Arrays.asList("CURRENT_TIMESTAMP", "CURRENT_DATE")) {
       Query q = em.createQuery("select from " + KitchenSink.class.getName() +
@@ -2926,7 +2926,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testPositionalParam() {
     Entity e = Book.newBookEntity("me", "isbn", "return of yam");
-    ldth.ds.put(e);
+    ds.put(e);
     List<Book> result =
         em.createQuery("select b from " + Book.class.getName() + " b where isbn=?1")
             .setParameter(1, "isbn").getResultList();
@@ -2934,7 +2934,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testDefaultClassName() {
-    ldth.ds.put(new Entity(DetachableJPA.class.getSimpleName()));
+    ds.put(new Entity(DetachableJPA.class.getSimpleName()));
     assertEquals(1, em.createQuery("select o from " + DetachableJPA.class.getName() + " o").getResultList().size());
     assertEquals(1, em.createQuery("select o from DetachableJPA o").getResultList().size());
   }
@@ -2997,7 +2997,7 @@ public class JPQLQueryTest extends JPATestCase {
     // Need to have enough data to ensure a Next call
     for (int i = 0; i < 21; i++) {
       Entity bookEntity = Book.newBookEntity("Joe Blow", "67890", "Bar Book");
-      ldth.ds.put(bookEntity);
+      ds.put(bookEntity);
     }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {

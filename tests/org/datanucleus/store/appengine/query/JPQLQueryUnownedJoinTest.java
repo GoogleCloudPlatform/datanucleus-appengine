@@ -41,7 +41,7 @@ public class JPQLQueryUnownedJoinTest extends JPATestCase {
     beginTxn();
     em.persist(student);
     commitTxn();
-    Entity studentEntity = ldth.ds.get(KeyFactory.createKey(kindForClass(Student.class), student.getId()));
+    Entity studentEntity = ds.get(KeyFactory.createKey(kindForClass(Student.class), student.getId()));
     assertEquals(3, studentEntity.getProperties().size());
     assertTrue(studentEntity.hasProperty("courses"));
     assertTrue(studentEntity.hasProperty("grade"));

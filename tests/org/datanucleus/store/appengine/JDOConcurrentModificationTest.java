@@ -94,7 +94,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testUpdateCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd =
         new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
@@ -114,7 +114,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testUpdateOfDetachedCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     commitTxn();
@@ -154,7 +154,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
         };
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     commitTxn();
@@ -200,7 +200,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
         };
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, e.getKey());
     // make a copy right away, otherwise our change will get reverted
@@ -232,7 +232,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testDeleteCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
@@ -274,7 +274,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testUpdateCollides_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 
@@ -293,7 +293,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
   public void testUpdateOfDetachedCollides_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     pm.close();
     pm = pmf.getPersistenceManager();
@@ -333,7 +333,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
         };
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     pm.close();
     pm = pmf.getPersistenceManager();
@@ -378,7 +378,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
         };
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     Flight f = pm.getObjectById(Flight.class, e.getKey());
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
@@ -411,7 +411,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
-    ldth.ds.put(e);
+    ds.put(e);
     CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
     ApiProxy.setDelegate(dd);
 

@@ -43,7 +43,7 @@ public class JPQLCursorTest extends JPATestCase {
     Entity e1 = Book.newBookEntity("auth", "34", "yar");
     Entity e2 = Book.newBookEntity("auth", "34", "yar");
     Entity e3 = Book.newBookEntity("auth", "34", "yar");
-    ldth.ds.put(Arrays.asList(e1, e2, e3));
+    ds.put(Arrays.asList(e1, e2, e3));
 
     beginTxn();
     Query q = em.createQuery("select from " + Book.class.getName());
@@ -84,12 +84,12 @@ public class JPQLCursorTest extends JPATestCase {
 
   public void testCursorEquality() {
     List<Key> keys = Utils.newArrayList();
-    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
-    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
-    keys.add(ldth.ds.put(Book.newBookEntity("auth", "34", "yar")));
+    keys.add(ds.put(Book.newBookEntity("auth", "34", "yar")));
+    keys.add(ds.put(Book.newBookEntity("auth", "34", "yar")));
+    keys.add(ds.put(Book.newBookEntity("auth", "34", "yar")));
 
     com.google.appengine.api.datastore.Query query = new com.google.appengine.api.datastore.Query("Book");
-    QueryResultIterator entityIter = ldth.ds.prepare(query).asQueryResultIterator();
+    QueryResultIterator entityIter = ds.prepare(query).asQueryResultIterator();
     List<Cursor> lowLevelCursors = Utils.newArrayList();
     lowLevelCursors.add(entityIter.getCursor());
     entityIter.next();
@@ -114,7 +114,7 @@ public class JPQLCursorTest extends JPATestCase {
 
     for (int i = 0; i < lowLevelCursors.size(); i++) {
       Cursor lowLevelCursor = lowLevelCursors.get(i);
-      List<Entity> list = ldth.ds.prepare(query).asList(FetchOptions.Builder.withCursor(lowLevelCursor));
+      List<Entity> list = ds.prepare(query).asList(FetchOptions.Builder.withCursor(lowLevelCursor));
       assertEquals(3 - i, list.size());
     }
   }
@@ -122,7 +122,7 @@ public class JPQLCursorTest extends JPATestCase {
   public void testGetCursor_Iterator() {
     List<Key> keys = Utils.newArrayList();
     for (int i = 0; i < 10; i++) {
-      keys.add(ldth.ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
+      keys.add(ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
     }
 
     beginTxn();
@@ -149,7 +149,7 @@ public class JPQLCursorTest extends JPATestCase {
   public void testGetCursor_Iterable() {
     List<Key> keys = Utils.newArrayList();
     for (int i = 0; i < 10; i++) {
-      keys.add(ldth.ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
+      keys.add(ds.put(Book.newBookEntity("auth" + i, "34", "yar")));
     }
 
     beginTxn();

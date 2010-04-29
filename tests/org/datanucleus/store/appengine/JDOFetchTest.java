@@ -57,7 +57,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimpleFetch_Id() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     commitTxn();
     beginTxn();
     String keyStr = KeyFactory.keyToString(key);
@@ -72,7 +72,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimpleFetch_Id_LongIdOnly() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     commitTxn();
     beginTxn();
 
@@ -97,7 +97,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimpleFetch_Id_IntIdOnly() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     commitTxn();
     beginTxn();
 
@@ -113,7 +113,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimpleFetch_NamedKey() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
     commitTxn();
     beginTxn();
 
@@ -125,7 +125,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimpleFetch_NamedKey_NameOnly() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
     commitTxn();
     beginTxn();
 
@@ -145,8 +145,8 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testFetchNonExistent() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.delete(key);
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.delete(key);
     String keyStr = KeyFactory.keyToString(key);
     try {
       pm.getObjectById(Flight.class, keyStr);
@@ -157,7 +157,7 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testKitchenSinkFetch() {
-    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
+    Key key = ds.put(KitchenSink.newKitchenSinkEntity(null));
     commitTxn();
     beginTxn();
 
@@ -170,7 +170,7 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithKeyPk() {
     Entity e = new Entity(HasKeyPkJDO.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     commitTxn();
     beginTxn();
     HasKeyPkJDO hk = pm.getObjectById(HasKeyPkJDO.class, e.getKey());
@@ -180,9 +180,9 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithKeyPkAndAncestor() {
     Entity parent = new Entity("yam");
-    ldth.ds.put(parent);
+    ds.put(parent);
     Entity child = new Entity(HasKeyPkJDO.class.getSimpleName(), parent.getKey());
-    ldth.ds.put(child);
+    ds.put(child);
     commitTxn();
     beginTxn();
     HasKeyPkJDO hk = pm.getObjectById(HasKeyPkJDO.class, child.getKey());
@@ -192,9 +192,9 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithKeyPkAndStringAncestor() {
     Entity parent = new Entity("yam");
-    ldth.ds.put(parent);
+    ds.put(parent);
     Entity child = new Entity(HasStringAncestorKeyPkJDO.class.getSimpleName(), parent.getKey());
-    ldth.ds.put(child);
+    ds.put(child);
     commitTxn();
     beginTxn();
     HasStringAncestorKeyPkJDO hk =
@@ -205,9 +205,9 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithStringPkAndKeyAncestor() {
     Entity parent = new Entity("yam");
-    ldth.ds.put(parent);
+    ds.put(parent);
     Entity child = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parent.getKey());
-    ldth.ds.put(child);
+    ds.put(child);
     commitTxn();
     beginTxn();
     HasKeyAncestorStringPkJDO hk =
@@ -218,7 +218,7 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithWrongIdType_Key() {
     Entity entity = new Entity(HasStringAncestorKeyPkJDO.class.getSimpleName());
-    ldth.ds.put(entity);
+    ds.put(entity);
     commitTxn();
     beginTxn();
 
@@ -229,7 +229,7 @@ public class JDOFetchTest extends JDOTestCase {
 
   public void testFetchWithWrongIdType_String() {
     Entity entity = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName());
-    ldth.ds.put(entity);
+    ds.put(entity);
     commitTxn();
     beginTxn();
 
@@ -244,7 +244,7 @@ public class JDOFetchTest extends JDOTestCase {
     e.setProperty("last", "jam");
     e.setProperty("anotherFirst", "anotherjimmy");
     e.setProperty("anotherLast", "anotherjam");
-    ldth.ds.put(e);
+    ds.put(e);
     commitTxn();
     beginTxn();
     Person p = pm.getObjectById(Person.class, KeyFactory.keyToString(e.getKey()));
@@ -261,7 +261,7 @@ public class JDOFetchTest extends JDOTestCase {
     Entity e = new Entity(Person.class.getSimpleName());
     e.setProperty("first", "jimmy");
     e.setProperty("last", "jam");
-    ldth.ds.put(e);
+    ds.put(e);
     commitTxn();
     beginTxn();
     Person p = pm.getObjectById(Person.class, KeyFactory.keyToString(e.getKey()));
@@ -277,8 +277,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -295,8 +295,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchArrayList() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strArrayList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -314,8 +314,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchList() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -333,8 +333,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchLinkedList() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -352,8 +352,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchHashSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strHashSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -371,8 +371,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchLinkedHashSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strLinkedHashSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -390,8 +390,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchSortedSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strSortedSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -409,8 +409,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchTreeSet() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strTreeSet", Utils.newArrayList("c", "b", "a"));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -428,8 +428,8 @@ public class JDOFetchTest extends JDOTestCase {
   public void testFetchCollection() {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("intColl", Utils.newArrayList(2, 3, 4));
-    ldth.ds.put(e);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
+    ds.put(e);
+    if (ds.getCurrentTransaction(null) != null) {
       commitTxn();
       beginTxn();
     }
@@ -448,7 +448,7 @@ public class JDOFetchTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("yar", "yar", "bos", "mia", 0, 44);
     // set the value of one of the int properties to be too big for an int field
     e.setProperty("you", Integer.MAX_VALUE + 1L);
-    ldth.ds.put(e);
+    ds.put(e);
     commitTxn();
     beginTxn();
 
@@ -462,7 +462,7 @@ public class JDOFetchTest extends JDOTestCase {
     List<String> oneNullElement = new ArrayList<String>();
     oneNullElement.add(null);
     e.setProperty("strList", oneNullElement);
-    Key key = ldth.ds.put(e);
+    Key key = ds.put(e);
     commitTxn();
     beginTxn();
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, key);

@@ -96,7 +96,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(child);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
     assertEquals("blarg", e.getProperty("overridden_string"));
     assertFalse(e.hasProperty("overriddenProperty"));
   }
@@ -123,7 +123,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(child);
     commitTxn();
     Key key = KeyFactory.createKey(kindForClass(child.getClass()), child.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
     assertEquals("aString", e.getProperty("aString"));
     assertEquals("bString", e.getProperty("bString"));
     assertEquals("embedded val 0", e.getProperty("val0"));
@@ -197,7 +197,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.deletePersistent(child);
     commitTxn();
     try {
-      ldth.ds.get(key);
+      ds.get(key);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -218,7 +218,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Key key = KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
     assertEquals("aString", e.getProperty("aString"));
     assertEquals("embedded val 0", e.getProperty("val0"));
     assertEquals("embedded val 1", e.getProperty("val1"));
@@ -265,7 +265,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.deletePersistent(parent);
     commitTxn();
     try {
-      ldth.ds.get(key);
+      ds.get(key);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -335,7 +335,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
     assertEquals("a", e.getProperty("aString"));
   }
 
@@ -346,7 +346,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(child);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
     assertEquals("a", e.getProperty("aString"));
     assertEquals("b", e.getProperty("bString"));
   }
@@ -359,7 +359,7 @@ public class JDOSubclassTest extends JDOTestCase {
     pm.makePersistent(grandchild);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(grandchild.getClass()), grandchild.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(grandchild.getClass()), grandchild.getId()));
     assertEquals("a", e.getProperty("aString"));
     assertEquals("b", e.getProperty("bString"));
     assertEquals("c", e.getProperty("cString"));
@@ -368,7 +368,7 @@ public class JDOSubclassTest extends JDOTestCase {
   private void testFetchParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = pm.getObjectById(parentClass, e.getKey());
@@ -381,7 +381,7 @@ public class JDOSubclassTest extends JDOTestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
@@ -396,7 +396,7 @@ public class JDOSubclassTest extends JDOTestCase {
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     e.setProperty("cString", "c");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     org.datanucleus.test.SubclassesJDO.Grandchild
@@ -411,11 +411,11 @@ public class JDOSubclassTest extends JDOTestCase {
   private void testQueryParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "z8");
-    ldth.ds.put(e);
+    ds.put(e);
 
     e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "z9");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = ((List<Parent>) pm.newQuery(
@@ -443,17 +443,17 @@ public class JDOSubclassTest extends JDOTestCase {
     Entity e1 = new Entity(kindForClass(childClass));
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b2");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     Entity e2 = new Entity(kindForClass(childClass));
     e2.setProperty("aString", "a2");
     e2.setProperty("bString", "b3");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     Entity e3 = new Entity(kindForClass(childClass));
     e3.setProperty("aString", "a2");
     e3.setProperty("bString", "b3");
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
 
@@ -495,19 +495,19 @@ public class JDOSubclassTest extends JDOTestCase {
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b1");
     e1.setProperty("cString", "c2");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     Entity e2 = new Entity(kindForClass(grandchildClass));
     e2.setProperty("aString", "a2");
     e2.setProperty("bString", "b3");
     e2.setProperty("cString", "c3");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     Entity e3 = new Entity(kindForClass(grandchildClass));
     e3.setProperty("aString", "a2");
     e3.setProperty("bString", "b2");
     e3.setProperty("cString", "c3");
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
     Grandchild grandchild = ((List<Grandchild>) pm.newQuery(
@@ -565,14 +565,14 @@ public class JDOSubclassTest extends JDOTestCase {
   private void testDeleteParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = pm.getObjectById(parentClass, e.getKey());
     pm.deletePersistent(parent);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -583,14 +583,14 @@ public class JDOSubclassTest extends JDOTestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
     pm.deletePersistent(child);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -602,14 +602,14 @@ public class JDOSubclassTest extends JDOTestCase {
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     e.setProperty("cString", "c");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     SubclassesJDO.Child child = pm.getObjectById(grandchildClass, e.getKey());
     pm.deletePersistent(child);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -619,13 +619,13 @@ public class JDOSubclassTest extends JDOTestCase {
   private void testUpdateParent(Class<? extends Parent> parentClass) throws Exception {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = pm.getObjectById(parentClass, e.getKey());
     parent.setAString("not a");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
   }
 
@@ -633,14 +633,14 @@ public class JDOSubclassTest extends JDOTestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     SubclassesJDO.Child child = pm.getObjectById(childClass, e.getKey());
     child.setAString("not a");
     child.setBString("not b");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
     assertEquals("not b", e.getProperty("bString"));
   }
@@ -649,7 +649,7 @@ public class JDOSubclassTest extends JDOTestCase {
     Entity e = new Entity(kindForClass(grandchildClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     org.datanucleus.test.SubclassesJDO.Grandchild
@@ -658,7 +658,7 @@ public class JDOSubclassTest extends JDOTestCase {
     grandchild.setBString("not b");
     grandchild.setCString("not c");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
     assertEquals("not b", e.getProperty("bString"));
     assertEquals("not c", e.getProperty("cString"));

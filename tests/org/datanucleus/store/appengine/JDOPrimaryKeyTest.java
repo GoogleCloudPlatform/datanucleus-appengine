@@ -45,7 +45,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
 
     assertNotNull(pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasLongPkJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasLongPkJDO.class.getSimpleName(), pojo.getId()));
 
     beginTxn();
     pm.getObjectById(HasLongPkJDO.class, e.getKey().getId());
@@ -61,7 +61,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     pm.makePersistent(pojo);
     commitTxn();
     // the fact that this doesn't throw an exception is the test
-    ldth.ds.get(KeyFactory.createKey(HasLongPkJDO.class.getSimpleName(), 33));
+    ds.get(KeyFactory.createKey(HasLongPkJDO.class.getSimpleName(), 33));
   }
 
   public void testUnencodedStringPk() throws EntityNotFoundException {
@@ -72,7 +72,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
 
     assertEquals("a name", pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasUnencodedStringPkJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasUnencodedStringPkJDO.class.getSimpleName(), pojo.getId()));
 
     beginTxn();
     pm.getObjectById(HasUnencodedStringPkJDO.class, e.getKey().getName());
@@ -102,7 +102,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
 
     assertEquals(KeyFactory.keyToString(key), pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(pojo.getId()));
 
     beginTxn();
     pm.getObjectById(HasEncodedStringPkJDO.class, e.getKey().getName());
@@ -118,7 +118,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
     assertNotNull(pojo.getId());
     Key key = KeyFactory.stringToKey(pojo.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
 
     beginTxn();
     pm.getObjectById(HasEncodedStringPkJDO.class, e.getKey().getId());
@@ -148,7 +148,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     commitTxn();
 
     assertEquals(TestUtils.createKey(pojo, "a name"), KeyFactory.stringToKey(pojo.getId()));
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(pojo.getId()));
 
     beginTxn();
     pojo = pm.getObjectById(HasEncodedStringPkSeparateNameFieldJDO.class, e.getKey().getName());
@@ -171,7 +171,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     beginTxn();
     assertNotNull(pojo.getId());
     assertNotNull(pojo.getKey());
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     long id = e.getKey().getId();
     assertEquals(34L, id);
     pojo = pm.getObjectById(HasEncodedStringPkSeparateIdFieldJDO.class, e.getKey().getId());
@@ -191,7 +191,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     pm.makePersistent(pojo);
     commitTxn();
     // the fact that this doesn't throw an exception is the test
-    ldth.ds.get(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), 34));
+    ds.get(KeyFactory.createKey(HasKeyPkJDO.class.getSimpleName(), 34));
   }
 
   public void testCannotChangeLongPk() {
@@ -213,7 +213,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
 
   public void testEntityWithLongPkMappedToPojoWithUnencodedStringPk() {
     Entity entity = new Entity(HasUnencodedStringPkJDO.class.getSimpleName());
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
     beginTxn();
     try {
       pm.getObjectById(HasUnencodedStringPkJDO.class, key);
@@ -226,7 +226,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
 
   public void testEntityWithStringPkMappedToPojoWithLongPk() {
     Entity entity = new Entity(HasLongPkJDO.class.getSimpleName(), "yar");
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
     beginTxn();
     try {
       pm.getObjectById(HasLongPkJDO.class, key);
@@ -240,7 +240,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
   public void testEntityWithParentMappedToPojoWithUnencodedStringPk() {
     Key parent = KeyFactory.createKey("parent kind", 88);
     Entity entity = new Entity(HasUnencodedStringPkJDO.class.getSimpleName(), "yar", parent);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
     beginTxn();
     try {
       pm.getObjectById(HasUnencodedStringPkJDO.class, key);
@@ -254,7 +254,7 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
   public void testEntityWithParentMappedToPojoWithLongPk() {
     Key parent = KeyFactory.createKey("parent kind", 88);
     Entity entity = new Entity(HasLongPkJDO.class.getSimpleName(), parent);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
     beginTxn();
     try {
       pm.getObjectById(HasLongPkJDO.class, key);

@@ -44,7 +44,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
 
     assertNotNull(pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasLongPkJPA.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasLongPkJPA.class.getSimpleName(), pojo.getId()));
 
     beginTxn();
     em.find(HasLongPkJPA.class, e.getKey().getId());
@@ -60,7 +60,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
     // the fact that this doesn't throw an exception is the test
-    ldth.ds.get(KeyFactory.createKey(HasLongPkJPA.class.getSimpleName(), 33));
+    ds.get(KeyFactory.createKey(HasLongPkJPA.class.getSimpleName(), 33));
   }
 
   public void testUnencodedStringPk() throws EntityNotFoundException {
@@ -71,7 +71,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
 
     assertEquals("a name", pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasUnencodedStringPkJPA.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasUnencodedStringPkJPA.class.getSimpleName(), pojo.getId()));
 
     beginTxn();
     em.find(HasUnencodedStringPkJPA.class, e.getKey().getName());
@@ -102,7 +102,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
 
     assertEquals(KeyFactory.keyToString(key), pojo.getId());
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(pojo.getId()));
 
     beginTxn();
     em.find(HasEncodedStringPkJPA.class, e.getKey().getName());
@@ -118,7 +118,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
     assertNotNull(pojo.getId());
     Key key = KeyFactory.stringToKey(pojo.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
 
     beginTxn();
     em.find(HasEncodedStringPkJPA.class, e.getKey().getId());
@@ -149,7 +149,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     commitTxn();
 
     assertEquals(TestUtils.createKey(pojo, "a name"), KeyFactory.stringToKey(pojo.getId()));
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(pojo.getId()));
 
     beginTxn();
     pojo = em.find(HasEncodedStringPkSeparateNameFieldJPA.class, e.getKey().getName());
@@ -171,7 +171,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     beginTxn();
     assertNotNull(pojo.getId());
     assertNotNull(pojo.getKey());
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     long id = e.getKey().getId();
     assertEquals(34L, id);
     pojo = em.find(HasEncodedStringPkSeparateIdFieldJPA.class, e.getKey().getId());
@@ -191,7 +191,7 @@ public class JPAPrimaryKeyTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
     // the fact that this doesn't throw an exception is the test
-    ldth.ds.get(KeyFactory.createKey(HasKeyPkJPA.class.getSimpleName(), 34));
+    ds.get(KeyFactory.createKey(HasKeyPkJPA.class.getSimpleName(), 34));
   }
 
   public void testCannotChangeLongPk() {

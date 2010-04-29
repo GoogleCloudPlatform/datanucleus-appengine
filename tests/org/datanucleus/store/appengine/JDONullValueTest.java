@@ -32,7 +32,7 @@ public class JDONullValueTest extends JDOTestCase {
 
   public void testFetchNullData() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, KeyFactory.keyToString(e.getKey()));
     assertNotNull(pojo.getArray());
@@ -45,7 +45,7 @@ public class JDONullValueTest extends JDOTestCase {
 
   public void testFetchNullDataWithDefaultValues() {
     Entity e = new Entity(NullDataWithDefaultValuesJDO.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataWithDefaultValuesJDO pojo =
         pm.getObjectById(NullDataWithDefaultValuesJDO.class, KeyFactory.keyToString(e.getKey()));
@@ -60,7 +60,7 @@ public class JDONullValueTest extends JDOTestCase {
   public void testFetchNullValue() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
     e.setProperty("list", null);
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
     assertNotNull(pojo.getList());
@@ -70,7 +70,7 @@ public class JDONullValueTest extends JDOTestCase {
   public void testFetchMultiValuePropWithOneNullEntry() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
     e.setProperty("list", Utils.newArrayList((String) null));
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
     assertNotNull(pojo.getList());
@@ -83,7 +83,7 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
     for (Object val : e.getProperties().values()) {
@@ -100,7 +100,7 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     assertEquals(1, ((List<?>)e.getProperty("array")).size());
     assertEquals(1, ((List<?>)e.getProperty("list")).size());
   }

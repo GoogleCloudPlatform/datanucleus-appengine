@@ -43,7 +43,7 @@ public class JPALobTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasLob.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasLob.class.getSimpleName(), pojo.getId()));
     assertEquals(new Text("a really big string"), e.getProperty("bigString"));
     assertEquals(new Blob("a really big byte array".getBytes()), e.getProperty("bigByteArray"));
     assertEquals(new Blob(SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(
@@ -57,7 +57,7 @@ public class JPALobTest extends JPATestCase {
     Date now = new Date();
     e.setProperty("dateList", new Blob(SerializationManager.DEFAULT_SERIALIZATION_STRATEGY.serialize(
         Utils.newArrayList(now)).getBytes()));
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     HasLob pojo = em.find(HasLob.class, e.getKey());

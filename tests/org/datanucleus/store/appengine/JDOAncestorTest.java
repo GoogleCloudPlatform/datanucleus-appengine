@@ -37,7 +37,7 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testInsert_IdGen() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(KeyFactory.keyToString(flightKey));
     makePersistentInTxn(ha, TXN_START_END);
@@ -47,13 +47,13 @@ public class JDOAncestorTest extends JDOTestCase {
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(flightKey);
-    Entity result = ldth.ds.prepare(q).asSingleEntity();
+    Entity result = ds.prepare(q).asSingleEntity();
     assertEquals(flightKey, result.getKey().getParent());
   }
 
   public void testInsert_NamedKey() {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     Key key = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key", flightKey).getKey();
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(null, KeyFactory.keyToString(key));
@@ -64,7 +64,7 @@ public class JDOAncestorTest extends JDOTestCase {
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(flightKey);
-    Entity result = ldth.ds.prepare(q).asSingleEntity();
+    Entity result = ds.prepare(q).asSingleEntity();
     assertEquals(flightKey, result.getKey().getParent());
     assertEquals("named key", result.getKey().getName());
     assertEquals("parent named key", result.getKey().getParent().getName());
@@ -72,7 +72,7 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testInsert_SetAncestorAndPk() {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     HasStringAncestorStringPkJDO ha = new HasStringAncestorStringPkJDO(
         KeyFactory.keyToString(flightKey),
@@ -89,9 +89,9 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testFetch() {
     Entity flightEntity = Flight.newFlightEntity("max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), flightEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     beginTxn();
     HasStringAncestorStringPkJDO ha = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
@@ -101,10 +101,10 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testFetchWithNamedKey() {
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Entity hasAncestorEntity =
         new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), "named key", flightEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     beginTxn();
     HasStringAncestorStringPkJDO ha = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
@@ -124,14 +124,14 @@ public class JDOAncestorTest extends JDOTestCase {
   public void testKeyPKKeyAncestor_NamedKey() throws EntityNotFoundException {
     HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     Key pojoKey = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), "child named key", flightKey).getKey();
     pojo.setKey(pojoKey);
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    ldth.ds.get(pojoKey);
+    ds.get(pojoKey);
     beginTxn();
     pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, pojoKey);
     assertEquals(pojo.getAncestorKey(), pojoKey.getParent());
@@ -141,7 +141,7 @@ public class JDOAncestorTest extends JDOTestCase {
   public void testKeyPKKeyAncestor_NamedKeyWrongKind() throws EntityNotFoundException {
     HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     Key pojoKey = new Entity("blarg", "child named key", flightKey).getKey();
     pojo.setKey(pojoKey);
@@ -158,13 +158,13 @@ public class JDOAncestorTest extends JDOTestCase {
   public void testKeyPKKeyAncestor_IdGen() throws EntityNotFoundException {
     HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     pojo.setAncestorKey(flightKey);
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
-    ldth.ds.get(pojo.getKey());
+    ds.get(pojo.getKey());
     beginTxn();
     pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, pojo.getKey());
     assertEquals(pojo.getAncestorKey(), pojo.getKey().getParent());
@@ -174,7 +174,7 @@ public class JDOAncestorTest extends JDOTestCase {
   public void testKeyPKKeyAncestor_SetAncestorAndKey() throws EntityNotFoundException {
     HasKeyAncestorKeyPkJDO pojo = new HasKeyAncestorKeyPkJDO();
     Entity flightEntity = Flight.newFlightEntity("parent named key", "max", "bos", "mia", 3, 4);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     Key flightKey = flightEntity.getKey();
     pojo.setAncestorKey(flightKey);
     Key pojoKey = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), "child named key", flightKey).getKey();
@@ -191,7 +191,7 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testInsertWithKeyPkAndAncestor() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyPkJDO hk1 = new HasKeyPkJDO();
     hk1.setAncestorKey(e.getKey());
     beginTxn();
@@ -200,13 +200,13 @@ public class JDOAncestorTest extends JDOTestCase {
     Key ancestorKey = hk1.getAncestorKey();
     assertNotNull(key);
     commitTxn();
-    Entity reloaded = ldth.ds.get(hk1.getKey());
+    Entity reloaded = ds.get(hk1.getKey());
     assertEquals(ancestorKey, reloaded.getKey().getParent());
   }
 
   public void testInsertWithKeyPkAndStringAncestor_IdGen() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
     hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
     beginTxn();
@@ -214,13 +214,13 @@ public class JDOAncestorTest extends JDOTestCase {
     Key key = hk1.getKey();
     String ancestorKey = hk1.getAncestorKey();
     commitTxn();
-    Entity reloaded = ldth.ds.get(key);
+    Entity reloaded = ds.get(key);
     assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
   public void testInsertWithKeyPkAndStringAncestor_NamedKey() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
     Key key = new Entity(HasStringAncestorKeyPkJDO.class.getSimpleName(), "named key", e.getKey()).getKey();
     hk1.setKey(key);
@@ -229,13 +229,13 @@ public class JDOAncestorTest extends JDOTestCase {
     assertEquals(e.getKey(), KeyFactory.stringToKey(hk1.getAncestorKey()));
     String ancestorKey = hk1.getAncestorKey();
     commitTxn();
-    Entity reloaded = ldth.ds.get(key);
+    Entity reloaded = ds.get(key);
     assertEquals(ancestorKey, KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
   public void testInsertWithKeyPkAndStringAncestor_SetKeyAndAncestor() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJDO hk1 = new HasStringAncestorKeyPkJDO();
     Key key = KeyFactory.createKey(HasStringAncestorKeyPkJDO.class.getSimpleName(), "named key");
     hk1.setKey(key);
@@ -252,7 +252,7 @@ public class JDOAncestorTest extends JDOTestCase {
 
   public void testInsertWithStringPkAndKeyAncestor_IdGen() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
     hk1.setAncestorKey(e.getKey());
     beginTxn();
@@ -260,13 +260,13 @@ public class JDOAncestorTest extends JDOTestCase {
     String key = hk1.getKey();
     Key ancestorKey = hk1.getAncestorKey();
     commitTxn();
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    Entity reloaded = ds.get(KeyFactory.stringToKey(key));
     assertEquals(ancestorKey, reloaded.getKey().getParent());
   }
 
   public void testInsertWithStringPkAndKeyAncestor_NamedKey() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
     Key keyToSet =
         new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), "yar", e.getKey()).getKey();
@@ -276,13 +276,13 @@ public class JDOAncestorTest extends JDOTestCase {
     String key = hk1.getKey();
     assertEquals(e.getKey(), hk1.getAncestorKey());
     commitTxn();
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    Entity reloaded = ds.get(KeyFactory.stringToKey(key));
     assertEquals(e.getKey(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithStringPkAndKeyAncestor_SetAncestorAndPk() throws EntityNotFoundException {
     Entity parentEntity = new Entity("yam");
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     HasKeyAncestorStringPkJDO hk1 = new HasKeyAncestorStringPkJDO();
     Key keyToSet =
         new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();

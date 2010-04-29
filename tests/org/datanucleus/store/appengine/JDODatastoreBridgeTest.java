@@ -32,7 +32,7 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
 
   public void testConvertQueryResultList_Empty() {
     QueryResultList<Entity> result =
-        ldth.ds.prepare(new Query("blarg")).asQueryResultList(FetchOptions.Builder.withLimit(10));
+        ds.prepare(new Query("blarg")).asQueryResultList(FetchOptions.Builder.withLimit(10));
 
     JDODatastoreBridge bridge = new JDODatastoreBridge();
     List<Flight> flights = bridge.toJDOResult(pm, Flight.class, result);
@@ -42,10 +42,10 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
   public void testConvertQueryResultList() {
     for (int i = 0; i < 5; i++) {
       Entity e = Flight.newFlightEntity("harold" + i, "bos", "mia", 23, 24);
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultList<Entity> result =
-        ldth.ds.prepare(new Query("Flight")).asQueryResultList(FetchOptions.Builder.withLimit(10));
+        ds.prepare(new Query("Flight")).asQueryResultList(FetchOptions.Builder.withLimit(10));
 
     JDODatastoreBridge bridge = new JDODatastoreBridge();
     List<Flight> flights = bridge.toJDOResult(pm, Flight.class, result);
@@ -63,10 +63,10 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
   public void testConvertQueryResultIterable() {
     for (int i = 0; i < 5; i++) {
       Entity e = Flight.newFlightEntity("harold" + i, "bos", "mia", 23, 24);
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultIterable<Entity> result =
-        ldth.ds.prepare(new Query("Flight")).asQueryResultIterable();
+        ds.prepare(new Query("Flight")).asQueryResultIterable();
 
     JDODatastoreBridge bridge = new JDODatastoreBridge();
     List<Flight> flights = bridge.toJDOResult(pm, Flight.class, result);
@@ -84,10 +84,10 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
   public void testAccessResultsAfterClose() {
     for (int i = 0; i < 3; i++) {
       Entity e = Flight.newFlightEntity("this", "bos", "mia", 24, 25);
-      ldth.ds.put(e);
+      ds.put(e);
     }
     QueryResultIterable<Entity> result =
-        ldth.ds.prepare(new Query("Flight")).asQueryResultIterable();
+        ds.prepare(new Query("Flight")).asQueryResultIterable();
     beginTxn();
     JDODatastoreBridge bridge = new JDODatastoreBridge();
     List<Flight> flights = bridge.toJDOResult(pm, Flight.class, result);

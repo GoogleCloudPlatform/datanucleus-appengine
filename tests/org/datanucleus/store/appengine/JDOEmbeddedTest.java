@@ -66,7 +66,7 @@ public class JDOEmbeddedTest extends JDOTestCase {
     pm.makePersistent(pojo);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(pojo.getClass()), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(pojo.getClass()), pojo.getId()));
     assertTrue(e.hasProperty("flightId"));
     assertTrue(e.hasProperty("origin"));
     assertTrue(e.hasProperty("dest"));
@@ -158,7 +158,7 @@ public class JDOEmbeddedTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(parent);
     commitTxn();
-    Entity e = ldth.ds.get(parent.getKey());
+    Entity e = ds.get(parent.getKey());
     assertTrue(e.hasProperty("key"));
   }
 }

@@ -86,7 +86,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
     assertEquals(newDate, e.getProperty("date"));
   }
@@ -116,7 +116,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     pm.makePersistent(pojo);
     pm.close();
-    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(DetachableJDO.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
     assertEquals(newDate, e.getProperty("date"));
   }
@@ -146,7 +146,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     assertEquals(ObjectState.PERSISTENT_CLEAN, JDOHelper.getObjectState(pojo));
     pojo.getStrList().add("e");
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(DetachableWithMultiValuePropsJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(DetachableWithMultiValuePropsJDO.class.getSimpleName(), pojo.getId()));
     assertEquals(3, ((List<String>)e.getProperty("strList")).size());
     assertEquals(Utils.newArrayList("c", "d", "e"), e.getProperty("strList"));
   }
@@ -174,7 +174,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     beginTxn();
     pojo = pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
 
@@ -200,7 +200,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     beginTxn();
     pojo = pm.makePersistent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(flight2.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(flight2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
 
@@ -227,7 +227,7 @@ public class JDOAttachDetachTest extends JDOTestCase {
     pojo.addBidirChild(bidir2);
     bidir2.setParent(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity e = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
   }
 

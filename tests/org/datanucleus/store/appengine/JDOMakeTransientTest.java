@@ -29,7 +29,7 @@ public class JDOMakeTransientTest extends JDOTestCase {
     Entity e = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
     e.setProperty("str", "yar");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     HasMultiValuePropsJDO pojo = pm.getObjectById(HasMultiValuePropsJDO.class, e.getKey().getId());

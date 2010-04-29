@@ -45,7 +45,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
+    Entity childEntity = ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
 
     beginTxn();
@@ -71,7 +71,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     assertEquals(parent.getId(), child.getAncestorId());
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getId()));
+    Entity childEntity = ds.get(KeyFactory.stringToKey(child.getId()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
@@ -91,7 +91,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     assertNotNull(parent.getCascadeAllChildWithKeyAncestor());
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
+    Entity childEntity = ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
@@ -111,7 +111,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     assertNotNull(parent.getCascadePersistChild());
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(child.getKey());
+    Entity childEntity = ds.get(child.getKey());
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 
@@ -182,11 +182,11 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
   public void testOneToOneRemoveParentCascadeAll() {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJDO.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity childEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(childEntity);
+    ds.put(childEntity);
     parentEntity.setProperty("cascadeall", childEntity.getKey());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJDO parent = pm.getObjectById(
@@ -196,14 +196,14 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     commitTxn();
 
     try {
-      ldth.ds.get(parentEntity.getKey());
+      ds.get(parentEntity.getKey());
       fail("expected enfe");
     } catch (EntityNotFoundException e) {
       // good
     }
 
     try {
-      ldth.ds.get(childEntity.getKey());
+      ds.get(childEntity.getKey());
       fail("expected enfe");
     } catch (EntityNotFoundException e) {
       // good
@@ -212,11 +212,11 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
   public void testOneToOneRemoveChildCascadeAll() throws EntityNotFoundException {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJDO.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity childEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(childEntity);
+    ds.put(childEntity);
     parentEntity.setProperty("cascadeall", childEntity.getKey());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJDO parent = pm.getObjectById(
@@ -226,10 +226,10 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     pm.deletePersistent(parent.getCascadeAllChild());
     commitTxn();
 
-    parentEntity = ldth.ds.get(parentEntity.getKey());
+    parentEntity = ds.get(parentEntity.getKey());
     assertEquals(childEntity.getKey(), parentEntity.getProperty("cascadeall"));
     try {
-      ldth.ds.get(childEntity.getKey());
+      ds.get(childEntity.getKey());
       fail("expected enfe");
     } catch (EntityNotFoundException e) {
       // good
@@ -238,11 +238,11 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
 
   public void testOneToOneRemoveChildCascadeRemove() throws EntityNotFoundException {
     Entity parentEntity = new Entity(HasOneToOnesWithDifferentCascadesJDO.class.getSimpleName());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     Entity childEntity = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(childEntity);
+    ds.put(childEntity);
     parentEntity.setProperty("cascaderemove", childEntity.getKey());
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
 
     beginTxn();
     HasOneToOnesWithDifferentCascadesJDO parent = pm.getObjectById(
@@ -252,10 +252,10 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     pm.deletePersistent(parent.getCascadeRemoveChild());
     commitTxn();
 
-    parentEntity = ldth.ds.get(parentEntity.getKey());
+    parentEntity = ds.get(parentEntity.getKey());
     assertEquals(childEntity.getKey(), parentEntity.getProperty("cascaderemove"));
     try {
-      ldth.ds.get(childEntity.getKey());
+      ds.get(childEntity.getKey());
       fail("expected enfe");
     } catch (EntityNotFoundException e) {
       // good
@@ -281,7 +281,7 @@ public class JDOImplicitEntityGroupTest extends JDOTestCase {
     assertNotNull(parent.getHasParent());
     commitTxn();
 
-    Entity childEntity = ldth.ds.get(KeyFactory.stringToKey(child.getKey()));
+    Entity childEntity = ds.get(KeyFactory.stringToKey(child.getKey()));
     assertKeyParentEquals(parent.getId(), childEntity, childEntity.getKey());
   }
 }

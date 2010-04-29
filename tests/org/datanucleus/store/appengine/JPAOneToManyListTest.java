@@ -196,7 +196,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertNotNull(b2.getId());
     assertNotNull(hasKeyPk2.getId());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Collections.singletonList(KeyFactory.stringToKey(bidir2.getId())), pojoEntity.getProperty("bidirChildren"));
@@ -206,30 +206,30 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
+      ds.get(KeyFactory.stringToKey(bidir1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bookId));
+      ds.get(KeyFactory.stringToKey(bookId));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(hasKeyPk1Key);
+      ds.get(hasKeyPk1Key);
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b2.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -237,13 +237,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(KeyFactory.stringToKey(b2.getId()), bookEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bookEntity, b2.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk2.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk2.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getId());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -323,7 +323,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(hasKeyPk2.getId(), pojo.getHasKeyPks().get(0).getId());
     assertEquals(b2.getId(), pojo.getBooks().get(0).getId());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Collections.singletonList(KeyFactory.stringToKey(bidir2.getId())), pojoEntity.getProperty("bidirChildren"));
@@ -333,30 +333,30 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
+      ds.get(KeyFactory.stringToKey(bidir1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bookId));
+      ds.get(KeyFactory.stringToKey(bookId));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(hasKeyPk1Key);
+      ds.get(hasKeyPk1Key);
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam2", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b2.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -364,13 +364,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(KeyFactory.stringToKey(b2.getId()), bookEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bookEntity, b2.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk2.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk2.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar 2", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getId());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -431,7 +431,7 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertNotNull(b2.getId());
     assertNotNull(hasKeyPk2.getId());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Utils.newArrayList(KeyFactory.stringToKey(bidir2.getId()), KeyFactory.stringToKey(bidir1Id)), pojoEntity.getProperty("bidirChildren"));
@@ -440,19 +440,19 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
 
     startEnd.end();
 
-    ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
-    ldth.ds.get(KeyFactory.stringToKey(bookId));
-    ldth.ds.get(hasKeyPk1Key);
+    ds.get(KeyFactory.stringToKey(bidir1Id));
+    ds.get(KeyFactory.stringToKey(bookId));
+    ds.get(hasKeyPk1Key);
 
-    Entity bidirChildEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
-    Entity bidirChildEntity2 = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity bidirChildEntity1 = ds.get(KeyFactory.stringToKey(bidir1Id));
+    Entity bidirChildEntity2 = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity2);
     assertEquals("yam2", bidirChildEntity2.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity2.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity2, bidir2.getId());
 
-    Entity bookEntity1 = ldth.ds.get(KeyFactory.stringToKey(bookId));
-    Entity bookEntity2 = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    Entity bookEntity1 = ds.get(KeyFactory.stringToKey(bookId));
+    Entity bookEntity2 = ds.get(KeyFactory.stringToKey(b2.getId()));
     assertNotNull(bookEntity2);
     assertEquals("max", bookEntity2.getProperty("author"));
     assertEquals("22333", bookEntity2.getProperty("isbn"));
@@ -460,14 +460,14 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(KeyFactory.stringToKey(b2.getId()), bookEntity2.getKey());
     assertKeyParentEquals(pojo.getId(), bookEntity2, b2.getId());
 
-    Entity hasKeyPkEntity1 = ldth.ds.get(hasKeyPk1Key);
-    Entity hasKeyPkEntity2 = ldth.ds.get(hasKeyPk2.getId());
+    Entity hasKeyPkEntity1 = ds.get(hasKeyPk1Key);
+    Entity hasKeyPkEntity2 = ds.get(hasKeyPk2.getId());
     assertNotNull(hasKeyPkEntity2);
     assertEquals("yar 2", hasKeyPkEntity2.getProperty("str"));
     assertEquals(hasKeyPk2.getId(), hasKeyPkEntity2.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity2, hasKeyPk2.getId());
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -522,13 +522,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
 
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -536,13 +536,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    Entity parentEntity = ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -588,13 +588,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertNotNull(b.getId());
     assertNotNull(hasKeyPk.getId());
 
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -602,13 +602,13 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
     assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    Entity parentEntity = ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));

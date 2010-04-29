@@ -37,7 +37,7 @@ public class JDODeleteTest extends JDOTestCase {
   private static final String DEFAULT_VERSION_PROPERTY_NAME = "OPT_VERSION";
 
   public void testSimpleDelete() {
-    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
+    Key key = ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -57,7 +57,7 @@ public class JDODeleteTest extends JDOTestCase {
   }
 
   public void testSimpleDelete_NamedKey() {
-    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
+    Key key = ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -80,7 +80,7 @@ public class JDODeleteTest extends JDOTestCase {
   public void testOptimisticLocking_Update_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
-    Key key = ldth.ds.put(flightEntity);
+    Key key = ds.put(flightEntity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -88,7 +88,7 @@ public class JDODeleteTest extends JDOTestCase {
 
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we update the flight directly in the datastore right before we delete
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     try {
       pm.deletePersistent(flight);
       fail("expected optimistic exception");
@@ -102,7 +102,7 @@ public class JDODeleteTest extends JDOTestCase {
   public void testOptimisticLocking_Delete_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
-    Key key = ldth.ds.put(flightEntity);
+    Key key = ds.put(flightEntity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -111,7 +111,7 @@ public class JDODeleteTest extends JDOTestCase {
     flight.setName("2");
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we remove the flight from the datastore right before delete
-    ldth.ds.delete(key);
+    ds.delete(key);
     try {
       pm.deletePersistent(flight);
       fail("expected optimistic exception");
@@ -126,7 +126,7 @@ public class JDODeleteTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -142,7 +142,7 @@ public class JDODeleteTest extends JDOTestCase {
 
     // we update the entity directly in the datastore right before delete
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
+    ds.put(entity);
     try {
       pm.deletePersistent(hvwf);
       fail("expected optimistic exception");
@@ -159,14 +159,14 @@ public class JDODeleteTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
     // delete the entity in the datastore right before we delete
-    ldth.ds.delete(key);
+    ds.delete(key);
     try {
       pm.deletePersistent(hvwf);
       fail("expected optimistic exception");
@@ -182,12 +182,12 @@ public class JDODeleteTest extends JDOTestCase {
   public void testNonTransactionalDelete() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     pm.deletePersistent(f);
     pm.close();
     try {
-      ldth.ds.get(key);
+      ds.get(key);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -198,7 +198,7 @@ public class JDODeleteTest extends JDOTestCase {
   public void testDeleteHasAncestorPkField() {
     Entity e =
         new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), KeyFactory.createKey("Yam", 24));
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     HasKeyAncestorKeyPkJDO pojo = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, e.getKey());
     pm.deletePersistent(pojo);

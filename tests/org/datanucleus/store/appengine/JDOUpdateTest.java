@@ -52,7 +52,7 @@ public class JDOUpdateTest extends JDOTestCase {
   private static final String DEFAULT_VERSION_PROPERTY_NAME = "OPT_VERSION";
 
   public void testSimpleUpdate() throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -68,7 +68,7 @@ public class JDOUpdateTest extends JDOTestCase {
     flight.setName("2");
     commitTxn();
 
-    Entity flightCheck = ldth.ds.get(key);
+    Entity flightCheck = ds.get(key);
     assertEquals("yam", flightCheck.getProperty("origin"));
     assertEquals("bam", flightCheck.getProperty("dest"));
     assertEquals("2", flightCheck.getProperty("name"));
@@ -80,7 +80,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testSimpleUpdateWithNamedKey() throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -96,7 +96,7 @@ public class JDOUpdateTest extends JDOTestCase {
     flight.setName("2");
     commitTxn();
 
-    Entity flightCheck = ldth.ds.get(key);
+    Entity flightCheck = ds.get(key);
     assertEquals("yam", flightCheck.getProperty("origin"));
     assertEquals("bam", flightCheck.getProperty("dest"));
     assertEquals("2", flightCheck.getProperty("name"));
@@ -111,7 +111,7 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testOptimisticLocking_Update_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
-    Key key = ldth.ds.put(flightEntity);
+    Key key = ds.put(flightEntity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -120,7 +120,7 @@ public class JDOUpdateTest extends JDOTestCase {
     flight.setName("2");
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we update the flight directly in the datastore right before commit
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     try {
       commitTxn();
       fail("expected optimistic exception");
@@ -132,7 +132,7 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testOptimisticLocking_Attach_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
-    Key key = ldth.ds.put(flightEntity);
+    Key key = ds.put(flightEntity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -143,7 +143,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pm.makePersistent(flight);
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we update the flight directly in the datastore right before commit
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     try {
       commitTxn();
       fail("expected optimistic exception");
@@ -155,7 +155,7 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testOptimisticLocking_Delete_NoField() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity flightEntity = Flight.newFlightEntity("1", "yam", "bam", 1, 2);
-    Key key = ldth.ds.put(flightEntity);
+    Key key = ds.put(flightEntity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -164,7 +164,7 @@ public class JDOUpdateTest extends JDOTestCase {
     flight.setName("2");
     flightEntity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 2L);
     // we remove the flight from the datastore right before commit
-    ldth.ds.delete(key);
+    ds.delete(key);
     try {
       commitTxn();
       fail("expected optimistic exception");
@@ -177,7 +177,7 @@ public class JDOUpdateTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -194,7 +194,7 @@ public class JDOUpdateTest extends JDOTestCase {
     hvwf.setValue("another value");
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
+    ds.put(entity);
     try {
       commitTxn();
       fail("expected optimistic exception");
@@ -209,14 +209,14 @@ public class JDOUpdateTest extends JDOTestCase {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity entity = new Entity(HasVersionWithFieldJDO.class.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionWithFieldJDO hvwf = pm.getObjectById(HasVersionWithFieldJDO.class, keyStr);
 
     // delete the entity in the datastore right before we commit
-    ldth.ds.delete(key);
+    ds.delete(key);
     hvwf.setValue("value");
     try {
       commitTxn();
@@ -231,17 +231,17 @@ public class JDOUpdateTest extends JDOTestCase {
   public void testNonTransactionalUpdate() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     f.setYou(77);
     pm.close();
-    Entity flightEntity = ldth.ds.get(key);
+    Entity flightEntity = ds.get(key);
     assertEquals(77L, flightEntity.getProperty("you"));
     pm = pmf.getPersistenceManager();
   }
 
   public void testChangeStringPK_SetNonKeyString() throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -264,7 +264,7 @@ public class JDOUpdateTest extends JDOTestCase {
       rollbackTxn();
     }
 
-    Entity flightCheck = ldth.ds.get(key);
+    Entity flightCheck = ds.get(key);
     assertEquals("yam", flightCheck.getProperty("origin"));
     assertEquals("bam", flightCheck.getProperty("dest"));
     assertEquals("1", flightCheck.getProperty("name"));
@@ -277,7 +277,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testChangeStringPK_SetNull() throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     f.setId(null);
@@ -293,7 +293,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testChangePK_SetKeyString() throws EntityNotFoundException {
-    Key key = ldth.ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
+    Key key = ds.put(Flight.newFlightEntity("1", "yam", "bam", 1, 2));
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(key));
     f.setId(KeyFactory.keyToString(KeyFactory.createKey(Flight.class.getSimpleName(), "yar")));
@@ -307,13 +307,13 @@ public class JDOUpdateTest extends JDOTestCase {
       rollbackTxn();
     }
     assertEquals(1, countForClass(Flight.class));
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
     assertEquals(1L, e.getProperty("you"));
     assertEquals(1, countForClass(Flight.class));
   }
 
   public void testChangeKeyPK_SetDifferentKey() throws EntityNotFoundException {
-    Key key = ldth.ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
 
     beginTxn();
     HasKeyPkJDO pojo = pm.getObjectById(HasKeyPkJDO.class, key);
@@ -330,7 +330,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testChangeKeyPK_SetNull() throws EntityNotFoundException {
-    Key key = ldth.ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasKeyPkJDO.class.getSimpleName()));
     beginTxn();
     HasKeyPkJDO pojo = pm.getObjectById(HasKeyPkJDO.class, key);
     pojo.setKey(null);
@@ -357,7 +357,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -375,7 +375,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrList(list);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strList")).size());
   }
 
@@ -392,7 +392,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getIntColl().add(4);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
   }
 
@@ -410,7 +410,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newArrayList(2, 3, 4);
     pojo.setIntColl(list);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("intColl")).size());
   }
 
@@ -427,7 +427,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrArrayList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -445,7 +445,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newArrayList("a", "b", "zoom");
     pojo.setStrArrayList(list);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strArrayList")).size());
   }
 
@@ -462,7 +462,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrLinkedList().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -480,7 +480,7 @@ public class JDOUpdateTest extends JDOTestCase {
     list = Utils.newLinkedList("a", "b", "zoom");
     pojo.setStrLinkedList(list);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedList")).size());
   }
 
@@ -497,7 +497,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -515,7 +515,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSet")).size());
   }
 
@@ -532,7 +532,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -550,7 +550,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newHashSet("a", "b", "zoom");
     pojo.setStrHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strHashSet")).size());
   }
 
@@ -567,7 +567,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrLinkedHashSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -585,7 +585,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newLinkedHashSet("a", "b", "zoom");
     pojo.setStrLinkedHashSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strLinkedHashSet")).size());
   }
 
@@ -602,7 +602,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrTreeSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -620,7 +620,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrTreeSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strTreeSet")).size());
   }
 
@@ -637,7 +637,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo = pm.getObjectById(HasMultiValuePropsJDO.class, pojo.getId());
     pojo.getStrSortedSet().add("zoom");
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
@@ -655,7 +655,7 @@ public class JDOUpdateTest extends JDOTestCase {
     set = Utils.newTreeSet("a", "b", "zoom");
     pojo.setStrSortedSet(set);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("strSortedSet")).size());
   }
 
@@ -673,7 +673,7 @@ public class JDOUpdateTest extends JDOTestCase {
     array = new String[] {"a", "b", "c"};
     pojo.setArray(array);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals(3, ((List<?>)e.getProperty("array")).size());
   }
 
@@ -693,7 +693,7 @@ public class JDOUpdateTest extends JDOTestCase {
     pojo.getArray()[0] = "c";
     pojo.setArray(array);
     commitTxn();
-    Entity e = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity e = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertEquals("c", ((List<?>)e.getProperty("array")).get(0));
   }
 
@@ -715,7 +715,7 @@ public class JDOUpdateTest extends JDOTestCase {
     p.getName().setFirst("not jimmy");
     commitTxn();
 
-    Entity entity = ldth.ds.get(TestUtils.createKey(p, p.getId()));
+    Entity entity = ds.get(TestUtils.createKey(p, p.getId()));
     assertNotNull(entity);
     assertEquals("not jimmy", entity.getProperty("first"));
     assertEquals("not jam", entity.getProperty("last"));
@@ -724,7 +724,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrPrimaryKey_SetNewName() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
+    Key key = ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
 
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, key.getId());
@@ -740,7 +740,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrPrimaryKey_SetNewKey() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
+    Key key = ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
 
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, key.getId());
@@ -756,7 +756,7 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrPrimaryKey_NullKey() {
-    Key key = ldth.ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
+    Key key = ds.put(Flight.newFlightEntity("name", "bos", "mia", 3, 4, 44));
 
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, key.getId());
@@ -772,8 +772,8 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrAncestor_SetNewName() {
-    Key parentKey = ldth.ds.put(new Entity(String.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
+    Key parentKey = ds.put(new Entity(String.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
     HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
@@ -788,8 +788,8 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrAncestor_SetNewKey() {
-    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
+    Key parentKey = ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
     HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
@@ -805,8 +805,8 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateStrAncestor_NullKey() {
-    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
+    Key parentKey = ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
     HasStringAncestorStringPkJDO pojo = pm.getObjectById(HasStringAncestorStringPkJDO.class, KeyFactory.keyToString(key));
@@ -821,8 +821,8 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateKeyAncestor_SetNewKey() {
-    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
+    Key parentKey = ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
     HasKeyAncestorStringPkJDO pojo = pm.getObjectById(
@@ -839,8 +839,8 @@ public class JDOUpdateTest extends JDOTestCase {
   }
 
   public void testUpdateKeyAncestor_NullKey() {
-    Key parentKey = ldth.ds.put(new Entity(Flight.class.getSimpleName()));
-    Key key = ldth.ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
+    Key parentKey = ds.put(new Entity(Flight.class.getSimpleName()));
+    Key key = ds.put(new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), parentKey));
 
     beginTxn();
     HasKeyAncestorStringPkJDO pojo = pm.getObjectById(

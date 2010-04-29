@@ -54,7 +54,7 @@ public class SerializationTest extends JDOTestCase {
     commitTxn();
 
     SerializationStrategy ss = SerializationManager.DEFAULT_SERIALIZATION_STRATEGY;
-    Entity e = ldth.ds.get(TestUtils.createKey(hasSerializable, hasSerializable.getId()));
+    Entity e = ds.get(TestUtils.createKey(hasSerializable, hasSerializable.getId()));
     Blob yamBlob = (Blob) e.getProperty("yam");
     assertNotNull(yamBlob);
     HasSerializableJDO.Yam reloadedYam = (HasSerializableJDO.Yam)
@@ -101,7 +101,7 @@ public class SerializationTest extends JDOTestCase {
     e.setProperty("integer", ss.serialize(3));
     Flight f = new Flight("bos", "mia", "harold", 23, 24);
     e.setProperty("flight", ss.serialize(f));
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     HasSerializableJDO hasSerializable = pm.getObjectById(
         HasSerializableJDO.class, KeyFactory.keyToString(e.getKey()));

@@ -54,7 +54,7 @@ public class JDOBytesTest extends JDOTestCase {
     pm.makePersistent(pojo);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(HasBytesJDO.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(HasBytesJDO.class.getSimpleName(), pojo.getId()));
     assertEquals(new ShortBlob("prim bytes".getBytes()), e.getProperty("primBytes"));
     assertEquals(new ShortBlob("bytes".getBytes()), e.getProperty("bytes"));
     assertEquals(new ShortBlob("byte list".getBytes()), e.getProperty("byteList"));
@@ -88,7 +88,7 @@ public class JDOBytesTest extends JDOTestCase {
     e.setProperty("serializedByteList", SS.serialize(PrimitiveArrays.asList("serialized byte list".getBytes())));
     e.setProperty("serializedByteSet", SS.serialize(new HashSet<Byte>(PrimitiveArrays.asList("serialized byte set".getBytes()))));
 
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     HasBytesJDO pojo = pm.getObjectById(HasBytesJDO.class, e.getKey());

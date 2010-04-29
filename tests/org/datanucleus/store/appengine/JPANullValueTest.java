@@ -31,7 +31,7 @@ public class JPANullValueTest extends JPATestCase {
 
   public void testFetchNullData() {
     Entity e = new Entity(NullDataJPA.class.getSimpleName());
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJPA pojo = em.find(NullDataJPA.class, KeyFactory.keyToString(e.getKey()));
     assertNotNull(pojo.getArray());
@@ -45,7 +45,7 @@ public class JPANullValueTest extends JPATestCase {
   public void testFetchNullValue() {
     Entity e = new Entity(NullDataJPA.class.getSimpleName());
     e.setProperty("list", null);
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJPA pojo = em.find(NullDataJPA.class, e.getKey());
     assertNotNull(pojo.getList());
@@ -55,7 +55,7 @@ public class JPANullValueTest extends JPATestCase {
   public void testFetchMultiValuePropWithOneNullEntry() {
     Entity e = new Entity(NullDataJPA.class.getSimpleName());
     e.setProperty("list", Utils.newArrayList((String) null));
-    ldth.ds.put(e);
+    ds.put(e);
     beginTxn();
     NullDataJPA pojo = em.find(NullDataJPA.class, e.getKey());
     assertNotNull(pojo.getList());
@@ -69,7 +69,7 @@ public class JPANullValueTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
     assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
@@ -87,7 +87,7 @@ public class JPANullValueTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(NullDataJPA.class.getSimpleName(), pojo.getId()));
     assertEquals(1, ((List<?>)e.getProperty("array")).size());
     assertEquals(1, ((List<?>)e.getProperty("list")).size());
   }

@@ -42,8 +42,8 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    Entity childEntity = ldth.ds.get(child.getId());
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity childEntity = ds.get(child.getId());
 
     assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
@@ -87,8 +87,8 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    Entity childEntity = ldth.ds.get(child.getId());
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity childEntity = ds.get(child.getId());
     assertEquals(2, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals(childEntity.getKey(), parentEntity.getProperty("child_id_OID"));
@@ -131,8 +131,8 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    Entity childEntity = ldth.ds.get(child.getId());
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity childEntity = ds.get(child.getId());
     assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals("b string", parentEntity.getProperty("bString"));
@@ -173,7 +173,7 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
     assertEquals(1, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
 
@@ -206,8 +206,8 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
-    Entity childEntity = ldth.ds.get(child.getId());
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity childEntity = ds.get(child.getId());
     assertEquals(3, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertEquals("b string", parentEntity.getProperty("bString"));
@@ -248,7 +248,7 @@ public class JDOBidirectionalOneToOneSubclassTest extends JDOTestCase {
     pm.makePersistent(parent);
     commitTxn();
     Entity parentEntity =
-        ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+        ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
     assertEquals(2, parentEntity.getProperties().size());
     assertEquals("a string", parentEntity.getProperty("aString"));
     assertTrue(parentEntity.hasProperty("child_id_OID"));

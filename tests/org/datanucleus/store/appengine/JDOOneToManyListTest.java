@@ -387,7 +387,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
 
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
@@ -396,7 +396,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -407,7 +407,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX_longpk"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
@@ -416,7 +416,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX_longpk"));
     }
 
-    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    Entity parentEntity = ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -464,7 +464,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
 
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
@@ -473,7 +473,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -484,7 +484,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
@@ -493,7 +493,7 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(TestUtils.createKey(parent, parent.getId()));
+    Entity parentEntity = ds.get(TestUtils.createKey(parent, parent.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));

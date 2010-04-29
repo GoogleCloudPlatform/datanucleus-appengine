@@ -34,7 +34,7 @@ public class JPATableAndColumnTest extends JPATestCase {
     em.persist(htacim);
     commitTxn();
     assertNotNull(htacim.getId());
-    Entity entity = ldth.ds.get(KeyFactory.createKey(
+    Entity entity = ds.get(KeyFactory.createKey(
         HasTableAndColumnsInMappingJPA.TABLE_NAME, htacim.getId()));
     assertNotNull(entity);
     assertEquals(HasTableAndColumnsInMappingJPA.TABLE_NAME, entity.getKind());
@@ -44,7 +44,7 @@ public class JPATableAndColumnTest extends JPATestCase {
   public void testFetch() {
     Entity entity = new Entity(HasTableAndColumnsInMappingJPA.TABLE_NAME);
     entity.setProperty(HasTableAndColumnsInMappingJPA.FOO_COLUMN_NAME, "foo val");
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();

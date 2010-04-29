@@ -54,7 +54,7 @@ public class JPAVersionTest extends JPATestCase {
     commitTxn();
     assertEquals(1L, hv.getVersion().longValue());
 
-    Entity entity = ldth.ds.get(
+    Entity entity = ds.get(
         KeyFactory.createKey(hv.getClass().getSimpleName(), hv.getId()));
     assertNotNull(entity);
     assertEquals(1L, entity.getProperty(DEFAULT_VERSION_PROPERTY_NAME));
@@ -73,14 +73,14 @@ public class JPAVersionTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(clazz.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(clazz, keyStr);
 
     // delete the entity in the datastore right before we commit
-    ldth.ds.delete(key);
+    ds.delete(key);
     em.remove(hv);
     try {
       commitTxn();
@@ -106,7 +106,7 @@ public class JPAVersionTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(clazz.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -123,7 +123,7 @@ public class JPAVersionTest extends JPATestCase {
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
     em.remove(hv);
-    ldth.ds.put(entity);
+    ds.put(entity);
     try {
       commitTxn();
       fail("expected optimistic exception");
@@ -148,14 +148,14 @@ public class JPAVersionTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(clazz.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
     HasVersionJPA hv = em.find(clazz, keyStr);
 
     // delete the entity in the datastore right before we commit
-    ldth.ds.delete(key);
+    ds.delete(key);
     hv.setValue("value");
     try {
       commitTxn();
@@ -181,7 +181,7 @@ public class JPAVersionTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(clazz.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -195,7 +195,7 @@ public class JPAVersionTest extends JPATestCase {
     beginTxn();
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
+    ds.put(entity);
     hv.setValue("another value");
     em.merge(hv);
     try {
@@ -222,7 +222,7 @@ public class JPAVersionTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
     Entity entity = new Entity(clazz.getSimpleName());
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 1L);
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();
@@ -245,7 +245,7 @@ public class JPAVersionTest extends JPATestCase {
     hv.setValue("another value");
     // we update the entity directly in the datastore right before commit
     entity.setProperty(DEFAULT_VERSION_PROPERTY_NAME, 7L);
-    ldth.ds.put(entity);
+    ds.put(entity);
     try {
       commitTxn();
       fail("expected optimistic exception");

@@ -43,7 +43,7 @@ public class JPAEmbeddedTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
     assertEquals(1, countForClass(HasEmbeddedJPA.class));
-    Entity e = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertEquals("yar", e.getProperty("embeddedString"));
     assertEquals(Utils.newArrayList("m1", "m2"), e.getProperty("multiVal"));
     assertEquals("yar2", e.getProperty("EMBEDDEDSTRING"));

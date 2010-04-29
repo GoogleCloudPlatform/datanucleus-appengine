@@ -40,7 +40,7 @@ public class JPANonWritableFieldsTest extends JPATestCase {
     assertEquals("update", pojo.getNotUpdatable());
     assertNull(pojo.getNotWritable());
     commitTxn();
-    Entity entity = ldth.ds.get(KeyFactory.createKey(kindForObject(pojo), pojo.getId()));
+    Entity entity = ds.get(KeyFactory.createKey(kindForObject(pojo), pojo.getId()));
     assertEquals(1, entity.getProperties().size());
     assertEquals("update", entity.getProperty("notUpdatable"));
   }
@@ -59,7 +59,7 @@ public class JPANonWritableFieldsTest extends JPATestCase {
     pojo.setNotUpdatable("update2");
     pojo.setNotWritable("write2");
     commitTxn();
-    Entity entity = ldth.ds.get(KeyFactory.createKey(kindForObject(pojo), pojo.getId()));
+    Entity entity = ds.get(KeyFactory.createKey(kindForObject(pojo), pojo.getId()));
     assertEquals(2, entity.getProperties().size());
     assertEquals("insert2", entity.getProperty("notInsertable"));
     assertEquals("update", entity.getProperty("notUpdatable"));

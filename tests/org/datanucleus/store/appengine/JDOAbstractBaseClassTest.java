@@ -48,10 +48,10 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     pm.makePersistent(concrete);
     commitTxn();
 
-    Entity concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
-    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
-    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+    Entity concreteEntity = ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
+    Entity concrete3Entity = ds.get(concrete3.getId());
+    Entity concrete4aEntity = ds.get(concrete4a.getId());
+    Entity concrete4bEntity = ds.get(concrete4b.getId());
 
     assertEquals(4, concreteEntity.getProperties().size());
     assertEquals("base 1", concreteEntity.getProperty("base1Str"));
@@ -90,9 +90,9 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     concrete.getConcrete4().remove(1);
     commitTxn();
 
-    concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    concrete3Entity = ldth.ds.get(concrete3.getId());
-    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    concreteEntity = ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
+    concrete3Entity = ds.get(concrete3.getId());
+    concrete4aEntity = ds.get(concrete4a.getId());
 
     assertEquals(4, concreteEntity.getProperties().size());
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
@@ -107,7 +107,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
     try {
-      ldth.ds.get(concrete4b.getId());
+      ds.get(concrete4b.getId());
     } catch (EntityNotFoundException enfe) {
       // good
     }
@@ -156,10 +156,10 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     pm.makePersistent(concrete);
     commitTxn();
 
-    Entity concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    Entity concrete3Entity = ldth.ds.get(concrete3.getId());
-    Entity concrete4aEntity = ldth.ds.get(concrete4a.getId());
-    Entity concrete4bEntity = ldth.ds.get(concrete4b.getId());
+    Entity concreteEntity = ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
+    Entity concrete3Entity = ds.get(concrete3.getId());
+    Entity concrete4aEntity = ds.get(concrete4a.getId());
+    Entity concrete4bEntity = ds.get(concrete4b.getId());
 
     assertEquals(5, concreteEntity.getProperties().size());
     assertEquals("base 1", concreteEntity.getProperty("base1Str"));
@@ -203,9 +203,9 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     concrete.getConcrete4().remove(1);
     commitTxn();
 
-    concreteEntity = ldth.ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
-    concrete3Entity = ldth.ds.get(concrete3.getId());
-    concrete4aEntity = ldth.ds.get(concrete4a.getId());
+    concreteEntity = ds.get(KeyFactory.createKey(kindForObject(concrete), concrete.getId()));
+    concrete3Entity = ds.get(concrete3.getId());
+    concrete4aEntity = ds.get(concrete4a.getId());
 
     assertEquals(5, concreteEntity.getProperties().size());
     assertEquals("not base 1", concreteEntity.getProperty("base1Str"));
@@ -222,7 +222,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
     try {
-      ldth.ds.get(concrete4b.getId());
+      ds.get(concrete4b.getId());
     } catch (EntityNotFoundException enfe) {
       // good
     }

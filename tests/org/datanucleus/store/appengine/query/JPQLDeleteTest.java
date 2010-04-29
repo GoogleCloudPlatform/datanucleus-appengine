@@ -36,8 +36,8 @@ import javax.persistence.Query;
 public class JPQLDeleteTest extends JPATestCase {
 
   public void testDelete_Txn_MultipleEntityGroups() {
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
     Query q = em.createQuery("DELETE FROM " + Book.class.getName());
     beginTxn();
@@ -52,8 +52,8 @@ public class JPQLDeleteTest extends JPATestCase {
   }
 
   public void testDelete_Txn_OneEntityGroup() {
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
     Query q = em.createQuery("DELETE FROM " + Book.class.getName());
     beginTxn();
@@ -69,8 +69,8 @@ public class JPQLDeleteTest extends JPATestCase {
 
   public void testDelete_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
-    ldth.ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
+    ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
     Query q = em.createQuery("DELETE FROM " + Book.class.getName());
     assertEquals(2, q.executeUpdate());
@@ -82,8 +82,8 @@ public class JPQLDeleteTest extends JPATestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
@@ -98,8 +98,8 @@ public class JPQLDeleteTest extends JPATestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
@@ -115,8 +115,8 @@ public class JPQLDeleteTest extends JPATestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
@@ -127,11 +127,11 @@ public class JPQLDeleteTest extends JPATestCase {
   public void testBatchDelete_NoTxn_FastButInaccurate() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
@@ -143,11 +143,11 @@ public class JPQLDeleteTest extends JPATestCase {
   public void testBatchDelete_NoTxn_SlowButAccurate() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e1 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity("title", "auth", "123432", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
@@ -160,11 +160,11 @@ public class JPQLDeleteTest extends JPATestCase {
   public void testBatchDelete_Txn() {
     Key parent = KeyFactory.createKey("yar", 23);
     Entity e1 = Book.newBookEntity(parent, "title", "auth", "123432", -40);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Book.newBookEntity(parent, "title", "auth", "123432", -40);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Book.newBookEntity(parent, "title", "auth", "123432", -40);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
     Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");

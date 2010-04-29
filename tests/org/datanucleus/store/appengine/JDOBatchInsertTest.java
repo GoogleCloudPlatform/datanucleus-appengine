@@ -159,8 +159,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(2, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
 
-    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
-    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity parent1Entity = ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity flight1Entity = ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals(6, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
@@ -171,8 +171,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertTrue(parent1Entity.hasProperty("notDependent_id_OID"));
     assertNull(parent1Entity.getProperty("notDependent_id_OID"));
     assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
-    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
-    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity parent2Entity = ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight2Entity = ds.get(KeyFactory.stringToKey(f2.getId()));
     assertEquals(6, parent2Entity.getProperties().size());
     assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
@@ -220,8 +220,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(2, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
 
-    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
-    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity parent1Entity = ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity flight1Entity = ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals(6, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent1Entity.getProperty("hasKeyPK_key_OID"));
@@ -232,8 +232,8 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertTrue(parent1Entity.hasProperty("notDependent_id_OID"));
     assertNull(parent1Entity.getProperty("notDependent_id_OID"));
     assertEquals(flight1Entity.getKey(), parent1Entity.getProperty("flight_id_OID"));
-    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
-    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity parent2Entity = ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight2Entity = ds.get(KeyFactory.stringToKey(f2.getId()));
     assertEquals(6, parent2Entity.getProperties().size());
     assertTrue(parent2Entity.hasProperty("hasKeyPK_key_OID"));
     assertNull(parent2Entity.getProperty("hasKeyPK_key_OID"));
@@ -272,16 +272,16 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
     assertEquals(1, batchRecorder.batchOps);
 
-    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
-    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
-    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
-    Entity flight3Entity = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
-    Entity flight4Entity = ldth.ds.get(KeyFactory.stringToKey(f4.getId()));
-    Entity bidir1Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
-    Entity bidir2Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
-    Entity bidir3Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
-    Entity bidir4Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
+    Entity parent1Entity = ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity parent2Entity = ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight1Entity = ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flight2Entity = ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flight3Entity = ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity flight4Entity = ds.get(KeyFactory.stringToKey(f4.getId()));
+    Entity bidir1Entity = ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
+    Entity bidir2Entity = ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
+    Entity bidir3Entity = ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
+    Entity bidir4Entity = ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
     assertEquals(4, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPks"));
     assertNull(parent1Entity.getProperty("hasKeyPks"));
@@ -363,16 +363,16 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
     assertEquals(1, batchRecorder.batchOps);
 
-    Entity parent1Entity = ldth.ds.get(KeyFactory.stringToKey(parent1.getId()));
-    Entity parent2Entity = ldth.ds.get(KeyFactory.stringToKey(parent2.getId()));
-    Entity flight1Entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    Entity flight2Entity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
-    Entity flight3Entity = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
-    Entity flight4Entity = ldth.ds.get(KeyFactory.stringToKey(f4.getId()));
-    Entity bidir1Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
-    Entity bidir2Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
-    Entity bidir3Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
-    Entity bidir4Entity = ldth.ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
+    Entity parent1Entity = ds.get(KeyFactory.stringToKey(parent1.getId()));
+    Entity parent2Entity = ds.get(KeyFactory.stringToKey(parent2.getId()));
+    Entity flight1Entity = ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flight2Entity = ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flight3Entity = ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity flight4Entity = ds.get(KeyFactory.stringToKey(f4.getId()));
+    Entity bidir1Entity = ds.get(KeyFactory.stringToKey(bidirChild1.getId()));
+    Entity bidir2Entity = ds.get(KeyFactory.stringToKey(bidirChild2.getId()));
+    Entity bidir3Entity = ds.get(KeyFactory.stringToKey(bidirChild3.getId()));
+    Entity bidir4Entity = ds.get(KeyFactory.stringToKey(bidirChild4.getId()));
     assertEquals(4, parent1Entity.getProperties().size());
     assertTrue(parent1Entity.hasProperty("hasKeyPks"));
     assertNull(parent1Entity.getProperty("hasKeyPks"));

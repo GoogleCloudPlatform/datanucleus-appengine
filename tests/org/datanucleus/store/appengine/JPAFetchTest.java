@@ -48,7 +48,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetch_Id() {
-    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("max", "47", "yam"));
 
     String keyStr = KeyFactory.keyToString(key);
     Book book = em.find(Book.class, keyStr);
@@ -61,7 +61,7 @@ public class JPAFetchTest extends JPATestCase {
 
   public void testSimpleFetchWithNonTransactionalDatasource() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("max", "47", "yam"));
 
     String keyStr = KeyFactory.keyToString(key);
     Book book = em.find(Book.class, keyStr);
@@ -73,7 +73,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetch_Id_LongIdOnly() {
-    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("max", "47", "yam"));
 
     Book book = em.find(Book.class, key.getId());
     assertNotNull(book);
@@ -89,7 +89,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetch_Id_IntIdOnly() {
-    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("max", "47", "yam"));
 
     Book book = em.find(Book.class, Long.valueOf(key.getId()).intValue());
     assertNotNull(book);
@@ -101,7 +101,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetchWithNamedKey() {
-    Key key = ldth.ds.put(Book.newBookEntity("named key", "max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("named key", "max", "47", "yam"));
 
     String keyStr = KeyFactory.keyToString(key);
     Book book = em.find(Book.class, keyStr);
@@ -114,7 +114,7 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testSimpleFetchWithNamedKey_NameOnly() {
-    Key key = ldth.ds.put(Book.newBookEntity("named key", "max", "47", "yam"));
+    Key key = ds.put(Book.newBookEntity("named key", "max", "47", "yam"));
 
     Book book = em.find(Book.class, key.getName());
     assertNotNull(book);
@@ -131,8 +131,8 @@ public class JPAFetchTest extends JPATestCase {
   }
 
   public void testFetchNonExistent() {
-    Key key = ldth.ds.put(Book.newBookEntity("max", "47", "yam"));
-    ldth.ds.delete(key);
+    Key key = ds.put(Book.newBookEntity("max", "47", "yam"));
+    ds.delete(key);
     String keyStr = KeyFactory.keyToString(key);
     assertNull(em.find(Book.class, keyStr));
   }
@@ -140,7 +140,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSet());
@@ -154,7 +154,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchArrayList() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strArrayList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrArrayList());
@@ -168,7 +168,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchList() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newArrayList("a", "b", "c"), pojo.getStrList());
@@ -182,7 +182,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchLinkedList() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strLinkedList", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newLinkedList("a", "b", "c"), pojo.getStrLinkedList());
@@ -196,7 +196,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchHashSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strHashSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrHashSet());
@@ -210,7 +210,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchLinkedHashSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strLinkedHashSet", Utils.newArrayList("a", "b", "c"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrLinkedHashSet());
@@ -224,7 +224,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchSortedSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strSortedSet", Utils.newArrayList("c", "b", "a"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newHashSet("a", "b", "c"), pojo.getStrSortedSet());
@@ -238,7 +238,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchTreeSet() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("strTreeSet", Utils.newArrayList("c", "b", "a"));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newTreeSet("a", "b", "c"), pojo.getStrTreeSet());
@@ -252,7 +252,7 @@ public class JPAFetchTest extends JPATestCase {
   public void testFetchCollection() {
     Entity e = new Entity(HasMultiValuePropsJPA.class.getSimpleName());
     e.setProperty("intColl", Utils.newArrayList(2, 3, 4));
-    ldth.ds.put(e);
+    ds.put(e);
 
     HasMultiValuePropsJPA pojo = em.find(HasMultiValuePropsJPA.class, e.getKey().getId());
     assertEquals(Utils.newArrayList(2, 3, 4), pojo.getIntColl());

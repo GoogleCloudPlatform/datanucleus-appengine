@@ -36,8 +36,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
 
   public void testDelete_Txn_MultipleEntityGroups() {
 
-    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
-    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
+    ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
+    ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24, 25));
 
     Query q = pm.newQuery(Flight.class);
     beginTxn();
@@ -54,8 +54,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
   public void testDelete_Txn_OneEntityGroup() {
 
     Key parentKey = KeyFactory.createKey("yar", 23);
-    ldth.ds.put(Flight.newFlightEntity(parentKey, null, "jimmy", "bos", "mia", 23, 24, 25));
-    ldth.ds.put(Flight.newFlightEntity(parentKey, null, "jimmy", "bos", "mia", 23, 24, 25));
+    ds.put(Flight.newFlightEntity(parentKey, null, "jimmy", "bos", "mia", 23, 24, 25));
+    ds.put(Flight.newFlightEntity(parentKey, null, "jimmy", "bos", "mia", 23, 24, 25));
 
     Query q = pm.newQuery(Flight.class);
     beginTxn();
@@ -67,8 +67,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
 
   public void testDelete_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24));
-    ldth.ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24));
+    ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24));
+    ds.put(Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24));
 
     Query q = pm.newQuery(Flight.class);
     assertEquals(2, q.deletePersistentAll());
@@ -80,8 +80,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = pm.newQuery(HasKeyAncestorKeyPkJDO.class, "ancestorKey == :p1");
     beginTxn();
@@ -95,8 +95,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = pm.newQuery(HasKeyAncestorKeyPkJDO.class, "ancestorKey == :p1");
     beginTxn();
@@ -111,8 +111,8 @@ public class JDOQLDeleteTest extends JDOTestCase {
     Entity pojo1 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
     Entity pojo2 = new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey);
 
-    ldth.ds.put(pojo1);
-    ldth.ds.put(pojo2);
+    ds.put(pojo1);
+    ds.put(pojo2);
 
     Query q = pm.newQuery(HasKeyAncestorKeyPkJDO.class, "ancestorKey == :p1");
     assertEquals(2, q.deletePersistentAll(parentKey));
@@ -122,11 +122,11 @@ public class JDOQLDeleteTest extends JDOTestCase {
   public void testBatchDelete_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     Query q = pm.newQuery(Flight.class, "id == :ids");
@@ -137,11 +137,11 @@ public class JDOQLDeleteTest extends JDOTestCase {
   public void testBatchDelete_Txn() {
     Key parent = KeyFactory.createKey("yar", 23);
     Entity e1 = Flight.newFlightEntity(parent, null, "jimmy", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(e1);
+    ds.put(e1);
     Entity e2 = Flight.newFlightEntity(parent, null, "jimmy", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(e2);
+    ds.put(e2);
     Entity e3 = Flight.newFlightEntity(parent, null, "jimmy", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
     Query q = pm.newQuery(Flight.class, "id == :ids");

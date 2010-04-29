@@ -90,7 +90,7 @@ public class JPASubclassTest extends JPATestCase {
     beginTxn();
     em.persist(child);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
     assertEquals("overridden", e.getProperty("overridden_string"));
     assertFalse(e.hasProperty("overriddenString"));
   }
@@ -118,7 +118,7 @@ public class JPASubclassTest extends JPATestCase {
     em.persist(child);
     commitTxn();
     Key key = KeyFactory.createKey(kindForClass(child.getClass()), child.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
     assertEquals("aString", e.getProperty("aString"));
     assertEquals("bString", e.getProperty("bString"));
     assertEquals("embedded val 0", e.getProperty("val0"));
@@ -193,7 +193,7 @@ public class JPASubclassTest extends JPATestCase {
     em.remove(child);
     commitTxn();
     try {
-      ldth.ds.get(key);
+      ds.get(key);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -215,7 +215,7 @@ public class JPASubclassTest extends JPATestCase {
     em.persist(parent);
     commitTxn();
     Key key = KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId());
-    Entity e = ldth.ds.get(key);
+    Entity e = ds.get(key);
     assertEquals("aString", e.getProperty("aString"));
     assertEquals("embedded val 0", e.getProperty("val0"));
     assertEquals("embedded val 1", e.getProperty("val1"));
@@ -260,7 +260,7 @@ public class JPASubclassTest extends JPATestCase {
     em.remove(parent);
     commitTxn();
     try {
-      ldth.ds.get(key);
+      ds.get(key);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -319,7 +319,7 @@ public class JPASubclassTest extends JPATestCase {
     em.persist(parent);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(parent.getClass()), parent.getId()));
     assertEquals("a", e.getProperty("aString"));
   }
 
@@ -330,7 +330,7 @@ public class JPASubclassTest extends JPATestCase {
     em.persist(child);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(child.getClass()), child.getId()));
     assertEquals("a", e.getProperty("aString"));
     assertEquals("b", e.getProperty("bString"));
   }
@@ -343,7 +343,7 @@ public class JPASubclassTest extends JPATestCase {
     em.persist(grandchild);
     commitTxn();
 
-    Entity e = ldth.ds.get(KeyFactory.createKey(kindForClass(grandchild.getClass()), grandchild.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kindForClass(grandchild.getClass()), grandchild.getId()));
     assertEquals("a", e.getProperty("aString"));
     assertEquals("b", e.getProperty("bString"));
     assertEquals("c", e.getProperty("cString"));
@@ -352,7 +352,7 @@ public class JPASubclassTest extends JPATestCase {
   private void testFetchParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = em.find(parentClass, e.getKey());
@@ -365,7 +365,7 @@ public class JPASubclassTest extends JPATestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Child child = em.find(childClass, e.getKey());
@@ -380,7 +380,7 @@ public class JPASubclassTest extends JPATestCase {
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     e.setProperty("cString", "c");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Grandchild grandchild = em.find(grandchildClass, e.getKey());
@@ -394,11 +394,11 @@ public class JPASubclassTest extends JPATestCase {
   private void testQueryParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "z8");
-    ldth.ds.put(e);
+    ds.put(e);
 
     e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "z9");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Query q = em.createQuery("select from " + parentClass.getName() + " where aString = :p");
@@ -426,17 +426,17 @@ public class JPASubclassTest extends JPATestCase {
     Entity e1 = new Entity(kindForClass(childClass));
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b2");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     Entity e2 = new Entity(kindForClass(childClass));
     e2.setProperty("aString", "a2");
     e2.setProperty("bString", "b3");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     Entity e3 = new Entity(kindForClass(childClass));
     e3.setProperty("aString", "a2");
     e3.setProperty("bString", "b3");
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
     Query q = em.createQuery("select from " + childClass.getName() + " where aString = :p");
@@ -482,19 +482,19 @@ public class JPASubclassTest extends JPATestCase {
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b1");
     e1.setProperty("cString", "c2");
-    ldth.ds.put(e1);
+    ds.put(e1);
 
     Entity e2 = new Entity(kindForClass(grandchildClass));
     e2.setProperty("aString", "a2");
     e2.setProperty("bString", "b3");
     e2.setProperty("cString", "c3");
-    ldth.ds.put(e2);
+    ds.put(e2);
 
     Entity e3 = new Entity(kindForClass(grandchildClass));
     e3.setProperty("aString", "a2");
     e3.setProperty("bString", "b2");
     e3.setProperty("cString", "c3");
-    ldth.ds.put(e3);
+    ds.put(e3);
 
     beginTxn();
     Query q = em.createQuery(
@@ -562,14 +562,14 @@ public class JPASubclassTest extends JPATestCase {
   private void testDeleteParent(Class<? extends Parent> parentClass) {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = em.find(parentClass, e.getKey());
     em.remove(parent);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -580,14 +580,14 @@ public class JPASubclassTest extends JPATestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Child child = em.find(childClass, e.getKey());
     em.remove(child);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -599,14 +599,14 @@ public class JPASubclassTest extends JPATestCase {
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     e.setProperty("cString", "c");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Child child = em.find(grandchildClass, e.getKey());
     em.remove(child);
     commitTxn();
     try {
-      ldth.ds.get(e.getKey());
+      ds.get(e.getKey());
       fail("expected exception");
     } catch (EntityNotFoundException e1) {
       // good
@@ -616,13 +616,13 @@ public class JPASubclassTest extends JPATestCase {
   private void testUpdateParent(Class<? extends Parent> parentClass) throws Exception {
     Entity e = new Entity(kindForClass(parentClass));
     e.setProperty("aString", "a");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Parent parent = em.find(parentClass, e.getKey());
     parent.setAString("not a");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
   }
 
@@ -630,14 +630,14 @@ public class JPASubclassTest extends JPATestCase {
     Entity e = new Entity(kindForClass(childClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Child child = em.find(childClass, e.getKey());
     child.setAString("not a");
     child.setBString("not b");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
     assertEquals("not b", e.getProperty("bString"));
   }
@@ -646,7 +646,7 @@ public class JPASubclassTest extends JPATestCase {
     Entity e = new Entity(kindForClass(grandchildClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
-    ldth.ds.put(e);
+    ds.put(e);
 
     beginTxn();
     Grandchild grandchild = em.find(grandchildClass, e.getKey());
@@ -654,7 +654,7 @@ public class JPASubclassTest extends JPATestCase {
     grandchild.setBString("not b");
     grandchild.setCString("not c");
     commitTxn();
-    e = ldth.ds.get(e.getKey());
+    e = ds.get(e.getKey());
     assertEquals("not a", e.getProperty("aString"));
     assertEquals("not b", e.getProperty("bString"));
     assertEquals("not c", e.getProperty("cString"));

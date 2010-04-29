@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.OMFContext;
@@ -42,13 +44,12 @@ public class JPATestCase extends DatastoreTestCase {
   protected EntityManagerFactory emf;
   protected EntityManager em;
 
-  protected DatastoreTestHelper ldth;
+  protected DatastoreService ds;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new DatastoreTestHelper();
-    ldth.setUp();
+    ds = DatastoreServiceFactory.getDatastoreService();
     emf = emfCache.get(getEntityManagerFactoryName());
     if (emf == null) {
       emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
@@ -127,7 +128,7 @@ public class JPATestCase extends DatastoreTestCase {
 
   public int countForClass(Class<?> clazz) {
     String kind = kindForClass(clazz);
-    return ldth.ds.prepare(new Query(kind)).countEntities();
+    return ds.prepare(new Query(kind)).countEntities();
   }
 
   protected String kindForClass(Class<?> clazz) {

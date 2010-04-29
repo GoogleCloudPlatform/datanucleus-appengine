@@ -28,7 +28,7 @@ public class JPADeleteTest extends JPATestCase {
   private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
 
   public void testSimpleDelete() {
-    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity(null));
+    Key key = ds.put(KitchenSink.newKitchenSinkEntity(null));
 
     String keyStr = KeyFactory.keyToString(key);
     KitchenSink ks;
@@ -46,7 +46,7 @@ public class JPADeleteTest extends JPATestCase {
   }
 
   public void testSimpleDeleteWithNamedKey() {
-    Key key = ldth.ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
+    Key key = ds.put(KitchenSink.newKitchenSinkEntity("named key", null));
     assertEquals("named key", key.getName());
     String keyStr = KeyFactory.keyToString(key);
     KitchenSink ks;

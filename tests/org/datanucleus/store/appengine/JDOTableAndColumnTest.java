@@ -39,7 +39,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
     htacim.setFoo("foo val");
     makePersistentInTxn(htacim, TXN_START_END);
     assertNotNull(htacim.getId());
-    Entity entity = ldth.ds.get(KeyFactory.createKey(
+    Entity entity = ds.get(KeyFactory.createKey(
         HasTableAndColumnsInMappingJDO.TABLE_NAME, htacim.getId()));
     assertNotNull(entity);
     assertEquals(HasTableAndColumnsInMappingJDO.TABLE_NAME, entity.getKind());
@@ -75,7 +75,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
     f1.setName("Harold");
     f1.setFlightNumber(400);
     pm.makePersistent(f1);
-    Entity entity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity entity = ds.get(KeyFactory.stringToKey(f1.getId()));
     assertNotNull(entity);
     assertEquals("PREFIX" + Flight.class.getSimpleName().toUpperCase() + "SUFFIX", entity.getKind());
     assertEquals("Harold", entity.getProperty("NAME"));
@@ -86,7 +86,7 @@ public class JDOTableAndColumnTest extends JDOTestCase {
   public void testFetch() {
     Entity entity = new Entity(HasTableAndColumnsInMappingJDO.TABLE_NAME);
     entity.setProperty(HasTableAndColumnsInMappingJDO.FOO_COLUMN_NAME, "foo val");
-    Key key = ldth.ds.put(entity);
+    Key key = ds.put(entity);
 
     String keyStr = KeyFactory.keyToString(key);
     beginTxn();

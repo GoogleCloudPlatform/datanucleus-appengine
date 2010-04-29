@@ -58,7 +58,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   @Override
   protected void tearDown() throws Exception {
     try {
-      if (!pm.isClosed() && pm.currentTransaction().isActive() && failed) {
+      if (!pm.isClosed() && pm.currentTransaction().isActive()) {
         pm.currentTransaction().rollback();
       }
       pmf.close();
@@ -90,7 +90,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
 
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
@@ -99,7 +99,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -110,7 +110,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
@@ -119,7 +119,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(parent.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(parent.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -143,7 +143,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertTrue(pojo.getHasKeyPks().isEmpty());
     assertTrue(pojo.getBidirChildren().isEmpty());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals("yar", pojoEntity.getProperty("val"));
@@ -177,7 +177,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(hasKeyPk.getKey());
     startEnd.end();
     
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
@@ -186,7 +186,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -197,7 +197,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
@@ -206,7 +206,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -263,7 +263,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(f2.getId());
     assertNotNull(hasKeyPk2.getKey());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Utils.newArrayList(KeyFactory.stringToKey(bidir2.getId())), pojoEntity.getProperty("bidirChildren"));
@@ -273,24 +273,24 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
+      ds.get(KeyFactory.stringToKey(bidir1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(flight1Id));
+      ds.get(KeyFactory.stringToKey(flight1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(hasKeyPk1Key);
+      ds.get(hasKeyPk1Key);
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
@@ -299,7 +299,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f2.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -310,7 +310,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk2.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk2.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
@@ -319,7 +319,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -380,7 +380,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(2, pojo.getHasKeyPks().size());
     assertEquals(2, pojo.getBidirChildren().size());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Utils.newArrayList(
@@ -396,24 +396,24 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
+      ds.get(KeyFactory.stringToKey(bidir1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(flight1Id));
+      ds.get(KeyFactory.stringToKey(flight1Id));
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(hasKeyPk1Key);
+      ds.get(hasKeyPk1Key);
       fail("expected EntityNotFoundException");
     } catch (EntityNotFoundException enfe) {
       // good
     }
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
@@ -422,7 +422,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
+    bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yet another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir3.getId()), bidirChildEntity.getKey());
@@ -431,7 +431,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f2.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -442,7 +442,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    flightEntity = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
+    flightEntity = ds.get(KeyFactory.stringToKey(f3.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -453,7 +453,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk2.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk2.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
@@ -462,7 +462,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    hasKeyPkEntity = ldth.ds.get(hasKeyPk3.getKey());
+    hasKeyPkEntity = ds.get(hasKeyPk3.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yet another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk3.getKey(), hasKeyPkEntity.getKey());
@@ -471,7 +471,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -531,7 +531,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(f2.getId());
     assertNotNull(hasKeyPk2.getKey());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
     assertEquals(Utils.newArrayList(
@@ -546,10 +546,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
 
     startEnd.end();
 
-    ldth.ds.get(KeyFactory.stringToKey(bidir1Id));
-    ldth.ds.get(KeyFactory.stringToKey(flight1Id));
-    ldth.ds.get(hasKeyPk1Key);
-    Entity bidirChildEntity = ldth.ds.get(KeyFactory.stringToKey(bidir2.getId()));
+    ds.get(KeyFactory.stringToKey(bidir1Id));
+    ds.get(KeyFactory.stringToKey(flight1Id));
+    ds.get(hasKeyPk1Key);
+    Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
@@ -558,7 +558,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f2.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f2.getId()));
     assertNotNull(flightEntity);
     assertEquals("bos", flightEntity.getProperty("origin"));
     assertEquals("mia", flightEntity.getProperty("dest"));
@@ -569,7 +569,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk2.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk2.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
@@ -578,7 +578,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(parentEntity);
     assertEquals(4, parentEntity.getProperties().size());
     assertEquals("yar", parentEntity.getProperty("val"));
@@ -621,7 +621,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pm.makePersistent(pojo);
     startEnd.end();
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
     assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
@@ -629,7 +629,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
@@ -637,7 +637,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     assertNotNull(bidirEntity);
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
@@ -674,7 +674,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.getBidirChildren().iterator().next().setChildVal("yap");
     startEnd.end();
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
     assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
@@ -682,7 +682,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getKey());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getKey());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
@@ -690,7 +690,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     assertNotNull(bidirEntity);
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
@@ -729,27 +729,27 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(flightId));
+      ds.get(KeyFactory.stringToKey(flightId));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasKeyPkKey);
+      ds.get(hasKeyPkKey);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidirChildId));
+      ds.get(KeyFactory.stringToKey(bidirChildId));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(4, pojoEntity.getProperties().size());
     assertTrue(pojoEntity.hasProperty("bidirChildren"));
     assertNull(pojoEntity.getProperty("bidirChildren"));
@@ -787,27 +787,27 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(flightId));
+      ds.get(KeyFactory.stringToKey(flightId));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasKeyPkId);
+      ds.get(hasKeyPkId);
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidirChildId));
+      ds.get(KeyFactory.stringToKey(bidirChildId));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(4, pojoEntity.getProperties().size());
     assertTrue(pojoEntity.hasProperty("bidirChildren"));
     assertNull(pojoEntity.getProperty("bidirChildren"));
@@ -824,40 +824,40 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     getObjectManager().getOMFContext().getPersistenceConfiguration().setProperty(
         "datanucleus.appengine.allowMultipleRelationsOfSameType", true);
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity flightEntity1 = newFlightEntity(pojoEntity.getKey(), "bos1", "mia2", "name 1");
     flightEntity1.setProperty("flightsByOrigAndDest_INTEGER_IDX", 0);
     flightEntity1.setProperty("flightsByIdAndOrig_INTEGER_IDX", 0);
     flightEntity1.setProperty("flightsByOrigAndId_INTEGER_IDX", 0);
-    ldth.ds.put(flightEntity1);
+    ds.put(flightEntity1);
 
     Entity flightEntity2 = newFlightEntity(pojoEntity.getKey(), "bos2", "mia2", "name 2");
     flightEntity2.setProperty("flightsByOrigAndDest_INTEGER_IDX", 1);
     flightEntity2.setProperty("flightsByIdAndOrig_INTEGER_IDX", 1);
     flightEntity2.setProperty("flightsByOrigAndId_INTEGER_IDX", 1);
-    ldth.ds.put(flightEntity2);
+    ds.put(flightEntity2);
 
     Entity flightEntity3 = newFlightEntity(pojoEntity.getKey(), "bos1", "mia1", "name 0");
     flightEntity3.setProperty("flightsByOrigAndDest_INTEGER_IDX", 2);
     flightEntity3.setProperty("flightsByIdAndOrig_INTEGER_IDX", 2);
     flightEntity3.setProperty("flightsByOrigAndId_INTEGER_IDX", 2);
-    ldth.ds.put(flightEntity3);
+    ds.put(flightEntity3);
 
     Entity explicitIndexEntity1 =
         new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
     explicitIndexEntity1.setProperty("index", 3);
-    ldth.ds.put(explicitIndexEntity1);
+    ds.put(explicitIndexEntity1);
 
     Entity explicitIndexEntity2 =
         new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
     explicitIndexEntity2.setProperty("index", 2);
-    ldth.ds.put(explicitIndexEntity2);
+    ds.put(explicitIndexEntity2);
 
     Entity explicitIndexEntity3 =
         new Entity(HasExplicitIndexColumnJDO.class.getSimpleName(), pojoEntity.getKey());
     explicitIndexEntity3.setProperty("index", 1);
-    ldth.ds.put(explicitIndexEntity3);
+    ds.put(explicitIndexEntity3);
 
     startEnd.start();
     HasOneToManyWithOrderByJDO pojo = pm.getObjectById(
@@ -893,20 +893,20 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   void testFind(Class<? extends HasOneToManyJDO> pojoClass,
       Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity flightEntity = newFlightEntity(pojoEntity.getKey(), "bos1", "mia2", "name 1");
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
     hasKeyPkEntity.setProperty("hasKeyPks_INTEGER_IDX", 1);
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
 
     startEnd.start();
     HasOneToManyJDO pojo =
@@ -928,20 +928,20 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
   void testQuery(Class<? extends HasOneToManyJDO> pojoClass,
       Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity flightEntity = newFlightEntity(pojoEntity.getKey(), "bos", "mia2", "name");
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
     hasKeyPkEntity.setProperty("hasKeyPks_INTEGER_IDX", 1);
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + pojoClass.getName() + " where id == key parameters String key");
@@ -969,37 +969,37 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       Class<? extends BidirectionalChildJDO> bidirClass) throws Exception {
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     tearDown();
-    DatastoreService ds = EasyMock.createMock(DatastoreService.class);
+    DatastoreService mockDatastore = EasyMock.createMock(DatastoreService.class);
     DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    DatastoreServiceFactoryInternal.setDatastoreService(ds);
+    DatastoreServiceFactoryInternal.setDatastoreService(mockDatastore);
     try {
       setUp();
 
       Entity pojoEntity = new Entity(pojoClass.getSimpleName());
-      ldth.ds.put(pojoEntity);
+      ds.put(pojoEntity);
 
       Entity FlightEntity = newFlightEntity(pojoEntity.getKey(), "bos", "mia", "name");
-      ldth.ds.put(FlightEntity);
+      ds.put(FlightEntity);
 
       Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
       hasKeyPkEntity.setProperty("str", "yar");
-      ldth.ds.put(hasKeyPkEntity);
+      ds.put(hasKeyPkEntity);
 
       Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
       bidirEntity.setProperty("childVal", "yap");
-      ldth.ds.put(bidirEntity);
+      ds.put(bidirEntity);
 
       Transaction txn = EasyMock.createMock(Transaction.class);
       EasyMock.expect(txn.getId()).andReturn("1").times(2);
       txn.commit();
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
-      EasyMock.expect(ds.beginTransaction()).andReturn(txn);
-      EasyMock.expect(ds.getCurrentTransaction(null)).andReturn(txn);
-      EasyMock.expect(ds.getCurrentTransaction(null)).andReturn(null);
+      EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
+      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(txn);
+      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(null);
       // the only get we're going to perform is for the pojo
-      EasyMock.expect(ds.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
-      EasyMock.replay(ds);
+      EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
+      EasyMock.replay(mockDatastore);
 
       beginTxn();
       HasOneToManyJDO pojo =
@@ -1010,27 +1010,27 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     } finally {
       DatastoreServiceFactoryInternal.setDatastoreService(original);
     }
-    EasyMock.verify(ds);
+    EasyMock.verify(mockDatastore);
   }
 
   void testDeleteParentDeletesChild(Class<? extends HasOneToManyJDO> pojoClass,
       Class<? extends BidirectionalChildJDO> bidirClass, StartEnd startEnd) throws Exception {
     Entity pojoEntity = new Entity(pojoClass.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity flightEntity = newFlightEntity(pojoEntity.getKey(), "bos", "mia", "name");
     flightEntity.setProperty("flights_INTEGER_IDX", 1);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJDO.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
     hasKeyPkEntity.setProperty("hasKeyPks_INTEGER_IDX", 1);
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
-    ldth.ds.put(bidirEntity);
+    ds.put(bidirEntity);
 
     startEnd.start();
     HasOneToManyJDO pojo = pm.getObjectById(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -1084,10 +1084,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(bidir2.getId(), bidirIds.iterator().next());
     startEnd.end();
 
-    Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
-    Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
-    Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
+    Entity flightEntity1 = ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
+    Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     if (isIndexed()) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX"));
@@ -1095,13 +1095,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(f2Id));
+      ds.get(KeyFactory.stringToKey(f2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir2Id));
+      ds.get(KeyFactory.stringToKey(bidir2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -1152,10 +1152,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(bidir2.getId(), bidirIds.iterator().next());
     startEnd.end();
 
-    Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
-    Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
-    Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
+    Entity flightEntity1 = ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
+    Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     if (isIndexed()) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_longpk"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_longpk"));
@@ -1163,13 +1163,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(f2Id));
+      ds.get(KeyFactory.stringToKey(f2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir2Id));
+      ds.get(KeyFactory.stringToKey(bidir2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -1222,10 +1222,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals(bidir2.getId(), bidirIds.iterator().next());
     startEnd.end();
 
-    Entity flightEntity1 = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
-    Entity flightEntity3 = ldth.ds.get(KeyFactory.stringToKey(f3.getId()));
-    Entity bidirEntity1 = ldth.ds.get(KeyFactory.stringToKey(bidir1.getId()));
-    Entity bidirEntity3 = ldth.ds.get(KeyFactory.stringToKey(bidir3.getId()));
+    Entity flightEntity1 = ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
+    Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
+    Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     if (isIndexed()) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
@@ -1233,13 +1233,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       assertEquals(1L, bidirEntity3.getProperty("bidirChildren_INTEGER_IDX"));
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(f2Id));
+      ds.get(KeyFactory.stringToKey(f2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
     try {
-      ldth.ds.get(KeyFactory.stringToKey(bidir2Id));
+      ds.get(KeyFactory.stringToKey(bidir2Id));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
@@ -1276,7 +1276,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pm.makePersistent(pojo);
     startEnd.end();
 
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f1.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f1.getId()));
     assertEquals("named key", flightEntity.getKey().getName());
   }
 
@@ -1365,9 +1365,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addFlight(f);
     pojo.addBidirChild(bidirChild);
     startEnd.end();
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
-    Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertEquals(pojoEntity.getKey(), flightEntity.getParent());
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
@@ -1387,9 +1387,9 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.addFlight(f);
     pojo.addBidirChild(bidirChild);
     startEnd.end();
-    Entity flightEntity = ldth.ds.get(KeyFactory.stringToKey(f.getId()));
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidirChild.getId()));
-    Entity pojoEntity = ldth.ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
+    Entity flightEntity = ds.get(KeyFactory.stringToKey(f.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
     assertEquals(pojoEntity.getKey(), flightEntity.getParent());
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
@@ -1407,14 +1407,14 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.getBidirChildren().add(bidir);
     startEnd.end();
     assertEquals(1, countForClass(bidir.getClass()));
-    Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
+    Entity e = ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
@@ -1431,14 +1431,14 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     pojo.getBidirChildren().add(bidir);
     startEnd.end();
     assertEquals(1, countForClass(bidir.getClass()));
-    Entity e = ldth.ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
+    Entity e = ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
-    Entity bidirEntity = ldth.ds.get(KeyFactory.stringToKey(bidir.getId()));
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
   }
 
@@ -1587,8 +1587,8 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       DatastoreServiceInterceptor.uninstall();
     }
     // prove that the book entity exists
-    ldth.ds.get(KeyFactory.stringToKey(flight2.getId()));
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    ds.get(KeyFactory.stringToKey(flight2.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     // the parent has a reference to the first book that was already there
     // but no reference to the second book
     assertEquals(

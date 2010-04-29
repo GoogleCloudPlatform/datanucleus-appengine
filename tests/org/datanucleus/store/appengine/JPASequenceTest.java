@@ -66,7 +66,7 @@ public class JPASequenceTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kind, pojo.getId()));
     assertEquals("yar1", e.getProperty("val"));
 
     HasSequence pojo2 = new HasSequence();
@@ -74,7 +74,7 @@ public class JPASequenceTest extends JPATestCase {
     beginTxn();
     em.persist(pojo2);
     commitTxn();
-    e = ldth.ds.get(KeyFactory.createKey(kind, pojo2.getId()));
+    e = ds.get(KeyFactory.createKey(kind, pojo2.getId()));
     assertEquals("yar2", e.getProperty("val"));
     assertEquals(pojo.getId().longValue(), pojo2.getId() - 1);
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
@@ -88,7 +88,7 @@ public class JPASequenceTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    Entity e = ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
+    Entity e = ds.get(KeyFactory.createKey(kind, pojo.getId()));
     assertEquals("yar1", e.getProperty("val"));
     assertEquals(Utils.newArrayList("that"), sequenceNames);
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
@@ -96,14 +96,14 @@ public class JPASequenceTest extends JPATestCase {
 
   public void testInsertWithSequenceGenerator_NoSequenceName() throws EntityNotFoundException {
     String kind = getKind(HasSequenceWithNoSequenceName.class);
-    KeyRange keyRange = ldth.ds.allocateIds(kind, 5);
+    KeyRange keyRange = ds.allocateIds(kind, 5);
     HasSequenceWithNoSequenceName pojo = new HasSequenceWithNoSequenceName();
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
+    ds.get(KeyFactory.createKey(kind, pojo.getId()));
     assertEquals(keyRange.getEnd().getId(), pojo.getId() - 1);
-    keyRange = ldth.ds.allocateIds(kind, 1);
+    keyRange = ds.allocateIds(kind, 1);
     assertEquals(pojo.getId() + 12, keyRange.getStart().getId());
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__"), sequenceNames);
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
@@ -115,13 +115,13 @@ public class JPASequenceTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
-    ldth.ds.get(KeyFactory.createKey(kind, pojo.getId()));
+    ds.get(KeyFactory.createKey(kind, pojo.getId()));
 
     HasSequenceWithUnencodedStringPk pojo2 = new HasSequenceWithUnencodedStringPk();
     beginTxn();
     em.persist(pojo2);
     commitTxn();
-    ldth.ds.get(KeyFactory.createKey(kind, pojo2.getId()));
+    ds.get(KeyFactory.createKey(kind, pojo2.getId()));
     assertEquals(Long.parseLong(pojo.getId()), Long.parseLong(pojo2.getId()) - 1);
     assertEquals(Utils.newArrayList(kind + "_SEQUENCE__", kind + "_SEQUENCE__"), sequenceNames);
     assertEquals(Utils.newArrayList(1L, 1L), sequenceBatchSizes);

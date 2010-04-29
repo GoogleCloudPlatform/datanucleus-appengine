@@ -37,7 +37,7 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testInsert_IdGen() {
     Entity bookEntity = Book.newBookEntity("max", "123456", "manifesto");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Key bookKey = bookEntity.getKey();
     HasStringAncestorStringPkJPA ha = new HasStringAncestorStringPkJPA(KeyFactory.keyToString(bookKey));
     beginTxn();
@@ -49,13 +49,13 @@ public class JPAAncestorTest extends JPATestCase {
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(bookKey);
-    Entity result = ldth.ds.prepare(q).asSingleEntity();
+    Entity result = ds.prepare(q).asSingleEntity();
     assertEquals(bookKey, result.getKey().getParent());
   }
 
   public void testInsert_NamedKey() {
     Entity bookEntity = Book.newBookEntity("parent named key", "max", "123456", "manifesto");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Key bookKey = bookEntity.getKey();
     Key key = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), "named key", bookKey).getKey();
     HasStringAncestorStringPkJPA ha = new HasStringAncestorStringPkJPA(null, KeyFactory.keyToString(key));
@@ -68,7 +68,7 @@ public class JPAAncestorTest extends JPATestCase {
     // if our object comes back.
     Query q = new Query(ha.getClass().getSimpleName());
     q.setAncestor(bookKey);
-    Entity result = ldth.ds.prepare(q).asSingleEntity();
+    Entity result = ds.prepare(q).asSingleEntity();
     assertEquals(bookKey, result.getKey().getParent());
     assertEquals("named key", result.getKey().getName());
     assertEquals("parent named key", result.getKey().getParent().getName());
@@ -76,7 +76,7 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testInsert_SetAncestorAndPk() {
     Entity bookEntity = Book.newBookEntity("parent named key", "max", "123456", "manifesto");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Key bookKey = bookEntity.getKey();
     HasStringAncestorStringPkJPA ha = new HasStringAncestorStringPkJPA(KeyFactory.keyToString(bookKey),
         TestUtils.createKeyString(HasStringAncestorStringPkJPA.class, "named key"));
@@ -93,9 +93,9 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testFetch() {
     Entity bookEntity = Book.newBookEntity("max", "123456", "manifesto");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), bookEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     beginTxn();
     HasStringAncestorStringPkJPA ha = em.find(HasStringAncestorStringPkJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
@@ -105,10 +105,10 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testFetchWithNamedKey() {
     Entity bookEntity = Book.newBookEntity("parent named key", "max", "123456", "manifesto");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
     Entity hasAncestorEntity =
         new Entity(HasStringAncestorStringPkJPA.class.getSimpleName(), "named key", bookEntity.getKey());
-    ldth.ds.put(hasAncestorEntity);
+    ds.put(hasAncestorEntity);
 
     beginTxn();
     HasStringAncestorStringPkJPA ha = em.find(HasStringAncestorStringPkJPA.class, KeyFactory.keyToString(hasAncestorEntity.getKey()));
@@ -129,33 +129,33 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testInsertWithKeyPkAndAncestor() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyPkJPA hk1 = new HasKeyPkJPA();
     hk1.setAncestorId(e.getKey());
     beginTxn();
     em.persist(hk1);
     commitTxn();
 
-    Entity reloaded = ldth.ds.get(hk1.getId());
+    Entity reloaded = ds.get(hk1.getId());
     assertEquals(hk1.getAncestorId(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithStringPkAndKeyAncestor_IdGen() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorStringPkJPA hk1 = new HasKeyAncestorStringPkJPA();
     hk1.setAncestorKey(e.getKey());
     beginTxn();
     em.persist(hk1);
     commitTxn();
 
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(hk1.getKey()));
+    Entity reloaded = ds.get(KeyFactory.stringToKey(hk1.getKey()));
     assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithStringPkAndKeyAncestor_NamedKey() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorStringPkJPA hk1 = new HasKeyAncestorStringPkJPA();
     Key keyToSet =
         new Entity(HasKeyAncestorStringPkJPA.class.getSimpleName(), "yar", e.getKey()).getKey();
@@ -165,13 +165,13 @@ public class JPAAncestorTest extends JPATestCase {
     commitTxn();
     String key = hk1.getKey();
     assertEquals(e.getKey(), hk1.getAncestorKey());
-    Entity reloaded = ldth.ds.get(KeyFactory.stringToKey(key));
+    Entity reloaded = ds.get(KeyFactory.stringToKey(key));
     assertEquals(e.getKey(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithStringPkAndKeyAncestor_SetAncestorAndPk() throws EntityNotFoundException {
     Entity parentEntity = new Entity("yam");
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     HasKeyAncestorStringPkJPA hk1 = new HasKeyAncestorStringPkJPA();
     Key keyToSet =
         new Entity(HasKeyAncestorStringPkJPA.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();
@@ -189,20 +189,20 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testInsertWithKeyPkAndKeyAncestor_IdGen() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
     hk1.setAncestorKey(e.getKey());
     beginTxn();
     em.persist(hk1);
     commitTxn();
 
-    Entity reloaded = ldth.ds.get(hk1.getKey());
+    Entity reloaded = ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithKeyPkAndKeyAncestor_NamedKey() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
     Key keyToSet =
         new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), "yar", e.getKey()).getKey();
@@ -212,13 +212,13 @@ public class JPAAncestorTest extends JPATestCase {
     commitTxn();
     Key key = hk1.getKey();
     assertEquals(e.getKey(), hk1.getAncestorKey());
-    Entity reloaded = ldth.ds.get(key);
+    Entity reloaded = ds.get(key);
     assertEquals(e.getKey(), reloaded.getKey().getParent());
   }
 
   public void testInsertWithKeyPkAndKeyAncestor_SetAncestorAndPk() throws EntityNotFoundException {
     Entity parentEntity = new Entity("yam");
-    ldth.ds.put(parentEntity);
+    ds.put(parentEntity);
     HasKeyAncestorKeyPkJPA hk1 = new HasKeyAncestorKeyPkJPA();
     Key keyToSet =
         new Entity(HasKeyAncestorKeyPkJPA.class.getSimpleName(), "yar", parentEntity.getKey()).getKey();
@@ -236,20 +236,20 @@ public class JPAAncestorTest extends JPATestCase {
 
   public void testInsertWithKeyPkAndStringAncestor_IdGen() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJPA hk1 = new HasStringAncestorKeyPkJPA();
     hk1.setAncestorKey(KeyFactory.keyToString(e.getKey()));
     beginTxn();
     em.persist(hk1);
     commitTxn();
 
-    Entity reloaded = ldth.ds.get(hk1.getKey());
+    Entity reloaded = ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
   public void testInsertWithKeyPkAndStringAncestor_NamedKey() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJPA hk1 = new HasStringAncestorKeyPkJPA();
     Key key = new Entity(HasStringAncestorKeyPkJPA.class.getSimpleName(), "named key", e.getKey()).getKey();
     hk1.setKey(key);
@@ -258,13 +258,13 @@ public class JPAAncestorTest extends JPATestCase {
     commitTxn();
     assertEquals(e.getKey(), KeyFactory.stringToKey(hk1.getAncestorKey()));
 
-    Entity reloaded = ldth.ds.get(hk1.getKey());
+    Entity reloaded = ds.get(hk1.getKey());
     assertEquals(hk1.getAncestorKey(), KeyFactory.keyToString(reloaded.getKey().getParent()));
   }
 
   public void testInsertWithKeyPkAndStringAncestor_SetKeyAndAncestor() throws EntityNotFoundException {
     Entity e = new Entity("yam");
-    ldth.ds.put(e);
+    ds.put(e);
     HasStringAncestorKeyPkJPA hk1 = new HasStringAncestorKeyPkJPA();
     Key key = KeyFactory.createKey(HasStringAncestorKeyPkJPA.class.getSimpleName(), "named key");
     hk1.setKey(key);

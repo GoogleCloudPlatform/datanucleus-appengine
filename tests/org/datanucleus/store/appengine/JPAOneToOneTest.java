@@ -83,7 +83,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(notDependent.getId());
     assertNotNull(pojo.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -91,25 +91,25 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertEquals(KeyFactory.stringToKey(hasParent.getId()), hasParentEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals(hasParentKeyPk.getId(), hasParentKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
-    Entity notDependentEntity = ldth.ds.get(KeyFactory.stringToKey(notDependent.getId()));
+    Entity notDependentEntity = ds.get(KeyFactory.stringToKey(notDependent.getId()));
     assertNotNull(notDependentEntity);
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
     assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
@@ -173,22 +173,22 @@ public class JPAOneToOneTest extends JPATestCase {
 
     assertNotNull(pojo.getId());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertKeyParentNull(bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertKeyParentNull(hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertKeyParentNull(hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertKeyParentNull(hasParentKeyPkEntity, hasParentKeyPk.getId());
 
@@ -214,7 +214,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNull(pojo.getHasParent());
     assertNull(pojo.getHasParentKeyPK());
 
-    Entity pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
 
     startEnd.start();
@@ -240,23 +240,23 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParent.getId());
     assertNotNull(hasParentKeyPk.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertKeyParentEquals(pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
-    pojoEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
     assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
     assertEquals(hasParentEntity.getKey(), pojoEntity.getProperty("hasparent_id"));
@@ -304,22 +304,22 @@ public class JPAOneToOneTest extends JPATestCase {
     em.merge(pojo);
     startEnd.end();
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("yam", bookEntity.getProperty("isbn"));
     assertKeyParentEquals(pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertEquals("yap", hasParentEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals("yag", hasParentKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
@@ -366,22 +366,22 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.getHasParentKeyPK().setStr("yag");
     startEnd.end();
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("yam", bookEntity.getProperty("isbn"));
     assertKeyParentEquals(pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertEquals("yap", hasParentEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals("yag", hasParentKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
@@ -422,34 +422,34 @@ public class JPAOneToOneTest extends JPATestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+      ds.get(KeyFactory.stringToKey(b.getId()));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasKeyPk.getId());
+      ds.get(hasKeyPk.getId());
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+      ds.get(KeyFactory.stringToKey(hasParent.getId()));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasParentKeyPk.getId());
+      ds.get(hasParentKeyPk.getId());
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(6, parentEntity.getProperties().size());
     assertTrue(parentEntity.hasProperty("str"));
     assertTrue(parentEntity.hasProperty("book_id"));
@@ -498,34 +498,34 @@ public class JPAOneToOneTest extends JPATestCase {
     startEnd.end();
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+      ds.get(KeyFactory.stringToKey(b.getId()));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasKeyPk.getId());
+      ds.get(hasKeyPk.getId());
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+      ds.get(KeyFactory.stringToKey(hasParent.getId()));
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
     try {
-      ldth.ds.get(hasParentKeyPk.getId());
+      ds.get(hasParentKeyPk.getId());
       fail("expected enfe");
     } catch (EntityNotFoundException enfe) {
       // good
     }
 
-    Entity parentEntity = ldth.ds.get(KeyFactory.stringToKey(pojo.getId()));
+    Entity parentEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(6, parentEntity.getProperties().size());
     assertTrue(parentEntity.hasProperty("str"));
     assertTrue(parentEntity.hasProperty("book_id"));
@@ -575,24 +575,24 @@ public class JPAOneToOneTest extends JPATestCase {
   }
   private void testFind(StartEnd startEnd) throws EntityNotFoundException {
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth", "22222", "the title");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity hasParentEntity =
         new Entity(HasOneToOneParentJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentEntity.setProperty("str", "yap");
-    ldth.ds.put(hasParentEntity);
+    ds.put(hasParentEntity);
 
     Entity hasParentKeyPkEntity =
         new Entity(HasOneToOneParentKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentKeyPkEntity.setProperty("str", "yag");
-    ldth.ds.put(hasParentKeyPkEntity);
+    ds.put(hasParentKeyPkEntity);
 
     startEnd.start();
     HasOneToOneJPA pojo = em.find(HasOneToOneJPA.class, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -616,24 +616,24 @@ public class JPAOneToOneTest extends JPATestCase {
   }
   private void testQuery(StartEnd startEnd) {
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth", "22222", "the title");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity hasParentEntity =
         new Entity(HasOneToOneParentJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentEntity.setProperty("str", "yap");
-    ldth.ds.put(hasParentEntity);
+    ds.put(hasParentEntity);
 
     Entity hasParentKeyPkEntity =
         new Entity(HasOneToOneParentKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentKeyPkEntity.setProperty("str", "yag");
-    ldth.ds.put(hasParentKeyPkEntity);
+    ds.put(hasParentKeyPkEntity);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " where id = :key");
@@ -660,43 +660,43 @@ public class JPAOneToOneTest extends JPATestCase {
     // DatastoreService mock
     emf.close();
     tearDown();
-    DatastoreService ds = EasyMock.createMock(DatastoreService.class);
+    DatastoreService mockDatastore = EasyMock.createMock(DatastoreService.class);
     DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    DatastoreServiceFactoryInternal.setDatastoreService(ds);
+    DatastoreServiceFactoryInternal.setDatastoreService(mockDatastore);
     try {
       setUp();
 
       Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-      ldth.ds.put(pojoEntity);
+      ds.put(pojoEntity);
 
       Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth", "22222", "the title");
-      ldth.ds.put(bookEntity);
+      ds.put(bookEntity);
 
       Entity hasKeyPkEntity = new Entity(HasKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
       hasKeyPkEntity.setProperty("str", "yar");
-      ldth.ds.put(hasKeyPkEntity);
+      ds.put(hasKeyPkEntity);
 
       Entity hasParentEntity =
           new Entity(HasOneToOneParentJPA.class.getSimpleName(), pojoEntity.getKey());
       hasParentEntity.setProperty("str", "yap");
-      ldth.ds.put(hasParentEntity);
+      ds.put(hasParentEntity);
 
       Entity hasParentKeyPkEntity =
           new Entity(HasOneToOneParentKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
       hasParentKeyPkEntity.setProperty("str", "yag");
-      ldth.ds.put(hasParentKeyPkEntity);
+      ds.put(hasParentKeyPkEntity);
 
       Transaction txn = EasyMock.createMock(Transaction.class);
       EasyMock.expect(txn.getId()).andReturn("1").times(2);
       txn.commit();
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
-      EasyMock.expect(ds.beginTransaction()).andReturn(txn);
-      EasyMock.expect(ds.getCurrentTransaction(null)).andReturn(txn);
-      EasyMock.expect(ds.getCurrentTransaction(null)).andReturn(null);
+      EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
+      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(txn);
+      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(null);
       // the only get we're going to perform is for the pojo
-      EasyMock.expect(ds.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
-      EasyMock.replay(ds);
+      EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
+      EasyMock.replay(mockDatastore);
 
       beginTxn();
       HasOneToOneJPA pojo = em.find(HasOneToOneJPA.class, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -708,7 +708,7 @@ public class JPAOneToOneTest extends JPATestCase {
       emf.close();
       DatastoreServiceFactoryInternal.setDatastoreService(original);
     }
-    EasyMock.verify(ds);
+    EasyMock.verify(mockDatastore);
   }
 
   public void testDeleteParentDeletesChild() {
@@ -720,27 +720,27 @@ public class JPAOneToOneTest extends JPATestCase {
   private void testDeleteParentDeletesChild(StartEnd startEnd) {
 
     Entity pojoEntity = new Entity(HasOneToOneJPA.class.getSimpleName());
-    ldth.ds.put(pojoEntity);
+    ds.put(pojoEntity);
 
     Entity bookEntity = Book.newBookEntity(pojoEntity.getKey(), "auth", "22222", "the title");
-    ldth.ds.put(bookEntity);
+    ds.put(bookEntity);
 
     Entity hasKeyPkEntity = new Entity(HasKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasKeyPkEntity.setProperty("str", "yar");
-    ldth.ds.put(hasKeyPkEntity);
+    ds.put(hasKeyPkEntity);
 
     Entity hasParentEntity =
         new Entity(HasOneToOneParentJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentEntity.setProperty("str", "yap");
-    ldth.ds.put(hasParentEntity);
+    ds.put(hasParentEntity);
 
     Entity hasParentPkEntity =
         new Entity(HasOneToOneParentKeyPkJPA.class.getSimpleName(), pojoEntity.getKey());
     hasParentPkEntity.setProperty("str", "yag");
-    ldth.ds.put(hasParentPkEntity);
+    ds.put(hasParentPkEntity);
 
     Entity notDependentEntity = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), pojoEntity.getKey());
-    ldth.ds.put(notDependentEntity);
+    ds.put(notDependentEntity);
 
     assertEquals(HasOneToOneJPA.class.getName(), 1, countForClass(HasOneToOneJPA.class));
 
@@ -749,7 +749,7 @@ public class JPAOneToOneTest extends JPATestCase {
     em.remove(pojo);
     startEnd.end();
     try {
-      pojoEntity = ldth.ds.get(pojoEntity.getKey());
+      pojoEntity = ds.get(pojoEntity.getKey());
       fail("expected enfe");
     } catch (EntityNotFoundException e) {
       // good
@@ -795,7 +795,7 @@ public class JPAOneToOneTest extends JPATestCase {
     em.persist(pojo);
     startEnd.end();
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertEquals("named key", bookEntity.getKey().getName());
   }
 
@@ -829,7 +829,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPk.getId());
     assertNotNull(pojo.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -837,22 +837,22 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertEquals(KeyFactory.stringToKey(hasParent.getId()), hasParentEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals(hasParentKeyPk.getId(), hasParentKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
-    Entity pojoEntity = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity pojoEntity = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
     assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
@@ -898,7 +898,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPk.getId());
     assertNotNull(pojo.getId());
 
-    Entity bookEntity = ldth.ds.get(KeyFactory.stringToKey(b.getId()));
+    Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
     assertEquals("max", bookEntity.getProperty("author"));
     assertEquals("22333", bookEntity.getProperty("isbn"));
@@ -906,22 +906,22 @@ public class JPAOneToOneTest extends JPATestCase {
     assertEquals(KeyFactory.stringToKey(b.getId()), bookEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), bookEntity, b.getId());
 
-    Entity hasKeyPkEntity = ldth.ds.get(hasKeyPk.getId());
+    Entity hasKeyPkEntity = ds.get(hasKeyPk.getId());
     assertNotNull(hasKeyPkEntity);
     assertEquals(hasKeyPk.getId(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasKeyPkEntity, hasKeyPk.getId());
 
-    Entity hasParentEntity = ldth.ds.get(KeyFactory.stringToKey(hasParent.getId()));
+    Entity hasParentEntity = ds.get(KeyFactory.stringToKey(hasParent.getId()));
     assertNotNull(hasParentEntity);
     assertEquals(KeyFactory.stringToKey(hasParent.getId()), hasParentEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasParentEntity, hasParent.getId());
 
-    Entity hasParentKeyPkEntity = ldth.ds.get(hasParentKeyPk.getId());
+    Entity hasParentKeyPkEntity = ds.get(hasParentKeyPk.getId());
     assertNotNull(hasParentKeyPkEntity);
     assertEquals(hasParentKeyPk.getId(), hasParentKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getClass(), pojo.getId(), hasParentKeyPkEntity, hasParentKeyPk.getId());
 
-    Entity pojoEntity = ldth.ds.get(TestUtils.createKey(pojo, pojo.getId()));
+    Entity pojoEntity = ds.get(TestUtils.createKey(pojo, pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(bookEntity.getKey(), pojoEntity.getProperty("book_id"));
     assertEquals(hasKeyPkEntity.getKey(), pojoEntity.getProperty("haskeypk_id"));
@@ -1007,10 +1007,10 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNull(child.getChild());
     startEnd.end();
 
-    Entity pojoEntity = ldth.ds.get(pojo.getId());
-    Entity childEntity = ldth.ds.get(child.getId());
-    Entity book1Entity = ldth.ds.get(KeyFactory.stringToKey(b1.getId()));
-    Entity book2Entity = ldth.ds.get(KeyFactory.stringToKey(b2.getId()));
+    Entity pojoEntity = ds.get(pojo.getId());
+    Entity childEntity = ds.get(child.getId());
+    Entity book1Entity = ds.get(KeyFactory.stringToKey(b1.getId()));
+    Entity book2Entity = ds.get(KeyFactory.stringToKey(b2.getId()));
     assertEquals(book1Entity.getKey(), pojoEntity.getProperty("book_id"));
     assertEquals(childEntity.getKey(), pojoEntity.getProperty("child_id"));
     assertEquals(book2Entity.getKey(), childEntity.getProperty("book_id"));

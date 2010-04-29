@@ -285,12 +285,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void test2Equals2OrderBy() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null ,newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null ,newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -306,8 +306,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testSetFilter() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName());
     q.setFilter("origin == \"yam\" && you == 2");
@@ -329,12 +329,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testDefaultOrderingIsAsc() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -350,12 +350,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testLimitQuery() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -388,12 +388,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testOffsetQuery() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -427,12 +427,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testOffsetLimitQuery() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -484,12 +484,12 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testOffsetLimitSingleStringQuery() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
-    ldth.ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
-    ldth.ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1));
+    ds.put(null, newFlightEntity("4", "yam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "notyam", "bam", 2, 2));
+    ds.put(null, newFlightEntity("5", "yam", "notbam", 2, 2));
     String queryFormat =
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -551,7 +551,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQuery_StringPk() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where id == key parameters String key");
@@ -564,8 +564,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testKeyQuery_KeyPk() {
     Entity entityWithName = new Entity(HasKeyPkJDO.class.getSimpleName(), "blarg");
     Entity entityWithId = new Entity(HasKeyPkJDO.class.getSimpleName());
-    ldth.ds.put(null, entityWithName);
-    ldth.ds.put(null, entityWithId);
+    ds.put(null, entityWithName);
+    ds.put(null, entityWithId);
 
     Query q = pm.newQuery(
         "select from " + HasKeyPkJDO.class.getName() +
@@ -602,7 +602,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQueryWithSorts() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
@@ -615,7 +615,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQuery_MultipleFilters() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
@@ -628,9 +628,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQuery_NonEqualityFilter() {
     Entity flightEntity1 = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity1);
+    ds.put(null, flightEntity1);
     Entity flightEntity2 = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity2);
+    ds.put(null, flightEntity2);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where id > key parameters String key");
@@ -642,10 +642,10 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQuery_SortByKey() {
     Entity flightEntity1 = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity1);
+    ds.put(null, flightEntity1);
 
     Entity flightEntity2 = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity2);
+    ds.put(null, flightEntity2);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where origin == 'yam' order by id DESC");
@@ -673,9 +673,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testAncestorQueryWithStringAncestor() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
     Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getSimpleName(), flightEntity.getKey());
-    ldth.ds.put(null, hasAncestorEntity);
+    ds.put(null, hasAncestorEntity);
 
     Query q = pm.newQuery(
         "select from " + HasStringAncestorStringPkJDO.class.getName()
@@ -694,9 +694,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testAncestorQueryWithKeyAncestor() {
     Entity e = new Entity("parent");
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Entity childEntity = new Entity(HasKeyAncestorStringPkJDO.class.getSimpleName(), e.getKey());
-    ldth.ds.put(null, childEntity);
+    ds.put(null, childEntity);
 
     Query q = pm.newQuery(
         "select from " + HasKeyAncestorStringPkJDO.class.getName()
@@ -710,9 +710,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIllegalAncestorQuery_BadOperator() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
     Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getName(), flightEntity.getKey());
-    ldth.ds.put(null, hasAncestorEntity);
+    ds.put(null, hasAncestorEntity);
 
     Query q = pm.newQuery(
         "select from " + HasStringAncestorStringPkJDO.class.getName()
@@ -726,9 +726,9 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testSortByFieldWithCustomColumn() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2, 400));
-    ldth.ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1, 300));
-    ldth.ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1, 200));
+    ds.put(null, newFlightEntity("1", "yam", "bam", 1, 2, 400));
+    ds.put(null, newFlightEntity("2", "yam", "bam", 1, 1, 300));
+    ds.put(null, newFlightEntity("3", "yam", "bam", 2, 1, 200));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName()
             + " where origin == \"yam\" && dest == \"bam\""
@@ -744,9 +744,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIllegalAncestorQuery_SortByAncestor() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
     Entity hasAncestorEntity = new Entity(HasStringAncestorStringPkJDO.class.getName(), flightEntity.getKey());
-    ldth.ds.put(null, hasAncestorEntity);
+    ds.put(null, hasAncestorEntity);
 
     Query q = pm.newQuery(
         "select from " + HasStringAncestorStringPkJDO.class.getName()
@@ -779,9 +779,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void testFilterByChildObject(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
@@ -801,9 +801,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByNullChildObject() {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
@@ -820,7 +820,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name)");
     List<Flight> flights = (List<Flight>) q.execute(Arrays.asList("name1", "name3"));
     assertEquals(2, flights.size());
@@ -845,7 +845,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "mia1", "bos1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "mia2", "bos2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "mia3", "bos3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name) && :p2.contains(origin)");
     List<Flight> flights =
         (List<Flight>) q.execute(Utils.newArrayList("name1", "name3"), Utils.newArrayList("mia3", "mia2"));
@@ -865,7 +865,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "mia1", "bos1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "mia2", "bos2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "mia3", "bos3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where :p1.contains(id) && :p2.contains(origin)");
     @SuppressWarnings("unchecked")
@@ -886,7 +886,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() +
                              " where name == 'name1' || name == 'name3'");
     List<Flight> flights = (List<Flight>) q.execute();
@@ -906,7 +906,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() +
                              " where name == :p1 || name == :p2");
     List<Flight> flights = (List<Flight>) q.execute("name1", "name3");
@@ -919,7 +919,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
                              + "(name  == 'name1' || name == 'name3') && "
                              + "(origin == 'bos3' || origin == 'bos2')");
@@ -932,7 +932,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
                              + "(name == :p1 || name == :p2) && "
                              + "(origin == :p3 || origin == :p4)");
@@ -950,7 +950,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "bos2", "mia2", 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia3", 27, 28);
-    ldth.ds.put(null, Arrays.asList(e, e2, e3));
+    ds.put(null, Arrays.asList(e, e2, e3));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where "
                              + "(name == :p1 || name == :p2) && "
                              + "(origin == :p3 || origin == :p4)");
@@ -966,7 +966,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIsNullChild() {
     Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " where flight == null");
     try {
       q.execute();
@@ -978,9 +978,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIsNullParent() {
     Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
-    Key key = ldth.ds.put(null, e);
+    Key key = ds.put(null, e);
     e = new Entity(HasOneToOneParentJDO.class.getSimpleName(), key);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasOneToOneParentJDO.class.getName() + " where parent == null");
     try {
@@ -993,9 +993,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void testFilterByChildObject_AdditionalFilterOnParent(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
@@ -1019,9 +1019,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void testFilterByChildObject_UnsupportedOperator(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity(parentEntity.getKey(), null, "f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
@@ -1044,9 +1044,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void testFilterByChildObject_ValueWithoutAncestor(FlightProvider fp) {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity("f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Flight flight = fp.getFlight(flightEntity.getKey());
     Query q = pm.newQuery(
@@ -1069,7 +1069,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByChildObject_KeyIsWrongType() {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
 
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
@@ -1094,9 +1094,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByChildObject_ValueWithoutId() {
     Entity parentEntity = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity flightEntity = newFlightEntity("f", "bos", "mia", 2, 4, 33);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Flight flight = new Flight();
     Query q = pm.newQuery(
@@ -1112,11 +1112,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByParentObject() {
     Entity parentEntity = new Entity(HasOneToManyListJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity bidirEntity = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity);
+    ds.put(null, bidirEntity);
     Entity bidirEntity2 = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity2);
+    ds.put(null, bidirEntity2);
 
     HasOneToManyListJDO parent =
         pm.getObjectById(HasOneToManyListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -1131,11 +1131,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByParentLongObjectId() throws Exception {
     Entity parentEntity = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity bidirEntity = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity);
+    ds.put(null, bidirEntity);
     Entity bidirEntity2 = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity2);
+    ds.put(null, bidirEntity2);
 
     HasOneToManyLongPkListJDO parent =
         pm.getObjectById(HasOneToManyLongPkListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -1151,11 +1151,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByParentIntObjectId() {
     Entity parentEntity = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity bidirEntity = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity);
+    ds.put(null, bidirEntity);
     Entity bidirEntity2 = new Entity(BidirectionalChildLongPkListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, bidirEntity2);
+    ds.put(null, bidirEntity2);
 
     HasOneToManyLongPkListJDO parent =
         pm.getObjectById(HasOneToManyLongPkListJDO.class, KeyFactory.keyToString(parentEntity.getKey()));
@@ -1171,15 +1171,15 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByParentObjectWhereParentIsAChild() {
     Entity parentEntity = new Entity(HasOneToManyListJDO.class.getSimpleName());
-    ldth.ds.put(null, parentEntity);
+    ds.put(null, parentEntity);
     Entity childEntity = new Entity(BidirectionalChildListJDO.class.getSimpleName(), parentEntity.getKey());
-    ldth.ds.put(null, childEntity);
+    ds.put(null, childEntity);
     Entity grandChildEntity1 =
         new Entity(BidirectionalGrandchildListJDO.class.getSimpleName(), childEntity.getKey());
-    ldth.ds.put(null, grandChildEntity1);
+    ds.put(null, grandChildEntity1);
     Entity grandChildEntity2 =
         new Entity(BidirectionalGrandchildListJDO.class.getSimpleName(), childEntity.getKey());
-    ldth.ds.put(null, grandChildEntity2);
+    ds.put(null, grandChildEntity2);
 
     BidirectionalChildListJDO child =
         pm.getObjectById(BidirectionalChildListJDO.class, KeyFactory.keyToString(childEntity.getKey()));
@@ -1197,7 +1197,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
     entity.setProperty("keyList",
         Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + HasMultiValuePropsJDO.class.getName()
@@ -1229,7 +1229,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
     entity.setProperty("keyList",
         Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + HasMultiValuePropsJDO.class.getName()
@@ -1254,7 +1254,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
     entity.setProperty("keyList",
         Utils.newArrayList(KeyFactory.createKey("be", "bo"), KeyFactory.createKey("bo", "be")));
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + HasMultiValuePropsJDO.class.getName()
@@ -1276,7 +1276,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByMultiValueProperty_ContainsWithLiteralString() {
     Entity entity = new Entity(HasMultiValuePropsJDO.class.getSimpleName());
     entity.setProperty("strList", Utils.newArrayList("1", "2", "3"));
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + HasMultiValuePropsJDO.class.getName()
@@ -1291,7 +1291,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName()
@@ -1305,7 +1305,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity entity = new Entity(HasEmbeddedJDO.class.getSimpleName());
     entity.setProperty("val1", "v1");
     entity.setProperty("val2", "v2");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + HasEmbeddedJDO.class.getName()
@@ -1321,7 +1321,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName()
@@ -1337,7 +1337,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "max");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName()
@@ -1373,14 +1373,14 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max2");
     entity.setProperty("last", "ross2");
     entity.setProperty("anotherFirst", "notmax2");
     entity.setProperty("anotherLast", "notross2");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName() + " order by name.first desc");
@@ -1397,14 +1397,14 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max2");
     entity.setProperty("last", "ross2");
     entity.setProperty("anotherFirst", "notmax2");
     entity.setProperty("anotherLast", "notross2");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q =
         pm.newQuery("select from " + Person.class.getName() + " order by anotherName.last desc");
@@ -1421,21 +1421,21 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity0.setProperty("last", "ross");
     entity0.setProperty("anotherFirst", "notmax");
     entity0.setProperty("anotherLast", "z");
-    ldth.ds.put(null, entity0);
+    ds.put(null, entity0);
 
     Entity entity1 = new Entity(Person.class.getSimpleName());
     entity1.setProperty("first", "max");
     entity1.setProperty("last", "ross2");
     entity1.setProperty("anotherFirst", "notmax2");
     entity1.setProperty("anotherLast", "notross2");
-    ldth.ds.put(null, entity1);
+    ds.put(null, entity1);
 
     Entity entity2 = new Entity(Person.class.getSimpleName());
     entity2.setProperty("first", "a");
     entity2.setProperty("last", "b");
     entity2.setProperty("anotherFirst", "c");
     entity2.setProperty("anotherLast", "d");
-    ldth.ds.put(null, entity2);
+    ds.put(null, entity2);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName() + " order by name.first asc, anotherName.last desc");
@@ -1467,7 +1467,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testUserQuery() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where userVal == u parameters " + User.class.getName() + " u");
@@ -1484,7 +1484,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testBigDecimalQuery() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where bigDecimal == bd parameters " + BigDecimal.class.getName() + " bd");
@@ -1494,7 +1494,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testQueryWithNegativeLiteralLong() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", -1, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", -1, 2));
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where you == -1");
@@ -1509,7 +1509,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testQueryWithNegativeLiteralDouble() {
-    ldth.ds.put(null, KitchenSink.newKitchenSinkEntity("blarg", null));
+    ds.put(null, KitchenSink.newKitchenSinkEntity("blarg", null));
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where doubleVal > -2.25");
@@ -1519,7 +1519,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testQueryWithNegativeParam() {
-    ldth.ds.put(null, newFlightEntity("1", "yam", "bam", -1, 2));
+    ds.put(null, newFlightEntity("1", "yam", "bam", -1, 2));
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where you == p parameters int p");
@@ -1530,7 +1530,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQueryWithUnencodedStringPk() {
     Entity e = new Entity(HasUnencodedStringPkJDO.class.getSimpleName(), "yar");
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasUnencodedStringPkJDO.class.getName() + " where id == p parameters String p");
     @SuppressWarnings("unchecked")
@@ -1551,7 +1551,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQueryWithLongPk() {
     Entity e = new Entity(HasLongPkJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasLongPkJDO.class.getName() + " where id == p parameters Long p");
     @SuppressWarnings("unchecked")
@@ -1570,7 +1570,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testKeyQueryWithEncodedStringPk() {
     Entity e = new Entity(HasEncodedStringPkJDO.class.getSimpleName(), "yar");
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasEncodedStringPkJDO.class.getName() + " where id == p parameters String p");
     @SuppressWarnings("unchecked")
@@ -1600,7 +1600,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testUniqueQuery_OneResult() {
     Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where you == p parameters Long p");
     q.setUnique(true);
@@ -1611,7 +1611,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testUniqueQuery_NoResult() {
     Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where you == p parameters Long p");
     q.setUnique(true);
@@ -1621,8 +1621,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testUniqueQuery_MultipleResults() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where you == p parameters Long p");
     q.setUnique(true);
@@ -1646,8 +1646,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testSetOrdering() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery(Flight.class);
     q.setOrdering("you");
     @SuppressWarnings("unchecked")
@@ -1662,7 +1662,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testSize() {
     for (int i = 0; i < 10; i++) {
       Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-      ldth.ds.put(null, e);
+      ds.put(null, e);
     }
     Query q = pm.newQuery(Flight.class);
     @SuppressWarnings("unchecked")
@@ -1674,7 +1674,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     // Need to have enough data to ensure a Next call
     for (int i = 0; i < 21; i++) {
       Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-      ldth.ds.put(null, e);
+      ds.put(null, e);
     }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {
@@ -1730,8 +1730,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testCountQuery_SetResult() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery(Flight.class);
     q.setResult("count(id)");
     assertEquals(2, q.execute());
@@ -1740,8 +1740,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testCountQuery_SingleString() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     assertEquals(2, q.execute());
 
@@ -1752,8 +1752,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testCountQueryWithFilter_SingleString() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where you == 23");
     assertEquals(1, q.execute());
   }
@@ -1761,8 +1761,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testCountQueryWithUnknownCountProp_SingleString() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     // letting this go through intentionally
     // we may want to circle back and lock this down but for now it's really
     // not a big deal
@@ -1773,8 +1773,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testCountQueryWithOffsetFails() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
-    ldth.ds.put(null, e1);
-    ldth.ds.put(null, e2);
+    ds.put(null, e1);
+    ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     q.setRange(1, Long.MAX_VALUE);
     try {
@@ -1794,7 +1794,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByEnum_ProvideStringExplicitly() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1");
     q.declareParameters(String.class.getName() + " p1");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1.name());
@@ -1804,7 +1804,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByEnum_ProvideEnumExplicitly() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1");
     q.declareParameters(HasEnumJDO.MyEnum.class.getName() + " p1");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1);
@@ -1814,7 +1814,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByEnum_ProvideStringParameterInline() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1 parameters String p1");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1.name());
     assertEquals(1, result.size());
@@ -1823,7 +1823,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByEnum_ProvideEnumParameterInline() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasEnumJDO.class.getName() + " where myEnum == p1 parameters " + HasEnumJDO.MyEnum.class.getName() + " p1");
     List<HasEnumJDO> result = (List<HasEnumJDO>) q.execute(HasEnumJDO.MyEnum.V1);
     assertEquals(1, result.size());
@@ -1832,7 +1832,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByEnum_ProvideLiteral() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasEnumJDO.class.getName() + " where myEnum == '"
         + HasEnumJDO.MyEnum.V1.name() + "'");
@@ -1844,7 +1844,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = new Entity(HasBytesJDO.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("shortBlob", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where shortBlob == p1");
     q.declareParameters(ShortBlob.class.getName() + " p1");
     List<HasBytesJDO> result =
@@ -1856,7 +1856,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = new Entity(HasBytesJDO.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("primBytes", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where primBytes == p1");
     q.declareParameters("byte[] p1");
     List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute("short blob".getBytes());
@@ -1867,7 +1867,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = new Entity(HasBytesJDO.class.getSimpleName());
     e.setProperty("onePrimByte", 8L);
     e.setProperty("bytes", new ShortBlob("short blob".getBytes()));
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + HasBytesJDO.class.getName() + " where bytes == p1");
     q.declareParameters("Byte[] p1");
     List<HasBytesJDO> result = (List<HasBytesJDO>) q.execute(
@@ -1876,7 +1876,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testFilterByDate() {
-    Key key = ldth.ds.put(null, KitchenSink.newKitchenSinkEntity(null));
+    Key key = ds.put(null, KitchenSink.newKitchenSinkEntity(null));
     Query q = pm.newQuery("select from " + KitchenSink.class.getName()
                           + " where dateVal >= p1 parameters java.util.Date p1");
     List<KitchenSink> result = (List<KitchenSink>) q.execute(KitchenSink.DATE1);
@@ -1886,9 +1886,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testExtents() {
     LinkedList<Key> keyStack = new LinkedList<Key>();
-    keyStack.addFirst(ldth.ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
-    keyStack.addFirst(ldth.ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
-    keyStack.addFirst(ldth.ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
+    keyStack.addFirst(ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
+    keyStack.addFirst(ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
+    keyStack.addFirst(ds.put(null, new Entity(HasLongPkJDO.class.getSimpleName())));
 
     Extent<HasLongPkJDO> ext = pm.getExtent(HasLongPkJDO.class);
     for (HasLongPkJDO pojo : ext) {
@@ -1899,7 +1899,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testAliasedFilter() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity);
+    ds.put(null, flightEntity);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " where this.id == key parameters String key");
@@ -1912,8 +1912,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAliasedSort() {
     Entity flightEntity1 = newFlightEntity("1", "yam", "bam", 2, 2);
     Entity flightEntity2 = newFlightEntity("1", "yam", "bam", 1, 2);
-    ldth.ds.put(null, flightEntity1);
-    ldth.ds.put(null, flightEntity2);
+    ds.put(null, flightEntity1);
+    ds.put(null, flightEntity2);
 
     Query q = pm.newQuery(
         "select from " + Flight.class.getName() + " order by this.you");
@@ -1930,7 +1930,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName() + " where this.name.first == \"max\"");
@@ -1945,13 +1945,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity1.setProperty("last", "ross");
     entity1.setProperty("anotherFirst", "notmax2");
     entity1.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity1);
+    ds.put(null, entity1);
     Entity entity2 = new Entity(Person.class.getSimpleName());
     entity2.setProperty("first", "max");
     entity2.setProperty("last", "ross");
     entity2.setProperty("anotherFirst", "notmax1");
     entity2.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity2);
+    ds.put(null, entity2);
 
     Query q = pm.newQuery(
         "select from " + Person.class.getName() + " order by this.anotherName.first");
@@ -1964,7 +1964,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByLiteralDoubleValue() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where doublePrimVal > 2.1");
@@ -1975,7 +1975,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterByParameterDoubleValue() {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery(
         "select from " + KitchenSink.class.getName() + " where doublePrimVal > p parameters double p");
@@ -1987,7 +1987,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByNullValue_Literal() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
     e.setProperty("string", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + NullDataJDO.class.getName() + " where string == null");
     @SuppressWarnings("unchecked")
@@ -1998,7 +1998,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testFilterByNullValue_Param() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
     e.setProperty("string", null);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + NullDataJDO.class.getName() + " where string == p");
     q.declareParameters("String p");
@@ -2009,14 +2009,14 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIsNotNull() {
     Entity e = Flight.newFlightEntity("name", "origin", null, 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     assertEquals(1, countForClass(Flight.class));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != null");
     assertTrue(((List)q.execute()).isEmpty());
     commitTxn();
     beginTxn();
     e = Flight.newFlightEntity("name", "origin", "not null", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     q.setUnique(true);
     Flight flight = (Flight) q.execute();
     assertEquals("not null", flight.getDest());
@@ -2024,13 +2024,13 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testIsNotNull_Param() {
     Entity e = Flight.newFlightEntity("name", "origin", null, 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != :p");
     assertTrue(((List)q.execute((String) null)).isEmpty());
     commitTxn();
     beginTxn();
     e = Flight.newFlightEntity("name", "origin", "not null", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     q.setUnique(true);
     Flight flight = (Flight) q.execute((String) null);
     assertEquals("not null", flight.getDest());
@@ -2038,14 +2038,14 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testNotEqual() {
     Entity e = Flight.newFlightEntity("name", "origin", "mia", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     assertEquals(1, countForClass(Flight.class));
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != 'mia'");
     assertTrue(((List)q.execute()).isEmpty());
     commitTxn();
     beginTxn();
     e = Flight.newFlightEntity("name", "origin", "not mia", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     q.setUnique(true);
     Flight flight = (Flight) q.execute();
     assertEquals("not mia", flight.getDest());
@@ -2053,13 +2053,13 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testNotEqual_Param() {
     Entity e = Flight.newFlightEntity("name", "origin", "mia", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where dest != :p");
     assertTrue(((List)q.execute("mia")).isEmpty());
     commitTxn();
     beginTxn();
     e = Flight.newFlightEntity("name", "origin", "not mia", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     q.setUnique(true);
     Flight flight = (Flight) q.execute("mia");
     assertEquals("not mia", flight.getDest());
@@ -2067,7 +2067,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManySetWithKeyPk() {
     Entity e = new Entity(HasOneToManyKeyPkSetJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyKeyPkSetJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2078,7 +2078,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManyListWithKeyPk() {
     Entity e = new Entity(HasOneToManyKeyPkListJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyKeyPkListJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2089,7 +2089,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManySetWithLongPk() {
     Entity e = new Entity(HasOneToManyLongPkSetJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyLongPkSetJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2100,7 +2100,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManyListWithLongPk() {
     Entity e = new Entity(HasOneToManyLongPkListJDO.class.getSimpleName());
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyLongPkListJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2111,7 +2111,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManySetWithUnencodedStringPk() {
     Entity e = new Entity(HasOneToManyUnencodedStringPkSetJDO.class.getSimpleName(), "yar");
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyUnencodedStringPkSetJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2123,7 +2123,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryForOneToManyListWithUnencodedStringPk() {
     Entity e = new Entity(HasOneToManyUnencodedStringPkListJDO.class.getSimpleName(), "yar");
-    ldth.ds.put(null, e);
+    ds.put(null, e);
 
     Query q = pm.newQuery("select from " + HasOneToManyUnencodedStringPkListJDO.class.getName());
     @SuppressWarnings("unchecked")
@@ -2135,9 +2135,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testImplicitParams() {
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :orig");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute("bos");
@@ -2148,11 +2148,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -2174,11 +2174,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -2203,11 +2203,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -2229,11 +2229,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
 
@@ -2249,11 +2249,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testBatchGet_Txn() {
     Entity e1 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = newFlightEntity(e1.getKey(), "blar", "the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = newFlightEntity("the name", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
 
     Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
@@ -2323,7 +2323,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     commitTxn();
     beginTxn();
     Query q = pm.newQuery("select origin from " + Flight.class.getName());
@@ -2333,7 +2333,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("bos", origins.get(0));
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     commitTxn();
     beginTxn();
     @SuppressWarnings("unchecked")
@@ -2345,9 +2345,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_OneIdField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
 
     Query q = pm.newQuery("select id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
@@ -2367,9 +2367,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_TwoIdFields() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
 
     Query q = pm.newQuery("select id, id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
@@ -2393,7 +2393,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_TwoFields() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Query q = pm.newQuery("select origin, dest from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();
@@ -2403,7 +2403,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("mia", results.get(0)[1]);
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     commitTxn();
     beginTxn();
 
@@ -2420,7 +2420,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_TwoFields_IdIsFirst() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     commitTxn();
     beginTxn();
     Query q = pm.newQuery("select id, dest from " + Flight.class.getName());
@@ -2432,7 +2432,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("mia", results.get(0)[1]);
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     commitTxn();
     beginTxn();
 
@@ -2449,7 +2449,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_TwoFields_IdIsSecond() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     commitTxn();
     beginTxn();
     Query q = pm.newQuery("select origin, id from " + Flight.class.getName());
@@ -2461,7 +2461,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(KeyFactory.keyToString(e1.getKey()), results.get(0)[1]);
 
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", null, 23, 24);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     commitTxn();
     beginTxn();
 
@@ -2478,9 +2478,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_OneToOne() {
     Entity e1 = new Entity(HasOneToOneJDO.class.getSimpleName());
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity(e1.getKey(), "key name", "jimmy", "bos", "mia", 23, 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Query q = pm.newQuery("select id, flight from " + HasOneToOneJDO.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();
@@ -2493,10 +2493,10 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_OneToMany() {
     Entity e1 = new Entity(HasOneToManyListJDO.class.getSimpleName());
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity(e1.getKey(), "key name", "jimmy", "bos", "mia", 23, 24, 25);
     e2.setProperty("flights_INTEGER_IDX", 0);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Query q = pm.newQuery("select id, flights from " + HasOneToManyListJDO.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();
@@ -2511,7 +2511,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_AliasedField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Query q = pm.newQuery("select this.origin from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<String> origins = (List<String>) q.execute();
@@ -2521,7 +2521,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFieldsAndCount() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Query q = pm.newQuery("select count(id), origin from " + Flight.class.getName());
     try {
       q.execute();
@@ -2545,7 +2545,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     entity.setProperty("last", "ross");
     entity.setProperty("anotherFirst", "notmax");
     entity.setProperty("anotherLast", "notross");
-    ldth.ds.put(null, entity);
+    ds.put(null, entity);
 
     Query q = pm.newQuery("select name.first, anotherName.last from " + Person.class.getName());
     @SuppressWarnings("unchecked")
@@ -2569,7 +2569,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertTrue(result.isEmpty());
 
     Entity e = Flight.newFlightEntity("y", "bos", "mia", 23, 24);
-    ldth.ds.put(null, e);
+    ds.put(null, e);
     commitTxn();
     beginTxn();
     q.setUnique(true);
@@ -2580,7 +2580,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testAccessResultsAfterClose() {
     for (int i = 0; i < 3; i++) {
       Entity e = Flight.newFlightEntity("this", "bos", "mia", 24, 25);
-      ldth.ds.put(null, e);
+      ds.put(null, e);
     }
     Query q = pm.newQuery("select from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
@@ -2602,11 +2602,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testStartsWith_Literal() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(\"y\")");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute();
@@ -2625,11 +2625,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testStartsWith_Param() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(p)");
     q.declareParameters("String p");
     @SuppressWarnings("unchecked")
@@ -2645,11 +2645,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testStartsWith_ImplicitParam() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.startsWith(:p)");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute("y");
@@ -2664,11 +2664,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testMatches_ImplicitParam() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e2);
+    ds.put(null, e2);
     Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e3);
+    ds.put(null, e3);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.matches(:p)");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute("y.*");
@@ -2758,7 +2758,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testAncestorQueryForDifferentEntityGroupWithCurrentTxn() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
-    ldth.ds.put(null, e1);
+    ds.put(null, e1);
 
     // Not used, but associates the txn with the flight's entity group
     Flight f = pm.getObjectById(Flight.class, e1.getKey());
@@ -2877,7 +2877,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     // Need to have enough data to ensure a Next call
     for (int i = 0; i < 21; i++) {
       Entity e = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
-      ldth.ds.put(null, e);
+      ds.put(null, e);
     }
     ExceptionThrowingDatastoreDelegate.ExceptionPolicy policy =
         new ExceptionThrowingDatastoreDelegate.BaseExceptionPolicy() {

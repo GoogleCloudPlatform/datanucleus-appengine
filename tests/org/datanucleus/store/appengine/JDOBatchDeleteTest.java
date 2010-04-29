@@ -64,16 +64,16 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    Key k1 = ldth.ds.put(newFlightEntity());
-    Key k2 = ldth.ds.put(newFlightEntity());
+    Key k1 = ds.put(newFlightEntity());
+    Key k2 = ds.put(newFlightEntity());
     Flight f1 = pm.getObjectById(Flight.class, k1);
     Flight f2 = pm.getObjectById(Flight.class, k2);
     pm.deletePersistentAll(f1, f2);
     assertEquals(0, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
 
-    Key k3 = ldth.ds.put(newFlightEntity());
-    Key k4 = ldth.ds.put(newFlightEntity());
+    Key k3 = ds.put(newFlightEntity());
+    Key k4 = ds.put(newFlightEntity());
     Flight f3 = pm.getObjectById(Flight.class, k3);
     Flight f4 = pm.getObjectById(Flight.class, k4);
     pm.deletePersistentAll(Utils.newArrayList(f3, f4));
@@ -83,13 +83,13 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_OneEntity_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    Key k1 = ldth.ds.put(newFlightEntity());
+    Key k1 = ds.put(newFlightEntity());
     Flight f1 = pm.getObjectById(Flight.class, k1);
     pm.deletePersistentAll(f1);
     assertEquals(0, countForClass(Flight.class));
     assertEquals(0, batchRecorder.batchOps);
 
-    Key k2 = ldth.ds.put(newFlightEntity());
+    Key k2 = ds.put(newFlightEntity());
     Flight f2 = pm.getObjectById(Flight.class, k2);
     pm.deletePersistentAll(Utils.newArrayList(f2));
     assertEquals(0, countForClass(Flight.class));
@@ -98,8 +98,8 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_Txn_MultipleEntityGroups() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ldth.ds.put(newFlightEntity());
-    Key k2 = ldth.ds.put(newFlightEntity());
+    Key k1 = ds.put(newFlightEntity());
+    Key k2 = ds.put(newFlightEntity());
     beginTxn();
     Flight f1 = pm.getObjectById(Flight.class, k1);
     commitTxn();
@@ -119,8 +119,8 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
     // before we get there.
     assertEquals(0, batchRecorder.batchOps);
 
-    Key k3 = ldth.ds.put(newFlightEntity());
-    Key k4 = ldth.ds.put(newFlightEntity());
+    Key k3 = ds.put(newFlightEntity());
+    Key k4 = ds.put(newFlightEntity());
     beginTxn();
     Flight f3 = pm.getObjectById(Flight.class, k3);
     commitTxn();
@@ -141,8 +141,8 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
   public void testDeletePersistentAll_Txn_OneEntityGroup() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
     Key parentKey = KeyFactory.createKey("yar", 24);
-    Key k1 = ldth.ds.put(new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey));
-    Key k2 = ldth.ds.put(new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey));
+    Key k1 = ds.put(new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey));
+    Key k2 = ds.put(new Entity(HasKeyAncestorKeyPkJDO.class.getSimpleName(), parentKey));
     beginTxn();
     HasKeyAncestorKeyPkJDO child1 = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, k1);
     HasKeyAncestorKeyPkJDO child2 = pm.getObjectById(HasKeyAncestorKeyPkJDO.class, k2);
@@ -154,7 +154,7 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_OneEntity_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ldth.ds.put(newFlightEntity());
+    Key k1 = ds.put(newFlightEntity());
     beginTxn();
     Flight f1 = pm.getObjectById(Flight.class, k1);
     pm.deletePersistentAll(f1);
@@ -162,7 +162,7 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
     assertEquals(0, countForClass(Flight.class));
     assertEquals(0, batchRecorder.batchOps);
 
-    Key k2 = ldth.ds.put(newFlightEntity());
+    Key k2 = ds.put(newFlightEntity());
     beginTxn();
     Flight f2 = pm.getObjectById(Flight.class, k2);
     pm.deletePersistentAll(Utils.newArrayList(f2));
@@ -173,10 +173,10 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToOne_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    Key k1 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
-    Key k2 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k2, 1));
+    Key k1 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
+    Key k2 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k2, 1));
     HasOneToOneJDO parent1 = pm.getObjectById(HasOneToOneJDO.class, k1);
     HasOneToOneJDO parent2 = pm.getObjectById(HasOneToOneJDO.class, k2);
     pm.deletePersistentAll(parent1, parent2);
@@ -188,10 +188,10 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToOne_MultipleEntityGroups_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
-    Key k2 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k2, 1));
+    Key k1 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
+    Key k2 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName()));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k2, 1));
     beginTxn();
     HasOneToOneJDO parent1 = pm.getObjectById(HasOneToOneJDO.class, k1);
     commitTxn();
@@ -213,10 +213,10 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
   public void testDeletePersistentAll_CascadeDelete_OneToOne_OneEntityGroup_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
 
-    Key k1 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName(), KeyFactory.createKey("Yar", 43)));
-    Key k2 = ldth.ds.put(new Entity(HasOneToOneJDO.class.getSimpleName(), KeyFactory.createKey("Yar", 43)));
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k2, 1));
+    Key k1 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName(), KeyFactory.createKey("Yar", 43)));
+    Key k2 = ds.put(new Entity(HasOneToOneJDO.class.getSimpleName(), KeyFactory.createKey("Yar", 43)));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k2, 1));
     beginTxn();
     HasOneToOneJDO parent1 = pm.getObjectById(HasOneToOneJDO.class, k1);
     HasOneToOneJDO parent2 = pm.getObjectById(HasOneToOneJDO.class, k2);
@@ -230,18 +230,18 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
   public void testDeletePersistentAll_CascadeDelete_OneToMany_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    Key k1 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
-    Key k2 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
 
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k1, 2));
-    ldth.ds.put(newFlightEntity(k2, 1));
-    ldth.ds.put(newFlightEntity(k2, 2));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k1, 2));
+    ds.put(newFlightEntity(k2, 1));
+    ds.put(newFlightEntity(k2, 2));
 
-    ldth.ds.put(newBidirChildEntity(k1, 1));
-    ldth.ds.put(newBidirChildEntity(k1, 2));
-    ldth.ds.put(newBidirChildEntity(k2, 1));
-    ldth.ds.put(newBidirChildEntity(k2, 2));
+    ds.put(newBidirChildEntity(k1, 1));
+    ds.put(newBidirChildEntity(k1, 2));
+    ds.put(newBidirChildEntity(k2, 1));
+    ds.put(newBidirChildEntity(k2, 2));
 
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
     assertEquals(2, parent1.getFlights().size());
@@ -258,18 +258,18 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_MultipleEntityGroups_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
-    Key k2 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
 
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k1, 2));
-    ldth.ds.put(newFlightEntity(k2, 1));
-    ldth.ds.put(newFlightEntity(k2, 2));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k1, 2));
+    ds.put(newFlightEntity(k2, 1));
+    ds.put(newFlightEntity(k2, 2));
 
-    ldth.ds.put(newBidirChildEntity(k1, 1));
-    ldth.ds.put(newBidirChildEntity(k1, 2));
-    ldth.ds.put(newBidirChildEntity(k2, 1));
-    ldth.ds.put(newBidirChildEntity(k2, 2));
+    ds.put(newBidirChildEntity(k1, 1));
+    ds.put(newBidirChildEntity(k1, 2));
+    ds.put(newBidirChildEntity(k2, 1));
+    ds.put(newBidirChildEntity(k2, 2));
 
     beginTxn();
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
@@ -296,18 +296,18 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_OneEntityGroup_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
-    Key k2 = ldth.ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
+    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
+    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
 
-    ldth.ds.put(newFlightEntity(k1, 1));
-    ldth.ds.put(newFlightEntity(k1, 2));
-    ldth.ds.put(newFlightEntity(k2, 1));
-    ldth.ds.put(newFlightEntity(k2, 2));
+    ds.put(newFlightEntity(k1, 1));
+    ds.put(newFlightEntity(k1, 2));
+    ds.put(newFlightEntity(k2, 1));
+    ds.put(newFlightEntity(k2, 2));
 
-    ldth.ds.put(newBidirChildEntity(k1, 1));
-    ldth.ds.put(newBidirChildEntity(k1, 2));
-    ldth.ds.put(newBidirChildEntity(k2, 1));
-    ldth.ds.put(newBidirChildEntity(k2, 2));
+    ds.put(newBidirChildEntity(k1, 1));
+    ds.put(newBidirChildEntity(k1, 2));
+    ds.put(newBidirChildEntity(k2, 1));
+    ds.put(newBidirChildEntity(k2, 2));
 
     beginTxn();
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
