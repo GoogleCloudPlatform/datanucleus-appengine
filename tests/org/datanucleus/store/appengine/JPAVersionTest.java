@@ -256,4 +256,42 @@ public class JPAVersionTest extends JPATestCase {
     // make sure the version didn't change on the model object
     assertEquals(3L, JDOHelper.getVersion(hv));
   }
+
+  public void testVersionIncrement() {
+    HasIntegerVersionJPA hv = new HasIntegerVersionJPA();
+    beginTxn();
+    hv.setValue("value");
+    em.persist(hv);
+    commitTxn();
+    assertEquals(1L, hv.getVersion().longValue());
+    beginTxn();
+    hv = em.find(hv.getClass(), hv.getId());
+    hv.setValue("another value");
+    commitTxn();
+    assertEquals(2, hv.getVersion().longValue());
+    beginTxn();
+    hv.setValue("yet another value");
+    hv = em.merge(hv);
+    commitTxn();
+    assertEquals(3, hv.getVersion().longValue());
+  }
+
+  public void testVersionIncrement_NoTxn() {
+    switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
+    HasIntegerVersionJPA hv = new HasIntegerVersionJPA();
+    hv.setValue("value");
+    em.persist(hv);
+    em.close();
+    assertEquals(1L, hv.getVersion().longValue());
+    em = emf.createEntityManager();
+    hv = em.find(hv.getClass(), hv.getId());
+    hv.setValue("another value");
+    em.close();
+    assertEquals(2, hv.getVersion().longValue());
+    em = emf.createEntityManager();
+    hv.setValue("yet another value");
+    hv = em.merge(hv);
+    em.close();
+    assertEquals(3, hv.getVersion().longValue());
+  }
 }

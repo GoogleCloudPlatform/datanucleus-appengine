@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import junit.framework.Test;
 import junit.framework.TestSuite;
 
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactoryTest;
@@ -42,7 +41,7 @@ import org.datanucleus.store.appengine.query.SlicingIterableTest;
  * @author Max Ross <maxr@google.com>
  */
 public class AllTests {
-  public static Test suite() {
+  public static TestSuite suite() {
     TestSuite suite = new TestSuite();
     suite.addTestSuite(DatastoreFieldManagerTest.class);
     suite.addTestSuite(DatastoreJDOPersistenceManagerFactoryTest.class);

@@ -15,8 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import junit.framework.TestCase;
-
 import org.datanucleus.ObjectManager;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.metadata.MetaDataManager;
@@ -32,7 +30,7 @@ import javax.jdo.PersistenceManagerFactory;
  *
  * @author Max Ross <maxr@google.com>
  */
-public class JDOTestCase extends TestCase {
+public class JDOTestCase extends DatastoreTestCase {
 
   private static Map<PersistenceManagerFactoryName, PersistenceManagerFactory> pmfCache = Utils.newHashMap();
 
@@ -40,39 +38,20 @@ public class JDOTestCase extends TestCase {
   protected PersistenceManager pm;
 
   protected DatastoreTestHelper ldth;
-  protected boolean failed = false;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     ldth = new DatastoreTestHelper();
     ldth.setUp();
-    boolean success = false;
     pmf = pmfCache.get(getPersistenceManagerFactoryName());
-    try {
-      if (pmf == null) {
-        pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
-        if (cacheManagers()) {
-          pmfCache.put(getPersistenceManagerFactoryName(), pmf);
-        }
-      }
-      pm = pmf.getPersistenceManager();
-      success = true;
-    } finally {
-      if (!success) {
-        ldth.tearDown(false);
+    if (pmf == null) {
+      pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
+      if (cacheManagers()) {
+        pmfCache.put(getPersistenceManagerFactoryName(), pmf);
       }
     }
-  }
-
-  @Override
-  protected void runTest() throws Throwable {
-    try {
-      super.runTest();
-    } catch (Throwable t) {
-      failed = true;
-      throw t;
-    }
+    pm = pmf.getPersistenceManager();
   }
 
   public enum PersistenceManagerFactoryName { transactional, nontransactional }
@@ -87,8 +66,6 @@ public class JDOTestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    boolean throwIfActiveTxn = !failed;
-    failed = false;
     try {
       if (!pm.isClosed()) {
         if (pm.currentTransaction().isActive()) {
@@ -97,7 +74,7 @@ public class JDOTestCase extends TestCase {
         pm.close();
       }
       pm = null;
-      // see if anybody closed any of our pms just remove them from the cache -
+      // see if anybody closed any of our pms and just remove them from the cache -
       // we'll rebuild it the next time it's needed.
       for (Map.Entry<PersistenceManagerFactoryName, PersistenceManagerFactory> entry : pmfCache.entrySet()) {
         if (entry.getValue().isClosed()) {
@@ -109,8 +86,6 @@ public class JDOTestCase extends TestCase {
       }
       pmf = null;
     } finally {
-      ldth.tearDown(throwIfActiveTxn);
-      ldth = null;
       super.tearDown();
     }
   }

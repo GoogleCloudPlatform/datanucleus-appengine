@@ -17,9 +17,7 @@ package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
 
-import junit.framework.TestCase;
-
-import org.datanucleus.store.appengine.DatastoreTestHelper;
+import org.datanucleus.store.appengine.DatastoreTestCase;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.Utils.Function;
 
@@ -30,22 +28,7 @@ import java.util.ListIterator;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class LazyResultTest extends TestCase {
-
-  protected DatastoreTestHelper ldth;
-
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    ldth = new DatastoreTestHelper();
-    ldth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    ldth.tearDown(false);
-    super.tearDown();
-  }
+public class LazyResultTest extends DatastoreTestCase {
 
   public void testEquality() {
     LazyResult lr1 = new LazyResult<Object>(Collections.<Entity>emptyList(), null);

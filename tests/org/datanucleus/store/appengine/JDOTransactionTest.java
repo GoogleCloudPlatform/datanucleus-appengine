@@ -16,12 +16,11 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-
-import junit.framework.TestCase;
 
 import org.datanucleus.jdo.exceptions.TransactionNotReadableException;
 import org.datanucleus.jdo.exceptions.TransactionNotWritableException;
@@ -48,34 +47,28 @@ import javax.jdo.Transaction;
  * @author Erick Armbrust <earmbrust@google.com>
  * @author Max Ross <maxr@google.com>
  */
-public class JDOTransactionTest extends TestCase {
+public class JDOTransactionTest extends DatastoreTestCase {
 
-  private DatastoreTestHelper ldth;
   private DatastoreService mockDatastoreService = EasyMock.createMock(DatastoreService.class);
   private com.google.appengine.api.datastore.Transaction mockTxn = EasyMock.createMock(
       com.google.appengine.api.datastore.Transaction.class);
   private DatastoreServiceRecordingImpl recordingImpl;
   private TxnIdAnswer txnIdAnswer;
+  private DatastoreService ds;
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new DatastoreTestHelper();
-    ldth.setUp();
     txnIdAnswer = new TxnIdAnswer();
+    ds = DatastoreServiceFactory.getDatastoreService();
     recordingImpl =
-        new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds, mockTxn, txnIdAnswer);
+        new DatastoreServiceRecordingImpl(mockDatastoreService, ds, mockTxn, txnIdAnswer);
     DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
-    if (ldth.ds.getCurrentTransaction(null) != null) {
-      ldth.ds.getCurrentTransaction().rollback();
-    }
-    ldth.tearDown(true);
-    ldth = null;
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     recordingImpl = null;
     super.tearDown();
@@ -133,7 +126,7 @@ public class JDOTransactionTest extends TestCase {
       PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalWrite)
       throws EntityNotFoundException {
     Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
@@ -187,7 +180,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity f1 = Flight.newFlightEntity("foo", "bar", "baz", 1, 2);
-    ldth.ds.put(f1);
+    ds.put(f1);
 
     Transaction txn = pm.currentTransaction();
     txn.setNontransactionalRead(nonTransactionalRead);
@@ -240,7 +233,7 @@ public class JDOTransactionTest extends TestCase {
       PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalOp)
       throws EntityNotFoundException {
     Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(Key.class))).andReturn(flightEntity);
     EasyMock.expect(mockDatastoreService.get(
@@ -277,7 +270,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity f1 = Flight.newFlightEntity("foo", "bar", "baz", 1, 2);
-    ldth.ds.put(f1);
+    ds.put(f1);
 
     Transaction txn = pm.currentTransaction();
     txn.setNontransactionalRead(nonTransactionalRead);
@@ -401,7 +394,7 @@ public class JDOTransactionTest extends TestCase {
       PersistenceManagerFactory pmf, boolean explicitDemarcation, boolean nonTransactionalOp)
       throws EntityNotFoundException {
     Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
-    ldth.ds.put(flightEntity);
+    ds.put(flightEntity);
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     PersistenceManager pm = pmf.getPersistenceManager();
@@ -434,7 +427,7 @@ public class JDOTransactionTest extends TestCase {
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity f1 = Flight.newFlightEntity("foo", "bar", "baz", 1, 2);
-    ldth.ds.put(f1);
+    ds.put(f1);
 
     Transaction txn = pm.currentTransaction();
     txn.setNontransactionalRead(nonTransactionalRead);

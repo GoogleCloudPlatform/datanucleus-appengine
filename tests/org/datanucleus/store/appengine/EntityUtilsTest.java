@@ -18,31 +18,29 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import junit.framework.TestCase;
-
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class EntityUtilsTest extends TestCase {
+public class EntityUtilsTest extends DatastoreTestCase {
 
-  private DatastoreTestHelper dth;
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    dth = new DatastoreTestHelper();
-    dth.setUp();
-  }
-
-  @Override
-  protected void tearDown() throws Exception {
-    dth.tearDown(false);
-    dth = null;
-    super.tearDown();
-  }
-
+//  private DatastoreTestHelper dth;
+//  @Override
+//  protected void setUp() throws Exception {
+//    super.setUp();
+//    dth = new DatastoreTestHelper();
+//    dth.setUp();
+//  }
+//
+//  @Override
+//  protected void tearDown() throws Exception {
+//    dth.tearDown(false);
+//    dth = null;
+//    super.tearDown();
+//  }
+//
   public void testUnencodedStringToEncodedString() {
     String keyStr = (String) EntityUtils.idToInternalKey(
         "Object", new PrimaryKeyMemberMetaData(true, String.class), Object.class, "yar", null, false);

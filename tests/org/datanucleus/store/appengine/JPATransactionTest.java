@@ -16,13 +16,12 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
-
-import junit.framework.TestCase;
 
 import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
 import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed;
@@ -52,9 +51,9 @@ import javax.persistence.Query;
  * @author Erick Armbrust <earmbrust@google.com>
  * @author Max Ross <maxr@google.com>
  */
-public class JPATransactionTest extends TestCase {
+public class JPATransactionTest extends DatastoreTestCase {
 
-  private DatastoreTestHelper ldth;
+  private DatastoreService ds;
   private DatastoreService mockDatastoreService = EasyMock.createMock(DatastoreService.class);
   private Transaction mockTxn = EasyMock.createMock(Transaction.class);
   private DatastoreServiceRecordingImpl recordingImpl;
@@ -63,19 +62,16 @@ public class JPATransactionTest extends TestCase {
   @Override
   protected void setUp() throws Exception {
     super.setUp();
-    ldth = new DatastoreTestHelper();
-    ldth.setUp();
+    ds = DatastoreServiceFactory.getDatastoreService();
     txnIdAnswer = new TxnIdAnswer();
     recordingImpl =
-        new DatastoreServiceRecordingImpl(mockDatastoreService, ldth.ds, mockTxn, txnIdAnswer);
+        new DatastoreServiceRecordingImpl(mockDatastoreService, ds, mockTxn, txnIdAnswer);
     DatastoreServiceFactoryInternal.setDatastoreService(recordingImpl);
   }
 
   @Override
   protected void tearDown() throws Exception {
     EasyMock.reset(mockDatastoreService, mockTxn);
-    ldth.tearDown(true);
-    ldth = null;
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     recordingImpl = null;
     super.tearDown();
@@ -147,7 +143,7 @@ public class JPATransactionTest extends TestCase {
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity entity = Book.newBookEntity("jimmy", "123456", "great american novel");
-    ldth.ds.put(entity);
+    ds.put(entity);
     EntityManager em = emf.createEntityManager();
     EntityTransaction txn = em.getTransaction();
     if (explicitDemarcation) {
@@ -200,7 +196,7 @@ public class JPATransactionTest extends TestCase {
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Entity entity = Book.newBookEntity("jimmy", "123456", "great american novel");
-    ldth.ds.put(entity);
+    ds.put(entity);
     EntityManager em = emf.createEntityManager();
     EntityTransaction txn = em.getTransaction();
     if (explicitDemarcation) {

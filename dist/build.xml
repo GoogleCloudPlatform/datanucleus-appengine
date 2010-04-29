@@ -3,11 +3,12 @@
 
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="6"/>
-  <property name="version.rc" value=".final"/>
+  <property name="version.point" value="7"/>
+  <property name="version.rc" value=".rc1"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
+  <property name="ormtests.jar" value="datanucleus-appengine-tests-${version}.jar"/>
   <property name="zip.prefix" value="appengine-orm"/>
   <property name="dist.target" value="${zip.prefix}-${version}.zip"/>
   <property name="shadow.src.dir" value="../shadowsrc"/>
@@ -38,6 +39,7 @@
     <pathelement location="${orm.lib.dir}/appengine-local-runtime.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
+    <pathelement location="${orm.lib.dir}/appengine-testing.jar"/>
     <pathelement location="${orm.lib.dir}/junit.jar"/>
     <pathelement location="${orm.lib.dir}/easymock.jar"/>
     <pathelement location="${shadowcompile.dest.dir}"/>
@@ -108,6 +110,10 @@
         <include name="**/*.class"/>
       </fileset>
     </datanucleusenhancer>
+  </target>
+
+  <target name="jar-tests" depends="enhance-tests" description="Jar the compiled datanucleus appengine tests">
+    <jar destfile="${ormtests.jar}" basedir="${compile.tests.dest.dir}"/>
   </target>
 
   <target name="test" depends="enhance-tests" description="Run the tests for the datanucleus appengine plugin">

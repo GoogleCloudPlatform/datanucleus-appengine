@@ -17,8 +17,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Query;
 
-import junit.framework.TestCase;
-
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
@@ -36,7 +34,7 @@ import javax.persistence.Persistence;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JPATestCase extends TestCase {
+public class JPATestCase extends DatastoreTestCase {
 
   private static
   Map<EntityManagerFactoryName, EntityManagerFactory> emfCache = Utils.newHashMap();
@@ -46,38 +44,19 @@ public class JPATestCase extends TestCase {
 
   protected DatastoreTestHelper ldth;
 
-  private boolean failed = false;
-  @Override
-  protected void runTest() throws Throwable {
-    try {
-      super.runTest();
-    } catch (Throwable t) {
-      failed = true;
-      throw t;
-    }
-  }
-
   @Override
   protected void setUp() throws Exception {
     super.setUp();
     ldth = new DatastoreTestHelper();
     ldth.setUp();
     emf = emfCache.get(getEntityManagerFactoryName());
-    boolean success = false;
-    try {
-      if (emf == null) {
-        emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
-        if (cacheManagers()) {
-          emfCache.put(getEntityManagerFactoryName(), emf);
-        }
-      }
-      em = emf.createEntityManager();
-      success = true;
-    } finally {
-      if (!success) {
-        ldth.tearDown(false);
+    if (emf == null) {
+      emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
+      if (cacheManagers()) {
+        emfCache.put(getEntityManagerFactoryName(), emf);
       }
     }
+    em = emf.createEntityManager();
   }
 
   public enum EntityManagerFactoryName {
@@ -101,8 +80,6 @@ public class JPATestCase extends TestCase {
 
   @Override
   protected void tearDown() throws Exception {
-    boolean throwIfActiveTxn = !failed;
-    failed = false;
     try {
       if (em.isOpen()) {
         if (em.getTransaction().isActive()) {
@@ -123,8 +100,6 @@ public class JPATestCase extends TestCase {
       }
       emf = null;
     } finally {
-      ldth.tearDown(throwIfActiveTxn);
-      ldth = null;
       super.tearDown();
     }
   }

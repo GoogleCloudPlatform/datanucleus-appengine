@@ -17,15 +17,19 @@
 
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.tools.development.ApiProxyLocal;
+import com.google.appengine.tools.development.Clock;
+import com.google.appengine.tools.development.LocalRpcService;
 import com.google.apphosting.api.ApiProxy;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
+public class ExceptionThrowingDatastoreDelegate implements ApiProxyLocal {
   private final ApiProxy.Delegate inner;
   private final ExceptionPolicy policy;
 
@@ -40,7 +44,7 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
     return inner.makeSyncCall(environment, packageName, methodName, request);
   }
 
-  public Future makeAsyncCall(ApiProxy.Environment environment, String packageName, String methodName,
+  public Future<byte[]> makeAsyncCall(ApiProxy.Environment environment, String packageName, String methodName,
                               byte[] request, ApiProxy.ApiConfig apiConfig) {
     policy.intercept(methodName);
     return inner.makeAsyncCall(environment, packageName, methodName, request, apiConfig);
@@ -52,6 +56,30 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
 
   public interface ExceptionPolicy {
     void intercept(String methodName);
+  }
+
+  public void setProperty(String s, String s1) {
+    ((ApiProxyLocal) inner).setProperty(s, s1);
+  }
+
+  public void setProperties(Map<String, String> stringStringMap) {
+    ((ApiProxyLocal) inner).setProperties(stringStringMap);
+  }
+
+  public void stop() {
+    ((ApiProxyLocal) inner).stop();
+  }
+
+  public LocalRpcService getService(String s) {
+    return ((ApiProxyLocal) inner).getService(s);
+  }
+
+  public Clock getClock() {
+    return ((ApiProxyLocal) inner).getClock();
+  }
+
+  public void setClock(Clock clock) {
+    ((ApiProxyLocal) inner).setClock(clock);
   }
 
   public static abstract class BaseExceptionPolicy implements ExceptionPolicy {

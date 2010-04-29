@@ -17,8 +17,6 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
-import com.google.appengine.api.datastore.Transaction;
-import com.google.apphosting.api.ApiProxy;
 
 /**
  * A test helper that sets up a datastore service that can be used in tests.
@@ -29,46 +27,7 @@ public class DatastoreTestHelper {
 
   public DatastoreService ds;
 
-  private final DatastoreDelegate delegate = newDatastoreDelegate();
-
-  private static final String DATASTORE_DELEGATE_PROP = "orm.DatastoreDelegate";
-
-  private ApiProxy.Delegate originalDelegate;
-
   public void setUp() throws Exception {
-    originalDelegate = ApiProxy.getDelegate();
-    delegate.setUp();
-    ApiProxy.setDelegate(delegate);
     ds = DatastoreServiceFactory.getDatastoreService();
   }
-
-  public void tearDown(boolean exceptionIfActiveTxn) throws Exception {
-    Transaction txn = ds.getCurrentTransaction(null);
-    try {
-      if (txn != null) {
-        try {
-          txn.rollback();
-        } finally {
-          if (exceptionIfActiveTxn) {
-            throw new IllegalStateException("Datastore service still has an active txn.  Please "
-                + "rollback or commit all txns before test completes.");
-          }
-        }
-      }
-    } finally {
-      ApiProxy.setDelegate(originalDelegate);
-      delegate.tearDown();
-    }
-  }
-
-  protected DatastoreDelegate newDatastoreDelegate() {
-    String helperClass =
-        System.getProperty(DATASTORE_DELEGATE_PROP, LocalDatastoreDelegate.class.getName());
-    try {
-      return (DatastoreDelegate) Class.forName(helperClass).newInstance();
-    } catch (Exception e) {
-      throw new RuntimeException(e);
-    }
-  }
-
 }
