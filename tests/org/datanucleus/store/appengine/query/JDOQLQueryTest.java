@@ -1689,17 +1689,23 @@ public class JDOQLQueryTest extends JDOTestCase {
         };
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+
+    ApiProxy.Delegate original = getDelegateForThread();
     setDelegateForThread(dd);
 
-    Query q = pm.newQuery(Flight.class);
-    @SuppressWarnings("unchecked")
-    List<Flight> results = (List<Flight>) q.execute();
     try {
-      results.size();
-      fail("expected exception");
-    } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JDO exceptions
-      // good
-      assertTrue(e.getCause() instanceof DatastoreFailureException);
+      Query q = pm.newQuery(Flight.class);
+      @SuppressWarnings("unchecked")
+      List<Flight> results = (List<Flight>) q.execute();
+      try {
+        results.size();
+        fail("expected exception");
+      } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JDO exceptions
+        // good
+        assertTrue(e.getCause() instanceof DatastoreFailureException);
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 
@@ -1716,15 +1722,20 @@ public class JDOQLQueryTest extends JDOTestCase {
         };
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    ApiProxy.Delegate original = getDelegateForThread();
     setDelegateForThread(dd);
 
-    Query q = pm.newQuery(Flight.class);
     try {
-      q.execute();
-      fail("expected exception");
-    } catch (JDOFatalUserException e) {
-      // good
-      assertTrue(e.getCause() instanceof IllegalArgumentException);
+      Query q = pm.newQuery(Flight.class);
+      try {
+        q.execute();
+        fail("expected exception");
+      } catch (JDOFatalUserException e) {
+        // good
+        assertTrue(e.getCause() instanceof IllegalArgumentException);
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 
@@ -2890,17 +2901,22 @@ public class JDOQLQueryTest extends JDOTestCase {
             }
           }
         };
+    ApiProxy.Delegate original = getDelegateForThread();
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
     setDelegateForThread(dd);
 
-    Query q = pm.newQuery(Flight.class);
-    @SuppressWarnings("unchecked")
-    List<Flight> results = (List<Flight>) q.execute();
     try {
-      results.size();
-      fail("expected exception");
-    } catch (QueryTimeoutException e) { // DataNuc bug - they should be wrapping with JDO exceptions
+      Query q = pm.newQuery(Flight.class);
+      @SuppressWarnings("unchecked")
+      List<Flight> results = (List<Flight>) q.execute();
+      try {
+        results.size();
+        fail("expected exception");
+      } catch (QueryTimeoutException e) { // DataNuc bug - they should be wrapping with JDO exceptions
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 

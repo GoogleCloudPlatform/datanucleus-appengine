@@ -4,7 +4,7 @@
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
   <property name="version.point" value="7"/>
-  <property name="version.rc" value=".rc1"/>
+  <property name="version.rc" value=".final"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -432,6 +432,7 @@
         <fileset dir="${appengine.sdk.lib.path}/impl/agent" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/shared" includes = "appengine*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/agent" includes = "*.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/testing" includes = "*.jar"/>
       </copy>
       <copy  todir="." verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.config.path}/user" includes="ant-macros.xml"/>

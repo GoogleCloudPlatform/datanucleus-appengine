@@ -1428,20 +1428,25 @@ public class JPQLQueryTest extends JPATestCase {
           }
         };
 
+    ApiProxy.Delegate original = getDelegateForThread();
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
     setDelegateForThread(dd);
 
-    javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName());
-    @SuppressWarnings("unchecked")
-    List<Book> books = (List<Book>) q.getResultList();
     try {
-      books.size();
-      fail("expected exception");
-    } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JPA exceptions
-      // good
-      assertTrue(e.getCause() instanceof DatastoreFailureException);
+      javax.persistence.Query q = em.createQuery(
+          "select from " + Book.class.getName());
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      try {
+        books.size();
+        fail("expected exception");
+      } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JPA exceptions
+        // good
+        assertTrue(e.getCause() instanceof DatastoreFailureException);
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 
@@ -1457,17 +1462,23 @@ public class JPQLQueryTest extends JPATestCase {
             }
           }
         };
+    ApiProxy.Delegate original = getDelegateForThread();
+
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
     setDelegateForThread(dd);
 
-    Query q = em.createQuery("select from " + Book.class.getName());
     try {
-      q.getResultList();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      // good
-      assertTrue(e.getCause() instanceof IllegalArgumentException);
+      Query q = em.createQuery("select from " + Book.class.getName());
+      try {
+        q.getResultList();
+        fail("expected exception");
+      } catch (PersistenceException e) {
+        // good
+        assertTrue(e.getCause() instanceof IllegalArgumentException);
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 
@@ -3039,18 +3050,23 @@ public class JPQLQueryTest extends JPATestCase {
           }
         };
 
+    ApiProxy.Delegate original = getDelegateForThread();
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
     setDelegateForThread(dd);
 
-    javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName());
-    @SuppressWarnings("unchecked")
-    List<Book> books = (List<Book>) q.getResultList();
     try {
-      books.size();
-      fail("expected exception");
-    } catch (org.datanucleus.store.query.QueryTimeoutException qte) { // DataNuc bug - they should be wrapping with JPA exceptions
+      javax.persistence.Query q = em.createQuery(
+          "select from " + Book.class.getName());
+      @SuppressWarnings("unchecked")
+      List<Book> books = (List<Book>) q.getResultList();
+      try {
+        books.size();
+        fail("expected exception");
+      } catch (org.datanucleus.store.query.QueryTimeoutException qte) { // DataNuc bug - they should be wrapping with JPA exceptions
+      }
+    } finally {
+      setDelegateForThread(original);
     }
   }
 
