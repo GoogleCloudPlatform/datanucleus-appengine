@@ -803,7 +803,8 @@ public class DatastoreManager extends MappedStoreManager {
     return copyDatastoreServiceConfig(defaultDatastoreServiceConfigPrototypeForWrites);
   }
 
-  private static DatastoreServiceConfig copyDatastoreServiceConfig(DatastoreServiceConfig config) {
+  // visible for testing
+  static DatastoreServiceConfig copyDatastoreServiceConfig(DatastoreServiceConfig config) {
     DatastoreServiceConfig newConfig = DatastoreServiceConfig.Builder.
         withImplicitTransactionManagementPolicy(config.getImplicitTransactionManagementPolicy()).
         readPolicy(config.getReadPolicy());
@@ -811,6 +812,6 @@ public class DatastoreManager extends MappedStoreManager {
     if (config.getDeadline() != null) {
       newConfig.deadline(config.getDeadline());
     }
-    return config;
+    return newConfig;
   }
 }

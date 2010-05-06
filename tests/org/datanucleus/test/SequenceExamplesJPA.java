@@ -57,8 +57,8 @@ public final class SequenceExamplesJPA {
   @Entity
   public static class HasSequenceWithSequenceGenerator {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar1")
-    @SequenceGenerator(name = "yar1", sequenceName = "that", allocationSize = 12)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "jpa1")
+    @SequenceGenerator(name = "jpa1", sequenceName = "jpathat", allocationSize = 12)
     private Long id;
 
     private String val;
@@ -83,8 +83,8 @@ public final class SequenceExamplesJPA {
   @Entity
   public static class HasSequenceWithNoSequenceName {
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar2")
-    @SequenceGenerator(name = "yar2", allocationSize = 12)
+    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "jpa2")
+    @SequenceGenerator(name = "jpa2", allocationSize = 12)
     private Long id;
 
     public Long getId() {

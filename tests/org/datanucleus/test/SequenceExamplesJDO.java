@@ -55,12 +55,12 @@ public final class SequenceExamplesJDO {
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
-  @Sequence(name = "yar1", datastoreSequence = "that", strategy = SequenceStrategy.NONTRANSACTIONAL,
+  @Sequence(name = "jdo1", datastoreSequence = "jdothat", strategy = SequenceStrategy.NONTRANSACTIONAL,
             extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
   public static class HasSequenceWithSequenceGenerator {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "yar1")
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "jdo1")
     private Long id;
 
     private String val;
@@ -79,12 +79,12 @@ public final class SequenceExamplesJDO {
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
-  @Sequence(name = "yar2", strategy = SequenceStrategy.NONTRANSACTIONAL,
+  @Sequence(name = "jdo2", strategy = SequenceStrategy.NONTRANSACTIONAL,
             extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
   public static class HasSequenceWithNoSequenceName {
 
     @PrimaryKey
-    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "yar2")
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "jdo2")
     private Long id;
 
     public Long getId() {

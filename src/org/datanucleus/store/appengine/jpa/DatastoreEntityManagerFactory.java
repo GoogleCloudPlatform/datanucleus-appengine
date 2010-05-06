@@ -141,4 +141,9 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
   public PersistenceManagerFactory getPersistenceManagerFactory() {
     return pmf;
   }
+
+  // visible for testing
+  static ConcurrentHashMap<String, AtomicInteger> getNumInstancesPerPersistenceUnit() {
+    return NUM_INSTANCES_PER_PERSISTENCE_UNIT;
+  }
 }

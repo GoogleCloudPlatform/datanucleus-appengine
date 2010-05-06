@@ -56,8 +56,17 @@ import java.util.Properties;
  */
 public class SequenceGenerator extends AbstractDatastoreGenerator {
 
-  private static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
+  public static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
   private static final String KEY_CACHE_SIZE_PROPERTY = "key-cache-size";
+
+  // TODO(maxr): Get rid of this when the local datastore id allocation behavior
+  // mirrors prod
+  private static final ThreadLocal<String> SEQUENCE_POSTFIX_APPENDAGE = new ThreadLocal<String>() {
+    @Override
+    protected String initialValue() {
+      return "";
+    }
+  };
 
   // can't be final because we need the storeMgr to derive it, and storeMgr
   // isn't set until setStoreManager is invoked.
@@ -144,7 +153,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
   // Default is the kind with _Sequence__ appended
   private String deriveSequenceNameFromClassMetaData(AbstractClassMetaData acmd) {
     return EntityUtils.determineKind(acmd, ((DatastoreManager) storeMgr).getIdentifierFactory()) +
-        SEQUENCE_POSTFIX;
+        SEQUENCE_POSTFIX + SEQUENCE_POSTFIX_APPENDAGE.get();
   }
 
   protected ValueGenerationBlock reserveBlock(long size) {
@@ -163,5 +172,13 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
       ids.add(current + i);
     }
     return new ValueGenerationBlock(ids);
+  }
+
+  public static void setSequencePostfixAppendage(String appendage) {
+    SEQUENCE_POSTFIX_APPENDAGE.set(appendage);
+  }
+
+  public static void clearSequencePostfixAppendage() {
+    SEQUENCE_POSTFIX_APPENDAGE.remove();
   }
 }

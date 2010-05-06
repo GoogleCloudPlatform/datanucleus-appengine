@@ -16,6 +16,7 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
+import com.google.appengine.testing.cloudcover.util.LocalServiceTestHelperWrapper;
 import com.google.apphosting.api.ApiProxy;
 
 import java.util.concurrent.Future;
@@ -27,7 +28,7 @@ import java.util.concurrent.Future;
  * @author Max Ross <max.ross@gmail.com>
  */
 public class NoQueryDelegate implements ApiProxy.Delegate {
-  private final ApiProxy.Delegate original = ApiProxy.getDelegate();
+  private ApiProxy.Delegate original;
   public byte[] makeSyncCall(ApiProxy.Environment environment, String pkg, String method, byte[] bytes)
       throws ApiProxy.ApiProxyException {
     if (pkg.equals(LocalDatastoreService.PACKAGE) && method.equals("RunQuery")) {
@@ -49,12 +50,13 @@ public class NoQueryDelegate implements ApiProxy.Delegate {
   }
 
   public NoQueryDelegate install() {
-    ApiProxy.setDelegate(this);
+    original = LocalServiceTestHelperWrapper.getDelegate();
+    LocalServiceTestHelperWrapper.setDelegate(this);
     return this;
   }
 
   public void uninstall() {
-    ApiProxy.setDelegate(original);
+    LocalServiceTestHelperWrapper.setDelegate(original);
   }
 }
 

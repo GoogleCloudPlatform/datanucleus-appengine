@@ -41,7 +41,8 @@ public final class DatastoreServiceFactoryInternal {
 
   private DatastoreServiceFactoryInternal() {}
 
-  private static DatastoreService datastoreServiceToReturn = null;
+  private static ThreadLocal<DatastoreService> datastoreServiceToReturn =
+      new ThreadLocal<DatastoreService>();
 
   /**
    * @param config The config to use.
@@ -54,8 +55,8 @@ public final class DatastoreServiceFactoryInternal {
    * .
    */
   public static DatastoreService getDatastoreService(DatastoreServiceConfig config) {
-    if (datastoreServiceToReturn != null) {
-      return datastoreServiceToReturn;
+    if (datastoreServiceToReturn.get() != null) {
+      return datastoreServiceToReturn.get();
     }
     // Wrap the service in an impl that properly translates the runtime
     // exceptions thrown by the datastore api
@@ -73,6 +74,6 @@ public final class DatastoreServiceFactoryInternal {
    * {@link #getDatastoreService(DatastoreServiceConfig)}.  Can be null.
    */
   public static void setDatastoreService(DatastoreService ds) {
-    datastoreServiceToReturn = ds;
+    datastoreServiceToReturn.set(ds);
   }
 }

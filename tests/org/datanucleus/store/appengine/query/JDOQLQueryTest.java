@@ -49,7 +49,6 @@ import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
 import org.datanucleus.test.Book;
 import org.datanucleus.test.Flight;
-import static org.datanucleus.test.Flight.newFlightEntity;
 import org.datanucleus.test.HasBytesJDO;
 import org.datanucleus.test.HasEmbeddedJDO;
 import org.datanucleus.test.HasEncodedStringPkJDO;
@@ -97,6 +96,8 @@ import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOQueryTimeoutException;
 import javax.jdo.JDOUserException;
 import javax.jdo.Query;
+
+import static org.datanucleus.test.Flight.newFlightEntity;
 
 
 /**
@@ -1687,8 +1688,8 @@ public class JDOQLQueryTest extends JDOTestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     Query q = pm.newQuery(Flight.class);
     @SuppressWarnings("unchecked")
@@ -1714,8 +1715,8 @@ public class JDOQLQueryTest extends JDOTestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     Query q = pm.newQuery(Flight.class);
     try {
@@ -2825,8 +2826,8 @@ public class JDOQLQueryTest extends JDOTestCase {
                               EasyMock.isA(byte[].class)))
             .andThrow(new DatastoreTimeoutException("too long")).anyTimes();
     EasyMock.replay(delegate);
-    ApiProxy.Delegate original = ApiProxy.getDelegate();
-    ApiProxy.setDelegate(delegate);
+    ApiProxy.Delegate original = getDelegateForThread();
+    setDelegateForThread(delegate);
 
     try {
       Query q = pm.newQuery(Flight.class);
@@ -2866,7 +2867,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       }
 
     } finally {
-      ApiProxy.setDelegate(original);
+      setDelegateForThread(original);
     }
     EasyMock.verify(delegate);
   }
@@ -2890,8 +2891,8 @@ public class JDOQLQueryTest extends JDOTestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     Query q = pm.newQuery(Flight.class);
     @SuppressWarnings("unchecked")
@@ -2905,10 +2906,10 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testOverrideReadConsistency() {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
-    ApiProxy.Delegate original = ApiProxy.getDelegate();
+    ApiProxy.Delegate original = getDelegateForThread();
     try {
       ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -2919,7 +2920,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -2931,7 +2932,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -2943,7 +2944,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -2954,7 +2955,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       q.execute();
       EasyMock.verify(delegate);
     } finally {
-      ApiProxy.setDelegate(original);
+      setDelegateForThread(original);
     }
   }
 

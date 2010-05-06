@@ -17,19 +17,15 @@
 
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.tools.development.ApiProxyLocal;
-import com.google.appengine.tools.development.Clock;
-import com.google.appengine.tools.development.LocalRpcService;
 import com.google.apphosting.api.ApiProxy;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class ExceptionThrowingDatastoreDelegate implements ApiProxyLocal {
+public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
   private final ApiProxy.Delegate inner;
   private final ExceptionPolicy policy;
 
@@ -58,30 +54,6 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxyLocal {
     void intercept(String methodName);
   }
 
-  public void setProperty(String s, String s1) {
-    ((ApiProxyLocal) inner).setProperty(s, s1);
-  }
-
-  public void setProperties(Map<String, String> stringStringMap) {
-    ((ApiProxyLocal) inner).setProperties(stringStringMap);
-  }
-
-  public void stop() {
-    ((ApiProxyLocal) inner).stop();
-  }
-
-  public LocalRpcService getService(String s) {
-    return ((ApiProxyLocal) inner).getService(s);
-  }
-
-  public Clock getClock() {
-    return ((ApiProxyLocal) inner).getClock();
-  }
-
-  public void setClock(Clock clock) {
-    ((ApiProxyLocal) inner).setClock(clock);
-  }
-
   public static abstract class BaseExceptionPolicy implements ExceptionPolicy {
 
     private static final Set<String> RPCS_TO_INTERCEPT =
@@ -94,5 +66,9 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxyLocal {
     }
 
     protected abstract void doIntercept(String methodName);
+  }
+
+  public ApiProxy.Delegate getInner() {
+    return inner;
   }
 }

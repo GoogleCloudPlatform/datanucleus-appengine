@@ -28,6 +28,7 @@ import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.persistence.EntityManager;
 import javax.persistence.EntityManagerFactory;
@@ -39,7 +40,14 @@ import javax.persistence.Persistence;
 public class JPATestCase extends DatastoreTestCase {
 
   private static
-  Map<EntityManagerFactoryName, EntityManagerFactory> emfCache = Utils.newHashMap();
+  ThreadLocal<Map<EntityManagerFactoryName, EntityManagerFactory>> emfCache =
+      new ThreadLocal<Map<EntityManagerFactoryName, EntityManagerFactory>>() {
+        @Override
+        protected Map<EntityManagerFactoryName, EntityManagerFactory> initialValue() {
+          // this shouldn't be necessary but I get concurrent mod exceptions
+          return new ConcurrentHashMap<EntityManagerFactoryName, EntityManagerFactory>();
+        }
+      };
 
   protected EntityManagerFactory emf;
   protected EntityManager em;
@@ -50,11 +58,11 @@ public class JPATestCase extends DatastoreTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ds = DatastoreServiceFactory.getDatastoreService();
-    emf = emfCache.get(getEntityManagerFactoryName());
-    if (emf == null) {
+    emf = emfCache.get().get(getEntityManagerFactoryName());
+    if (emf == null || !emf.isOpen()) {
       emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name());
       if (cacheManagers()) {
-        emfCache.put(getEntityManagerFactoryName(), emf);
+        emfCache.get().put(getEntityManagerFactoryName(), emf);
       }
     }
     em = emf.createEntityManager();
@@ -89,11 +97,11 @@ public class JPATestCase extends DatastoreTestCase {
         em.close();
       }
       em = null;
-      // see if anybody closed any of our pms just remove them from the cache -
+      // see if anybody closed any of our emfs and if so just remove them from the cache -
       // we'll rebuild it the next time it's needed.
-      for (Map.Entry<EntityManagerFactoryName, EntityManagerFactory> entry : emfCache.entrySet()) {
+      for (Map.Entry<EntityManagerFactoryName, EntityManagerFactory> entry : emfCache.get().entrySet()) {
         if (!entry.getValue().isOpen()) {
-          emfCache.remove(entry.getKey());
+          emfCache.get().remove(entry.getKey());
         }
       }
       if (!cacheManagers() && emf.isOpen()) {

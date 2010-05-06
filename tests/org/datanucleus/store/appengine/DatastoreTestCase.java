@@ -15,10 +15,23 @@
  */
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.testing.cloudcover.util.LocalServiceTestHelperWrapper;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
-import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
+import com.google.apphosting.api.ApiProxy;
 
 import junit.framework.TestCase;
+
+import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactory;
+import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactory;
+
+import java.lang.reflect.Field;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
+
+import javax.jdo.spi.JDOImplHelper;
 
 /**
  * Base class for all tests that access the datastore.
@@ -27,18 +40,124 @@ import junit.framework.TestCase;
  */
 public class DatastoreTestCase extends TestCase {
 
-  private final LocalServiceTestHelper helper = new LocalServiceTestHelper(
+  private final LocalServiceTestHelperWrapper helper = new LocalServiceTestHelperWrapper(
       new LocalDatastoreServiceTestConfig());
 
   @Override
   protected void setUp() throws Exception {
     super.setUp();
+    synchronized (JDOImplHelper.class) {
+      Field f = JDOImplHelper.class.getDeclaredField("registeredClasses");
+      f.setAccessible(true);
+      Map map = (Map) f.get(null);
+      if (!(map instanceof ThreadLocalMap)) {
+        f.set(null, new ThreadLocalMap((Map) f.get(null)));
+      }
+    }
+    synchronized (DatastoreJDOPersistenceManagerFactory.class) {
+      System.setProperty(
+          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY,
+          Boolean.TRUE.toString());
+    }
+    synchronized (DatastoreEntityManagerFactory.class) {
+      System.setProperty(DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY,
+                         Boolean.TRUE.toString());
+    }
     helper.setUp();
   }
 
   @Override
   protected void tearDown() throws Exception {
     helper.tearDown();
+    // Do NOT clear out these properties.  System properties are global and if
+    // we're running multiple tests concurrently, clearing them will cause other
+    // tests to fail.  We want these properties set at all times so this is ok.
+//    System.clearProperty(
+//        DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
+//    System.clearProperty(DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
     super.tearDown();
+  }
+
+  protected void setDelegateForThread(ApiProxy.Delegate delegate) {
+    LocalServiceTestHelperWrapper.setDelegate(delegate);
+  }
+
+  protected ApiProxy.Delegate getDelegateForThread() {
+    return LocalServiceTestHelperWrapper.getDelegate();
+  }
+
+  /**
+   * A bizarro custom map implementation that we inject into the jdo
+   * implementation to get around a concurrent modification bug.
+   * Methods that are supposed to return views instead return copies.  This is
+   * non-standard but it addresses the concurrency issues.  We're only doing
+   * this for tests so it's not a big deal. 
+   */
+  private static final class ThreadLocalMap implements Map {
+
+    private final Map delegate;
+
+    private ThreadLocalMap(Map delegate) {
+      this.delegate = delegate;
+    }
+
+    public int size() {
+      return delegate.size();
+    }
+
+    public boolean isEmpty() {
+      return delegate.isEmpty();
+    }
+
+    public boolean containsKey(Object o) {
+      return delegate.containsKey(o);
+    }
+
+    public boolean containsValue(Object o) {
+      return delegate.containsValue(o);
+    }
+
+    public Object get(Object o) {
+      return delegate.get(o);
+    }
+
+    public synchronized Object put(Object o, Object o1) {
+      return delegate.put(o, o1);
+    }
+
+    public synchronized Object remove(Object o) {
+      return delegate.remove(o);
+    }
+
+    public synchronized void putAll(Map map) {
+      delegate.putAll(map);
+    }
+
+    public synchronized void clear() {
+      delegate.clear();
+    }
+
+    public synchronized Set keySet() {
+      Set set = delegate.keySet();
+      return new HashSet(set);
+    }
+
+    public synchronized Collection values() {
+      Collection values = delegate.values();
+      return new ArrayList(values);
+    }
+
+    public Set entrySet() {
+      Set entries = delegate.entrySet();
+      return new HashSet(entries);
+    }
+
+    public boolean equals(Object o) {
+      return delegate.equals(o);
+    }
+
+    public int hashCode() {
+      return delegate.hashCode();
+    }
   }
 }

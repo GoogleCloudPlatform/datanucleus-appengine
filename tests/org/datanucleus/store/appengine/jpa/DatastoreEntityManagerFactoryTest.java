@@ -17,43 +17,55 @@ package org.datanucleus.store.appengine.jpa;
 
 import junit.framework.TestCase;
 
-import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
-
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceException;
+
+import static org.datanucleus.store.appengine.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreEntityManagerFactoryTest extends TestCase {
 
-  public void testExceptionOnDuplicatePMF() {
-    boolean propertyWasSet = System.getProperties().containsKey(
-        DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
-    System.clearProperty(
-        DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
-    try {
-      EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-          nontransactional_ds_non_transactional_ops_allowed.name());
-      // Close it so we can verify that closing doesn't affect our exception
-      // throwing.
-      emf.close();
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    DatastoreEntityManagerFactory.getNumInstancesPerPersistenceUnit().clear();
+  }
 
-      // Now allocate another with the same name
+
+  public void testExceptionOnDuplicateEMF() {
+    // we're mucking with system properties.  in order to stay thread-safe
+    // we need to prevent other tests that muck with this system property from
+    // running at the same time
+    synchronized (DatastoreEntityManagerFactory.class) {
+      boolean propertyWasSet = System.getProperties().containsKey(
+          DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
+      System.clearProperty(
+          DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
       try {
-        Persistence.createEntityManagerFactory(
+        EntityManagerFactory emf = Persistence.createEntityManagerFactory(
             nontransactional_ds_non_transactional_ops_allowed.name());
-        fail("expected exception");
-      } catch (PersistenceException e) {
-        // good
-        assertTrue(e.getCause() instanceof IllegalStateException);
-      }
-    } finally {
-      if (propertyWasSet) {
-        System.setProperty(
-            DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY,
-            Boolean.TRUE.toString());
+        // Close it so we can verify that closing doesn't affect our exception
+        // throwing.
+        emf.close();
+
+        // Now allocate another with the same name
+        try {
+          Persistence.createEntityManagerFactory(
+              nontransactional_ds_non_transactional_ops_allowed.name());
+          fail("expected exception");
+        } catch (PersistenceException e) {
+          // good
+          assertTrue(e.getCause() instanceof IllegalStateException);
+        }
+      } finally {
+        if (propertyWasSet) {
+          System.setProperty(
+              DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY,
+              Boolean.TRUE.toString());
+        }
       }
     }
   }

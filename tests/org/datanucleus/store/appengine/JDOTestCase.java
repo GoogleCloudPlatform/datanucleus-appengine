@@ -35,7 +35,14 @@ import javax.jdo.PersistenceManagerFactory;
  */
 public class JDOTestCase extends DatastoreTestCase {
 
-  private static Map<PersistenceManagerFactoryName, PersistenceManagerFactory> pmfCache = Utils.newHashMap();
+  private static
+  ThreadLocal<Map<PersistenceManagerFactoryName, PersistenceManagerFactory>> pmfCache =
+      new ThreadLocal<Map<PersistenceManagerFactoryName, PersistenceManagerFactory>>() {
+        @Override
+        protected Map<PersistenceManagerFactoryName, PersistenceManagerFactory> initialValue() {
+          return Utils.newHashMap();
+        }
+      };
 
   protected PersistenceManagerFactory pmf;
   protected PersistenceManager pm;
@@ -46,11 +53,11 @@ public class JDOTestCase extends DatastoreTestCase {
   protected void setUp() throws Exception {
     super.setUp();
     ds = DatastoreServiceFactory.getDatastoreService();
-    pmf = pmfCache.get(getPersistenceManagerFactoryName());
+    pmf = pmfCache.get().get(getPersistenceManagerFactoryName());
     if (pmf == null) {
       pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
       if (cacheManagers()) {
-        pmfCache.put(getPersistenceManagerFactoryName(), pmf);
+        pmfCache.get().put(getPersistenceManagerFactoryName(), pmf);
       }
     }
     pm = pmf.getPersistenceManager();
@@ -76,11 +83,11 @@ public class JDOTestCase extends DatastoreTestCase {
         pm.close();
       }
       pm = null;
-      // see if anybody closed any of our pms and just remove them from the cache -
+      // see if anybody closed any of our pmfs and if so just remove them from the cache -
       // we'll rebuild it the next time it's needed.
-      for (Map.Entry<PersistenceManagerFactoryName, PersistenceManagerFactory> entry : pmfCache.entrySet()) {
+      for (Map.Entry<PersistenceManagerFactoryName, PersistenceManagerFactory> entry : pmfCache.get().entrySet()) {
         if (entry.getValue().isClosed()) {
-          pmfCache.remove(entry.getKey());
+          pmfCache.get().remove(entry.getKey());
         }
       }
       if (!cacheManagers() && !pmf.isClosed()) {

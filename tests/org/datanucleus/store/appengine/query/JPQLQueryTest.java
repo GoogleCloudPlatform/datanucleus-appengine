@@ -70,6 +70,7 @@ import org.datanucleus.test.HasOneToOneJPA;
 import org.datanucleus.test.HasOneToOneParentJPA;
 import org.datanucleus.test.HasStringAncestorStringPkJPA;
 import org.datanucleus.test.HasUnencodedStringPkJPA;
+import org.datanucleus.test.InTheHouseJPA;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.NullDataJPA;
 import org.datanucleus.test.Person;
@@ -1428,8 +1429,8 @@ public class JPQLQueryTest extends JPATestCase {
         };
 
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName());
@@ -1457,8 +1458,8 @@ public class JPQLQueryTest extends JPATestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     Query q = em.createQuery("select from " + Book.class.getName());
     try {
@@ -2939,8 +2940,36 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, em.createQuery("select o from DetachableJPA o").getResultList().size());
   }
 
+  public void testQueryWithEntityShortName2() {
+    Query q = em.createQuery("select b from bookalias b where title = 'yam'");
+    assertTrue(q.getResultList().isEmpty());
+
+    Book b = new Book();
+    b.setTitle("yam");
+    beginTxn();
+    em.persist(b);
+    commitTxn();
+
+    assertEquals(b, q.getResultList().get(0));
+
+    q = em.createQuery("select from bookalias where title = 'yam'");
+    assertEquals(b, q.getResultList().get(0));
+
+    q = em.createQuery("select from bookalias b where b.title = 'yam'");
+    assertEquals(b, q.getResultList().get(0));
+  }
+
+
   public void testQueryForClassWithNameStartingWithIn() {
-    assertTrue(em.createQuery("select o from InTheHouseJPA o").getResultList().isEmpty());
+    // force the class metadata to load - we've seen occasional problems
+    // where the class can't be resolved for a query if we don't reference
+    // it first.
+    InTheHouseJPA pojo = new InTheHouseJPA();
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+
+    assertNotNull(em.createQuery("select b from InTheHouseJPA b").getResultList().get(0));
   }
 
   public void testNonexistentClassThrowsReasonableException() {
@@ -2973,8 +3002,8 @@ public class JPQLQueryTest extends JPATestCase {
                               EasyMock.isA(byte[].class)))
             .andThrow(new DatastoreTimeoutException("too long")).anyTimes();
     EasyMock.replay(delegate);
-    ApiProxy.Delegate original = ApiProxy.getDelegate();
-    ApiProxy.setDelegate(delegate);
+    ApiProxy.Delegate original = getDelegateForThread();
+    setDelegateForThread(delegate);
 
     try {
       Query q = em.createQuery("select from " + Book.class.getName());
@@ -2986,7 +3015,7 @@ public class JPQLQueryTest extends JPATestCase {
         // good
       }
     } finally {
-      ApiProxy.setDelegate(original);
+      setDelegateForThread(original);
     }
     EasyMock.verify(delegate);
   }
@@ -3011,8 +3040,8 @@ public class JPQLQueryTest extends JPATestCase {
         };
 
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName());
@@ -3027,10 +3056,10 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testOverrideReadConsistency() {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
-    ApiProxy.Delegate original = ApiProxy.getDelegate();
+    ApiProxy.Delegate original = getDelegateForThread();
     try {
       ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -3041,7 +3070,7 @@ public class JPQLQueryTest extends JPATestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -3053,7 +3082,7 @@ public class JPQLQueryTest extends JPATestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -3065,7 +3094,7 @@ public class JPQLQueryTest extends JPATestCase {
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-      ApiProxy.setDelegate(delegate);
+      setDelegateForThread(delegate);
       EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
@@ -3076,7 +3105,7 @@ public class JPQLQueryTest extends JPATestCase {
       q.getResultList();
       EasyMock.verify(delegate);
     } finally {
-      ApiProxy.setDelegate(original);
+      setDelegateForThread(original);
     }
   }
 

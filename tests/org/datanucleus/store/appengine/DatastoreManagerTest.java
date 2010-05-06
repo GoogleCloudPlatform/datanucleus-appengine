@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
+
 import junit.framework.TestCase;
 
 import java.util.Arrays;
@@ -27,5 +29,15 @@ public class DatastoreManagerTest extends TestCase {
   public void testArraysAsListResult() {
     // DatastoreManager.addTypeManagerMappings() depends on this.
     assertEquals("java.util.Arrays$ArrayList", Arrays.asList(1, 2, 3).getClass().getName());
+  }
+
+  public void testCopyDatastoreServiceConfig() {
+    DatastoreServiceConfig original = DatastoreServiceConfig.Builder.withDefaults();
+    DatastoreServiceConfig copy = DatastoreManager.copyDatastoreServiceConfig(original);
+    assertFalse(original == copy);
+    assertEquals(original.getDeadline(), copy.getDeadline());
+    assertEquals(original.getImplicitTransactionManagementPolicy(),
+                 copy.getImplicitTransactionManagementPolicy());
+    assertEquals(original.getReadPolicy(), copy.getReadPolicy());
   }
 }

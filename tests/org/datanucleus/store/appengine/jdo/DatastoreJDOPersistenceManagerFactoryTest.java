@@ -17,7 +17,6 @@ package org.datanucleus.store.appengine.jdo;
 
 import junit.framework.TestCase;
 
-import static org.datanucleus.store.appengine.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
 import org.datanucleus.store.appengine.Utils;
 
 import java.util.Map;
@@ -26,35 +25,48 @@ import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
 
+import static org.datanucleus.store.appengine.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreJDOPersistenceManagerFactoryTest extends TestCase {
 
-  public void testExceptionOnDuplicatePMF() {
-    boolean propertyWasSet = System.getProperties().containsKey(
-        DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
-    System.clearProperty(
-        DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
-    try {
-      PersistenceManagerFactory pmf =
-          JDOHelper.getPersistenceManagerFactory(nontransactional.name());
-      // Close it so we can verify that closing doesn't affect our exception
-      // throwing.
-      pmf.close();
+  @Override
+  protected void setUp() throws Exception {
+    super.setUp();
+    DatastoreJDOPersistenceManagerFactory.getNumInstancesPerPersistenceUnit().clear();
+  }
 
-      // Now allocate another with the same name
+  public void testExceptionOnDuplicatePMF() {
+    // we're mucking with system properties.  in order to stay thread-safe
+    // we need to prevent other tests that muck with this system property from
+    // running at the same time
+    synchronized (DatastoreJDOPersistenceManagerFactory.class) {
+      boolean propertyWasSet = System.getProperties().containsKey(
+          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
+      System.clearProperty(
+          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
       try {
-        JDOHelper.getPersistenceManagerFactory(nontransactional.name());
-        fail("expected exception");
-      } catch (JDOFatalUserException e) {
-        // good
-      }
-    } finally {
-      if (propertyWasSet) {
-        System.setProperty(
-            DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY,
-            Boolean.TRUE.toString());
+        PersistenceManagerFactory pmf =
+            JDOHelper.getPersistenceManagerFactory(nontransactional.name());
+        // Close it so we can verify that closing doesn't affect our exception
+        // throwing.
+        pmf.close();
+
+        // Now allocate another with the same name
+        try {
+          JDOHelper.getPersistenceManagerFactory(nontransactional.name());
+          fail("expected exception");
+        } catch (JDOFatalUserException e) {
+          // good
+        }
+      } finally {
+        if (propertyWasSet) {
+          System.setProperty(
+              DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY,
+              Boolean.TRUE.toString());
+        }
       }
     }
   }

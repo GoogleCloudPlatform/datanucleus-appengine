@@ -18,7 +18,6 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.test.Flight;
@@ -35,26 +34,30 @@ import javax.jdo.JDOException;
 public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testInsertCollides() {
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-    Flight flight = new Flight();
-    flight.setName("harold");
-    flight.setOrigin("bos");
-    flight.setDest("mia");
-    flight.setYou(23);
-    flight.setMe(24);
-    flight.setFlightNumber(88);
-    beginTxn();
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      pm.makePersistent(flight);
-      fail("expected exception");
-    } catch (JDODataStoreException e) {
-      // good
-      assertTrue(e.getCause() instanceof ConcurrentModificationException);
+      Flight flight = new Flight();
+      flight.setName("harold");
+      flight.setOrigin("bos");
+      flight.setDest("mia");
+      flight.setYou(23);
+      flight.setMe(24);
+      flight.setFlightNumber(88);
+      beginTxn();
+      try {
+        pm.makePersistent(flight);
+        fail("expected exception");
+      } catch (JDODataStoreException e) {
+        // good
+        assertTrue(e.getCause() instanceof ConcurrentModificationException);
+      }
+      assertTrue(pm.currentTransaction().isActive());
+      rollbackTxn();
+      assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertTrue(pm.currentTransaction().isActive());
-    rollbackTxn();
-    assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
   }
 
   public void testInsertCollidesOnCommit() {
@@ -69,47 +72,53 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
-    Flight flight = new Flight();
-    flight.setName("harold");
-    flight.setOrigin("bos");
-    flight.setDest("mia");
-    flight.setYou(23);
-    flight.setMe(24);
-    flight.setFlightNumber(88);
-    beginTxn();
-    pm.makePersistent(flight);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (JDODataStoreException e) {
-      // good
-      assertTrue(e.getCause() instanceof SQLException);
-      assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      Flight flight = new Flight();
+      flight.setName("harold");
+      flight.setOrigin("bos");
+      flight.setDest("mia");
+      flight.setYou(23);
+      flight.setMe(24);
+      flight.setFlightNumber(88);
+      beginTxn();
+      pm.makePersistent(flight);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (JDODataStoreException e) {
+        // good
+        assertTrue(e.getCause() instanceof SQLException);
+        assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(pm.currentTransaction().isActive());
+      assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(pm.currentTransaction().isActive());
-    assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
   }
 
   public void testUpdateCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ds.put(e);
-    CollisionDatastoreDelegate dd =
-        new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    beginTxn();
-    Flight f = pm.getObjectById(Flight.class, e.getKey());
-    f.setYou(12);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      Flight f = pm.getObjectById(Flight.class, e.getKey());
+      f.setYou(12);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(pm.currentTransaction().isActive());
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(pm.currentTransaction().isActive());
   }
 
   public void testUpdateOfDetachedCollides() {
@@ -119,25 +128,29 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     Flight f = pm.detachCopy(pm.getObjectById(Flight.class, e.getKey()));
     commitTxn();
 
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    // update detached object
-    f.setYou(12);
-    beginTxn();
-
-    // reattach
-    pm.makePersistent(f);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      // update detached object
+      f.setYou(12);
+      beginTxn();
+
+      // reattach
+      pm.makePersistent(f);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(pm.currentTransaction().isActive());
+      // now verify that the new value is still in the detached version.
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(pm.currentTransaction().isActive());
-    // now verify that the new value is still in the detached version.
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
   }
 
   public void testUpdateOfDetachedCollidesThenSucceeds() {
@@ -160,30 +173,34 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     commitTxn();
 
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update detached object
-    f.setYou(12);
-    beginTxn();
-
-    // reattach
-    pm.makePersistent(f);
     try {
+      // update detached object
+      f.setYou(12);
+      beginTxn();
+
+      // reattach
+      pm.makePersistent(f);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(pm.currentTransaction().isActive());
+      beginTxn();
+      pm.makePersistent(f);
       commitTxn();
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      f = pm.getObjectById(Flight.class, e.getKey());
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+      commitTxn();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(pm.currentTransaction().isActive());
-    beginTxn();
-    pm.makePersistent(f);
-    commitTxn();
-    beginTxn();
-    f = pm.getObjectById(Flight.class, e.getKey());
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
-    commitTxn();
   }
 
   public void testUpdateOfAttachedCollidesThenSucceeds() {
@@ -207,86 +224,102 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     // when the txn rolls back
     Flight fCopy = pm.detachCopy(f);
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update attached object
-    fCopy.setYou(12);
-    pm.makePersistent(fCopy);
     try {
+      // update attached object
+      fCopy.setYou(12);
+      pm.makePersistent(fCopy);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(pm.currentTransaction().isActive());
+      beginTxn();
+      pm.makePersistent(fCopy);
       commitTxn();
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      f = pm.getObjectById(Flight.class, e.getKey());
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+      commitTxn();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(pm.currentTransaction().isActive());
-    beginTxn();
-    pm.makePersistent(fCopy);
-    commitTxn();
-    beginTxn();
-    f = pm.getObjectById(Flight.class, e.getKey());
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
-    commitTxn();
   }
 
   public void testDeleteCollides() {
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    beginTxn();
-    Flight f = pm.getObjectById(Flight.class, e.getKey());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
     try {
-      pm.deletePersistent(f);
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      Flight f = pm.getObjectById(Flight.class, e.getKey());
+
+      try {
+        pm.deletePersistent(f);
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      assertTrue(pm.currentTransaction().isActive());
+      rollbackTxn();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertTrue(pm.currentTransaction().isActive());
-    rollbackTxn();
   }
 
   public void testInsertCollides_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-    Flight flight = new Flight();
-    flight.setName("harold");
-    flight.setOrigin("bos");
-    flight.setDest("mia");
-    flight.setYou(23);
-    flight.setMe(24);
-    flight.setFlightNumber(88);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      pm.makePersistent(flight);
-      fail("expected exception");
-    } catch (JDODataStoreException e) {
-      // good
-      assertTrue(e.getCause() instanceof ConcurrentModificationException);
+      Flight flight = new Flight();
+      flight.setName("harold");
+      flight.setOrigin("bos");
+      flight.setDest("mia");
+      flight.setYou(23);
+      flight.setMe(24);
+      flight.setFlightNumber(88);
+      try {
+        pm.makePersistent(flight);
+        fail("expected exception");
+      } catch (JDODataStoreException e) {
+        // good
+        assertTrue(e.getCause() instanceof ConcurrentModificationException);
+      }
+      assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);
   }
 
   public void testUpdateCollides_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    Flight f = pm.getObjectById(Flight.class, e.getKey());
-    f.setYou(12);
     try {
-      pm.close();
-      fail("expected exception");
-    } catch (JDOException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      Flight f = pm.getObjectById(Flight.class, e.getKey());
+      f.setYou(12);
+      try {
+        pm.close();
+        fail("expected exception");
+      } catch (JDOException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
   }
 
@@ -298,24 +331,28 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     pm.close();
     pm = pmf.getPersistenceManager();
 
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    // update detached object
-    f.setYou(12);
-
-    // reattach
-    pm.makePersistent(f);
     try {
-      pm.close();
-      fail("expected exception");
-    } catch (JDOException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      // update detached object
+      f.setYou(12);
+
+      // reattach
+      pm.makePersistent(f);
+      try {
+        pm.close();
+        fail("expected exception");
+      } catch (JDOException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      // now verify that the new value is still in the detached version.
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    // now verify that the new value is still in the detached version.
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
   }
 
   public void testUpdateOfDetachedCollidesThenSucceeds_NoTxn() {
@@ -338,29 +375,33 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     pm.close();
     pm = pmf.getPersistenceManager();
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update detached object
-    f.setYou(12);
-
-    // reattach
-    pm.makePersistent(f);
     try {
+      // update detached object
+      f.setYou(12);
+
+      // reattach
+      pm.makePersistent(f);
+      try {
+        pm.close();
+        fail("expected exception");
+      } catch (JDOException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      pm = pmf.getPersistenceManager();
+      pm.makePersistent(f);
       pm.close();
-      fail("expected exception");
-    } catch (JDOException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      pm = pmf.getPersistenceManager();
+      f = pm.getObjectById(Flight.class, e.getKey());
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+      pm.close();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    pm = pmf.getPersistenceManager();
-    pm.makePersistent(f);
-    pm.close();
-    pm = pmf.getPersistenceManager();
-    f = pm.getObjectById(Flight.class, e.getKey());
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
-    pm.close();
   }
 
   public void testUpdateOfAttachedCollidesThenSucceeds_NoTxn() {
@@ -384,27 +425,31 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     // when the txn rolls back
     Flight fCopy = pm.detachCopy(f);
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update attached object
-    fCopy.setYou(12);
-    pm.makePersistent(fCopy);
     try {
+      // update attached object
+      fCopy.setYou(12);
+      pm.makePersistent(fCopy);
+      try {
+        pm.close();
+        fail("expected exception");
+      } catch (JDOException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      pm = pmf.getPersistenceManager();
+      pm.makePersistent(fCopy);
       pm.close();
-      fail("expected exception");
-    } catch (JDOException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      pm = pmf.getPersistenceManager();
+      f = pm.getObjectById(Flight.class, e.getKey());
+      assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
+      pm.close();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    pm = pmf.getPersistenceManager();
-    pm.makePersistent(fCopy);
-    pm.close();
-    pm = pmf.getPersistenceManager();
-    f = pm.getObjectById(Flight.class, e.getKey());
-    assertEquals(f, "harold", "bos", "mia", 12, 24, 88);
-    pm.close();
   }
 
   public void testDeleteCollides_NoTxn() {
@@ -412,19 +457,23 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
 
     Entity e = Flight.newFlightEntity("harold", "bos", "mia", 23, 24, 88);
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    Flight f = pm.getObjectById(Flight.class, e.getKey());
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
     try {
-      pm.deletePersistent(f);
-      fail("expected exception");
-    } catch (JDODataStoreException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      Flight f = pm.getObjectById(Flight.class, e.getKey());
+
+      try {
+        pm.deletePersistent(f);
+        fail("expected exception");
+      } catch (JDODataStoreException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      }
+      pm.close();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    pm.close();
   }
 
   private void assertEquals(Flight f, String name, String orig, String dest, int you, int me, int flightNumber) {

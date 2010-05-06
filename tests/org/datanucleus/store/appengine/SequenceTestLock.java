@@ -13,31 +13,17 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.test;
+package org.datanucleus.store.appengine;
 
-import com.google.appengine.api.datastore.Key;
-
-import javax.persistence.Entity;
-import javax.persistence.GeneratedValue;
-import javax.persistence.GenerationType;
-import javax.persistence.Id;
+import java.util.concurrent.Semaphore;
 
 /**
- * DataNucleus has historically had problems with classes beginning with 'In'
+ * A lock that we use to prevent sequence tests from running concurrently.
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-@Entity
-public class InTheHouseJPA {
-  @Id
-  @GeneratedValue(strategy=GenerationType.IDENTITY)
-  private Key id;
-
-  public Key getId() {
-    return id;
-  }
-
-  public void setId(Key id) {
-    this.id = id;
-  }
+final class SequenceTestLock {
+  private SequenceTestLock() {}
+  
+  public static final Semaphore LOCK = new Semaphore(1);
 }

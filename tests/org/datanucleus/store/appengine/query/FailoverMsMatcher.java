@@ -43,7 +43,7 @@ final class FailoverMsMatcher implements IArgumentMatcher {
   }
 
   public void appendTo(StringBuffer buffer) {
-    buffer.append("Env Matcher");
+    buffer.append("Env Matcher: " + expectedFailoverMs);
   }
 
   public static byte[] eqFailoverMs(Long failoverMs) {

@@ -157,4 +157,9 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
     return count.incrementAndGet() > 1 &&
         !System.getProperties().containsKey(DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
   }
+
+  // visible for testing
+  static ConcurrentHashMap<String, AtomicInteger> getNumInstancesPerPersistenceUnit() {
+    return NUM_INSTANCES_PER_PERSISTENCE_UNIT;
+  }
 }

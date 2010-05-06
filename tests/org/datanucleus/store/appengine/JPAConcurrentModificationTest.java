@@ -18,7 +18,6 @@
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Entity;
-import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.test.Book;
@@ -36,25 +35,29 @@ import javax.transaction.xa.XAException;
 public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testInsertCollides() {
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-    Book book = new Book();
-    book.setAuthor("harold");
-    book.setIsbn("1234");
-    book.setFirstPublished(1888);
-    book.setTitle("the title");
-    beginTxn();
-    em.persist(book);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (RollbackException e) {
-      // good
-      assertTrue(e.getCause() instanceof PersistenceException);
-      assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      Book book = new Book();
+      book.setAuthor("harold");
+      book.setIsbn("1234");
+      book.setFirstPublished(1888);
+      book.setTitle("the title");
+      beginTxn();
+      em.persist(book);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException e) {
+        // good
+        assertTrue(e.getCause() instanceof PersistenceException);
+        assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(em.getTransaction().isActive());
+      assertEquals(book, "harold", "1234", 1888, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(em.getTransaction().isActive());
-    assertEquals(book, "harold", "1234", 1888, "the title");
   }
 
   public void testInsertCollidesOnCommit() {
@@ -69,49 +72,56 @@ public class JPAConcurrentModificationTest extends JPATestCase {
           }
         };
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
-    Book book = new Book();
-    book.setAuthor("harold");
-    book.setIsbn("1234");
-    book.setFirstPublished(1888);
-    book.setTitle("the title");
-    beginTxn();
-    em.persist(book);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (RollbackException e) {
-      // good
-      assertTrue(e.getCause() instanceof PersistenceException);
-      assertTrue(e.getCause().getCause() instanceof XAException);
-      assertTrue(e.getCause().getCause().getCause() instanceof SQLException);
-      assertTrue(e.getCause().getCause().getCause().getCause() instanceof ConcurrentModificationException);
+      Book book = new Book();
+      book.setAuthor("harold");
+      book.setIsbn("1234");
+      book.setFirstPublished(1888);
+      book.setTitle("the title");
+      beginTxn();
+      em.persist(book);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException e) {
+        // good
+        assertTrue(e.getCause() instanceof PersistenceException);
+        assertTrue(e.getCause().getCause() instanceof XAException);
+        assertTrue(e.getCause().getCause().getCause() instanceof SQLException);
+        assertTrue(e.getCause().getCause().getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(em.getTransaction().isActive());
+      assertEquals(book, "harold", "1234", 1888, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(em.getTransaction().isActive());
-    assertEquals(book, "harold", "1234", 1888, "the title");
   }
 
   public void testUpdateCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
     CollisionDatastoreDelegate dd =
-        new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    beginTxn();
-    Book b = em.find(Book.class, e.getKey());
-    b.setFirstPublished(1998);
+        new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (RollbackException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof PersistenceException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      Book b = em.find(Book.class, e.getKey());
+      b.setFirstPublished(1998);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof PersistenceException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(em.getTransaction().isActive());
+      assertEquals(b, "harold", "1234", 2000, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(em.getTransaction().isActive());
-    assertEquals(b, "harold", "1234", 2000, "the title");
   }
 
   public void testUpdateOfDetachedCollides() {
@@ -121,26 +131,30 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
 
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    // update detached object
-    book.setFirstPublished(1988);
-    beginTxn();
-
-    // reattach
-    em.merge(book);
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (RollbackException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof PersistenceException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      // update detached object
+      book.setFirstPublished(1988);
+      beginTxn();
+
+      // reattach
+      em.merge(book);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof PersistenceException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(em.getTransaction().isActive());
+      // now verify that the new value is still in the detached version.
+      assertEquals(book, "harold", "1234", 1988, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(em.getTransaction().isActive());
-    // now verify that the new value is still in the detached version.
-    assertEquals(book, "harold", "1234", 1988, "the title");
   }
 
   public void testUpdateOfDetachedCollidesThenSucceeds() {
@@ -163,31 +177,35 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     commitTxn();
 
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update detached object
-    book.setFirstPublished(1988);
-    beginTxn();
-
-    // reattach
-    em.merge(book);
     try {
+      // update detached object
+      book.setFirstPublished(1988);
+      beginTxn();
+
+      // reattach
+      em.merge(book);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof PersistenceException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertFalse(em.getTransaction().isActive());
+      beginTxn();
+      em.merge(book);
       commitTxn();
-      fail("expected exception");
-    } catch (RollbackException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof PersistenceException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      book = em.find(Book.class, e.getKey());
+      assertEquals(book, "harold", "1234", 1988, "the title");
+      commitTxn();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertFalse(em.getTransaction().isActive());
-    beginTxn();
-    em.merge(book);
-    commitTxn();
-    beginTxn();
-    book = em.find(Book.class, e.getKey());
-    assertEquals(book, "harold", "1234", 1988, "the title");
-    commitTxn();
   }
 
   public void testUpdateOfAttachedCollidesThenSucceeds() {
@@ -208,90 +226,106 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     beginTxn();
     Book b = em.find(Book.class, e.getKey());
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update attached object
-    b.setFirstPublished(1988);
     try {
+      // update attached object
+      b.setFirstPublished(1988);
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof PersistenceException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      // rollback of txn causes state of pojo to rollback as well
+      assertEquals(2000, b.getFirstPublished());
+      assertFalse(em.getTransaction().isActive());
+      beginTxn();
+      // reapply the change
+      b.setFirstPublished(1988);
+      em.merge(b);
       commitTxn();
-      fail("expected exception");
-    } catch (RollbackException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof PersistenceException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      b = em.find(Book.class, e.getKey());
+      assertEquals(b, "harold", "1234", 1988, "the title");
+      commitTxn();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    // rollback of txn causes state of pojo to rollback as well
-    assertEquals(2000, b.getFirstPublished());
-    assertFalse(em.getTransaction().isActive());
-    beginTxn();
-    // reapply the change
-    b.setFirstPublished(1988);
-    em.merge(b);
-    commitTxn();
-    beginTxn();
-    b = em.find(Book.class, e.getKey());
-    assertEquals(b, "harold", "1234", 1988, "the title");
-    commitTxn();
   }
 
   public void testDeleteCollides() {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    beginTxn();
-    Book b = em.find(Book.class, e.getKey());
-    em.remove(b);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
     try {
-      commitTxn();
-      fail("expected exception");
-    } catch (RollbackException ex) {
-      // good
-      assertTrue(ex.getCause() instanceof PersistenceException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      beginTxn();
+      Book b = em.find(Book.class, e.getKey());
+      em.remove(b);
+
+      try {
+        commitTxn();
+        fail("expected exception");
+      } catch (RollbackException ex) {
+        // good
+        assertTrue(ex.getCause() instanceof PersistenceException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
   }
 
   public void testInsertCollides_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-    Book book = new Book();
-    book.setAuthor("harold");
-    book.setIsbn("1234");
-    book.setFirstPublished(1988);
-    book.setTitle("the title");
-    em.persist(book);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
     try {
-      em.close();
-      fail("expected exception");
-    } catch (PersistenceException e) {
-      assertTrue(e.getCause() instanceof NucleusDataStoreException);
-      assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      Book book = new Book();
+      book.setAuthor("harold");
+      book.setIsbn("1234");
+      book.setFirstPublished(1988);
+      book.setTitle("the title");
+      em.persist(book);
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException e) {
+        assertTrue(e.getCause() instanceof NucleusDataStoreException);
+        assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertEquals(book, "harold", "1234", 1988, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertEquals(book, "harold", "1234", 1988, "the title");
   }
 
   public void testUpdateCollides_NoTxn() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    Book b = em.find(Book.class, e.getKey());
-    b.setFirstPublished(1988);
     try {
-      em.close();
-      fail("expected exception");
-    } catch (PersistenceException ex) {
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      Book b = em.find(Book.class, e.getKey());
+      b.setFirstPublished(1988);
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException ex) {
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      assertEquals(b, "harold", "1234", 1988, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    assertEquals(b, "harold", "1234", 1988, "the title");
   }
 
   public void testUpdateOfDetachedCollides_NoTxn() {
@@ -305,24 +339,28 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
 
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
-
-    // update detached object
-    book.setFirstPublished(1988);
-
-    // reattach
-    em.merge(book);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
     try {
-      em.close();
-      fail("expected exception");
-    } catch (PersistenceException ex) {
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      // update detached object
+      book.setFirstPublished(1988);
+
+      // reattach
+      em.merge(book);
+
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException ex) {
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      // now verify that the new value is still in the detached version.
+      assertEquals(book, "harold", "1234", 1988, "the title");
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    // now verify that the new value is still in the detached version.
-    assertEquals(book, "harold", "1234", 1988, "the title");
   }
 
   public void testUpdateOfDetachedCollidesThenSucceeds_NoTxn() {
@@ -347,28 +385,32 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update detached object
-    b.setFirstPublished(1988);
-
-    // reattach
-    em.merge(b);
     try {
+      // update detached object
+      b.setFirstPublished(1988);
+
+      // reattach
+      em.merge(b);
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException ex) {
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      em = emf.createEntityManager();
+      em.merge(b);
       em.close();
-      fail("expected exception");
-    } catch (PersistenceException ex) {
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      em = emf.createEntityManager();
+      b = em.find(Book.class, e.getKey());
+      assertEquals(b, "harold", "1234", 1988, "the title");
+      em.close();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    em = emf.createEntityManager();
-    em.merge(b);
-    em.close();
-    em = emf.createEntityManager();
-    b = em.find(Book.class, e.getKey());
-    assertEquals(b, "harold", "1234", 1988, "the title");
-    em.close();
   }
 
   public void testUpdateOfAttachedCollidesThenSucceeds_NoTxn() {
@@ -391,29 +433,33 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     // make a copy right away, otherwise our change will get reverted
     // when the txn rolls back
     ExceptionThrowingDatastoreDelegate dd =
-        new ExceptionThrowingDatastoreDelegate(ApiProxy.getDelegate(), policy);
-    ApiProxy.setDelegate(dd);
+        new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
+    setDelegateForThread(dd);
 
-    // update attached object
-    b.setFirstPublished(1988);
-    em.merge(b);
     try {
+      // update attached object
+      b.setFirstPublished(1988);
+      em.merge(b);
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException ex) {
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+      em = emf.createEntityManager();
+      b = em.find(Book.class, e.getKey());
+      // update attached object
+      b.setFirstPublished(1988);
+      em.merge(b);
       em.close();
-      fail("expected exception");
-    } catch (PersistenceException ex) {
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      em = emf.createEntityManager();
+      b = em.find(Book.class, e.getKey());
+      assertEquals(b, "harold", "1234", 1988, "the title");
+      em.close();
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
-    em = emf.createEntityManager();
-    b = em.find(Book.class, e.getKey());
-    // update attached object
-    b.setFirstPublished(1988);
-    em.merge(b);
-    em.close();
-    em = emf.createEntityManager();
-    b = em.find(Book.class, e.getKey());
-    assertEquals(b, "harold", "1234", 1988, "the title");
-    em.close();
   }
 
   public void testDeleteCollides_NoTxn() {
@@ -421,18 +467,22 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
-    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(ApiProxy.getDelegate());
-    ApiProxy.setDelegate(dd);
+    CollisionDatastoreDelegate dd = new CollisionDatastoreDelegate(getDelegateForThread());
+    setDelegateForThread(dd);
 
-    Book b = em.find(Book.class, e.getKey());
-
-    em.remove(b);
     try {
-      em.close();
-      fail("expected exception");
-    } catch (PersistenceException ex) {
-      assertTrue(ex.getCause() instanceof NucleusDataStoreException);
-      assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      Book b = em.find(Book.class, e.getKey());
+
+      em.remove(b);
+      try {
+        em.close();
+        fail("expected exception");
+      } catch (PersistenceException ex) {
+        assertTrue(ex.getCause() instanceof NucleusDataStoreException);
+        assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      }
+    } finally {
+      setDelegateForThread(dd.getInner());
     }
   }
 
