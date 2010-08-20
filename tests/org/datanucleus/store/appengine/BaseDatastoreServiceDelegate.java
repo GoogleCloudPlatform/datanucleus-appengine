@@ -118,4 +118,8 @@ public class BaseDatastoreServiceDelegate implements DatastoreService {
   public KeyRange allocateIds(Key key, String s, long l) {
     return delegate.allocateIds(key, s, l);
   }
+
+  public KeyRangeState allocateIdRange(KeyRange keyRange) {
+    return delegate.allocateIdRange(keyRange);
+  }
 }

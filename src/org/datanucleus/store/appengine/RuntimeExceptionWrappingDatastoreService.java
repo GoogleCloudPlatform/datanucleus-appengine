@@ -25,14 +25,14 @@ import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
-
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
+
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
+import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 /**
  * {@link DatastoreService} implementation that catches runtime exceptions
@@ -257,6 +257,16 @@ public class RuntimeExceptionWrappingDatastoreService implements DatastoreServic
   public KeyRange allocateIds(Key parent, String kind, long num) {
     try {
       return inner.allocateIds(parent, kind, num);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
+  public KeyRangeState allocateIdRange(KeyRange keyRange) {
+    try {
+      return inner.allocateIdRange(keyRange);
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (DatastoreFailureException e) {

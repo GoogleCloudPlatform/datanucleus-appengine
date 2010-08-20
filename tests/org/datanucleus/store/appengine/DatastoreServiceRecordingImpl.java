@@ -159,4 +159,9 @@ class DatastoreServiceRecordingImpl implements DatastoreService {
     recorder.allocateIds(parent, kind, num);
     return delegate.allocateIds(parent, kind, num);
   }
+
+  public KeyRangeState allocateIdRange(KeyRange keyRange) {
+    recorder.allocateIdRange(keyRange);
+    return delegate.allocateIdRange(keyRange);
+  }
 }

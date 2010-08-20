@@ -15,7 +15,7 @@
  */
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.testing.cloudcover.util.LocalServiceTestHelperWrapper;
+import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.apphosting.api.ApiProxy;
 
@@ -40,7 +40,7 @@ import javax.jdo.spi.JDOImplHelper;
  */
 public class DatastoreTestCase extends TestCase {
 
-  private final LocalServiceTestHelperWrapper helper = new LocalServiceTestHelperWrapper(
+  private final CloudCoverLocalServiceTestHelper helper = new CloudCoverLocalServiceTestHelper(
       new LocalDatastoreServiceTestConfig());
 
   @Override
@@ -79,11 +79,11 @@ public class DatastoreTestCase extends TestCase {
   }
 
   protected void setDelegateForThread(ApiProxy.Delegate delegate) {
-    LocalServiceTestHelperWrapper.setDelegate(delegate);
+    CloudCoverLocalServiceTestHelper.setDelegate(delegate);
   }
 
   protected ApiProxy.Delegate getDelegateForThread() {
-    return LocalServiceTestHelperWrapper.getDelegate();
+    return CloudCoverLocalServiceTestHelper.getDelegate();
   }
 
   /**
