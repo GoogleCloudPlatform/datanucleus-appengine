@@ -2936,12 +2936,21 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  public void testPositionalParam() {
+  public void testPositionalParams() {
     Entity e = Book.newBookEntity("me", "isbn", "return of yam");
     ds.put(e);
     List<Book> result =
-        em.createQuery("select b from " + Book.class.getName() + " b where isbn=?1")
-            .setParameter(1, "isbn").getResultList();
+        em.createQuery("select b from " + Book.class.getName() + " b where isbn=?1 AND title=?2")
+            .setParameter(1, "isbn").setParameter(2, "return of yam").getResultList();
+    assertEquals(1, result.size());
+  }
+
+  public void testOutOfOrderPositionalParams() {
+    Entity e = Book.newBookEntity("me", "isbn", "return of yam");
+    ds.put(e);
+    List<Book> result =
+        em.createQuery("select b from " + Book.class.getName() + " b where isbn=?2 AND title=?1")
+            .setParameter(2, "isbn").setParameter(1, "return of yam").getResultList();
     assertEquals(1, result.size());
   }
 

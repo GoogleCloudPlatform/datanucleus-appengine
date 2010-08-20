@@ -45,6 +45,7 @@ final class QueryData {
   final DatastoreQuery.ResultType resultType;
   final Utils.Function<Entity, Object> resultTransformer;
   final LinkedHashMap<String, List<Object>> inFilters = new LinkedHashMap<String, List<Object>>();
+  final boolean isJDO;
   Set<Key> batchGetKeys;
   // only used by JDO when there is an explicit variable
   VariableExpression joinVariableExpression;
@@ -55,8 +56,9 @@ final class QueryData {
 
   QueryData(
       Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
-      QueryCompilation compilation, Query primaryDatastoreQuery, DatastoreQuery.ResultType resultType,
-      Utils.Function<Entity, Object> resultTransformer) {
+      QueryCompilation compilation, Query primaryDatastoreQuery,
+      DatastoreQuery.ResultType resultType,
+      Utils.Function<Entity, Object> resultTransformer, boolean isJDO) {
     this.parameters = parameters;
     this.acmd = acmd;
     this.tableMap.put(acmd.getFullClassName(), table);
@@ -64,6 +66,7 @@ final class QueryData {
     this.primaryDatastoreQuery = primaryDatastoreQuery;
     this.resultType = resultType;
     this.resultTransformer = resultTransformer;
+    this.isJDO = isJDO;
   }
 }
 

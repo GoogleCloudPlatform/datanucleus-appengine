@@ -74,7 +74,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
   protected Object performExecute(Map parameters) {
     @SuppressWarnings("unchecked")
     Map<String, ?> params = parameters;
-    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
+    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params, false);
   }
 
   // Exposed for tests.

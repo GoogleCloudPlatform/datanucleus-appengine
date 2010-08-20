@@ -20,9 +20,6 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withCursor;
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.PreparedQuery;
@@ -92,6 +89,10 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.jdo.spi.PersistenceCapable;
+
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withCursor;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -191,11 +192,12 @@ public class DatastoreQuery implements Serializable {
    * @param fromInclNo The index of the first result the user wants returned.
    * @param toExclNo The index of the last result the user wants returned.
    * @param parameters Parameter values for the query.
+   * @param isJDO {@code true} if this is a JDO query.
    *
    * @return The result of executing the query.
    */
   public Object performExecute(Localiser localiser, QueryCompilation compilation,
-      long fromInclNo, long toExclNo, Map<String, ?> parameters) {
+      long fromInclNo, long toExclNo, Map<String, ?> parameters, boolean isJDO) {
 
     if (query.getCandidateClass() == null) {
       throw new FatalNucleusUserException(
@@ -212,7 +214,7 @@ public class DatastoreQuery implements Serializable {
     storeMgr.validateMetaDataForClass(acmd, clr);
 
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-    QueryData qd = validate(compilation, parameters, acmd, table, clr);
+    QueryData qd = validate(compilation, parameters, acmd, table, clr, isJDO);
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
@@ -597,7 +599,7 @@ public class DatastoreQuery implements Serializable {
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, DatastoreTable table,
-                             final ClassLoaderResolver clr) {
+                             final ClassLoaderResolver clr, boolean isJDO) {
     if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
       throw new FatalNucleusUserException("Only select and delete statements are supported.");
     }
@@ -647,7 +649,7 @@ public class DatastoreQuery implements Serializable {
                                                           projectionFields, compilation.getCandidateAlias());
     }
     QueryData qd = new QueryData(
-        parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer);
+        parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer, isJDO);
 
     if (compilation.getExprFrom() != null) {
       for (Expression fromExpr : compilation.getExprFrom()) {
@@ -1017,23 +1019,24 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object getParameterValue(QueryData qd, ParameterExpression pe) {
-    if (pe.getPosition() != -1 &&
-        qd.parameters != null &&
-        qd.parameters.get(pe.getPosition()) != null) {
+    if (pe.getPosition() != -1) {
       // implicit param
-      return qd.parameters.get(pe.getPosition());
-    }
-    Object paramValue = qd.parameters.get(pe.getId());
-    if (paramValue == null) {
-      // JPQL positional param keys are Integers in this map so make sure
-      // we try to find it that way
+      // If this is JDO then the parameter is keyed by position.
+      // If this is JPA then the paramter is keyed by id.
+      Object paramValue = null;
       try {
-        paramValue = qd.parameters.get(Integer.parseInt(pe.getId()));
+        paramValue =
+            qd.isJDO ?
+            qd.parameters.get(pe.getPosition()) :
+            qd.parameters.get(Integer.parseInt(pe.getId()));
       } catch (NumberFormatException nfe) {
         // that's fine, it just means this isn't a positional param
       }
+      if (paramValue != null) {
+        return paramValue;
+      }
     }
-    return paramValue;
+    return qd.parameters.get(pe.getId());
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,

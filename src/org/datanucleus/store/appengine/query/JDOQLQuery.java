@@ -86,7 +86,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       toExclNo = Long.parseLong(fromTo[1].trim());
     }
     try {
-      return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params);
+      return datastoreQuery.performExecute(
+          LOCALISER, compilation, fromInclNo, toExclNo, params, true);
     } catch (QueryTimeoutException e) {
       throw new JDOQueryTimeoutException(e.getMessage());
     }
