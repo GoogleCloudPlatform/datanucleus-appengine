@@ -15,43 +15,57 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
-import com.google.appengine.api.datastore.DatastoreFailureException;
-import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
+import org.datanucleus.store.appengine.Utils.Supplier;
 
 import java.util.Iterator;
 
 /**
  * {@link Iterable} implementation that catches runtime exceptions thrown by
- * the datastore api and translates them to the appropriate nucleus exception.
+ * the datastore api and translates them to the appropriate JDO or JPA exception.
+ * DataNucleus is supposed to do this for us, but they miss runtime exceptions
+ * that are thrown while iterating.
  *
  * @author Max Ross <maxr@google.com>
  */
-class RuntimeExceptionWrappingIterable implements Iterable<Entity> {
+class RuntimeExceptionWrappingIterable implements Iterable<Entity>, RuntimeExceptionObserver {
 
-  private final Iterable<Entity> inner;
+  private final boolean isJPA;
+  private final Supplier<Iterator<Entity>> iteratorSupplier;
+  private boolean hasError = false;
 
-  RuntimeExceptionWrappingIterable(Iterable<Entity> inner) {
-    this.inner = inner;
-  }
-
-  public Iterator<Entity> iterator() {
-    try {
-      return newIterator(inner.iterator());
-    } catch (IllegalArgumentException e) {
-      throw wrapIllegalArgumentException(e);
-    } catch (DatastoreTimeoutException e) {
-      throw wrapDatastoreTimeoutExceptionForQuery(e);
-    } catch (DatastoreFailureException e) {
-      throw wrapDatastoreFailureException(e);
+  RuntimeExceptionWrappingIterable(final Iterable<Entity> inner, boolean isJPA) {
+    if (inner == null) {
+      throw new NullPointerException("inner cannot be null");
+    }
+    this.isJPA = isJPA;
+    Supplier<Iterator<Entity>> supplier = QueryExceptionWrappers.datastoreToDataNucleus(
+        new Supplier<Iterator<Entity>>() {
+          public Iterator<Entity> get() {
+            return newIterator(inner.iterator());
+          }
+        });
+    if (isJPA) {
+      this.iteratorSupplier = QueryExceptionWrappers.dataNucleusToJPA(supplier);
+    } else {
+      this.iteratorSupplier = QueryExceptionWrappers.dataNucleusToJDO(supplier);
     }
   }
 
+  public Iterator<Entity> iterator() {
+    return iteratorSupplier.get();
+  }
+
   Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
-    return new RuntimeExceptionWrappingIterator(innerIter);
+    return new RuntimeExceptionWrappingIterator(innerIter, isJPA, this);
+  }
+
+  public void onException() {
+    hasError = true;
+  }
+
+  boolean hasError() {
+    return hasError;
   }
 }

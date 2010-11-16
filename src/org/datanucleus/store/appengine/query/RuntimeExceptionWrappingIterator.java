@@ -15,59 +15,101 @@
  **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
-import com.google.appengine.api.datastore.DatastoreFailureException;
-import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
+import org.datanucleus.store.appengine.Utils.Supplier;
 
 import java.util.Iterator;
 
 /**
  * {@link Iterator} implementation that catches runtime exceptions thrown by
- * the datastore api and translates them to the appropriate nucleus exception.
+ * the datastore api and translates them to the appropriate JDO or JPA
+ * exception.  DataNucleus is supposed to do this for us, but they miss runtime
+ * exceptions that are thrown while iterating.
  *
  * @author Max Ross <maxr@google.com>
  */
 class RuntimeExceptionWrappingIterator implements Iterator<Entity> {
 
   final Iterator<Entity> inner;
+  final Supplier<Boolean> hasNextSupplier;
+  final Supplier<Entity> nextSupplier;
+  final Supplier<Void> removeSupplier;
 
-  RuntimeExceptionWrappingIterator(Iterator<Entity> inner) {
+  RuntimeExceptionWrappingIterator(final Iterator<Entity> inner,
+                                   boolean isJPA, final RuntimeExceptionObserver exceptionObserver) {
+    if (inner == null) {
+      throw new NullPointerException("inner cannot be null");
+    }
     this.inner = inner;
+    Supplier<Boolean> datastoreHasNextSupplier = QueryExceptionWrappers.datastoreToDataNucleus(
+        new Supplier<Boolean>() {
+          public Boolean get() {
+            boolean success = false;
+            try {
+              boolean result = inner.hasNext();
+              success = true;
+              return result;
+            } finally {
+              if (!success) {
+                exceptionObserver.onException();
+              }
+            }
+          }
+        });
+
+    Supplier<Entity> datastoreNextSupplier = QueryExceptionWrappers.datastoreToDataNucleus(
+        new Supplier<Entity>() {
+          public Entity get() {
+            boolean success = false;
+            try {
+              Entity result = inner.next();
+              success = true;
+              return result;
+            } finally {
+              if (!success) {
+                exceptionObserver.onException();
+              }
+            }
+          }
+        });
+
+    Supplier<Void> datastoreRemoveSupplier = QueryExceptionWrappers.datastoreToDataNucleus(
+          new Supplier<Void>() {
+            public Void get() {
+              boolean success = false;
+              try {
+                inner.remove();
+                success = true;
+                return null;
+              } finally {
+                if (!success) {
+                  exceptionObserver.onException();
+                }
+              }
+            }
+          });
+
+    if (isJPA) {
+      hasNextSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreHasNextSupplier);
+      nextSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreNextSupplier);
+      removeSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreRemoveSupplier);
+    } else {
+      hasNextSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreHasNextSupplier);
+      nextSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreNextSupplier);
+      removeSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreRemoveSupplier);
+    }
   }
 
   public boolean hasNext() {
-    try {
-      return inner.hasNext();
-    } catch (IllegalArgumentException e) {
-      throw wrapIllegalArgumentException(e);
-    } catch (DatastoreTimeoutException e) {
-      throw wrapDatastoreTimeoutExceptionForQuery(e);
-    } catch (DatastoreFailureException e) {
-      throw wrapDatastoreFailureException(e);
-    }
+    return hasNextSupplier.get();
   }
 
   public Entity next() {
-    try {
-      return inner.next();
-    } catch (IllegalArgumentException e) {
-      throw wrapIllegalArgumentException(e);
-    } catch (DatastoreFailureException e) {
-      throw wrapDatastoreFailureException(e);
-    }
+    return nextSupplier.get();
   }
 
   public void remove() {
-    try {
-      inner.remove();
-    } catch (IllegalArgumentException e) {
-      throw wrapIllegalArgumentException(e);
-    } catch (DatastoreFailureException e) {
-      throw wrapDatastoreFailureException(e);
-    }
+    removeSupplier.get();
   }
 }

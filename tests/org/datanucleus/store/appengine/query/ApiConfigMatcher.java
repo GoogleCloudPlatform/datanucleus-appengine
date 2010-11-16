@@ -21,34 +21,33 @@ import org.easymock.EasyMock;
 import org.easymock.IArgumentMatcher;
 
 /**
- * EasyMock matcher that verifies that the deadline of the current environment
- * matches the deadline of the provided environment.
+ * EasyMock matcher for ApiConfig.  Delete this once ApiConfig implements
+ * equals().
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-final class DeadlineMatcher implements IArgumentMatcher {
-  private final Double expectedDeadline;
+final class ApiConfigMatcher implements IArgumentMatcher {
+  private final ApiProxy.ApiConfig expectedApiConfig;
 
-  DeadlineMatcher(Double expectedDeadline) {
-    this.expectedDeadline = expectedDeadline;
+  ApiConfigMatcher(ApiProxy.ApiConfig expectedApiConfig) {
+    this.expectedApiConfig = expectedApiConfig;
   }
 
   public boolean matches(Object argument) {
-    ApiProxy.Environment env = (ApiProxy.Environment) argument;
-    Double deadline =
-        (Double) env.getAttributes().get(ApiProxy.class.getName() + ".api_deadline_key");
-    if (deadline == null) {
-      return expectedDeadline == null;
+    ApiProxy.ApiConfig actualApiConfig = (ApiProxy.ApiConfig) argument;
+    if (expectedApiConfig.getDeadlineInSeconds() == null) {
+      return actualApiConfig.getDeadlineInSeconds() == null;
     }
-    return deadline.equals(expectedDeadline);
+    return expectedApiConfig.getDeadlineInSeconds().equals(actualApiConfig.getDeadlineInSeconds());
   }
 
   public void appendTo(StringBuffer buffer) {
-    buffer.append("Env Matcher");
+    buffer.append("Env Matcher: " + expectedApiConfig.getDeadlineInSeconds());
   }
 
-  public static ApiProxy.Environment eqDeadline(Double expectedDeadline) {
-    EasyMock.reportMatcher(new DeadlineMatcher(expectedDeadline));
+  public static ApiProxy.ApiConfig eqApiConfig(ApiProxy.ApiConfig apiConfig) {
+    EasyMock.reportMatcher(new ApiConfigMatcher(apiConfig));
     return null;
   }
+
 }

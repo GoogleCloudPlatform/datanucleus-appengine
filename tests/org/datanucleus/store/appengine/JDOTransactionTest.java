@@ -334,7 +334,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
       EasyMock.expect(mockDatastoreService.prepare(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
           EasyMock.isA(com.google.appengine.api.datastore.Query.class))).andReturn(null);
-      EasyMock.expect(mockTxn.isActive()).andReturn(true).times(2);
+      EasyMock.expect(mockTxn.isActive()).andReturn(true).times(3);
     } else {
       EasyMock.expect(mockDatastoreService.prepare(
           (com.google.appengine.api.datastore.Transaction) EasyMock.isNull(),

@@ -44,10 +44,11 @@ class PojoDatastoreBridge {
       }
     };
     AbstractJavaQuery query = new DummyQuery(om);
+    DatastoreManager dm = (DatastoreManager) om.getStoreManager();
     ManagedConnection mconn = om.getStoreManager().getConnection(om);
     try {
       return (List<T>) DatastoreQuery.newStreamingQueryResultForEntities(
-          queryResultIterable, func, mconn, endCursor, query);
+          queryResultIterable, func, mconn, endCursor, query, dm.isJPA());
     } finally {
       mconn.release();
     }

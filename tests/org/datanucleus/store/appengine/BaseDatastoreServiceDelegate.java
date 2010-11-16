@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreAttributes;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -121,5 +122,9 @@ public class BaseDatastoreServiceDelegate implements DatastoreService {
 
   public KeyRangeState allocateIdRange(KeyRange keyRange) {
     return delegate.allocateIdRange(keyRange);
+  }
+
+  public DatastoreAttributes getDatastoreAttributes() {
+    return delegate.getDatastoreAttributes();
   }
 }

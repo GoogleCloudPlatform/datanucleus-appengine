@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
+import com.google.appengine.api.datastore.DatastoreAttributes;
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
@@ -267,6 +268,16 @@ public class RuntimeExceptionWrappingDatastoreService implements DatastoreServic
   public KeyRangeState allocateIdRange(KeyRange keyRange) {
     try {
       return inner.allocateIdRange(keyRange);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
+  public DatastoreAttributes getDatastoreAttributes() {
+    try {
+      return inner.getDatastoreAttributes();
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (DatastoreFailureException e) {

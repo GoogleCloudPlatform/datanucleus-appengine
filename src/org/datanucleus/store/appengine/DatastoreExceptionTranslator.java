@@ -61,9 +61,15 @@ public final class DatastoreExceptionTranslator {
         "Could not retrieve entity of kind " + key.getKind() + " with key " + key);
   }
 
-  public static QueryTimeoutException wrapDatastoreTimeoutExceptionForQuery(DatastoreTimeoutException e) {
-    QueryTimeoutException qte = new QueryTimeoutException(e.getMessage());
-    qte.initCause(e);
+  public static QueryTimeoutException wrapDatastoreTimeoutExceptionForQuery(final DatastoreTimeoutException e) {
+    QueryTimeoutException qte = new QueryTimeoutException(e.getMessage()) {
+      @Override
+      public Throwable getCause() {
+        // hack to make the cause available because QueryTimeoutException
+        // implicitly sets it to null.
+        return e;
+      }
+    };
     return qte;
   }
 }

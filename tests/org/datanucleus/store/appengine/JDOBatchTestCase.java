@@ -40,6 +40,7 @@ abstract class JDOBatchTestCase extends JDOTestCase {
     }
 
     public Object invoke(Object o, Method method, Object[] objects) throws Throwable {
+      method.setAccessible(true);
       if (isBatchMethod(method)) {
         batchOps++;
       }

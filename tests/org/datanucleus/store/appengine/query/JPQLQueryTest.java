@@ -29,7 +29,6 @@ import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
@@ -1441,7 +1440,7 @@ public class JPQLQueryTest extends JPATestCase {
       try {
         books.size();
         fail("expected exception");
-      } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JPA exceptions
+      } catch (PersistenceException e) {
         // good
         assertTrue(e.getCause() instanceof DatastoreFailureException);
       }
@@ -2684,7 +2683,7 @@ public class JPQLQueryTest extends JPATestCase {
         "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
     q.setParameter("p", KeyFactory.keyToString(KeyFactory.createKey("yar", 33L)));
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected iae");
     } catch (PersistenceException e) {
       // good
@@ -2692,7 +2691,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q.setHint("gae.exclude-query-from-txn", false);
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -2807,7 +2806,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%' and author LIKE 'z%'");
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (PersistenceException pe) {
       // good
@@ -2818,7 +2817,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
     q.setParameter("p", "%y");
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2826,7 +2825,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q.setParameter("p", "y%y");
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2834,7 +2833,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q.setParameter("p", "y");
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2842,7 +2841,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q.setParameter("p", 23);
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (PersistenceException pe) {
       // good
@@ -2852,7 +2851,7 @@ public class JPQLQueryTest extends JPATestCase {
     q.setParameter("p", "y%");
     q.setParameter("q", "y%");
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected exception");
     } catch (PersistenceException pe) {
       // good
@@ -3015,11 +3014,14 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testQueryTimeout() {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+    config.setDeadlineInSeconds(3.0);
     ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-    EasyMock.expect(delegate.makeSyncCall(DeadlineMatcher.eqDeadline(3.0),
+    EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                               EasyMock.eq(LocalDatastoreService.PACKAGE),
                               EasyMock.eq("RunQuery"),
-                              EasyMock.isA(byte[].class)))
+                              EasyMock.isA(byte[].class),
+                              ApiConfigMatcher.eqApiConfig(config)))
             .andThrow(new DatastoreTimeoutException("too long")).anyTimes();
     EasyMock.replay(delegate);
     ApiProxy.Delegate original = getDelegateForThread();
@@ -3029,7 +3031,7 @@ public class JPQLQueryTest extends JPATestCase {
       Query q = em.createQuery("select from " + Book.class.getName());
       q.setHint("javax.persistence.query.timeout", 3000);
       try {
-        q.getResultList();
+        q.getResultList().iterator();
         fail("expected exception");
       } catch (QueryTimeoutException e) {
         // good
@@ -3072,7 +3074,9 @@ public class JPQLQueryTest extends JPATestCase {
       try {
         books.size();
         fail("expected exception");
-      } catch (org.datanucleus.store.query.QueryTimeoutException qte) { // DataNuc bug - they should be wrapping with JPA exceptions
+      } catch (QueryTimeoutException qte) {
+        assertTrue(qte.getCause() instanceof org.datanucleus.store.query.QueryTimeoutException);
+        assertTrue(qte.getCause().getCause() instanceof DatastoreTimeoutException);        
       }
     } finally {
       setDelegateForThread(original);
@@ -3085,10 +3089,12 @@ public class JPQLQueryTest extends JPATestCase {
     try {
       ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
       Query q = em.createQuery("select from " + Book.class.getName());
       q.getResultList();
@@ -3096,10 +3102,11 @@ public class JPQLQueryTest extends JPATestCase {
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
       q = em.createQuery("select from " + Book.class.getName());
       q.setHint("datanucleus.appengine.datastoreReadConsistency", null);
@@ -3108,10 +3115,11 @@ public class JPQLQueryTest extends JPATestCase {
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
       q = em.createQuery("select from " + Book.class.getName());
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "STRONG");
@@ -3120,10 +3128,11 @@ public class JPQLQueryTest extends JPATestCase {
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(-1L))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(-1L),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
       q = em.createQuery("select from " + Book.class.getName());
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "EVENTUAL");
@@ -3137,7 +3146,7 @@ public class JPQLQueryTest extends JPATestCase {
   private void assertQueryUnsupportedByDatastore(String query, Class<?> expectedCauseClass) {
     Query q = em.createQuery(query);
     try {
-      q.getResultList();
+      q.getResultList().iterator();
       fail("expected PersistenceException for query <" + query + ">");
     } catch (PersistenceException e) {
       // good

@@ -28,9 +28,9 @@ import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.api.users.User;
 import com.google.apphosting.api.ApiProxy;
+import com.google.apphosting.api.DatastorePb;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOQuery;
@@ -43,7 +43,6 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.WriteBlocker;
-import org.datanucleus.store.query.QueryTimeoutException;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
@@ -89,8 +88,10 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.jdo.Extent;
+import javax.jdo.JDODataStoreException;
 import javax.jdo.JDOException;
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOQueryTimeoutException;
@@ -1700,7 +1701,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       try {
         results.size();
         fail("expected exception");
-      } catch (NucleusDataStoreException e) { // DataNuc bug - they should be wrapping with JDO exceptions
+      } catch (JDODataStoreException e) {
         // good
         assertTrue(e.getCause() instanceof DatastoreFailureException);
       }
@@ -2696,7 +2697,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testMatchesQuery_InvalidLiteral() {
     Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('.*y')");
     try {
-      q.execute();
+      ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2704,7 +2705,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*y')");
     try {
-      q.execute();
+      ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2712,7 +2713,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y')");
     try {
-      q.execute();
+      ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
@@ -2720,7 +2721,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*') && author.matches('z.*')");
     try {
-      q.execute();
+      ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -2731,28 +2732,28 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testMatchesQuery_InvalidParameter() {
     Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches(:p)");
     try {
-      q.execute(".*y");
+      ((List<?>) q.execute(".*y")).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
     }
 
     try {
-      q.execute("y.*y");
+      ((List<?>) q.execute("y.*y")).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
     }
 
     try {
-      q.execute("y");
+      ((List<?>) q.execute("y")).isEmpty();
       fail("expected exception");
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
       // good
     }
 
     try {
-      q.execute(23);
+      ((List<?>) q.execute(23)).isEmpty();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -2760,7 +2761,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches(:p) && author.matches(:q)");
     try {
-      q.execute("y.*", "y.*");
+      ((List<?>) q.execute("y.*", "y.*")).isEmpty();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -2778,7 +2779,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasKeyAncestorKeyPkJDO.class.getName() + " where ancestorKey == :p");
     try {
-      q.execute(KeyFactory.createKey("yar", 33L));
+      ((List<?>) q.execute(KeyFactory.createKey("yar", 33L))).isEmpty();
       fail("expected iae");
     } catch (JDOFatalUserException e) {
       // good
@@ -2787,7 +2788,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     extensions.put("gae.exclude-query-from-txn", false);
     q.setExtensions(extensions);
     try {
-      q.execute(KeyFactory.createKey("yar", 33L));
+      ((List<?>) q.execute(KeyFactory.createKey("yar", 33L))).isEmpty();
       fail("expected iae");
     } catch (JDOFatalUserException e) {
       // good
@@ -2830,11 +2831,14 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testQueryTimeout() {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+    config.setDeadlineInSeconds(3.0);
     ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
-    EasyMock.expect(delegate.makeSyncCall(DeadlineMatcher.eqDeadline(3.0),
+    EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                               EasyMock.eq(LocalDatastoreService.PACKAGE),
                               EasyMock.eq("RunQuery"),
-                              EasyMock.isA(byte[].class)))
+                              EasyMock.isA(byte[].class),
+                              ApiConfigMatcher.eqApiConfig(config)))
             .andThrow(new DatastoreTimeoutException("too long")).anyTimes();
     EasyMock.replay(delegate);
     ApiProxy.Delegate original = getDelegateForThread();
@@ -2844,7 +2848,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       Query q = pm.newQuery(Flight.class);
       q.setTimeoutMillis(3000);
       try {
-        q.executeWithMap(new HashMap());
+        ((List<?>) q.executeWithMap(new HashMap())).isEmpty();
         fail("expected exception");
       } catch (JDOQueryTimeoutException e) {
         // good
@@ -2853,7 +2857,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       q = pm.newQuery(Flight.class);
       q.setTimeoutMillis(3000);
       try {
-        q.executeWithArray();
+        ((List<?>) q.executeWithArray()).isEmpty();
         fail("expected exception");
       } catch (JDOQueryTimeoutException e) {
         // good
@@ -2862,7 +2866,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       q = pm.newQuery(Flight.class);
       q.setTimeoutMillis(3000);
       try {
-        q.executeWithArray();
+        ((List<?>) q.executeWithArray()).isEmpty();
         fail("expected exception");
       } catch (JDOQueryTimeoutException e) {
         // good
@@ -2871,7 +2875,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       q = pm.newQuery(Flight.class);
       q.setTimeoutMillis(3000);
       try {
-        q.execute();
+        ((List<?>) q.execute()).isEmpty();
         fail("expected exception");
       } catch (JDOQueryTimeoutException e) {
         // good
@@ -2913,7 +2917,9 @@ public class JDOQLQueryTest extends JDOTestCase {
       try {
         results.size();
         fail("expected exception");
-      } catch (QueryTimeoutException e) { // DataNuc bug - they should be wrapping with JDO exceptions
+      } catch (JDOQueryTimeoutException e) {
+        assertTrue(e.getCause() instanceof org.datanucleus.store.query.QueryTimeoutException);
+        assertTrue(e.getCause().getCause().toString(), e.getCause().getCause() instanceof DatastoreTimeoutException);
       }
     } finally {
       setDelegateForThread(original);
@@ -2923,24 +2929,28 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testOverrideReadConsistency() {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     ApiProxy.Delegate original = getDelegateForThread();
+    Future<DatastorePb.QueryResult> result = EasyMock.createNiceMock(Future.class);
     try {
       ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
-      EasyMock.replay(delegate);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.replay(delegate, result);
       Query q = pm.newQuery(Flight.class);
       q.execute();
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
       EasyMock.replay(delegate);
       q = pm.newQuery(Flight.class);
       q.addExtension("datanucleus.appengine.datastoreReadConsistency", null);
@@ -2949,10 +2959,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(null))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(null),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
       EasyMock.replay(delegate);
       q = pm.newQuery(Flight.class);
       q.addExtension("datanucleus.appengine.datastoreReadConsistency", "STRONG");
@@ -2961,10 +2972,11 @@ public class JDOQLQueryTest extends JDOTestCase {
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
-      EasyMock.expect(delegate.makeSyncCall(EasyMock.isA(ApiProxy.Environment.class),
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
-                                FailoverMsMatcher.eqFailoverMs(-1L))).andReturn(null);
+                                FailoverMsMatcher.eqFailoverMs(-1L),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
       EasyMock.replay(delegate);
       q = pm.newQuery(Flight.class);
       q.addExtension("datanucleus.appengine.datastoreReadConsistency", "EVENTUAL");
@@ -2992,7 +3004,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   private void assertQueryUnsupportedByDatastore(String query) {
     Query q = pm.newQuery(query);
     try {
-      q.execute();
+      ((List<?>) q.execute()).isEmpty();
       fail("expected exception for query <" + query + ">");
     } catch (JDOFatalUserException e) {
       // good

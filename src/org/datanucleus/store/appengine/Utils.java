@@ -83,4 +83,8 @@ public class Utils {
   public interface Function<F, T> {
     T apply(F from);
   }
+
+  public interface Supplier<T> {
+    T get();
+  }
 }

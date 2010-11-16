@@ -410,23 +410,25 @@ public class DatastoreQuery implements Serializable {
   private List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
       ManagedConnection mconn, Cursor endCursor) {
-    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, endCursor, query);
+    return newStreamingQueryResultForEntities(
+        entities, resultTransformer, mconn, endCursor, query, getStoreManager().isJPA());
   }
 
   public static List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
-      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query) {
-    RuntimeExceptionWrappingIterable iterable;
+      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query,
+      final boolean isJPA) {
+    final RuntimeExceptionWrappingIterable iterable;
     if (entities instanceof QueryResultIterable) {
       // need to wrap it in a specialization so that CursorHelper can reach in
-      iterable = new RuntimeExceptionWrappingIterable((QueryResultIterable<Entity>) entities) {
+      iterable = new RuntimeExceptionWrappingIterable((QueryResultIterable<Entity>) entities, isJPA) {
         @Override
         Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
-          return new RuntimeExceptionWrappingQueryResultIterator((QueryResultIterator<Entity>) innerIter);
+          return new RuntimeExceptionWrappingQueryResultIterator(this, (QueryResultIterator<Entity>) innerIter, isJPA);
         }
       };
     } else {
-      iterable = new RuntimeExceptionWrappingIterable(entities);
+      iterable = new RuntimeExceptionWrappingIterable(entities, isJPA);
     }
     final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
     // Add a listener to the connection so we can get a callback when the connection is
@@ -435,6 +437,7 @@ public class DatastoreQuery implements Serializable {
       public void managedConnectionPreClose() {}
       public void managedConnectionPostClose() {}
       public void managedConnectionFlushed() {
+        qr.setHasError(iterable.hasError());
         // Disconnect the query from this ManagedConnection (read in unread rows etc)
         qr.disconnect();
       }

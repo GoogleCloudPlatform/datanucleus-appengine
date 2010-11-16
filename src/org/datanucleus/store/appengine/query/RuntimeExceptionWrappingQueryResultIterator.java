@@ -22,11 +22,12 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 /**
  * @author Max Ross <maxr@google.com>
  */
-final class RuntimeExceptionWrappingQueryResultIterator extends RuntimeExceptionWrappingIterator
+class RuntimeExceptionWrappingQueryResultIterator extends RuntimeExceptionWrappingIterator
     implements QueryResultIterator<Entity> {
 
-  RuntimeExceptionWrappingQueryResultIterator(QueryResultIterator<Entity> inner) {
-    super(inner);
+  RuntimeExceptionWrappingQueryResultIterator(RuntimeExceptionWrappingIterable iterable,
+                                              QueryResultIterator<Entity> inner, boolean isJPA) {
+    super(inner, isJPA, iterable);
   }
 
   public Cursor getCursor() {

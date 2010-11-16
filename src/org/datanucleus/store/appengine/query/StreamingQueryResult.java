@@ -47,6 +47,8 @@ class StreamingQueryResult extends AbstractQueryResult {
 
   private final Cursor endCursor;
 
+  private boolean hasError;
+
   /**
    * Constructs a StreamingQueryResult
    *
@@ -73,15 +75,19 @@ class StreamingQueryResult extends AbstractQueryResult {
   protected void closingConnection() {
     // mostly copied from ForwardQueryResult in the rdbms plugin
     if (loadResultsAtCommit && isOpen()) {
-      try {
-        // If we are still open, force consumption of the rest of the results
-        lazyResult.resolveAll();
-      } catch (NucleusUserException jpue) {
-        // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
-        NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + jpue.getMessage());
-      } catch (JDOUserException ue) {
-        // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
-        NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + ue.getMessage());
+      if (hasError) {
+        NucleusLogger.QUERY.info("Skipping resolution of remaining results due to earlier error.");
+      } else {
+        try {
+          // If we are still open, force consumption of the rest of the results
+          lazyResult.resolveAll();
+        } catch (NucleusUserException jpue) {
+          // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
+          NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + jpue.getMessage());
+        } catch (JDOUserException ue) {
+          // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
+          NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + ue.getMessage());
+        }
       }
     }
   }
@@ -128,4 +134,7 @@ class StreamingQueryResult extends AbstractQueryResult {
     return endCursor;
   }
 
+  void setHasError(boolean hasError) {
+    this.hasError = hasError;
+  }
 }

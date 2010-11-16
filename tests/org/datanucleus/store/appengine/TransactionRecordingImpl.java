@@ -17,6 +17,8 @@ package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.Transaction;
 
+import java.util.concurrent.Future;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -53,5 +55,15 @@ class TransactionRecordingImpl implements Transaction {
   public String getApp() {
     recorder.getApp();
     return delegate.getApp();
+  }
+
+  public Future<Void> commitAsync() {
+    recorder.commitAsync();
+    return delegate.commitAsync();
+  }
+
+  public Future<Void> rollbackAsync() {
+    recorder.rollbackAsync();
+    return delegate.rollbackAsync();
   }
 }
