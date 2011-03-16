@@ -150,6 +150,8 @@ public class DatastoreManager extends MappedStoreManager {
 
   public static final String JPA_QUERY_TIMEOUT_PROPERTY = "javax.persistence.query.timeout";
 
+  public static final String JPA_QUERY_CHUNK_SIZE_PROPERTY = "javax.persistence.query.chunkSize";
+
   /**
    * The name of the extension that indicates the return value of the batch
    * delete query should be as accurate as possible at the expense of

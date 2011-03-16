@@ -77,6 +77,7 @@ import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.io.Serializable;
+import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collection;
@@ -90,9 +91,10 @@ import java.util.Set;
 
 import javax.jdo.spi.PersistenceCapable;
 
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withCursor;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withChunkSize;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartCursor;
 
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
@@ -236,6 +238,11 @@ public class DatastoreQuery implements Serializable {
       Integer queryTimeout = (Integer) extensions.get(DatastoreManager.JPA_QUERY_TIMEOUT_PROPERTY);
       if (queryTimeout != null && queryTimeout > 0) {
         query.setTimeoutMillis(queryTimeout);
+      }
+      // JPA doesn't expose fetch size either
+      Integer chunkSize = (Integer) extensions.get(DatastoreManager.JPA_QUERY_CHUNK_SIZE_PROPERTY);
+      if (chunkSize != null) {
+        query.getFetchPlan().setFetchSize(chunkSize);
       }
     }
     return executeQuery(qd, fromInclNo, toExclNo);
@@ -496,12 +503,78 @@ public class DatastoreQuery implements Serializable {
     // If we have a cursor, add it to the fetch options
     if (cursor != null) {
       if (opts == null) {
-        opts = withCursor(cursor);
+        opts = withStartCursor(cursor);
       } else {
-        opts.cursor(cursor);
+        opts.startCursor(cursor);
+      }
+    }
+    // Use the fetch size of the fetch plan to determine
+    // chunk size.
+    Integer fetchSize = getFetchSize();
+    if (fetchSize != null) {
+      if (opts == null) {
+        opts = withChunkSize(fetchSize);
+      } else {
+        opts.chunkSize(fetchSize);
       }
     }
     return opts;
+  }
+
+  private static final Field FETCH_PLAN_FIELD;
+  static {
+    try {
+      FETCH_PLAN_FIELD = org.datanucleus.store.query.Query.class.getDeclaredField("fetchPlan");
+      FETCH_PLAN_FIELD.setAccessible(true);
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  /**
+   * This is nasty. Query.getFetchPlan() has the side effect of establishing
+   * a FetchPlan if the query does not already have one.  The problem is that,
+   * even though FetchPlan implements Serializable, it has a reference to a
+   * SoftValueMap, which is not Serializable.  As a result, any attempt to
+   * serialize a Query that has a FetchPlan will fail.  This is a DataNucleus
+   * bug, and shouldn't be our problem, except for the fact that we have
+   * already guaranteed to existing users that our Query objects serialize
+   * (we have a test that locks this down), so if we call Query.getFetchPlan(),
+   * all of a sudden our objects will stop serializing.  The workaround is
+   * create a version of getFetchPlan() that does not have a side effect.  In
+   * the case where the client code isn't using the fetch plan to set a fetch
+   * size, everything continues to work normally.  In the case where the client
+   * code is using the fetch plan to set a fetch size, the query is no longer
+   * serializable.  However, we can live with this because we are just now
+   * adding the ability to set a fetch size, so we're not going to break any
+   * existing users.  Clients who start using fetch size may notice this bug
+   * and complain, but hopefully the DN upgrade will take care of this.  It's
+   * certainly not worth fixing in the version of DN we're using now.
+   */
+  FetchPlan getFetchPlanWithoutSideEffect() {
+    FetchPlan fetchPlan;
+    try {
+      fetchPlan = (FetchPlan) FETCH_PLAN_FIELD.get(query);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+    if (fetchPlan == null) {
+      fetchPlan = getObjectManager().getFetchPlan();
+    }
+    return fetchPlan;
+  }
+
+  Integer getFetchSize() {
+    FetchPlan fetchPlan = getFetchPlanWithoutSideEffect();
+    Integer fetchSize = fetchPlan.getFetchSize();
+    if (fetchSize != FetchPlan.FETCH_SIZE_OPTIMAL) {
+      if (fetchSize == FetchPlan.FETCH_SIZE_GREEDY) {
+        return Integer.MAX_VALUE;
+      }
+    } else {
+      fetchSize = null;
+    }
+    return fetchSize;
   }
 
   /**
@@ -521,7 +594,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
-      ClassLoaderResolver clr, DatastoreManager storeMgr, FetchPlan fp) {
+      ClassLoaderResolver clr, FetchPlan fp) {
     return entityToPojo(entity, acmd, clr, getObjectManager(), query.getIgnoreCache(), fp);
   }
 
@@ -640,7 +713,7 @@ public class DatastoreQuery implements Serializable {
             // entity.
             fp = null;
           }
-          return entityToPojo(from, acmd, clr, getDatastoreManager(), fp);
+          return entityToPojo(from, acmd, clr, fp);
         }
       };
     }

@@ -2987,6 +2987,29 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testSetChunkSize() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.Delegate original = getDelegateForThread();
+    Future<DatastorePb.QueryResult> result = EasyMock.createNiceMock(Future.class);
+    try {
+      ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      setDelegateForThread(delegate);
+      ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                ChunkMatcher.eqChunkSize(33),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.replay(delegate, result);
+      Query q = pm.newQuery(Flight.class);
+      q.getFetchPlan().setFetchSize(33);
+      q.execute();
+      EasyMock.verify(delegate);
+    } finally {
+      setDelegateForThread(original);
+    }
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {

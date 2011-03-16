@@ -27,12 +27,14 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.apphosting.api.ApiProxy;
+import com.google.apphosting.api.DatastorePb;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
 import org.datanucleus.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.store.appengine.DatastoreServiceInterceptor;
 import org.datanucleus.store.appengine.ExceptionThrowingDatastoreDelegate;
@@ -86,6 +88,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.Future;
 
 import javax.persistence.NoResultException;
 import javax.persistence.NonUniqueResultException;
@@ -3142,6 +3145,30 @@ public class JPQLQueryTest extends JPATestCase {
       setDelegateForThread(original);
     }
   }
+
+  public void testSetChunkSize() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.Delegate original = getDelegateForThread();
+    Future<DatastorePb.QueryResult> result = EasyMock.createNiceMock(Future.class);
+    try {
+      ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      setDelegateForThread(delegate);
+      ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                ChunkMatcher.eqChunkSize(33),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.replay(delegate, result);
+      Query q = em.createQuery("select from " + Flight.class.getName());
+      q.setHint(DatastoreManager.JPA_QUERY_CHUNK_SIZE_PROPERTY, 33);
+      q.getResultList();
+      EasyMock.verify(delegate);
+    } finally {
+      setDelegateForThread(original);
+    }
+  }
+
 
   private void assertQueryUnsupportedByDatastore(String query, Class<?> expectedCauseClass) {
     Query q = em.createQuery(query);
