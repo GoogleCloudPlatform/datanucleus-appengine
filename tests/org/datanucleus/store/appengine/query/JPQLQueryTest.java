@@ -1504,9 +1504,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query
-        q =
-        em.createQuery(
+    Query q = em.createQuery(
             "select count(id) from " + Book.class.getName() + " where firstPublished = 2003");
     assertEquals(1, q.getSingleResult());
   }
@@ -1525,19 +1523,37 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  public void testCountQueryWithOffsetFails() {
+  public void testCountQueryWithOffset() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName());
     q.setFirstResult(1);
-    try {
-      q.getSingleResult();
-      fail("expected exception");
-    } catch (UnsupportedOperationException uoe) {
-      // good
-    }
+    assertEquals(1, q.getSingleResult());
+  }
+
+  public void testCountQueryWithLimit() {
+    Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
+    Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
+    ds.put(e1);
+    ds.put(e2);
+    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    q.setMaxResults(1);
+    assertEquals(1, q.getSingleResult());
+  }
+
+  public void testCountQueryWithOffsetAndLimit() {
+    Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
+    Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
+    Entity e3 = Book.newBookEntity("jimmy", "12345", "the title", 2005);
+    ds.put(e1);
+    ds.put(e2);
+    ds.put(e3);
+    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    q.setFirstResult(1);
+    q.setMaxResults(1);
+    assertEquals(1, q.getSingleResult());
   }
 
   public void testQueryCacheDisabled() {

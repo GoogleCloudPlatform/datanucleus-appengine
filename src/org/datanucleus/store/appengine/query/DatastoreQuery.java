@@ -92,6 +92,7 @@ import java.util.Set;
 import javax.jdo.spi.PersistenceCapable;
 
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withChunkSize;
+import static com.google.appengine.api.datastore.FetchOptions.Builder.withDefaults;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartCursor;
@@ -290,7 +291,10 @@ public class DatastoreQuery implements Serializable {
         PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
         FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
         if (qd.resultType == ResultType.COUNT) {
-          return fulfillCountQuery(preparedQuery, opts);
+          if (opts == null) {
+            opts = withDefaults();
+          }
+          return Collections.singletonList(preparedQuery.countEntities(opts));
         } else {
           if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
             qd.primaryDatastoreQuery.setKeysOnly();
@@ -363,19 +367,6 @@ public class DatastoreQuery implements Serializable {
     // something could get deleted in between the fetch and the delete.
     ds.delete(innerTxn, keysToDelete);
     return (long) keysToDelete.size();
-  }
-
-  private List<Integer> fulfillCountQuery(PreparedQuery preparedQuery, FetchOptions opts) {
-    if (opts != null) {
-      // TODO(maxr) support count + offset/limit by issuing a non-count
-      // query and returning the size of the result set
-      throw new UnsupportedOperationException(
-          "The datastore does not support using count() in conjunction with offset and/or "
-          + "limit.  You can get the answer to this query by issuing the query without "
-          + "count() and then counting the size of the result set.");
-    }
-
-    return Collections.singletonList(preparedQuery.countEntities());
   }
 
   private Object fulfillEntityQuery(

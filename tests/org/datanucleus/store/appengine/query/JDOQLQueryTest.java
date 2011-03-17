@@ -1783,19 +1783,36 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2, q.execute());
   }
 
-  public void testCountQueryWithOffsetFails() {
+  public void testCountQueryWithOffset() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
     ds.put(null, e1);
     ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     q.setRange(1, Long.MAX_VALUE);
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (UnsupportedOperationException uoe) {
-      // good
-    }
+    assertEquals(1, q.execute());
+  }
+
+  public void testCountQueryWithLimit() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ds.put(null, e1);
+    ds.put(null, e2);
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
+    q.setRange(0, 1);
+    assertEquals(1, q.execute());
+  }
+
+  public void testCountQueryWithOffsetAndLimit() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    Entity e3 = newFlightEntity("harold", "bos", "mia", 43, 44, 45);
+    ds.put(null, e1);
+    ds.put(null, e2);
+    ds.put(null, e3);
+    Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
+    q.setRange(1, 2);
+    assertEquals(1, q.execute());
   }
 
   public void testQueryCacheDisabled() {
