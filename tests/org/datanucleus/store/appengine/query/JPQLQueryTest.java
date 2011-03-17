@@ -1814,10 +1814,8 @@ public class JPQLQueryTest extends JPATestCase {
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -1843,10 +1841,8 @@ public class JPQLQueryTest extends JPATestCase {
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -1869,10 +1865,8 @@ public class JPQLQueryTest extends JPATestCase {
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
       q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
@@ -1880,10 +1874,8 @@ public class JPQLQueryTest extends JPATestCase {
       q.setParameter("id3", e2.getKey());
       books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
       q = em.createQuery("select from " + Book.class.getName() + " where "
                          + "id IN (:id1, :id3) OR id IN (:id2)");
@@ -1892,10 +1884,8 @@ public class JPQLQueryTest extends JPATestCase {
       q.setParameter("id3", e2.getKey());
       books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -1966,10 +1956,8 @@ public class JPQLQueryTest extends JPATestCase {
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -1991,10 +1979,8 @@ public class JPQLQueryTest extends JPATestCase {
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
       q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
@@ -2002,10 +1988,8 @@ public class JPQLQueryTest extends JPATestCase {
       q.setParameter("id3", e2.getKey());
       books = (List<Book>) q.getResultList();
       assertEquals(2, books.size());
-      keys = Utils.newHashSet(KeyFactory.stringToKey(
-          books.get(0).getId()), KeyFactory.stringToKey(books.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
     } finally {
       nqd.uninstall();
     }

@@ -79,6 +79,7 @@ import org.datanucleus.util.NucleusLogger;
 import java.io.Serializable;
 import java.lang.reflect.Field;
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -312,7 +313,7 @@ public class DatastoreQuery implements Serializable {
       return;
     }
     boolean onlyKeyFilters = true;
-    Set<Key> batchGetKeys = Utils.newHashSet();
+    Set<Key> batchGetKeys = Utils.newLinkedHashSet();
     for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
       if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
         onlyKeyFilters = false;
@@ -341,7 +342,15 @@ public class DatastoreQuery implements Serializable {
     if (isBulkDelete()) {
       return fulfillBatchDeleteQuery(innerTxn, ds, qd);
     } else {
-      Collection<Entity> entities = ds.get(innerTxn, qd.batchGetKeys).values();
+      Map<Key, Entity> entityMap = ds.get(innerTxn, qd.batchGetKeys);
+      // return the entities in the order in which the keys were provided
+      Collection<Entity> entities = new ArrayList<Entity>();
+      for (Key key : qd.batchGetKeys) {
+        Entity entity = entityMap.get(key);
+        if (entity != null) {
+          entities.add(entity);
+        }
+      }
       if (qd.resultType == ResultType.COUNT) {
         return Collections.singletonList(entities.size());
       }
@@ -1279,7 +1288,7 @@ public class DatastoreQuery implements Serializable {
     }
     // If it turns out there aren't any other filters or sorts we'll fulfill
     // the query using a batch get
-    qd.batchGetKeys = Utils.newHashSet();
+    qd.batchGetKeys = Utils.newLinkedHashSet();
     for (Object obj : value) {
       qd.batchGetKeys.add(internalPkToKey(acmd, obj));
     }

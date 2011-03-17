@@ -2191,10 +2191,8 @@ public class JDOQLQueryTest extends JDOTestCase {
       @SuppressWarnings("unchecked")
       List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       assertEquals(2, flights.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -2220,10 +2218,8 @@ public class JDOQLQueryTest extends JDOTestCase {
           KeyFactory.keyToString(e1.getKey()),
           KeyFactory.keyToString(e2.getKey())));
       assertEquals(2, flights.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -2246,10 +2242,8 @@ public class JDOQLQueryTest extends JDOTestCase {
       @SuppressWarnings("unchecked")
       List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       assertEquals(2, flights.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
@@ -2292,10 +2286,8 @@ public class JDOQLQueryTest extends JDOTestCase {
       @SuppressWarnings("unchecked")
       List<Flight> flights = (List<Flight>) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       assertEquals(2, flights.size());
-      Set<Key> keys = Utils.newHashSet(KeyFactory.stringToKey(
-          flights.get(0).getId()), KeyFactory.stringToKey(flights.get(1).getId()));
-      assertTrue(keys.contains(e1.getKey()));
-      assertTrue(keys.contains(e2.getKey()));
+      assertEquals(e1.getKey(), KeyFactory.stringToKey(flights.get(0).getId()));
+      assertEquals(e2.getKey(), KeyFactory.stringToKey(flights.get(1).getId()));
     } finally {
       nqd.uninstall();
     }
