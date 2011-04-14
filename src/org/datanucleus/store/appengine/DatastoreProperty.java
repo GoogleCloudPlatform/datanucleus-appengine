@@ -50,9 +50,12 @@ class DatastoreProperty implements DatastoreField {
   /** Manager for the store into which we are persisting. */
   private final MappedStoreManager storeMgr;
 
-  /** Flag indicated whether or not this is a pk */
+  /** Flag indicating whether or not this is a pk */
   private boolean isPrimaryKey;
 
+  /** Flag indicating whether the user wants the property to be nullable or not */
+  private boolean isNullable;
+  
   /**
    * {@link #getMemberMetaData()} typically derives this from the parent of
    * {@link #columnMetaData} but if this member is set it just returns
@@ -74,6 +77,9 @@ class DatastoreProperty implements DatastoreField {
       columnMetaData = colmd;
     }
 
+    // if not specified by the user the getAllowsNull is null
+    isNullable = !Boolean.FALSE.equals(columnMetaData.getAllowsNull());
+    
     // Uniqueness
     if (columnMetaData.getUnique()) {
       // MetaData requires it to be unique
@@ -94,8 +100,7 @@ class DatastoreProperty implements DatastoreField {
   }
 
   public boolean isNullable() {
-    // all properties all nullable
-    return true;
+    return isNullable;
   }
 
   public DatastoreMapping getDatastoreMapping() {

@@ -28,6 +28,7 @@ import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.appengine.query.DatastoreQuery;
@@ -268,13 +269,20 @@ class DatastoreRelationFieldManager {
         DatastoreTable table = fieldManager.getDatastoreTable();
         if (table.isParentKeyProvider(ammd)) {
           // bidir 1 to 1 and we are the child
-          value = lookupParent(ammd, mapping);
+          value = lookupParent(ammd, mapping, false);
         } else {
           // bidir 1 to 1 and we are the parent
           value = lookupOneToOneChild(ammd, clr);
         }
       } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        value = lookupParent(ammd, mapping);
+        // Do not complain about a non existing parent
+        // if we have a self referencing relation
+        // and are on the top of the hierarchy.
+        MetaData other = ammd.getRelatedMemberMetaData(clr)[0].getParent();
+        MetaData parent = ammd.getParent();
+        boolean allowNullParent =
+            other == parent && fieldManager.getEntity().getKey().getParent() == null;
+        value = lookupParent(ammd, mapping, allowNullParent);
       } else {
         value = null;
       }
@@ -283,15 +291,19 @@ class DatastoreRelationFieldManager {
     return getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
   }
 
-  private Object lookupParent(AbstractMemberMetaData ammd, JavaTypeMapping mapping) {
+  private Object lookupParent(AbstractMemberMetaData ammd, JavaTypeMapping mapping, boolean allowNullParent) {
     Key parentKey = fieldManager.getEntity().getParent();
     if (parentKey == null) {
-      String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
-      throw new FatalNucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
-          + "provide a reference to its parent but the entity does not have a parent.  "
-          + "Did you perhaps try to establish an instance of " + childClass  +  " as "
-          + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
-          + "persisted?");
+      if (!allowNullParent) {
+        String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
+        throw new FatalNucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
+            + "provide a reference to its parent but the entity does not have a parent.  "
+            + "Did you perhaps try to establish an instance of " + childClass  +  " as "
+            + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
+            + "persisted?");
+      } else {
+        return null;
+      }
     }
     ObjectManager om = getStateManager().getObjectManager();
     return mapping.getObject(om, parentKey, NOT_USED);

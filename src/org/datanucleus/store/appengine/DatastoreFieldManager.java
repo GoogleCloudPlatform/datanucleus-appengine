@@ -27,10 +27,12 @@ import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
 import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
@@ -837,6 +839,8 @@ public class DatastoreFieldManager implements FieldManager {
         // honk on unknown types
         value = unwrapSCOField(fieldNumber, value);
         String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
+        // validate null values against ammd
+        checkNullValue(ammd, propName, value);
         if (isUnindexedProperty(ammd)) {
           datastoreEntity.setUnindexedProperty(propName, value);
         } else {
@@ -1075,6 +1079,22 @@ public class DatastoreFieldManager implements FieldManager {
 
   private AbstractMemberMetaData getMetaData(int fieldNumber) {
     return fieldManagerStateStack.getFirst().abstractMemberMetaDataProvider.get(fieldNumber);
+  }
+  
+  private void checkNullValue(AbstractMemberMetaData ammd, String propName, Object value) {
+    if (value == null) {
+      // This test goes against the member meta data, since the member meta data
+      // says how to behave in case of unwanted null values (but JDO only).
+      // All other cases of unwanted null values will be handled
+      // by the DatastoreTable as the proxy for "tables" in the datastore.
+      if (ammd.getNullValue() == NullValue.EXCEPTION) {
+      // always throw a JDOUserException as required by the jdo spec
+        throw new NucleusUserException(
+            "Field "
+            + ammd.getFullFieldName()
+            + " is null, but is mandatory as it's described in the jdo metadata");
+      }
+    }
   }
 
   AbstractClassMetaData getClassMetaData() {

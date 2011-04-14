@@ -166,7 +166,7 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
           Long pos = (Long) shiftMe.getProperty(indexProp);
           shiftMe.setProperty(indexProp, pos - 1);
-          handler.put(om, shiftMe);
+          handler.put(om, acmd, shiftMe);
         }
       }
     }

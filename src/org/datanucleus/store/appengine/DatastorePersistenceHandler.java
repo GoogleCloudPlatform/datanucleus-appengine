@@ -25,6 +25,7 @@ import com.google.appengine.api.datastore.Transaction;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -33,6 +34,7 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
+import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
@@ -41,6 +43,7 @@ import org.datanucleus.util.NucleusLogger;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.jdo.spi.PersistenceCapable;
 
@@ -114,6 +117,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
     DatastoreTransaction txn = null;
     ObjectManager om = null;
+    AbstractClassMetaData acmd = null;
     List<Entity> entityList = Utils.newArrayList();
     for (PutState putState : putStateList) {
       if (txn == null) {
@@ -122,24 +126,27 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       if (om == null) {
         om = putState.sm.getObjectManager();
       }
+      if (acmd == null) {
+        acmd = putState.sm.getClassMetaData();
+      }
       entityList.add(putState.entity);
     }
-    put(om, entityList);
+    put(om, acmd, entityList);
     for (PutState putState : putStateList) {
       setAssociatedEntity(putState.sm, txn, putState.entity);
     }
   }
 
   private void put(StateManager sm, Entity entity) {
-    DatastoreTransaction txn = put(sm.getObjectManager(), entity);
+    DatastoreTransaction txn = put(sm.getObjectManager(), sm.getClassMetaData(), entity);
     setAssociatedEntity(sm, txn, entity);
   }
 
-  DatastoreTransaction put(ObjectManager om, Entity entity) {
-    return put(om, Collections.singletonList(entity));
+  DatastoreTransaction put(ObjectManager om, AbstractClassMetaData acmd, Entity entity) {
+    return put(om, acmd, Collections.singletonList(entity));
   }
 
-  private DatastoreTransaction put(ObjectManager om, List<Entity> entities) {
+  private DatastoreTransaction put(ObjectManager om, AbstractClassMetaData acmd, List<Entity> entities) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(om);
     List<Entity> putMe = Utils.newArrayList();
     for (Entity entity : entities) {
@@ -175,6 +182,12 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
       }
     }
     if (!putMe.isEmpty()) {
+      // validate the entity
+      // for now it checks for unwanted null values
+      for (Entity entity : putMe) {
+        validate(om, acmd, entity);
+      }
+      
       if (txn == null) {
         if (putMe.size() == 1) {
           datastoreServiceForWrites.put(putMe.get(0));
@@ -652,6 +665,24 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
   public void close() {
   }
 
+  private void validate(ObjectManager om, AbstractClassMetaData acmd, Entity entity) {
+    DatastoreTable table = storeMgr.getDatastoreClass(
+        acmd.getFullClassName(), om.getClassLoaderResolver());
+    
+    for (Entry<String, Object> prop : entity.getProperties().entrySet()) {
+      DatastoreField field = table.getDatastoreField(prop.getKey());
+      // If the property is a relation and datanucleus thinks it won't
+      // be stored in a database field, we don't have a database field.
+      // And the are some issues with the @Version field where we don't
+      // have a database field either.
+      // TODO investigate into the app engine plugin not honoring the
+      // column attributes for version fields.
+      if (field != null && !field.isNullable() && prop.getValue() == null) {
+        throw new NucleusDataStoreException("non-null property " + prop.getKey() + " of " + entity.getKind() +
+            " is null");
+      }
+    }
+  }
   /**
    * All the information needed to perform a put on an Entity.
    */

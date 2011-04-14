@@ -60,6 +60,7 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -294,10 +295,25 @@ public class DatastoreTable implements DatastoreClass {
     // a class plus all its subclasses living in every "table," so we'll
     // iterate over all managed fields in the entire chain, topmost classes
     // first so that overrides work properly.
-    for (AbstractClassMetaData curCmd : buildClassMetaDataList()) {
-      AbstractMemberMetaData[] fields = curCmd.getManagedMembers();
+    List<AbstractClassMetaData> cmdl = buildClassMetaDataList();
+    
+    // get the class level overridden members
+    // simply reversing the order we iterate through the hierarchy
+    // of ClassMetaData disorders the field numbers 
+    Map<String, AbstractMemberMetaData> overriddenFieldMap = new HashMap<String, AbstractMemberMetaData>();
+    for (AbstractClassMetaData curCmd : cmdl) {
+      for (AbstractMemberMetaData fmd : curCmd.getOverriddenMembers()) {
+        overriddenFieldMap.put(fmd.getFullFieldName(), fmd);
+      }
+    }    
+    
+    for (AbstractClassMetaData curCmd : cmdl) {
       // Go through the fields for this class and add columns for them
-      for (AbstractMemberMetaData fmd : fields) {
+      for (AbstractMemberMetaData fmd : curCmd.getManagedMembers()) {
+        if (overriddenFieldMap.containsKey(fmd.getFullFieldName())) {
+          fmd = overriddenFieldMap.get(fmd.getFullFieldName());
+        }
+	
         // Primary key fields are added by the initialisePK method
         if (fmd.isPrimaryKey()) {
           // We need to know about this mapping when accessing the class as an

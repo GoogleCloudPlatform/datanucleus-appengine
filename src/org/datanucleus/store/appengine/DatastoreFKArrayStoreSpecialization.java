@@ -47,7 +47,7 @@ public class DatastoreFKArrayStoreSpecialization extends DatastoreAbstractArrayS
       StateManager childSm = om.findStateManager(element);
       Entity childEntity = handler.getAssociatedEntityForCurrentTransaction(childSm);
       orderMapping.setObject(sm.getObjectManager(), childEntity, new int[1], index);
-      handler.put(om, childEntity);
+      handler.put(om, childSm.getClassMetaData(), childEntity);
       return true;
     }
     return false;
