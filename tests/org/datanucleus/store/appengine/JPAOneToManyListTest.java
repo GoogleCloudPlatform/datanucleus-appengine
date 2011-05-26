@@ -20,10 +20,8 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.BidirectionalChildLongPkListJPA;
-import org.datanucleus.test.BidirectionalChildSetJPA;
 import org.datanucleus.test.BidirectionalChildStringPkListJPA;
 import org.datanucleus.test.BidirectionalChildUnencodedStringPkListJPA;
 import org.datanucleus.test.Book;
@@ -35,13 +33,14 @@ import org.datanucleus.test.HasOneToManyChildAtMultipleLevelsJPA;
 import org.datanucleus.test.HasOneToManyKeyPkListJPA;
 import org.datanucleus.test.HasOneToManyListJPA;
 import org.datanucleus.test.HasOneToManyLongPkListJPA;
-import org.datanucleus.test.HasOneToManySetJPA;
 import org.datanucleus.test.HasOneToManyStringPkListJPA;
 import org.datanucleus.test.HasOneToManyUnencodedStringPkListJPA;
 import org.datanucleus.test.HasOneToManyWithOrderByJPA;
 import org.datanucleus.test.HasUnencodedStringPkOneToManyBidirChildrenJPA;
 
 import java.util.Collections;
+
+import static org.datanucleus.store.appengine.TestUtils.assertKeyParentEquals;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -749,20 +748,20 @@ public class JPAOneToManyListTest extends JPAOneToManyTestCase {
   }
 
   public void testAddQueriedParentToBidirChild() throws Exception {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+    testAddQueriedParentToBidirChild(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                      TXN_START_END);
   }
   public void testAddQueriedParentToBidirChild_NoTxn() throws Exception {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+    testAddQueriedParentToBidirChild(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                      NEW_EM_START_END);
   }
 
   public void testAddFetchedParentToBidirChild() throws Exception {
-    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+    testAddFetchedParentToBidirChild(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                      TXN_START_END);
   }
   public void testAddFetchedParentToBidirChild_NoTxn() throws Exception {
-    testAddFetchedParentToBidirChild(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
+    testAddFetchedParentToBidirChild(new HasOneToManyListJPA(), new BidirectionalChildListJPA(),
                                      NEW_EM_START_END);
   }
 

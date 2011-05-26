@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
+import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
@@ -72,23 +73,28 @@ class KeyRegistry {
     DatastoreTable dt = fieldMgr.getDatastoreTable();
     SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();
+    AbstractClassMetaData acmd = stateMgr.getClassMetaData();
     for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
-      stateMgr.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
-      Object childValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
-      if (childValue != null) {
-        if (childValue instanceof Object[]) {
-          childValue  = Arrays.asList((Object[]) childValue);
-        }
-        if (childValue instanceof Iterable) {
-          // TODO(maxr): Make sure we're not pulling back unnecessary data
-          // when we iterate over the values.
-          for (Object element : (Iterable) childValue) {
-            addToParentKeyMap(element, key, getExpectedChildType(dependent), true);
+      // Make sure we only provide the field for the correct part of any inheritance tree
+      if (dependent.getAbstractClassMetaData().isSameOrAncestorOf(acmd)) {
+        stateMgr.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
+        Object childValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
+        if (childValue != null) {
+          if (childValue instanceof Object[]) {
+            childValue  = Arrays.asList((Object[]) childValue);
           }
-        } else {
-          boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
-          addToParentKeyMap(
-              childValue, key, getExpectedChildType(dependent), checkForPolymorphism);
+          if (childValue instanceof Iterable) {
+            // TODO(maxr): Make sure we're not pulling back unnecessary data
+            // when we iterate over the values.
+            String expectedType = getExpectedChildType(dependent);
+            for (Object element : (Iterable) childValue) {
+              addToParentKeyMap(element, key, stateMgr, expectedType, true);
+            }
+          } else {
+            boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
+            addToParentKeyMap(
+                childValue, key, stateMgr, getExpectedChildType(dependent), checkForPolymorphism);
+          }
         }
       }
     }
@@ -104,9 +110,9 @@ class KeyRegistry {
     }
     return dependent.getTypeName();
   }
-
-  void registerKey(Object childValue, Key key, String expectedType) {
-    addToParentKeyMap(childValue, key, expectedType, false);
+    
+  void registerKey(Object childValue, Key key, StateManager stateMgr, String expectedType) {
+    addToParentKeyMap(childValue, key, stateMgr, expectedType, false);
   }
 
   Key getRegisteredKey(Object object) {
@@ -117,11 +123,22 @@ class KeyRegistry {
     parentKeyMap.clear();
   }
 
-  private void addToParentKeyMap(Object childValue, Key key, String expectedType, boolean checkForPolymorphism) {
-    if (checkForPolymorphism && childValue != null && !childValue.getClass().getName().equals(expectedType)) {
-      throw new UnsupportedOperationException(
-          "Received a child of type " + childValue.getClass().getName() + " for a field of type "
-          + expectedType + ".  Unfortunately polymorphism in relationships is not yet supported.");
+  private void addToParentKeyMap(Object childValue, Key key,
+                                 StateManager stateMgr, String expectedType,
+                                 boolean checkForPolymorphism) {
+    if (checkForPolymorphism && childValue != null && !childValue.getClass().getName()
+        .equals(expectedType)) {
+      AbstractClassMetaData acmd = stateMgr.getMetaDataManager().getMetaDataForClass(
+          childValue.getClass(), stateMgr.getObjectManager().getClassLoaderResolver());
+      if (!DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
+        // TODO cache the result of this evaluation to improve performance
+        boolean isJPA = ((DatastoreManager) stateMgr.getStoreManager()).isJPA();
+        throw new UnsupportedOperationException(
+            "Received a child of type " + childValue.getClass().getName() + " for a field of type "
+            + expectedType
+            + ". Unfortunately polymorphism in relationships is only supported for the " +
+            (isJPA ? "SINGLE_TABLE" : "superclass-table") + " inheritance mapping strategy.");
+      }
     }
     parentKeyMap.put(childValue, key);
   }

@@ -128,13 +128,21 @@ public class JDOTestCase extends DatastoreTestCase {
   }
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
+    switchDatasource(null, name);
+  }
+
+  protected void switchDatasource(Map<String, String> props, PersistenceManagerFactoryName name) {
     if (!pm.isClosed()) {
       pm.close();
     }
     if (!cacheManagers() && !pmf.isClosed()) {
       pmf.close();
     }
-    pmf = JDOHelper.getPersistenceManagerFactory(name.name());
+    if (props == null) {
+      pmf = JDOHelper.getPersistenceManagerFactory(name.name());
+    } else {
+      pmf = JDOHelper.getPersistenceManagerFactory(props, name.name());      
+    }
     pm = pmf.getPersistenceManager();
   }
 

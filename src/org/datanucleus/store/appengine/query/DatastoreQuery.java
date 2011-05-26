@@ -39,9 +39,13 @@ import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.DiscriminatorMetaData;
+import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.InheritanceMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
@@ -233,6 +237,7 @@ public class DatastoreQuery implements Serializable {
     }
     addFilters(qd);
     addSorts(qd);
+    addDiscriminator(qd);
     Map extensions = query.getExtensions();
     if (extensions != null) {
       // The only way to set a query timeout for jpa is with a hint.  It's our
@@ -614,6 +619,7 @@ public class DatastoreQuery implements Serializable {
       final ClassLoaderResolver clr, ObjectManager om,
       boolean ignoreCache, final FetchPlan fetchPlan) {
     final DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
+    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), om.getClassLoaderResolver());
     storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
       public void fetchFields(StateManager sm) {
@@ -630,7 +636,7 @@ public class DatastoreQuery implements Serializable {
         return fetchPlan;
       }
     };
-    Object pojo = om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, ignoreCache, true);
+    Object pojo = om.findObjectUsingAID(getClass(entity, acmd, table, clr, om), fv, ignoreCache, true);
     StateManager stateMgr = om.findStateManager(pojo);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     // TODO(maxr): Seems like we should be able to refactor the handler
@@ -643,6 +649,67 @@ public class DatastoreQuery implements Serializable {
     storeMgr.getPersistenceHandler().fetchObject(
         stateMgr, fieldsToFetch);
     return pojo;
+  }
+
+  private static Class<?> getClass(Entity entity, AbstractClassMetaData acmd,
+                                   DatastoreTable table, ClassLoaderResolver clr,
+                                   ObjectManager om) {
+    JavaTypeMapping discrimMapping = table.getDiscriminatorMapping(true);
+    if (discrimMapping == null) {
+      return clr.classForName(acmd.getFullClassName());
+    }
+
+    DiscriminatorMetaData dismd = discrimMapping.getDatastoreContainer().getDiscriminatorMetaData();
+
+    Class<?> discrimType = discrimMapping.getDataStoreMapping(0).getJavaTypeMapping().getJavaType();
+    String discriminatorColName = discrimMapping.getDataStoreMapping(0)
+        .getDatastoreField().getIdentifier().getIdentifierName();
+    Object discrimValue = entity.getProperty(discriminatorColName);
+
+    if (discrimValue == null) {
+      throw new NucleusUserException("Discriminator of this entity is null: " + entity);
+    }
+    String rowClassName = null;
+
+    if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
+      rowClassName = (String) discrimValue;
+    } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
+      AbstractClassMetaData baseCmd = (AbstractClassMetaData)
+          ((InheritanceMetaData) dismd.getParent()).getParent();
+      // Check the main class type for the table
+      Object discrimMDValue = dismd.getValue();
+      if (discrimType == Long.class) {
+        discrimMDValue = Long.parseLong((String) discrimMDValue);
+      }
+      if (discrimMDValue.equals(discrimValue)) {
+        rowClassName = baseCmd.getFullClassName();
+      } else {
+        // Go through all possible subclasses to find one with this value
+        for (Object o : om.getStoreManager().getSubClassesForClass(baseCmd.getFullClassName(), true, clr)) {
+          String className = (String) o;
+          AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(className, clr);
+          discrimMDValue = cmd.getInheritanceMetaData().getDiscriminatorMetaData().getValue();
+          if (discrimType == Long.class) {
+            discrimMDValue = Long.parseLong((String) discrimMDValue);
+          }
+          if (discrimValue.equals(discrimMDValue)) {
+            rowClassName = className;
+            break;
+          }
+        }
+      }
+    }
+
+    if (rowClassName == null) {
+      throw new NucleusUserException(
+          "Cannot get the class for entity " + entity + "\n" +
+          "This can happen if the meta data for the subclasses of "
+          + acmd.getFullClassName() +
+          " is not yet loaded! You may want to consider using the datanucleus autostart mechanism"
+          + " to tell datanucleus about these classes.");
+    }
+
+    return clr.classForName(rowClassName);
   }
 
   /**
@@ -695,7 +762,7 @@ public class DatastoreQuery implements Serializable {
     final List<String> projectionFields = Utils.newArrayList();
     ResultType resultType = validateResultExpression(compilation, acmd, projectionFields);
     // TODO(maxr): Add checks for subqueries and anything else we don't allow
-    String kind = getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+    String kind = table.getIdentifier().getIdentifierName();
     Function<Entity, Object> resultTransformer;
     if (resultType == ResultType.KEYS_ONLY) {
       resultTransformer = new Function<Entity, Object>() {
@@ -845,6 +912,65 @@ public class DatastoreQuery implements Serializable {
       String sortProp = getSortProperty(qd, expr);
       qd.primaryDatastoreQuery.addSort(sortProp, dir);
     }
+  }
+  
+  private void addDiscriminator(QueryData qd) {
+    DatastoreTable candidateTable = qd.tableMap.get(qd.acmd.getFullClassName());
+    JavaTypeMapping discriminatorMapping = candidateTable.getDiscriminatorMapping(true);
+    
+    if (discriminatorMapping != null) {
+      String className = qd.acmd.getFullClassName();
+      boolean includeSubclasses = query.isSubclasses();
+      boolean restrictDiscriminator = true;
+
+      // Use discriminator metadata from the place where the discriminator
+      // mapping is defined
+      DiscriminatorMetaData dismd = discriminatorMapping.getDatastoreContainer().getDiscriminatorMetaData();
+      boolean hasDiscriminator = dismd.getStrategy() != DiscriminatorStrategy.NONE;
+
+      if (hasDiscriminator) {
+	DatastoreManager storeMgr = getStoreManager();
+	if (includeSubclasses &&
+	    candidateTable.getDiscriminatorMapping(false) != null && 
+	    !storeMgr.getOMFContext().getMetaDataManager().isPersistentDefinitionImplementation(className)) {
+	  // no use in restricting if there is only one managed class
+	  restrictDiscriminator = candidateTable.getManagedClasses().size() > 1;
+	}
+
+	if (restrictDiscriminator) {
+	  List<Object> discriminatorValues = new ArrayList<Object>();
+	  ClassLoaderResolver clr = getClassLoaderResolver();
+	  Object discriminatorValue = getDiscriminatorValue(qd.acmd, dismd, candidateTable);
+	  discriminatorValues.add(discriminatorValue);
+	  if (includeSubclasses) {
+	    for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
+	      discriminatorValue = getDiscriminatorValue(
+                  storeMgr.getMetaDataManager().getMetaDataForClass(subClassName, clr), dismd, candidateTable);
+	      discriminatorValues.add(discriminatorValue);
+	    }
+	  }
+	  
+	  String discriminatorPropertyName = discriminatorMapping.getDataStoreMapping(0)
+	  	.getDatastoreField().getIdentifier().getIdentifierName();
+	  qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
+	}
+      }
+    }
+  }
+  
+  private static Object getDiscriminatorValue(AbstractClassMetaData targetCmd,
+      DiscriminatorMetaData dismd, DatastoreTable candidateTable) {
+    // Default to the "class-name" discriminator strategy
+    Object discriminatorValue = targetCmd.getFullClassName();
+    if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
+      discriminatorValue = targetCmd.getInheritanceMetaData()
+	  .getDiscriminatorMetaData().getValue();
+      JavaTypeMapping mapping = candidateTable.getDiscriminatorMapping(true);
+      if (mapping.getDataStoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
+	discriminatorValue = Long.parseLong((String)discriminatorValue);
+      }
+    }
+    return discriminatorValue;
   }
 
   static Query.SortDirection getSortDirection(OrderExpression oe) {
@@ -1377,7 +1503,8 @@ public class DatastoreQuery implements Serializable {
         qd.tableMap.put(acmd.getFullClassName(), table);
       }
       // deepest mapping we have so far
-      mapping = table.getMemberMapping(tuple);
+      AbstractMemberMetaData mmd = acmd.getMetaDataForMember(tuple);
+      mapping = table.getMemberMapping(mmd);
       // set the class meta data to the class of the type of the field of the
       // mapping so that we go one deeper if there are any more tuples
       acmd = getMetaDataManager().getMetaDataForClass(mapping.getMemberMetaData().getType(), clr);

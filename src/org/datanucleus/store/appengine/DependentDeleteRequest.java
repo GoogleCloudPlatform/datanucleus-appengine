@@ -50,8 +50,8 @@ class DependentDeleteRequest {
    */
   private final AbstractMemberMetaData[] oneToOneNonOwnerFields;
 
-  public DependentDeleteRequest(DatastoreClass dc, ClassLoaderResolver clr) {
-    DependentDeleteMappingConsumer consumer = new DependentDeleteMappingConsumer(clr);
+  public DependentDeleteRequest(DatastoreClass dc, AbstractClassMetaData acmd, ClassLoaderResolver clr) {
+    DependentDeleteMappingConsumer consumer = new DependentDeleteMappingConsumer(acmd, clr);
     dc.provideNonPrimaryKeyMappings(consumer); // to compute callbacks
     dc.providePrimaryKeyMappings(consumer);
     dc.provideDatastoreIdMappings(consumer);
@@ -112,14 +112,22 @@ class DependentDeleteRequest {
 
     private final ClassLoaderResolver clr;
 
-    public DependentDeleteMappingConsumer(ClassLoaderResolver clr) {
+    private final AbstractClassMetaData cmd;
+    
+    public DependentDeleteMappingConsumer(AbstractClassMetaData cmd, ClassLoaderResolver clr) {
       this.clr = clr;
+      this.cmd = cmd;
     }
 
     public void preConsumeMapping(int highest) {
     }
 
     public void consumeMapping(JavaTypeMapping m, AbstractMemberMetaData fmd) {
+      if (!fmd.getAbstractClassMetaData().isSameOrAncestorOf(cmd)) {
+        // Make sure we only accept mappings from the correct part of any inheritance tree
+        return;
+      }
+
       if (m.includeInUpdateStatement()) {
         if (fmd.isPrimaryKey()) {
           pkField = fmd.getAbsoluteFieldNumber();

@@ -44,6 +44,7 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.WriteBlocker;
+import org.datanucleus.test.AbstractBaseClassesJPA.Base1;
 import org.datanucleus.test.BidirectionalChildListJPA;
 import org.datanucleus.test.BidirectionalChildLongPkListJPA;
 import org.datanucleus.test.BidirectionalGrandchildListJPA;
@@ -75,6 +76,7 @@ import org.datanucleus.test.InTheHouseJPA;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.NullDataJPA;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirTop;
 import org.easymock.EasyMock;
 
 import java.io.ByteArrayOutputStream;
@@ -3006,6 +3008,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSubclassesNotSupported() {
     JPQLQuery q = new JPQLQuery(getObjectManager());
+    q.setClass(Base1.class);
     q.setSubclasses(false);
     try {
       q.setSubclasses(true);
@@ -3013,6 +3016,9 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (NucleusUserException nue) {
       // good
     }
+    q.setClass(UnidirTop.class);
+    q.setSubclasses(false);
+    q.setSubclasses(true);
   }
 
   public void testQueryTimeout() {

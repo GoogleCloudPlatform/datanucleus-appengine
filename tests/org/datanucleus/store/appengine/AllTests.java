@@ -138,6 +138,13 @@ public class AllTests {
     suite.addTestSuite(JDODatastoreServiceConfigTest.class);
     suite.addTestSuite(JPADatastoreServiceConfigTest.class);
     suite.addTestSuite(JPAVersionTest.class);
+    suite.addTestSuite(JDOSuperclassTableInheritanceTest.class);
+    suite.addTestSuite(JPASingleTableInheritanceTest.class);
+    suite.addTestSuite(JDOOneToManyPolymorphicListTest.class);
+    suite.addTestSuite(JDOOneToManyPolymorphicSetTest.class);
+    suite.addTestSuite(JPAOneToManyPolymorphicListTest.class);
+    suite.addTestSuite(JPAOneToManyPolymorphicSetTest.class);
+    
     return suite;
   }
 }

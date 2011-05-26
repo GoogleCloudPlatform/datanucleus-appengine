@@ -169,6 +169,9 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY =
       EXTENSION_PREFIX + "slow-but-more-accurate-jpql-delete-query";
 
+  public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
+      "datanucleus.appengine.getExtentCanReturnSubclasses";
+
   private static final Map<InheritanceStrategy, String> INHERITANCE_STRATEGY_MAP =
       new ConcurrentHashMap<InheritanceStrategy, String>();
 
@@ -216,6 +219,7 @@ public class DatastoreManager extends MappedStoreManager {
     addTypeManagerMappings();
     PersistenceConfiguration persistenceConfig = omfContext.getPersistenceConfiguration();
     storageVersion = StorageVersion.fromConfig(persistenceConfig);
+    initialiseAutoStart(clr);
     logConfiguration();
   }
 
@@ -340,10 +344,14 @@ public class DatastoreManager extends MappedStoreManager {
     if (!cmd.isRequiresExtent()) {
         throw new NoExtentException(c.getName());
     }
+    if (!getMetaDataManager().getOMFContext().getPersistenceConfiguration()
+            .getBooleanProperty(GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY)) {
+      subclasses = false;
+    }
     // In order to avoid breaking existing apps I'm hard-coding subclasses to
     // be false.  This breaks spec compliance since the no-arg overload of
     // PersistenceManager.getExtent() is supposed to return subclasses.
-    return new DefaultCandidateExtent(om, c, false, cmd);
+    return new DefaultCandidateExtent(om, c, subclasses, cmd);
   }
 /**
    * Method to create the IdentifierFactory to be used by this store.
@@ -437,6 +445,19 @@ public class DatastoreManager extends MappedStoreManager {
       // superclass or your persistent superclass has delegated responsibility
       // for storing its fields to you.
       return buildStoreData(cmd, clr);
+    } else if (isNewOrSuperclassTableInheritanceStrategy(cmd)) {
+      // Table mapped into table of superclass
+      // Find the superclass - should have been created first
+      AbstractClassMetaData[] managingCmds = getClassesManagingTableForClass(cmd, clr);
+      DatastoreTable superTable;
+      if (managingCmds != null && managingCmds.length == 1) {
+        MappedStoreData superData = (MappedStoreData) storeDataMgr.get(managingCmds[0].getFullClassName());
+        if (superData != null) {
+          // Specify the table if it already exists
+          superTable = (DatastoreTable) superData.getDatastoreContainerObject();
+          return buildStoreDataWithTable(cmd, superTable);
+        }
+      }
     }
     String unsupportedMsg = buildUnsupportedInheritanceStrategyMessage(cmd);
     throw new UnsupportedInheritanceStrategyException(unsupportedMsg);
@@ -473,12 +494,27 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   private StoreData buildStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
-    DatastoreTable table = new DatastoreTable(this, cmd, clr, dba);
+    String tableName;
+    if (cmd.getTable() != null) {
+      // User specified a table name as part of the mapping so use that as the kind.
+      tableName = cmd.getTable();
+    } else {
+      tableName = getIdentifierFactory().newDatastoreContainerIdentifier(cmd).getIdentifierName();
+    }
+    DatastoreTable table = new DatastoreTable(tableName, this, cmd, clr, dba);
     StoreData sd = new MappedStoreData(cmd, table, true);
     registerStoreData(sd);
     // needs to be called after we register the store data to avoid stack
     // overflow
     table.buildMapping();
+    return sd;
+  }
+  
+  private StoreData buildStoreDataWithTable(ClassMetaData cmd, DatastoreTable table) {
+    MappedStoreData sd = new MappedStoreData(cmd, table, false);
+    registerStoreData(sd);
+    sd.setDatastoreContainerObject(table);
+    table.manageClass(cmd);
     return sd;
   }
 
@@ -755,6 +791,20 @@ public class DatastoreManager extends MappedStoreManager {
 
   static boolean isPKIdField(AbstractClassMetaData acmd, int pos) {
     return memberHasExtension(acmd, pos, PK_ID);
+  }
+  
+  public static boolean isNewOrSuperclassTableInheritanceStrategy(AbstractClassMetaData cmd) {
+    while (cmd != null) {
+      AbstractClassMetaData pcmd = cmd.getSuperAbstractClassMetaData();
+      if (pcmd == null) {
+	return cmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.NEW_TABLE;
+      } else if (cmd.getInheritanceMetaData().getStrategy() != InheritanceStrategy.SUPERCLASS_TABLE) {
+	return false;
+      }
+      cmd = pcmd;
+    }
+    
+    return false;
   }
 
   /**

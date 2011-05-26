@@ -25,6 +25,7 @@ import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
 import org.datanucleus.metadata.DiscriminatorMetaData;
+import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.IdentityStrategy;
@@ -46,8 +47,11 @@ import org.datanucleus.store.mapped.DatastoreIdentifier;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.IdentifierType;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.exceptions.DuplicateDatastoreFieldException;
 import org.datanucleus.store.mapped.mapping.CorrespondentColumnsMapper;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
+import org.datanucleus.store.mapped.mapping.DiscriminatorLongMapping;
+import org.datanucleus.store.mapped.mapping.DiscriminatorStringMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.IntegerMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -59,8 +63,10 @@ import org.datanucleus.util.MultiMap;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
+import java.text.MessageFormat;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -85,7 +91,7 @@ public class DatastoreTable implements DatastoreClass {
   /** All callbacks for class tables waiting to be performed. */
   private static final MultiMap callbacks = new MultiMap();
 
-  private final MappedStoreManager storeMgr;
+  private final DatastoreManager storeMgr;
   private final AbstractClassMetaData cmd;
   private final ClassLoaderResolver clr;
   private final DatastoreAdapter dba;
@@ -135,6 +141,12 @@ public class DatastoreTable implements DatastoreClass {
    */
   private JavaTypeMapping idMapping;
 
+  /** MetaData for discriminator for objects stored in this kind. */
+  protected DiscriminatorMetaData discriminatorMetaData;
+
+  /** Mapping for any discriminator column. */
+  private JavaTypeMapping discriminatorMapping;
+  
   /**
    * Highest absolute field number managed by this table
    */
@@ -148,14 +160,17 @@ public class DatastoreTable implements DatastoreClass {
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
   private AbstractMemberMetaData parentMappingField;
-
-  DatastoreTable(MappedStoreManager storeMgr, AbstractClassMetaData cmd,
+  
+  /** MetaData for all classes being managed here. */
+  private final Collection<AbstractClassMetaData> managedClassMetaData = new HashSet<AbstractClassMetaData>();
+  
+  DatastoreTable(String kind, DatastoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
     this.storeMgr = storeMgr;
     this.cmd = cmd;
     this.clr = clr;
     this.dba = dba;
-    this.identifier = new DatastoreKind(cmd);
+    this.identifier = new DatastoreKind(kind);
   }
 
   public String getType() {
@@ -226,17 +241,24 @@ public class DatastoreTable implements DatastoreClass {
   public DatastoreProperty addDatastoreField(String storedJavaType, DatastoreIdentifier name,
       JavaTypeMapping mapping, MetaData colmd) {
 
-    if (hasColumnName(name) &&
-        (colmd == null || !(colmd instanceof ColumnMetaData) ||
-         ((ColumnMetaData) colmd).getInsertable() || ((ColumnMetaData) colmd).getUpdateable())) {
-      // duplicate property names are ok if the field is neither insertable nor updatable
-      throw new NucleusException("Duplicate property name on class " + getType() + " : " + name);
-    }
-
     // Create the column
     DatastoreProperty prop =
         new DatastoreProperty(this, mapping.getJavaType().getName(), name, (ColumnMetaData) colmd);
 
+    if (hasColumnName(name)) {
+      if (colmd == null || !(colmd instanceof ColumnMetaData)) {
+        throw new NucleusException(
+            "invalid column meta data property name on class " + getType() + " : " + colmd);
+      }
+
+      if (((ColumnMetaData) colmd).getInsertable() || ((ColumnMetaData) colmd).getUpdateable()) {
+        // duplicate property names are ok if the field is neither insertable nor updatable
+        if (!isSuperclassColumn(prop, mapping, colmd)) {
+          throw new NucleusException(
+              "Duplicate property name on class " + getType() + " : " + name);
+        }
+      }
+    }
     DatastoreIdentifier colName = prop.getIdentifier();
 
     datastoreProperties.add(prop);
@@ -251,6 +273,72 @@ public class DatastoreTable implements DatastoreClass {
 
   public boolean hasDatastoreField(DatastoreIdentifier identifier) {
     return (hasColumnName(identifier));
+  }
+
+  public boolean isSuperclassColumn(DatastoreField col, JavaTypeMapping mapping, MetaData colmd) {
+    // Verify if a duplicate column is valid. A duplicate column name is (currently) valid when :-
+    // 1. subclasses defining the duplicated column are using "super class table" strategy
+    //
+    // Find the MetaData for the existing column
+    DatastoreIdentifier name = col.getIdentifier();
+    DatastoreField existingCol = getDatastoreField(name);
+    MetaData md = existingCol.getColumnMetaData().getParent();
+    while (!(md instanceof AbstractClassMetaData)) {
+      if (md == null) {
+        // ColumnMetaData for existing column has no parent class somehow!
+        throw new NucleusUserException(MessageFormat.format(
+            "The property \"{0}\" exists in entity \"{1}\" and has invalid metadata. The existing property is \"{2}\"",
+            name, this.identifier, colmd.toString()));
+      }
+      md = md.getParent();
+    }
+
+    // Find the MetaData for the column to be added
+    MetaData dupMd = colmd.getParent();
+    while (!(dupMd instanceof AbstractClassMetaData)) {
+      dupMd = dupMd.getParent();
+      if (dupMd == null) {
+        // ColumnMetaData for required column has no parent class somehow!
+        throw new NucleusUserException(MessageFormat.format(
+            "The column \"{0}\" exists in table \"{1}\" and cannot be validated because a duplicated column has been specified and the metadata is invalid. The column is \"{2}\"",
+            name, this.identifier, colmd.toString()));
+      }
+    }
+    if (((AbstractClassMetaData) md).getFullClassName().equals(
+        ((AbstractClassMetaData) dupMd).getFullClassName())) {
+      // compare the current column defining class and the duplicated column defining class. if the same class,
+      // we raise an exception when within one class it is defined a column twice
+      // in some cases it could still be possible to have these duplicated columns, but does not make too
+      // much sense in most of the cases. (this whole block of duplicated column check, could be optional, like a pmf property)
+      throw new DuplicateDatastoreFieldException(this.toString(), existingCol, col);
+    }
+
+    // Make sure the field JavaTypeMappings are compatible
+    if (mapping != null &&
+        !mapping.getClass().isAssignableFrom(existingCol.getJavaTypeMapping().getClass()) &&
+        !existingCol.getJavaTypeMapping().getClass().isAssignableFrom(mapping.getClass())) {
+      // the mapping class must be the same (not really required, but to avoid user mistakes)
+      throw new DuplicateDatastoreFieldException(this.toString(), existingCol, col);
+    }
+
+    // Make sure the field java types are compatible
+    Class<?> fieldStoredJavaTypeClass = null;
+    Class<?> existingColStoredJavaTypeClass = null;
+    try {
+      ClassLoaderResolver clr = storeMgr.getOMFContext().getClassLoaderResolver(null);
+      fieldStoredJavaTypeClass = clr.classForName(col.getStoredJavaType());
+      existingColStoredJavaTypeClass = clr.classForName(col.getStoredJavaType());
+    }
+    catch (RuntimeException cnfe) {
+      // Do nothing
+    }
+    if (fieldStoredJavaTypeClass != null && existingColStoredJavaTypeClass != null &&
+        !fieldStoredJavaTypeClass.isAssignableFrom(existingColStoredJavaTypeClass) &&
+        !existingColStoredJavaTypeClass.isAssignableFrom(fieldStoredJavaTypeClass)) {
+      // the stored java type must be the same (not really required, but to avoid user mistakes)
+      throw new DuplicateDatastoreFieldException(this.toString(), existingCol, col);
+    }
+    return true;
   }
 
   DatastoreField getDatastoreField(String colName) {
@@ -287,7 +375,43 @@ public class DatastoreTable implements DatastoreClass {
   public void buildMapping() {
     initializePK();
     initializeNonPK();
+    initializeDescriminatorMapping();
     runCallBacks();
+    this.managedClassMetaData.add(cmd);
+  }
+
+  public void manageClass(AbstractClassMetaData cmd) {
+    //	We demand DiscriminatorMetaData, because in cases where an object of the
+    //	top class in the inheritance hierarchy will be persisted and the subclasses
+    //	are not yet known to datanucleus, we already need to know about the discriminator
+    //	property. At this point here the exception can be too late, if an object of
+    //	the top class has been persisted already. But at least the developer is
+    //	now informed, that he should add the DiscriminatorMetaData.
+    if (getDiscriminatorMetaData() == null) {
+      throw new NucleusUserException("Descriminator meta data for " +
+                                     cmd.getFullClassName() +
+                                     " is missing. Please specify at least the discriminator column.");
+    }
+
+    // Go through the fields for this class and add columns for them
+    for (AbstractMemberMetaData fmd : cmd.getManagedMembers()) {
+      addFieldMapping(cmd, fmd);
+    }
+    this.managedClassMetaData.add(cmd);
+  }
+
+  /**
+   * returns the names of all classes managed by this table.
+   *
+   * @return Names of the classes managed (stored) here
+   */
+  public List<String> getManagedClasses() {
+    return Utils
+        .transform(managedClassMetaData, new Utils.Function<AbstractClassMetaData, String>() {
+          public String apply(AbstractClassMetaData cmd) {
+            return cmd.getFullClassName();
+          }
+        });
   }
 
   private void initializeNonPK() {
@@ -313,132 +437,7 @@ public class DatastoreTable implements DatastoreClass {
         if (overriddenFieldMap.containsKey(fmd.getFullFieldName())) {
           fmd = overriddenFieldMap.get(fmd.getFullFieldName());
         }
-	
-        // Primary key fields are added by the initialisePK method
-        if (fmd.isPrimaryKey()) {
-          // We need to know about this mapping when accessing the class as an
-          // embedded field.
-          embeddedFieldMappingsMap.put(fmd, pkMappings[0]);
-        } else {
-          if (managesField(fmd.getFullFieldName())) {
-            if (!fmd.getClassName(true).equals(curCmd.getFullClassName())) {
-              throw new UnsupportedOperationException("Overrides not currently supported.");
-            }
-          } else {
-            // Manage the field if not already managed (may already exist if overriding a superclass field)
-            if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
-              boolean isPrimary = true;
-              if (fmd.getTable() != null && fmd.getJoinMetaData() == null) {
-                // Field has a table specified and is not a 1-N with join table
-                // so is mapped to a secondary table
-                isPrimary = false;
-              }
-              if (isPrimary) {
-                // Add the field to this table
-                JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
-                    this, fmd, dba, clr, FieldRole.ROLE_FIELD);
-                addFieldMapping(mapping);
-                embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
-              } else {
-                throw new UnsupportedOperationException("No support for secondary tables.");
-              }
-            } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
-              throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
-            }
-
-            // Calculate if we need a FK adding due to a 1-N (FK) relationship
-            boolean needsFKToContainerOwner = false;
-            int relationType = fmd.getRelationType(clr);
-            if (relationType == Relation.ONE_TO_MANY_BI) {
-              AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
-              if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {
-                needsFKToContainerOwner = true;
-              }
-            } else if (relationType == Relation.ONE_TO_MANY_UNI) {
-              if (fmd.getJoinMetaData() == null) {
-                needsFKToContainerOwner = true;
-              }
-            } else if (relationType == Relation.ONE_TO_ONE_BI) {
-              if (fmd.getMappedBy() != null) {
-                // This element type has a many-to-one pointing back.
-                // We assume that our pk is part of the pk of the element type.
-                DatastoreTable dt =
-                    (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-                dt.runCallBacks();
-                dt.markFieldAsParentKeyProvider(fmd.getName());
-              }
-            } else if (relationType == Relation.MANY_TO_ONE_BI) {
-              DatastoreTable dt =
-                  (DatastoreTable) storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-              AbstractClassMetaData acmd =
-                  storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
-              dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
-            }
-
-            if (needsFKToContainerOwner) {
-              // 1-N uni/bidirectional using FK, so update the element side with a FK
-              if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
-                  (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd))) {
-                // 1-N ForeignKey collection/array, so add FK to element table
-                AbstractClassMetaData elementCmd;
-                if (fmd.hasCollection()) {
-                  // Collection
-                  elementCmd = storeMgr.getMetaDataManager()
-                      .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
-                } else {
-                  // Array
-                  elementCmd = storeMgr.getMetaDataManager()
-                      .getMetaDataForClass(fmd.getType().getComponentType(), clr);
-                }
-                if (elementCmd == null) {
-                  // Elements that are reference types or non-PC will come through here
-                } else {
-                  AbstractClassMetaData[] elementCmds;
-                  // TODO : Cater for interface elements, and get the metadata for the implementation classes here
-                  if (elementCmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE) {
-                    elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
-                  } else {
-                    elementCmds = new ClassMetaData[1];
-                    elementCmds[0] = elementCmd;
-                  }
-
-                  // Run callbacks for each of the element classes.
-                  for (AbstractClassMetaData elementCmd1 : elementCmds) {
-                    callbacks.put(elementCmd1.getFullClassName(),
-                                  new CallBack(fmd, cmd.getFullClassName()));
-                    DatastoreTable dt =
-                        (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
-                    dt.runCallBacks();
-                    if (fmd.getMappedBy() != null) {
-                      // This element type has a many-to-one pointing back.
-                      // We assume that our pk is part of the pk of the element type.
-                      dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
-                    }
-                  }
-                }
-              } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
-                // 1-N ForeignKey map, so add FK to value table
-                if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
-                  // Key is stored in the value table so add the FK to the value table
-                  AbstractClassMetaData valueCmd = storeMgr.getMetaDataManager()
-                      .getMetaDataForClass(fmd.getMap().getValueType(), clr);
-                  if (valueCmd == null) {
-                    // Interface elements will come through here and java.lang.String and others as well
-                  } else {
-                  }
-                } else if (fmd.getValueMetaData() != null && fmd.getValueMetaData().getMappedBy() != null) {
-                  // Value is stored in the key table so add the FK to the key table
-                  AbstractClassMetaData keyCmd = storeMgr.getMetaDataManager()
-                      .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
-                  if (keyCmd == null) {
-                    // Interface elements will come through here and java.lang.String and others as well
-                  } else {
-                  }
-                }
-              }
-            }
-          }
-        }
+        addFieldMapping(curCmd, fmd);
       }
     }
 
@@ -466,6 +465,137 @@ public class DatastoreTable implements DatastoreClass {
         }
       }
       curClass = curClass.getSuperclass();
+    }
+  }
+
+  private void addFieldMapping(AbstractClassMetaData curCmd,
+                               AbstractMemberMetaData fmd) {
+    // Primary key fields are added by the initialisePK method
+    if (fmd.isPrimaryKey()) {
+      // We need to know about this mapping when accessing the class as an
+      // embedded field.
+      embeddedFieldMappingsMap.put(fmd, pkMappings[0]);
+    } else {
+      if (managesField(fmd.getFullFieldName())) {
+        if (!fmd.getClassName(true).equals(curCmd.getFullClassName())) {
+          throw new UnsupportedOperationException("Overrides not currently supported.");
+        }
+      } else {
+        // Manage the field if not already managed (may already exist if overriding a superclass field)
+        if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
+          boolean isPrimary = true;
+          if (fmd.getTable() != null && fmd.getJoinMetaData() == null) {
+            // Field has a table specified and is not a 1-N with join table
+            // so is mapped to a secondary table
+            isPrimary = false;
+          }
+          if (isPrimary) {
+            // Add the field to this table
+            JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
+                this, fmd, dba, clr, FieldRole.ROLE_FIELD);
+            addFieldMapping(mapping);
+            embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
+          } else {
+            throw new UnsupportedOperationException("No support for secondary tables.");
+          }
+        } else if (fmd.getPersistenceModifier() != FieldPersistenceModifier.TRANSACTIONAL) {
+          throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
+        }
+
+        // Calculate if we need a FK adding due to a 1-N (FK) relationship
+        boolean needsFKToContainerOwner = false;
+        int relationType = fmd.getRelationType(clr);
+        if (relationType == Relation.ONE_TO_MANY_BI) {
+          AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
+          if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {
+            needsFKToContainerOwner = true;
+          }
+        } else if (relationType == Relation.ONE_TO_MANY_UNI) {
+          if (fmd.getJoinMetaData() == null) {
+            needsFKToContainerOwner = true;
+          }
+        } else if (relationType == Relation.ONE_TO_ONE_BI) {
+          if (fmd.getMappedBy() != null) {
+            // This element type has a many-to-one pointing back.
+            // We assume that our pk is part of the pk of the element type.
+            DatastoreTable dt = storeMgr
+                    .getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+            dt.runCallBacks();
+            dt.markFieldAsParentKeyProvider(fmd.getName());
+          }
+        } else if (relationType == Relation.MANY_TO_ONE_BI) {
+          DatastoreTable dt = storeMgr
+                  .getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+          AbstractClassMetaData acmd =
+              storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
+          dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
+        }
+
+        if (needsFKToContainerOwner) {
+          // 1-N uni/bidirectional using FK, so update the element side with a FK
+          if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
+              (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd))) {
+            // 1-N ForeignKey collection/array, so add FK to element table
+            AbstractClassMetaData elementCmd;
+            if (fmd.hasCollection()) {
+              // Collection
+              elementCmd = storeMgr.getMetaDataManager()
+                  .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
+            } else {
+              // Array
+              elementCmd = storeMgr.getMetaDataManager()
+                  .getMetaDataForClass(fmd.getType().getComponentType(), clr);
+            }
+            if (elementCmd == null) {
+              // Elements that are reference types or non-PC will come through here
+            } else {
+              AbstractClassMetaData[] elementCmds;
+              // TODO : Cater for interface elements, and get the metadata for the implementation classes here
+              if (elementCmd.getInheritanceMetaData().getStrategy()
+                  == InheritanceStrategy.SUBCLASS_TABLE) {
+                elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
+              } else {
+                elementCmds = new ClassMetaData[1];
+                elementCmds[0] = elementCmd;
+              }
+
+              // Run callbacks for each of the element classes.
+              for (AbstractClassMetaData elementCmd1 : elementCmds) {
+                callbacks.put(elementCmd1.getFullClassName(),
+                              new CallBack(fmd, cmd.getFullClassName()));
+                DatastoreTable dt =
+                    (DatastoreTable) storeMgr
+                        .getDatastoreClass(elementCmd1.getFullClassName(), clr);
+                dt.runCallBacks();
+                if (fmd.getMappedBy() != null) {
+                  // This element type has a many-to-one pointing back.
+                  // We assume that our pk is part of the pk of the element type.
+                  dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
+                }
+              }
+            }
+          } else if (fmd.getMap() != null && !SCOUtils.mapHasSerialisedKeysAndValues(fmd)) {
+            // 1-N ForeignKey map, so add FK to value table
+            if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
+              // Key is stored in the value table so add the FK to the value table
+              AbstractClassMetaData valueCmd = storeMgr.getMetaDataManager()
+                  .getMetaDataForClass(fmd.getMap().getValueType(), clr);
+              if (valueCmd == null) {
+                // Interface elements will come through here and java.lang.String and others as well
+              }
+            } else if (fmd.getValueMetaData() != null
+                       && fmd.getValueMetaData().getMappedBy() != null) {
+              // Value is stored in the key table so add the FK to the key table
+              AbstractClassMetaData keyCmd = storeMgr.getMetaDataManager()
+                  .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
+              if (keyCmd == null) {
+                // Interface elements will come through here and java.lang.String and others as well
+              } else {
+              }
+            }
+          }
+        }
+      }
     }
   }
 
@@ -758,6 +888,36 @@ public class DatastoreTable implements DatastoreClass {
     initializeIDMapping();
   }
 
+  private void initializeDescriminatorMapping() {
+    initializeDescriminatorMapping(cmd.getDiscriminatorMetaDataForTable());
+  }
+
+  private void initializeDescriminatorMapping(DiscriminatorMetaData dismd) {
+    if (dismd != null) {
+      discriminatorMetaData = dismd;
+      if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
+        discriminatorMapping = new DiscriminatorStringMapping(
+            dba, this, dba.getMappingManager(storeMgr).getMapping(String.class));
+      } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
+        ColumnMetaData disColmd = dismd.getColumnMetaData();
+        if (disColmd != null && disColmd.getJdbcType() != null) {
+          if (disColmd.getJdbcType().equalsIgnoreCase("INTEGER")
+              || disColmd.getJdbcType().equalsIgnoreCase("BIGINT")
+              || disColmd.getJdbcType().equalsIgnoreCase("NUMERIC")) {
+            discriminatorMapping = new DiscriminatorLongMapping(dba, this, dba
+                .getMappingManager(storeMgr).getMapping(Long.class));
+          } else {
+            discriminatorMapping = new DiscriminatorStringMapping(
+                dba, this, dba.getMappingManager(storeMgr).getMapping(String.class));
+          }
+        } else {
+          discriminatorMapping = new DiscriminatorStringMapping(
+              dba, this, dba.getMappingManager(storeMgr).getMapping(String.class));
+        }
+      }
+    }
+  }
+
   /**
    * Initialize the ID Mapping
    */
@@ -930,6 +1090,11 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public void provideDiscriminatorMappings(MappingConsumer consumer) {
+    consumer.preConsumeMapping(highestFieldNumber + 1);
+    if (getDiscriminatorMapping(false) != null) {
+      consumer.consumeMapping(getDiscriminatorMapping(false),
+                              MappingConsumer.MAPPING_TYPE_DISCRIMINATOR);
+    }
   }
 
   public void provideUnmappedDatastoreFields(MappingConsumer consumer) {
@@ -980,11 +1145,11 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public DiscriminatorMetaData getDiscriminatorMetaData() {
-    return null;
+    return discriminatorMetaData;
   }
 
   public JavaTypeMapping getDiscriminatorMapping(boolean allowSuperclasses) {
-    return null;
+    return discriminatorMapping;
   }
 
   public VersionMetaData getVersionMetaData() {

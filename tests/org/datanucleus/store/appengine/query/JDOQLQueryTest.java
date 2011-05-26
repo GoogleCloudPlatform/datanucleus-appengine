@@ -43,6 +43,7 @@ import org.datanucleus.store.appengine.PrimitiveArrays;
 import org.datanucleus.store.appengine.TestUtils;
 import org.datanucleus.store.appengine.Utils;
 import org.datanucleus.store.appengine.WriteBlocker;
+import org.datanucleus.test.AbstractBaseClassesJDO.Base1;
 import org.datanucleus.test.BidirectionalChildListJDO;
 import org.datanucleus.test.BidirectionalChildLongPkListJDO;
 import org.datanucleus.test.BidirectionalGrandchildListJDO;
@@ -73,6 +74,7 @@ import org.datanucleus.test.HasUnencodedStringPkJDO;
 import org.datanucleus.test.KitchenSink;
 import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.Person;
+import org.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTop;
 import org.easymock.EasyMock;
 
 import java.io.ByteArrayOutputStream;
@@ -2829,6 +2831,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testSubclassesNotSupported() {
     JDOQLQuery q = new JDOQLQuery(getObjectManager());
+    q.setClass(Base1.class);
     q.setSubclasses(false);
     try {
       q.setSubclasses(true);
@@ -2836,6 +2839,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (NucleusUserException nue) {
       // good
     }
+    q.setClass(UnidirTop.class);
+    q.setSubclasses(false);
+    q.setSubclasses(true);
   }
 
   public void testQueryTimeout() {

@@ -29,6 +29,8 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.DiscriminatorMetaData;
+import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.StorePersistenceHandler;
@@ -37,6 +39,7 @@ import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.NucleusLogger;
 
@@ -362,6 +365,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
         continue;
       } else {
         handleVersioningBeforeWrite(sm, entity, VersionBehavior.INCREMENT, "updating");
+        handleDiscriminatorBeforeInsert(sm, entity);
       }
       // Add the state for this put to the list.
       putStateList.add(new PutState(sm, fieldMgr, acmd, assignedParentPk, entity));
@@ -444,6 +448,28 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     }
   }
 
+  private void handleDiscriminatorBeforeInsert(StateManager sm, Entity entity) {
+    DatastoreTable table = storeMgr.getDatastoreClass(sm.getClassMetaData().getFullClassName(),
+                                                      sm.getObjectManager().getClassLoaderResolver());
+    if (table.getDiscriminatorMapping(false) != null) {
+      DiscriminatorMetaData dismd = table.getDiscriminatorMetaData();
+      JavaTypeMapping mapping = table.getDiscriminatorMapping(false);
+      String propertyName = mapping.getDataStoreMapping(0)
+          .getDatastoreField().getIdentifier().getIdentifierName();
+      if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
+        entity.setProperty(propertyName, sm.getObject().getClass().getName());
+      } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
+        dismd = sm.getClassMetaData().getInheritanceMetaData().getDiscriminatorMetaData();
+        if (mapping.getDataStoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
+          entity.setProperty(propertyName, Long.parseLong(dismd.getValue()));
+        } else {
+          entity.setProperty(propertyName, dismd.getValue());
+        }
+      }
+    }
+  }
+  
+  
   /**
    * Get the primary key of the object associated with the provided
    * state manager.  Can return {@code null}.
@@ -622,7 +648,7 @@ public class DatastorePersistenceHandler implements StorePersistenceHandler {
     sm.setAssociatedValue("deleted", true);
 
     // first handle any dependent deletes
-    DependentDeleteRequest req = new DependentDeleteRequest(dc, clr);
+    DependentDeleteRequest req = new DependentDeleteRequest(dc, sm.getClassMetaData(), clr);
     req.execute(sm, entity);
 
     // now delete ourselves

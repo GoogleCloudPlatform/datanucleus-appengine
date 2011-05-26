@@ -18,6 +18,7 @@ package org.datanucleus.test;
 import javax.persistence.AttributeOverride;
 import javax.persistence.AttributeOverrides;
 import javax.persistence.Column;
+import javax.persistence.DiscriminatorColumn;
 import javax.persistence.Embeddable;
 import javax.persistence.Embedded;
 import javax.persistence.Entity;
@@ -134,6 +135,7 @@ public class SubclassesJPA {
 
   @Entity
   @Inheritance(strategy = InheritanceType.SINGLE_TABLE)
+  @DiscriminatorColumn(name = "TYPE")
   public static class SingleTable implements Parent {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)

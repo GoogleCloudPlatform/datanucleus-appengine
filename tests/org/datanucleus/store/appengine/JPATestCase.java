@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Query;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.OMFContext;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
@@ -126,11 +127,19 @@ public class JPATestCase extends DatastoreTestCase {
   }
 
   protected void switchDatasource(EntityManagerFactoryName name) {
+    switchDatasource(name, null);
+  }
+
+  protected void switchDatasource(EntityManagerFactoryName name, Map<String, String> props) {
     em.close();
     if (!cacheManagers() && emf.isOpen()) {
       emf.close();
     }
-    emf = Persistence.createEntityManagerFactory(name.name());
+    if (props == null) {
+      emf = Persistence.createEntityManagerFactory(name.name());
+    } else {
+      emf = Persistence.createEntityManagerFactory(name.name(), props);
+    }
     em = emf.createEntityManager();
   }
 
@@ -145,11 +154,13 @@ public class JPATestCase extends DatastoreTestCase {
     OMFContext omfContext = pmf.getOMFContext();
     MetaDataManager mdm = omfContext.getMetaDataManager();
     MappedStoreManager storeMgr = (MappedStoreManager) pmf.getStoreManager();
+    ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
     return EntityUtils.determineKind(
         mdm.getMetaDataForClass(
             clazz,
             omfContext.getClassLoaderResolver(getClass().getClassLoader())),
-        storeMgr.getIdentifierFactory());
+            storeMgr,
+            clr);
   }
 
   protected ObjectManager getObjectManager() {

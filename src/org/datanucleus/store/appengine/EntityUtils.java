@@ -19,16 +19,19 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
+import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
@@ -88,18 +91,17 @@ public final class EntityUtils {
 
   public static String determineKind(AbstractClassMetaData acmd, ObjectManager om) {
     MappedStoreManager storeMgr = (MappedStoreManager) om.getStoreManager();
-    return determineKind(acmd, storeMgr.getIdentifierFactory());
+    return determineKind(acmd, storeMgr, om.getClassLoaderResolver());
   }
 
-  public static String determineKind(AbstractClassMetaData acmd, IdentifierFactory idFactory) {
-    if (acmd.getTable() != null) {
-      // User specified a table name as part of the mapping so use that as the
-      // kind.
-      return acmd.getTable();
+  public static String determineKind(AbstractClassMetaData acmd, MappedStoreManager storeMgr, ClassLoaderResolver clr) {
+    DatastoreClass table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
+    if (table == null) {
+      // We've seen this when there is a class with the superclass inheritance
+      // strategy that does not have a parent
+      throw new NoPersistenceInformationException(acmd.getFullClassName());
     }
-    // No table name provided so use the identifier factory to convert the
-    // class name into the kind.
-    return idFactory.newDatastoreContainerIdentifier(acmd).getIdentifierName();
+    return table.getIdentifier().getIdentifierName();
   }
 
   /**

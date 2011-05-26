@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine;
 
-import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
 
 /**
@@ -28,8 +27,8 @@ class DatastoreKind implements DatastoreIdentifier {
 
   private final String identifier;
 
-  public DatastoreKind(AbstractClassMetaData acmd) {
-    this.identifier = acmd.getFullClassName();
+  public DatastoreKind(String identifier) {
+    this.identifier = identifier;
   }
 
   public String getIdentifierName() {

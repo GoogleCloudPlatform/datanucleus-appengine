@@ -152,7 +152,8 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
 
   // Default is the kind with _Sequence__ appended
   private String deriveSequenceNameFromClassMetaData(AbstractClassMetaData acmd) {
-    return EntityUtils.determineKind(acmd, ((DatastoreManager) storeMgr).getIdentifierFactory()) +
+    ClassLoaderResolver clr = getOMFContext().getClassLoaderResolver(getClass().getClassLoader());
+    return EntityUtils.determineKind(acmd, (DatastoreManager) storeMgr, clr) +
         SEQUENCE_POSTFIX + SEQUENCE_POSTFIX_APPENDAGE.get();
   }
 

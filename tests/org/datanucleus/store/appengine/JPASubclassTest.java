@@ -53,7 +53,6 @@ public class JPASubclassTest extends JPATestCase {
   public void testUnsupportedStrategies_GAE() {
     // Child classes need to go first due to datanuc runtime enhancer weirdness
     assertUnsupportedByGAE(new JoinedChild(), "JOINED");
-    assertUnsupportedByGAE(new SingleTableChild(), "SINGLE_TABLE");
   }
 
   public void testGrandchildren() throws Exception {
@@ -61,14 +60,15 @@ public class JPASubclassTest extends JPATestCase {
   }
 
   public void testChildren() throws Exception {
-    testChild(new TablePerClassChild());
-    testChild(new MappedSuperclassChild());
+    testChild(new TablePerClassChild(), null);
+    testChild(new MappedSuperclassChild(), null);
+    testChild(new SingleTableChild(), SingleTableChild.class.getName());
   }
 
   public void testParents() throws Exception {
-    testParent(new TablePerClass());
-    testParent(new Joined());
-    testParent(new SingleTable());
+    testParent(new TablePerClass(), null);
+    testParent(new Joined(), null);
+    testParent(new SingleTable(), SingleTable.class.getName());
   }
 
   public void testInsertParent_MappedSuperclass() throws EntityNotFoundException {
@@ -391,12 +391,18 @@ public class JPASubclassTest extends JPATestCase {
     commitTxn();
   }
 
-  private void testQueryParent(Class<? extends Parent> parentClass) {
+  private void testQueryParent(Class<? extends Parent> parentClass, String discriminator) {
     Entity e = new Entity(kindForClass(parentClass));
+    if (discriminator != null) {
+      e.setProperty("TYPE", discriminator);
+    }
     e.setProperty("aString", "z8");
     ds.put(e);
 
     e = new Entity(kindForClass(parentClass));
+    if (discriminator != null) {
+      e.setProperty("TYPE", discriminator);
+    }
     e.setProperty("aString", "z9");
     ds.put(e);
 
@@ -422,18 +428,27 @@ public class JPASubclassTest extends JPATestCase {
 
   }
 
-  private void testQueryChild(Class<? extends Child> childClass) {
+  private void testQueryChild(Class<? extends Child> childClass, String discriminator) {
     Entity e1 = new Entity(kindForClass(childClass));
+    if (discriminator != null) {
+      e1.setProperty("TYPE", discriminator);
+    }
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b2");
     ds.put(e1);
 
     Entity e2 = new Entity(kindForClass(childClass));
+    if (discriminator != null) {
+      e2.setProperty("TYPE", discriminator);
+    }
     e2.setProperty("aString", "a2");
     e2.setProperty("bString", "b3");
     ds.put(e2);
 
     Entity e3 = new Entity(kindForClass(childClass));
+    if (discriminator != null) {
+      e3.setProperty("TYPE", discriminator);
+    }
     e3.setProperty("aString", "a2");
     e3.setProperty("bString", "b3");
     ds.put(e3);
@@ -668,19 +683,19 @@ public class JPASubclassTest extends JPATestCase {
     testQueryGrandchild(grandchild.getClass());
   }
 
-  private void testChild(Child child) throws Exception {
+  private void testChild(Child child, String discriminator) throws Exception {
     testInsertChild(child);
     testUpdateChild(child.getClass());
     testDeleteChild(child.getClass());
     testFetchChild(child.getClass());
-    testQueryChild(child.getClass());
+    testQueryChild(child.getClass(), discriminator);
   }
 
-  private void testParent(Parent parent) throws Exception {
+  private void testParent(Parent parent, String discriminator) throws Exception {
     testInsertParent(parent);
     testUpdateParent(parent.getClass());
     testDeleteParent(parent.getClass());
     testFetchParent(parent.getClass());
-    testQueryParent(parent.getClass());
+    testQueryParent(parent.getClass(), discriminator);
   }
 }

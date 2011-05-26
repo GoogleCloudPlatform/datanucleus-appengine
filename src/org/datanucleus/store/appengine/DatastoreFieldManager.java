@@ -158,7 +158,7 @@ public class DatastoreFieldManager implements FieldManager {
     this.operation = operation;
 
     // Sanity check
-    String expectedKind = EntityUtils.determineKind(getClassMetaData(), getIdentifierFactory());
+    String expectedKind = EntityUtils.determineKind(getClassMetaData(), sm.getObjectManager());
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()

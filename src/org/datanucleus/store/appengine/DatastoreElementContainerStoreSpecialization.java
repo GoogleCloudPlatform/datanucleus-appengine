@@ -77,8 +77,8 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
       Iterable<SortPredicate> sortPredicates,
       boolean keysOnly,
       ElementContainerStore ecs) {
-    String kind = storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(
-        ecs.getEmd()).getIdentifierName();
+    String kind = ecs.getContainerTable()
+    	.getIdentifier().getIdentifierName();
     Query q = new Query(kind, parentKey);
     if (keysOnly) {
       q.setKeysOnly();

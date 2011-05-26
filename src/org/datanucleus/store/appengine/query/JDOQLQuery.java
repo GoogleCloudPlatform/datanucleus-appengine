@@ -15,8 +15,11 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.store.appengine.query;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.store.appengine.DatastoreManager;
 import org.datanucleus.store.appengine.FatalNucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 import org.datanucleus.store.query.QueryTimeoutException;
@@ -109,11 +112,21 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
 
   @Override
   public void setSubclasses(boolean subclasses) {
-    // We don't support queries that also return subclasses
-    if (subclasses) {
+    // We support only queries that also return subclasses
+    // if all subclasses belong to the same kind.
+    
+    if (subclasses && !allowSubClasses()) {
       throw new FatalNucleusUserException(
-          "The App Engine datastore does not support queries that return subclass entities.");
+          "The App Engine datastore only supports queries that return subclass entities with the " +
+          "superclass-table interitance mapping strategy.");
     }
     super.setSubclasses(subclasses);
+  }
+  
+  private boolean allowSubClasses() {
+    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
+    ClassLoaderResolver clr = om.getClassLoaderResolver();
+    AbstractClassMetaData acmd = storeMgr.getMetaDataManager().getMetaDataForClass(getCandidateClass(), clr);
+    return DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd);
   }
 }
