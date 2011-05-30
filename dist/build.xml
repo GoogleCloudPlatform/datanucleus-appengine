@@ -3,7 +3,7 @@
 
   <property name="version.major" value="1"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="8"/>
+  <property name="version.point" value="9"/>
   <property name="version.rc" value=".final"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
@@ -40,7 +40,7 @@
     <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-testing.jar"/>
-    <pathelement location="${orm.lib.dir}/cloudcover-1.0.0.final.jar"/>
+    <pathelement location="${orm.lib.dir}/cloudcover-1.0.2.final.jar"/>
     <pathelement location="${orm.lib.dir}/junit.jar"/>
     <pathelement location="${orm.lib.dir}/easymock.jar"/>
     <pathelement location="${shadowcompile.dest.dir}"/>

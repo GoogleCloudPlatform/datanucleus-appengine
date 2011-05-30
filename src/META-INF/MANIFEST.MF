@@ -1,10 +1,10 @@
 Manifest-Version: 1.0
 Ant-Version: Apache Ant 1.8.2
-Created-By: 1.5.0_28-b04-382-9M3326 (Apple Inc.)
+Created-By: 1.6.0_24-b07-334-9M3326 (Apple Inc.)
 Bundle-ManifestVersion: 2
 Bundle-Name: DataNucleus AppEngine
 Bundle-SymbolicName: org.datanucleus.store.appengine;singleton:=true
-Bundle-Version: 1.0.8.final
+Bundle-Version: 1.0.9.final
 Bundle-Vendor: Google
 Require-Bundle: org.datanucleus;bundle-version="[1.0.4, 1.1.5.final)"
 Import-Package: javax.jdo, javax.jdo.annotations, javax.jdo.datastore,

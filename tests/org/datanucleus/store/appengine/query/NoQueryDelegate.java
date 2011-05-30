@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 import com.google.apphosting.api.ApiProxy;
 
+import java.util.List;
 import java.util.concurrent.Future;
 
 /**
@@ -53,6 +54,14 @@ public class NoQueryDelegate implements ApiProxy.Delegate {
     original = CloudCoverLocalServiceTestHelper.getDelegate();
     CloudCoverLocalServiceTestHelper.setDelegate(this);
     return this;
+  }
+
+  public void flushLogs(ApiProxy.Environment environment) {
+    original.flushLogs(environment);
+  }
+
+  public List<Thread> getRequestThreads(ApiProxy.Environment environment) {
+    return original.getRequestThreads(environment);
   }
 
   public void uninstall() {

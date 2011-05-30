@@ -19,6 +19,7 @@ package org.datanucleus.store.appengine;
 
 import com.google.apphosting.api.ApiProxy;
 
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.Future;
 
@@ -48,6 +49,14 @@ public class ExceptionThrowingDatastoreDelegate implements ApiProxy.Delegate {
 
   public void log(ApiProxy.Environment environment, ApiProxy.LogRecord logRecord) {
     inner.log(environment, logRecord);
+  }
+
+  public void flushLogs(ApiProxy.Environment environment) {
+    inner.flushLogs(environment);
+  }
+
+  public List<Thread> getRequestThreads(ApiProxy.Environment environment) {
+    return inner.getRequestThreads(environment);
   }
 
   public interface ExceptionPolicy {
