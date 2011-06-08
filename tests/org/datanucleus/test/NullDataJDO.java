@@ -15,14 +15,9 @@ limitations under the License.
 **********************************************************************/
 package org.datanucleus.test;
 
+import javax.jdo.annotations.*;
 import java.util.List;
 import java.util.Set;
-
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.IdentityType;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -41,6 +36,10 @@ public class NullDataJDO {
   private List<String> list;
 
   private Set<String> set;
+
+  private List<Integer> integerList;
+
+  private Set<Integer> integerSet;
 
   public Long getId() {
     return id;
@@ -76,5 +75,21 @@ public class NullDataJDO {
 
   public void setSet(Set<String> set) {
     this.set = set;
+  }
+
+  public List<Integer> getIntegerList() {
+    return integerList;
+  }
+
+  public void setIntegerList(List<Integer> integerList) {
+    this.integerList = integerList;
+  }
+
+  public Set<Integer> getIntegerSet() {
+    return integerSet;
+  }
+
+  public void setIntegerSet(Set<Integer> integerSet) {
+    this.integerSet = integerSet;
   }
 }

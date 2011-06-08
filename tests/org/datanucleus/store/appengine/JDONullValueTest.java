@@ -18,7 +18,6 @@ package org.datanucleus.store.appengine;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-
 import org.datanucleus.test.NullDataJDO;
 import org.datanucleus.test.NullDataWithDefaultValuesJDO;
 
@@ -39,6 +38,9 @@ public class JDONullValueTest extends JDOTestCase {
     assertEquals(0, pojo.getArray().length);
     assertNotNull(pojo.getList());
     assertTrue(pojo.getList().isEmpty());
+    assertTrue(pojo.getSet().isEmpty());
+    assertTrue(pojo.getIntegerList().isEmpty());
+    assertTrue(pojo.getIntegerSet().isEmpty());
     assertNull(pojo.getString());
     commitTxn();
   }
@@ -64,18 +66,37 @@ public class JDONullValueTest extends JDOTestCase {
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
     assertNotNull(pojo.getList());
+    assertNotNull(pojo.getSet());
+    assertNotNull(pojo.getIntegerList());
+    assertNotNull(pojo.getIntegerSet());
     assertTrue(pojo.getList().isEmpty());
+    assertTrue(pojo.getSet().isEmpty());
+    assertTrue(pojo.getIntegerList().isEmpty());
+    assertTrue(pojo.getIntegerSet().isEmpty());
   }
 
   public void testFetchMultiValuePropWithOneNullEntry() {
     Entity e = new Entity(NullDataJDO.class.getSimpleName());
     e.setProperty("list", Utils.newArrayList((String) null));
+    e.setProperty("set", Utils.newArrayList((String) null));
+    e.setProperty("integerList", Utils.newArrayList((Integer) null));
+    e.setProperty("integerSet", Utils.newArrayList((Integer) null));
     ds.put(e);
     beginTxn();
     NullDataJDO pojo = pm.getObjectById(NullDataJDO.class, e.getKey());
     assertNotNull(pojo.getList());
     assertEquals(1, pojo.getList().size());
     assertNull(pojo.getList().get(0));
+    assertNotNull(pojo.getSet());
+    assertEquals(1, pojo.getSet().size());
+    assertNull(pojo.getSet().iterator().next());
+
+    assertNotNull(pojo.getIntegerList());
+    assertEquals(1, pojo.getIntegerList().size());
+    assertNull(pojo.getIntegerList().get(0));
+    assertNotNull(pojo.getIntegerSet());
+    assertEquals(1, pojo.getIntegerSet().size());
+    assertNull(pojo.getIntegerSet().iterator().next());
   }
 
   public void testInsertNullData() throws EntityNotFoundException {
@@ -85,7 +106,7 @@ public class JDONullValueTest extends JDOTestCase {
     commitTxn();
     Entity e = ds.get(KeyFactory.createKey(NullDataJDO.class.getSimpleName(), pojo.getId()));
     Set<String> props = e.getProperties().keySet();
-    assertEquals(Utils.newHashSet("string", "array", "list", "set"), props);
+    assertEquals(Utils.newHashSet("string", "array", "list", "set", "integerList", "integerSet"), props);
     for (Object val : e.getProperties().values()) {
       assertNull(val);
     }
@@ -96,6 +117,15 @@ public class JDONullValueTest extends JDOTestCase {
     List<String> list = Utils.newArrayList();
     list.add(null);
     pojo.setList(list);
+    Set<String> set = Utils.newHashSet();
+    set.add(null);
+    pojo.setSet(set);
+    List<Integer> integerList = Utils.newArrayList();
+    integerList.add(null);
+    pojo.setIntegerList(integerList);
+    Set<Integer> integerSet = Utils.newHashSet();
+    integerSet.add(null);
+    pojo.setIntegerSet(integerSet);
     pojo.setArray(new String[] {null});
     beginTxn();
     pm.makePersistent(pojo);

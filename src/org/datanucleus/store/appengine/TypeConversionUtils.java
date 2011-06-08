@@ -16,7 +16,6 @@ limitations under the License.
 package org.datanucleus.store.appengine;
 
 import com.google.appengine.api.datastore.ShortBlob;
-
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusException;
@@ -27,18 +26,10 @@ import org.datanucleus.metadata.ContainerMetaData;
 import org.datanucleus.sco.SCOUtils;
 import org.datanucleus.store.appengine.Utils.Function;
 
+import javax.persistence.Entity;
 import java.lang.reflect.Array;
 import java.math.BigDecimal;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.SortedSet;
-
-import javax.persistence.Entity;
+import java.util.*;
 
 /**
  * Utility methods for converting between datastore types and pojo types.
@@ -53,7 +44,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> LONG_TO_INTEGER = new Function<Object, Object>() {
     public Integer apply(Object in) {
-      return ((Long) in).intValue();
+      return null==in ? null : ((Long) in).intValue() ;
     }
   };
 
@@ -62,7 +53,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> LONG_TO_SHORT = new Function<Object, Object>() {
     public Short apply(Object in) {
-      return ((Long) in).shortValue();
+      return null==in ? null : ((Long) in).shortValue() ;
     }
   };
 
@@ -71,7 +62,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> LONG_TO_BYTE = new Function<Object, Object>() {
     public Byte apply(Object in) {
-      return ((Long) in).byteValue();
+      return null==in ? null : ((Long) in).byteValue() ;
     }
   };
 
@@ -89,7 +80,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> DOUBLE_TO_FLOAT = new Function<Object, Object>() {
     public Float apply(Object in) {
-      return ((Double) in).floatValue();
+      return null==in ? null : ((Double) in).floatValue() ;
     }
   };
 
@@ -99,7 +90,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> DOUBLE_TO_BIG_DECIMAL = new Function<Object, Object>() {
     public BigDecimal apply(Object in) {
-      return new BigDecimal((Double) in);
+      return null==in ? null : new BigDecimal((Double) in);
     }
   };
 
@@ -108,7 +99,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> INTEGER_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
-      return ((Integer) in).longValue();
+      return null==in ? null : ((Integer) in).longValue() ;
     }
   };
 
@@ -117,7 +108,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> SHORT_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
-      return ((Short) in).longValue();
+      return null==in ? null : ((Short) in).longValue() ;
     }
   };
 
@@ -126,7 +117,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> CHARACTER_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object character) {
-      return Long.valueOf((Character) character);
+      return null==character ? null : Long.valueOf((Character) character);
     }
   };
 
@@ -135,7 +126,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> BYTE_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
-      return ((Byte) in).longValue();
+      return null==in ? null : ((Byte) in).longValue() ;
     }
   };
 
@@ -144,7 +135,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> FLOAT_TO_DOUBLE = new Function<Object, Object>() {
     public Double apply(Object in) {
-      return ((Float) in).doubleValue();
+      return null==in ? null : ((Float) in).doubleValue() ;
     }
   };
 
@@ -153,7 +144,7 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> BIG_DECIMAL_TO_DOUBLE = new Function<Object, Object>() {
     public Double apply(Object in) {
-      return ((BigDecimal) in).doubleValue();
+      return null==in ? null : ((BigDecimal) in).doubleValue() ;
     }
   };
 
