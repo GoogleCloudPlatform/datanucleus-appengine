@@ -15,23 +15,18 @@
  */
 package org.datanucleus.store.appengine;
 
-import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
+//import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
+
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
+import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.google.apphosting.api.ApiProxy;
-
 import junit.framework.TestCase;
-
 import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManagerFactory;
 import org.datanucleus.store.appengine.jpa.DatastoreEntityManagerFactory;
 
-import java.lang.reflect.Field;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import javax.jdo.spi.JDOImplHelper;
+import java.lang.reflect.Field;
+import java.util.*;
 
 /**
  * Base class for all tests that access the datastore.
@@ -40,8 +35,11 @@ import javax.jdo.spi.JDOImplHelper;
  */
 public class DatastoreTestCase extends TestCase {
 
-  private final CloudCoverLocalServiceTestHelper helper = new CloudCoverLocalServiceTestHelper(
+  private final LocalServiceTestHelper helper = new LocalServiceTestHelper(
       new LocalDatastoreServiceTestConfig());
+    // TODO(maxr): Put this back once we have a maven project for cloudcover
+//  private final CloudCoverLocalServiceTestHelper helper = new CloudCoverLocalServiceTestHelper(
+//      new LocalDatastoreServiceTestConfig());
 
   @Override
   protected void setUp() throws Exception {
@@ -79,11 +77,13 @@ public class DatastoreTestCase extends TestCase {
   }
 
   protected void setDelegateForThread(ApiProxy.Delegate delegate) {
-    CloudCoverLocalServiceTestHelper.setDelegate(delegate);
+    ApiProxy.setDelegate(delegate);
+//    CloudCoverLocalServiceTestHelper.setDelegate(delegate);
   }
 
   protected ApiProxy.Delegate getDelegateForThread() {
-    return CloudCoverLocalServiceTestHelper.getDelegate();
+    return ApiProxy.getDelegate();
+//    return CloudCoverLocalServiceTestHelper.getDelegate();
   }
 
   /**

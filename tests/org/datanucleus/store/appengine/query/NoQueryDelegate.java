@@ -16,7 +16,6 @@
 package org.datanucleus.store.appengine.query;
 
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
-import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 import com.google.apphosting.api.ApiProxy;
 
 import java.util.List;
@@ -51,8 +50,10 @@ public class NoQueryDelegate implements ApiProxy.Delegate {
   }
 
   public NoQueryDelegate install() {
-    original = CloudCoverLocalServiceTestHelper.getDelegate();
-    CloudCoverLocalServiceTestHelper.setDelegate(this);
+    original = ApiProxy.getDelegate();
+    ApiProxy.setDelegate(this);
+//    original = CloudCoverLocalServiceTestHelper.getDelegate();
+//    CloudCoverLocalServiceTestHelper.setDelegate(this);
     return this;
   }
 
@@ -65,7 +66,8 @@ public class NoQueryDelegate implements ApiProxy.Delegate {
   }
 
   public void uninstall() {
-    CloudCoverLocalServiceTestHelper.setDelegate(original);
+    ApiProxy.setDelegate(original);
+//    CloudCoverLocalServiceTestHelper.setDelegate(original);
   }
 }
 

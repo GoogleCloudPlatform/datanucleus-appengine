@@ -40,7 +40,7 @@
     <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-testing.jar"/>
-    <pathelement location="${orm.lib.dir}/cloudcover-1.0.2.final.jar"/>
+    <!--<pathelement location="${orm.lib.dir}/cloudcover-1.0.2.final.jar"/>-->
     <pathelement location="${orm.lib.dir}/junit.jar"/>
     <pathelement location="${orm.lib.dir}/easymock.jar"/>
     <pathelement location="${shadowcompile.dest.dir}"/>
