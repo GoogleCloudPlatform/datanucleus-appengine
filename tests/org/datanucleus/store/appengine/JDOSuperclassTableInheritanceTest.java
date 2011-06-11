@@ -19,33 +19,13 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
-
 import junit.framework.Assert;
-
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Child11;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Child11Many;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Child12;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Child21;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Child22;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.ChildBoolIntDiscriminator;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.ChildDateIntDiscriminator;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.ChildToParentWithoutDiscriminator;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Embedded1;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Embedded2;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.Parent;
-import org.datanucleus.test.SuperclassTableInheritanceJDO.ParentIntDiscriminator;
-
-import java.util.Arrays;
-import java.util.Date;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import org.datanucleus.test.SuperclassTableInheritanceJDO.*;
 
 import javax.jdo.Extent;
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
+import java.util.*;
 
 public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   private final static String PARENT_KIND = "SuperclassTableInheritanceJDO$Parent";
@@ -466,8 +446,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
 
     Child12 c12 = newChild12(startEnd, "A", 211, 112, 8.15f, null);
     Long c12Id = c12.getId();
-    System.out.println(ds.get(KeyFactory.createKey(PARENT_KIND, c12Id)));
-    
+
     Parent p = newParent(startEnd, "A");
     Long pId = p.getId();
 
