@@ -13,31 +13,31 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************-->
-<plugin id="org.datanucleus.store.appengine" name="DataNucleus App Engine" provider-name="DataNucleus">
+<plugin id="com.google.appengine.datanucleus" name="DataNucleus App Engine" provider-name="Google">
     <!-- STORE MANAGER -->
     <extension point="org.datanucleus.store_manager">
-        <store-manager class-name="org.datanucleus.store.appengine.DatastoreManager" key="appengine" url-key="appengine"/>
+        <store-manager class-name="com.google.appengine.datanucleus.DatastoreManager" key="appengine" url-key="appengine"/>
     </extension>
 
     <!-- QUERY LANGUAGES -->
     <extension point="org.datanucleus.store_query_query">
-        <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="javax.jdo.query.JDOQL"/>
-        <query class-name="org.datanucleus.store.appengine.query.JDOQLQuery" datastore="appengine" name="JDOQL"/>
-        <query class-name="org.datanucleus.store.appengine.query.JPQLQuery" datastore="appengine" name="javax.jdo.query.JPQL"/>
-        <query class-name="org.datanucleus.store.appengine.query.JPQLQuery" datastore="appengine" name="JPQL"/>
+        <query class-name="com.google.appengine.datanucleus.query.JDOQLQuery" datastore="appengine" name="javax.jdo.query.JDOQL"/>
+        <query class-name="com.google.appengine.datanucleus.query.JDOQLQuery" datastore="appengine" name="JDOQL"/>
+        <query class-name="com.google.appengine.datanucleus.query.JPQLQuery" datastore="appengine" name="javax.jdo.query.JPQL"/>
+        <query class-name="com.google.appengine.datanucleus.query.JPQLQuery" datastore="appengine" name="JPQL"/>
     </extension>
 
     <!-- CONNECTION FACTORY -->
     <extension point="org.datanucleus.store_connectionfactory">
-        <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="true"
+        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" transactional="true"
             datastore="appengine"/>
     </extension>
     <extension point="org.datanucleus.store_connectionfactory">
-        <connectionfactory name="appengine" class-name="org.datanucleus.store.appengine.DatastoreConnectionFactoryImpl" transactional="false"
+        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" transactional="false"
             datastore="appengine"/>
     </extension>
     <extension point="org.datanucleus.store_valuegenerator">
-        <valuegenerator name="sequence" class-name="org.datanucleus.store.appengine.valuegenerator.SequenceGenerator" datastore="appengine"/>
+        <valuegenerator name="sequence" class-name="com.google.appengine.datanucleus.valuegenerator.SequenceGenerator" datastore="appengine"/>
     </extension>
 
     <!--
