@@ -13,13 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.jpa;
+package com.google.appengine.datanucleus.appengine.jpa;
 
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jpa.EntityManagerImpl;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.EntityUtils;
-import org.datanucleus.store.appengine.jdo.DatastoreJDOPersistenceManager;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.EntityUtils;
+import com.google.appengine.datanucleus.appengine.jdo.DatastoreJDOPersistenceManager;
 
 import javax.jdo.PersistenceManagerFactory;
 import javax.persistence.EntityManagerFactory;

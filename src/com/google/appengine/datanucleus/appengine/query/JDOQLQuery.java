@@ -13,14 +13,14 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.FatalNucleusUserException;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.FatalNucleusUserException;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 import org.datanucleus.store.query.QueryTimeoutException;
 

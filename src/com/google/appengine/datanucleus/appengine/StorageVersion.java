@@ -1,4 +1,4 @@
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import org.datanucleus.PersistenceConfiguration;
 

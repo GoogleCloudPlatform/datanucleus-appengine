@@ -13,12 +13,12 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
 
-import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.Utils.Function;
+import com.google.appengine.datanucleus.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.Utils.Function;
 
 import java.util.ArrayList;
 import java.util.Iterator;

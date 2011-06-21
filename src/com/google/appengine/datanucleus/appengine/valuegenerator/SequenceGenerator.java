@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.valuegenerator;
+package com.google.appengine.datanucleus.appengine.valuegenerator;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
@@ -26,11 +26,11 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
-import org.datanucleus.store.appengine.EntityUtils;
-import org.datanucleus.store.appengine.FatalNucleusUserException;
-import org.datanucleus.store.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.appengine.EntityUtils;
+import com.google.appengine.datanucleus.appengine.FatalNucleusUserException;
+import com.google.appengine.datanucleus.appengine.Utils;
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
 import org.datanucleus.store.valuegenerator.ValueGenerationBlock;
 

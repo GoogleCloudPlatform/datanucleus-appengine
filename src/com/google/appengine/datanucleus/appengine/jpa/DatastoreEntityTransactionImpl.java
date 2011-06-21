@@ -13,15 +13,15 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.store.appengine.jpa;
+package com.google.appengine.datanucleus.appengine.jpa;
 
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ObjectManager;
 import org.datanucleus.jpa.EntityTransactionImpl;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.util.NucleusLogger;
 
 /**

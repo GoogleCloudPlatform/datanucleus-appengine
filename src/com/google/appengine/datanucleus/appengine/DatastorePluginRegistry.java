@@ -13,15 +13,15 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import org.datanucleus.plugin.Bundle;
 import org.datanucleus.plugin.ConfigurationElement;
 import org.datanucleus.plugin.Extension;
 import org.datanucleus.plugin.ExtensionPoint;
 import org.datanucleus.plugin.PluginRegistry;
-import org.datanucleus.store.appengine.jdo.DatastoreJDOMetaDataManager;
-import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
+import com.google.appengine.datanucleus.appengine.jdo.DatastoreJDOMetaDataManager;
+import com.google.appengine.datanucleus.appengine.jpa.DatastoreJPACallbackHandler;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;

@@ -13,14 +13,14 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.store.appengine.jdo;
+package com.google.appengine.datanucleus.appengine.jdo;
 
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.jdo.JDOTransaction;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastoreServiceFactoryInternal;
 import org.datanucleus.util.NucleusLogger;
 
 import javax.jdo.PersistenceManager;

@@ -13,9 +13,9 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
-import org.datanucleus.store.appengine.Utils.Function;
+import com.google.appengine.datanucleus.appengine.Utils.Function;
 
 import java.util.Collection;
 import java.util.HashMap;

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.DatastoreService;
@@ -60,18 +60,18 @@ import org.datanucleus.query.expression.VariableExpression;
 import org.datanucleus.query.symbol.Symbol;
 import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.appengine.DatastoreExceptionTranslator;
-import org.datanucleus.store.appengine.DatastoreFieldManager;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastorePersistenceHandler;
-import org.datanucleus.store.appengine.DatastoreServiceFactoryInternal;
-import org.datanucleus.store.appengine.DatastoreTable;
-import org.datanucleus.store.appengine.DatastoreTransaction;
-import org.datanucleus.store.appengine.EntityUtils;
-import org.datanucleus.store.appengine.FatalNucleusUserException;
-import org.datanucleus.store.appengine.PrimitiveArrays;
-import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.Utils.Function;
+import com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator;
+import com.google.appengine.datanucleus.appengine.DatastoreFieldManager;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastorePersistenceHandler;
+import com.google.appengine.datanucleus.appengine.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.appengine.DatastoreTable;
+import com.google.appengine.datanucleus.appengine.DatastoreTransaction;
+import com.google.appengine.datanucleus.appengine.EntityUtils;
+import com.google.appengine.datanucleus.appengine.FatalNucleusUserException;
+import com.google.appengine.datanucleus.appengine.PrimitiveArrays;
+import com.google.appengine.datanucleus.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
@@ -31,7 +31,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.appengine.query.DatastoreQuery;
+import com.google.appengine.datanucleus.appengine.query.DatastoreQuery;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;

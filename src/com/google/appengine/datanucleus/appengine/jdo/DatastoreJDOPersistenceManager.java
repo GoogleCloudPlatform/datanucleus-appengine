@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.jdo;
+package com.google.appengine.datanucleus.appengine.jdo;
 
 import com.google.appengine.api.datastore.Key;
 
@@ -21,12 +21,12 @@ import org.datanucleus.Transaction;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.jdo.JDOPersistenceManager;
 import org.datanucleus.jdo.JDOPersistenceManagerFactory;
-import org.datanucleus.store.appengine.BatchDeleteManager;
-import org.datanucleus.store.appengine.BatchManager;
-import org.datanucleus.store.appengine.BatchPutManager;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastorePersistenceHandler;
-import org.datanucleus.store.appengine.EntityUtils;
+import com.google.appengine.datanucleus.appengine.BatchDeleteManager;
+import com.google.appengine.datanucleus.appengine.BatchManager;
+import com.google.appengine.datanucleus.appengine.BatchPutManager;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastorePersistenceHandler;
+import com.google.appengine.datanucleus.appengine.EntityUtils;
 
 import java.util.Collection;
 

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
@@ -35,7 +35,7 @@ import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.state.StateManagerFactory;
-import org.datanucleus.store.appengine.jpa.DatastoreJPACallbackHandler;
+import com.google.appengine.datanucleus.appengine.jpa.DatastoreJPACallbackHandler;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;

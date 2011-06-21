@@ -13,11 +13,11 @@
  See the License for the specific language governing permissions and
  limitations under the License.
  **********************************************************************/
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
 
-import org.datanucleus.store.appengine.Utils.Supplier;
+import com.google.appengine.datanucleus.appengine.Utils.Supplier;
 
 import java.util.Iterator;
 

@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.store.appengine.jdo;
+package com.google.appengine.datanucleus.appengine.jdo;
 
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.datastore.Blob;
@@ -39,7 +39,7 @@ import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.MetaDataManager;
-import org.datanucleus.store.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.Utils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;

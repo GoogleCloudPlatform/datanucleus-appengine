@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import com.google.appengine.api.datastore.DatastoreAttributes;
 import com.google.appengine.api.datastore.DatastoreFailureException;
@@ -31,9 +31,9 @@ import java.util.ConcurrentModificationException;
 import java.util.List;
 import java.util.Map;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapConcurrentModificationException;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 /**
  * {@link DatastoreService} implementation that catches runtime exceptions

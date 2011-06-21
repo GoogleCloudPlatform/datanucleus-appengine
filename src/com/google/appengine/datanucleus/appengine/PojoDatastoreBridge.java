@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
@@ -22,7 +22,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ManagedConnection;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.store.appengine.query.DatastoreQuery;
+import com.google.appengine.datanucleus.appengine.query.DatastoreQuery;
 import org.datanucleus.store.query.AbstractJavaQuery;
 
 import java.util.List;

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import com.google.appengine.api.datastore.Entity;
 
@@ -21,9 +21,9 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ObjectManager;
 import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.store.appengine.DatastoreManager;
-import org.datanucleus.store.appengine.DatastoreTable;
-import org.datanucleus.store.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.DatastoreManager;
+import com.google.appengine.datanucleus.appengine.DatastoreTable;
+import com.google.appengine.datanucleus.appengine.Utils;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 

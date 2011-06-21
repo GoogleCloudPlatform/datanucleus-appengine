@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package org.datanucleus.store.appengine.query;
+package com.google.appengine.datanucleus.appengine.query;
 
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
@@ -21,15 +21,15 @@ import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.jdo.NucleusJDOHelper;
 import org.datanucleus.jpa.NucleusJPAHelper;
-import org.datanucleus.store.appengine.Utils;
-import org.datanucleus.store.appengine.Utils.Supplier;
+import com.google.appengine.datanucleus.appengine.Utils;
+import com.google.appengine.datanucleus.appengine.Utils.Supplier;
 import org.datanucleus.store.query.QueryTimeoutException;
 
 import javax.jdo.JDOException;
 
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
-import static org.datanucleus.store.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapDatastoreFailureException;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
+import static com.google.appengine.datanucleus.appengine.DatastoreExceptionTranslator.wrapIllegalArgumentException;
 
 /**
  * Helper methods that wrap the execution of the provided {@link Utils.Supplier}

@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package org.datanucleus.store.appengine;
+package com.google.appengine.datanucleus.appengine;
 
 import com.google.appengine.api.datastore.ShortBlob;
 import org.datanucleus.ClassLoaderResolver;
@@ -24,7 +24,7 @@ import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ContainerMetaData;
 import org.datanucleus.sco.SCOUtils;
-import org.datanucleus.store.appengine.Utils.Function;
+import com.google.appengine.datanucleus.appengine.Utils.Function;
 
 import javax.persistence.Entity;
 import java.lang.reflect.Array;
