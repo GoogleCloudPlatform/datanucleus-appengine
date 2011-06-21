@@ -30,5 +30,5 @@
 	<classpathentry kind="lib" path="lib/repackaged-appengine-jasper-compiler-5.0.28.jar"/>
 	<classpathentry kind="lib" path="lib/repackaged-appengine-jasper-runtime-5.0.28.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
-	<classpathentry kind="output" path="target/test-classes"/>
+	<classpathentry kind="output" path="bin"/>
 </classpath>
