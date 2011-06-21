@@ -1,1 +1,1 @@
-org.datanucleus.store.appengine.jpa.DatastorePersistenceProvider
+com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider
