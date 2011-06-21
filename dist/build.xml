@@ -1,10 +1,10 @@
 <?xml version="1.0" encoding="ISO-8859-1"?>
 <project name="gae" default="testdist">
 
-  <property name="version.major" value="1"/>
+  <property name="version.major" value="2"/>
   <property name="version.minor" value="0"/>
-  <property name="version.point" value="9"/>
-  <property name="version.rc" value=".final"/>
+  <property name="version.point" value="0"/>
+  <property name="version.rc" value=".beta"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="orm.source.zip" value="datanucleus-appengine-${version}-src.zip"/>
   <property name="orm.jar" value="datanucleus-appengine-${version}.jar"/>
@@ -198,7 +198,7 @@
         <attribute name="Manifest-Version" value="1.0"/>
         <attribute name="Bundle-ManifestVersion" value="2"/>
         <attribute name="Bundle-Name" value="DataNucleus AppEngine"/>
-        <attribute name="Bundle-SymbolicName" value="org.datanucleus.store.appengine;singleton:=true"/>
+        <attribute name="Bundle-SymbolicName" value="com.google.appengine.datanucleus;singleton:=true"/>
         <attribute name="Bundle-Version" value="${version}"/>
         <attribute name="Bundle-Vendor" value="Google"/>
         <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.0.4, 1.1.5.final)&quot;"/>

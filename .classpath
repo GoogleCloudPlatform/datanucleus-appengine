@@ -23,13 +23,12 @@
 	<classpathentry kind="lib" path="lib/geronimo-jsp_2.1_spec-1.0.1.jar"/>
 	<classpathentry kind="lib" path="lib/geronimo-jta_1.1_spec-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/geronimo-servlet_2.5_spec-1.2.jar"/>
-	<classpathentry kind="lib" path="lib/jdo2-api-2.3-eb.jar"/>
+	<classpathentry kind="lib" path="lib/jdo2-api-2.3-eb.jar" sourcepath="/usr/local/maven2-repository/javax/jdo/jdo2-api/2.3-eb/jdo2-api-2.3-eb-sources.jar"/>
 	<classpathentry kind="lib" path="lib/junit.jar"/>
 	<classpathentry kind="lib" path="lib/log4j-1.2.9.jar"/>
 	<classpathentry kind="lib" path="lib/repackaged-appengine-commons-logging-1.1.1.jar"/>
 	<classpathentry kind="lib" path="lib/repackaged-appengine-jasper-compiler-5.0.28.jar"/>
 	<classpathentry kind="lib" path="lib/repackaged-appengine-jasper-runtime-5.0.28.jar"/>
-	<classpathentry kind="lib" path="target/datanucleus-appengine-1.0.10-SNAPSHOT.jar"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="output" path="target/test-classes"/>
 </classpath>
