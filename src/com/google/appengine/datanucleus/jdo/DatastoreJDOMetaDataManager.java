@@ -31,14 +31,15 @@ import com.google.appengine.api.datastore.Text;
 import com.google.appengine.api.users.User;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.OMFContext;
-import org.datanucleus.jdo.metadata.JDOMetaDataManager;
+import org.datanucleus.NucleusContext;
+import org.datanucleus.api.jdo.metadata.JDOMetaDataManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.datanucleus.Utils;
 
@@ -73,6 +74,11 @@ import javax.jdo.spi.PersistenceCapable;
  * want.  This is pretty fragile but for now it does the job nicely.
  *
  * @author Max Ross <max.ross@gmail.com>
+ * 
+ * TODO Remove this nonsense. The JDO dfg is defined in specifications. The store plugin is the
+ * place to load additional fields as required by the datastore. Besides which this process
+ * is not being applied for JPA (which also has a "dfg"), and it is not being applied
+ * to the enhancement process either.
  */
 public class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
 
@@ -120,21 +126,21 @@ public class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
   );
 
   /**
-   * There's no way to mutate this field from outside the class so we resort to
-   * reflection.
+   * There's no way to mutate this field from outside the class so we resort to reflection.
    */
   private static final Field JDO_FIELD_FLAG_FIELD;
   static {
     try {
-      JDO_FIELD_FLAG_FIELD = AbstractMemberMetaData.class.getDeclaredField("jdoFieldFlag");
+      JDO_FIELD_FLAG_FIELD = AbstractMemberMetaData.class.getDeclaredField("persistenceFlags");
     } catch (NoSuchFieldException e) {
       throw new RuntimeException(e);
     }
     JDO_FIELD_FLAG_FIELD.setAccessible(true);
   }
 
-  public DatastoreJDOMetaDataManager(OMFContext ctxt) {
+  public DatastoreJDOMetaDataManager(NucleusContext ctxt) {
     super(ctxt);
+    NucleusLogger.GENERAL.info(">> DatastoreJDOMetaDataManager CTR");
   }
 
   @Override

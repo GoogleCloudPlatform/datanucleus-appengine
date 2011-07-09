@@ -23,7 +23,7 @@ import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultList;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.api.jdo.JDOPersistenceManager;
 
 import java.util.List;
 

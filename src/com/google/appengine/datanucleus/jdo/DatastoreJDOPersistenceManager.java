@@ -15,24 +15,17 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.api.datastore.Key;
-
 import org.datanucleus.Transaction;
-import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.jdo.JDOPersistenceManager;
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.api.jdo.JDOPersistenceManager;
+import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 
 import com.google.appengine.datanucleus.BatchDeleteManager;
 import com.google.appengine.datanucleus.BatchManager;
 import com.google.appengine.datanucleus.BatchPutManager;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastorePersistenceHandler;
-import com.google.appengine.datanucleus.EntityUtils;
 
 import java.util.Collection;
-
-import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOUserException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -41,37 +34,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
 
   public DatastoreJDOPersistenceManager(JDOPersistenceManagerFactory apmf, String userName, String password) {
     super(apmf, userName, password);
-    setTransaction(objectMgr.getTransaction());
-  }
-
-  /**
-   * We override this method to make it easier for users to lookup objects
-   * when they only have the name or the id component of the {@link Key}.
-   * Given a {@link Class} and the nname or id a user can always construct a
-   * {@link Key}, but that introduces app-engine specific dependencies into
-   * the code and we're trying to let users keep things portable.  Furthermore,
-   * if the primary key field on the object is a {@link String}, the user,
-   * after constructing the {@link Key}, needs to call another app-engine
-   * specific method to convert the {@link Key} into a {@link String}.  So
-   * in addition to writing code that isn't portable, users have to write a lot
-   * of code.  This override determines if the provided key is just an id or
-   * name, and if so it constructs an appropriate {@link Key} on the user's
-   * behalf and then calls the parent's implementation of this method.
-   */
-  @Override
-  public Object getObjectById(Class cls, Object key) {
-    try {
-      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key, false);
-    } catch (NucleusUserException e) {
-      String keyStr = key == null ? "" : key.toString();
-      String msg = "Exception converting " + keyStr + " to an internal key.";
-      if (e.isFatal()) {
-        throw new JDOFatalUserException(msg, e);
-      } else {
-        throw new JDOUserException(msg, e);
-      }
-    }
-    return super.getObjectById(cls, key);
+    setTransaction(om.getTransaction());
   }
 
   private BatchPutManager getBatchPutManager() {
@@ -96,6 +59,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
    */
   @Override
   public Collection makePersistentAll(final Collection pcs) {
+    // TODO Remove this since DN has PersistenceHandler.batchStart/batchEnd methods
     return new BatchManagerWrapper().call(getBatchPutManager(), new Callable<Collection>() {
       public Collection call() {
         return DatastoreJDOPersistenceManager.super.makePersistentAll(pcs);
@@ -108,6 +72,7 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
    */
   @Override
   public void deletePersistentAll(final Collection pcs) {
+    // TODO Remove this since DN has PersistenceHandler.batchStart/batchEnd methods
     new BatchManagerWrapper().call(getBatchDeleteManager(), new Callable<Void>() {
       public Void call() {
         DatastoreJDOPersistenceManager.super.deletePersistentAll(pcs);

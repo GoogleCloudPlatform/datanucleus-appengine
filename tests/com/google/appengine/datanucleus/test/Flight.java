@@ -141,7 +141,7 @@ public class Flight implements Serializable {
     e.setProperty("dest", dest);
     e.setProperty("you", you);
     e.setProperty("me", me);
-    e.setProperty("OPT_VERSION", 1L);
+    e.setProperty("VERSION", 1L);
     e.setProperty("flight_number", flightNumber);
   }
 

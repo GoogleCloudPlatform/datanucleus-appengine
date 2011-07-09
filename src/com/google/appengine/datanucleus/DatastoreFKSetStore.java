@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.scostore.FKSetStore;
 
 import java.util.Collections;
@@ -38,29 +38,28 @@ public class DatastoreFKSetStore extends FKSetStore {
     super(fmd, storeMgr, clr, new DatastoreAbstractSetStoreSpecialization(LOCALISER, clr, storeMgr));
   }
 
-  @Override
-  protected void clearInternal(StateManager ownerSM, ObjectManager om) {
+  protected void clearInternal(ObjectProvider ownerOP, ExecutionContext ec) {
     throw new UnsupportedOperationException();
   }
 
   @Override
-  protected boolean updateElementFkInternal(StateManager sm, Object element, Object owner) {
+  protected boolean updateElementFkInternal(ObjectProvider op, Object element, Object owner) {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    DatastoreRelationFieldManager.checkForParentSwitch(element, sm);
+    DatastoreRelationFieldManager.checkForParentSwitch(element, op);
     // fk is already set and sets are unindexed so there's nothing else to do
     return true;
   }
 
-  public Iterator iterator(StateManager ownerSM) {
-    ObjectManager om = ownerSM.getObjectManager();
-    ApiAdapter apiAdapter = om.getApiAdapter();
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerSM);
+  public Iterator iterator(ObjectProvider ownerOP) {
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    ApiAdapter apiAdapter = ec.getApiAdapter();
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerOP);
     return ((DatastoreAbstractSetStoreSpecialization) specialization).getChildren(
         parentKey,
         Collections.<Query.FilterPredicate>emptyList(),
-        Collections.<Query.SortPredicate>emptyList(), this, om).iterator();
+        Collections.<Query.SortPredicate>emptyList(), this, ec).iterator();
   }
 
   /**
@@ -74,32 +73,32 @@ public class DatastoreFKSetStore extends FKSetStore {
    * try and force the delete to happen.  This is really brittle.
    */
   @Override
-  public boolean remove(StateManager ownerSM, Object element, int size, boolean allowDependentField) {
-    boolean result = super.remove(ownerSM, element, size,allowDependentField);
+  public boolean remove(ObjectProvider ownerOP, Object element, int size, boolean allowDependentField) {
+    boolean result = super.remove(ownerOP, element, size,allowDependentField);
     if (result) {
       return result;
     }
     if (element == null) {
       return false;
     }
-    if (!validateElementForReading(ownerSM, element)) {
+    if (!validateElementForReading(ownerOP, element)) {
       return false;
     }
 
-    ObjectManager om = ownerSM.getObjectManager();
-    StateManager elementSM = om.findStateManager(element);
-    if (om.getApiAdapter().isDetached(element)) // User passed in detached object to collection.remove()!
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    ObjectProvider elementOP = ec.findObjectProvider(element);
+    if (ec.getApiAdapter().isDetached(element)) // User passed in detached object to collection.remove()!
     {
       // Find an attached equivalent of this detached object (DON'T attach the object itself)
-      element = om.findObject(om.getApiAdapter().getIdForObject(element), true, false,
+      element = ec.findObject(ec.getApiAdapter().getIdForObject(element), true, false,
                         element.getClass().getName());
     }
-    if (om.getApiAdapter().isPersistable(element) && om.getApiAdapter().isDeleted(element)) {
+    if (ec.getApiAdapter().isPersistable(element) && ec.getApiAdapter().isDeleted(element)) {
       // Element is waiting to be deleted so flush it (it has the FK)
-      elementSM.flush();
+      elementOP.flush();
     } else {
       // Element not yet marked for deletion so go through the normal process
-      om.deleteObjectInternal(element);
+      ec.deleteObjectInternal(element);
     }
     return true;
   }
@@ -110,7 +109,7 @@ public class DatastoreFKSetStore extends FKSetStore {
    * because keys are immutable.
    */
   @Override
-  protected boolean checkRemovalOfElementShouldDelete(StateManager ownerSM) {
+  protected boolean checkRemovalOfElementShouldDelete(ObjectProvider ownerOP) {
     return true;
   }
 }

@@ -22,7 +22,7 @@ import java.util.concurrent.Semaphore;
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-final class SequenceTestLock {
+public final class SequenceTestLock {
   private SequenceTestLock() {}
   
   public static final Semaphore LOCK = new Semaphore(1);

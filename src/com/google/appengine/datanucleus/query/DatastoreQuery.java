@@ -33,18 +33,18 @@ import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ManagedConnectionResourceListener;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.EmbeddedMetaData;
+import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InheritanceMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.query.compiler.QueryCompilation;
@@ -59,17 +59,19 @@ import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.query.expression.VariableExpression;
 import org.datanucleus.query.symbol.Symbol;
 import org.datanucleus.query.symbol.SymbolTable;
+import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.Type;
 
 import com.google.appengine.datanucleus.DatastoreExceptionTranslator;
-import com.google.appengine.datanucleus.DatastoreFieldManager;
+import com.google.appengine.datanucleus.FetchFieldManager;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreTable;
 import com.google.appengine.datanucleus.DatastoreTransaction;
 import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.FatalNucleusUserException;
 import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
@@ -77,7 +79,7 @@ import com.google.appengine.datanucleus.Utils.Function;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -95,8 +97,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-
-import javax.jdo.spi.PersistenceCapable;
 
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withChunkSize;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withDefaults;
@@ -210,14 +210,14 @@ public class DatastoreQuery implements Serializable {
       long fromInclNo, long toExclNo, Map<String, ?> parameters, boolean isJDO) {
 
     if (query.getCandidateClass() == null) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Candidate class could not be found: " + query.getSingleStringQuery());
     }
     DatastoreManager storeMgr = getStoreManager();
     ClassLoaderResolver clr = getClassLoaderResolver();
     AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     if (acmd == null) {
-      throw new FatalNucleusUserException("No meta data for " + query.getCandidateClass().getName()
+      throw new NucleusFatalUserException("No meta data for " + query.getCandidateClass().getName()
           + ".  Perhaps you need to run the enhancer on this class?");
     }
 
@@ -231,38 +231,23 @@ public class DatastoreQuery implements Serializable {
     }
 
     if (toExclNo == 0 ||
-        (rangeValueIsSet(toExclNo)
-            && rangeValueIsSet(fromInclNo)
-            && (toExclNo - fromInclNo) <= 0)) {
+        (rangeValueIsSet(toExclNo) && rangeValueIsSet(fromInclNo) && (toExclNo - fromInclNo) <= 0)) {
       // short-circuit - no point in executing the query
       return Collections.emptyList();
     }
+
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
-    Map extensions = query.getExtensions();
-    if (extensions != null) {
-      // The only way to set a query timeout for jpa is with a hint.  It's our
-      // responsibility to translate the hint into an actual timeout
-      Integer queryTimeout = (Integer) extensions.get(DatastoreManager.JPA_QUERY_TIMEOUT_PROPERTY);
-      if (queryTimeout != null && queryTimeout > 0) {
-        query.setTimeoutMillis(queryTimeout);
-      }
-      // JPA doesn't expose fetch size either
-      Integer chunkSize = (Integer) extensions.get(DatastoreManager.JPA_QUERY_CHUNK_SIZE_PROPERTY);
-      if (chunkSize != null) {
-        query.getFetchPlan().setFetchSize(chunkSize);
-      }
-    }
     return executeQuery(qd, fromInclNo, toExclNo);
   }
 
   private Object executeQuery(QueryData qd, long fromInclNo, long toExclNo) {
     processInFilters(qd);
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-    if (query.getTimeoutMillis() > 0) {
+    if (query.getDatastoreReadTimeoutMillis() > 0) {
       // config wants the timeout in seconds
-      config.deadline(query.getTimeoutMillis() / 1000);
+      config.deadline(query.getDatastoreReadTimeoutMillis() / 1000);
     }
     Map extensions = query.getExtensions();
     if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
@@ -272,7 +257,7 @@ public class DatastoreQuery implements Serializable {
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
-    ManagedConnection mconn = getStoreManager().getConnection(getObjectManager());
+    ManagedConnection mconn = getStoreManager().getConnection(getExecutionContext());
     try {
       if (qd.batchGetKeys != null &&
           qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
@@ -344,7 +329,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object fulfillBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getObjectManager());
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getExecutionContext());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     if (isBulkDelete()) {
       return fulfillBatchDeleteQuery(innerTxn, ds, qd);
@@ -425,39 +410,43 @@ public class DatastoreQuery implements Serializable {
       Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
       ManagedConnection mconn, Cursor endCursor) {
     return newStreamingQueryResultForEntities(
-        entities, resultTransformer, mconn, endCursor, query, getStoreManager().isJPA());
+        entities, resultTransformer, mconn, endCursor, query);
   }
 
   public static List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
-      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query,
-      final boolean isJPA) {
+      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query) {
     final RuntimeExceptionWrappingIterable iterable;
+    final ApiAdapter api = query.getExecutionContext().getApiAdapter();
     if (entities instanceof QueryResultIterable) {
       // need to wrap it in a specialization so that CursorHelper can reach in
-      iterable = new RuntimeExceptionWrappingIterable((QueryResultIterable<Entity>) entities, isJPA) {
+      iterable = new RuntimeExceptionWrappingIterable(api, (QueryResultIterable<Entity>) entities) {
         @Override
         Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
-          return new RuntimeExceptionWrappingQueryResultIterator(this, (QueryResultIterator<Entity>) innerIter, isJPA);
+          return new RuntimeExceptionWrappingQueryResultIterator(api, this, 
+              (QueryResultIterator<Entity>) innerIter);
         }
       };
     } else {
-      iterable = new RuntimeExceptionWrappingIterable(entities, isJPA);
+      iterable = new RuntimeExceptionWrappingIterable(api, entities);
     }
     final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
-    // Add a listener to the connection so we can get a callback when the connection is
-    // flushed.
+
+    // Add a listener to the connection so we can get a callback when the connection is flushed.
     ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
       public void managedConnectionPreClose() {}
       public void managedConnectionPostClose() {}
-      public void managedConnectionFlushed() {
-        qr.setHasError(iterable.hasError());
-        // Disconnect the query from this ManagedConnection (read in unread rows etc)
-        qr.disconnect();
-      }
 
       public void resourcePostClose() {
         mconn.removeListener(this);
+      }
+
+      public void transactionFlushed() {}
+
+      public void transactionPreClose() {
+        qr.setHasError(iterable.hasError());
+        // Disconnect the query from this ManagedConnection (read in unread rows etc)
+        qr.disconnect();
       }
     };
     mconn.addListener(listener);
@@ -466,8 +455,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * Datanucleus provides {@link Long#MAX_VALUE} if the range value was not set
-   * by the user.
+   * Datanucleus provides {@link Long#MAX_VALUE} if the range value was not set by the user.
    */
   private boolean rangeValueIsSet(long rangeVal) {
     return rangeVal != Long.MAX_VALUE;
@@ -566,7 +554,7 @@ public class DatastoreQuery implements Serializable {
       throw new RuntimeException(e);
     }
     if (fetchPlan == null) {
-      fetchPlan = getObjectManager().getFetchPlan();
+      fetchPlan = getExecutionContext().getFetchPlan();
     }
     return fetchPlan;
   }
@@ -585,8 +573,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * @return The cursor the user added to the query, or {@code null} if no
-   * cursor.
+   * @return The cursor the user added to the query, or {@code null} if no cursor.
    */
   private Cursor getCursor() {
     // users can provide the cursor as a Cursor or its String representation.
@@ -600,9 +587,8 @@ public class DatastoreQuery implements Serializable {
     return null;
   }
 
-  private Object entityToPojo(Entity entity, AbstractClassMetaData acmd,
-      ClassLoaderResolver clr, FetchPlan fp) {
-    return entityToPojo(entity, acmd, clr, getObjectManager(), query.getIgnoreCache(), fp);
+  private Object entityToPojo(Entity entity, AbstractClassMetaData acmd, ClassLoaderResolver clr, FetchPlan fp) {
+    return entityToPojo(entity, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
   }
 
   /**
@@ -618,44 +604,55 @@ public class DatastoreQuery implements Serializable {
    * @return The pojo that corresponds to the provided entity.
    */
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, ObjectManager om,
+      final ClassLoaderResolver clr, ExecutionContext ec,
       boolean ignoreCache, final FetchPlan fetchPlan) {
-    final DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), om.getClassLoaderResolver());
+    final DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
+    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
     storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
-      public void fetchFields(StateManager sm) {
-        sm.replaceFields(
-            acmd.getPKMemberPositions(),
-            new DatastoreFieldManager(sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
+      public void fetchFields(ObjectProvider op) {
+        op.replaceFields(
+            acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
       }
-      public void fetchNonLoadedFields(StateManager sm) {
-        sm.replaceNonLoadedFields(
-            acmd.getPKMemberPositions(),
-            new DatastoreFieldManager(sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
+      public void fetchNonLoadedFields(ObjectProvider op) {
+        op.replaceNonLoadedFields(
+            acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
       }
       public FetchPlan getFetchPlanForLoading() {
         return fetchPlan;
       }
     };
-    Object pojo = om.findObjectUsingAID(getClass(entity, acmd, table, clr, om), fv, ignoreCache, true);
-    StateManager stateMgr = om.findStateManager(pojo);
+
+    Object id = null;
+    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+      // TODO Need FieldManager that uses the entity and returns the field values (last arg)
+//      id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, null, false, fm);
+    }
+    else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      // TODO Implement this
+    }
+
+    // TODO This method is deprecated, so use IdentityUtils etc
+    Object pojo = ec.findObjectUsingAID(new Type(getClass(entity, acmd, table, clr, ec)), fv, ignoreCache, true);
+    ObjectProvider op = ec.findObjectProvider(pojo);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     // TODO(maxr): Seems like we should be able to refactor the handler
     // so that we can do a fetch without having to hide the entity in the
     // state manager.
-    handler.setAssociatedEntity(stateMgr, EntityUtils.getCurrentTransaction(om), entity);
+    handler.setAssociatedEntity(op, EntityUtils.getCurrentTransaction(ec), entity);
     int[] fieldsToFetch =
         fetchPlan != null ?
-        fetchPlan.getFetchPlanForClass(acmd).getFieldsInActualFetchPlan() : acmd.getAllMemberPositions();
-    storeMgr.getPersistenceHandler().fetchObject(
-        stateMgr, fieldsToFetch);
+        fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers() : acmd.getAllMemberPositions();
+// TODO Used to be fetchPlan.getFetchPlanForClass(acmd).getFieldsInActualFetchPlan() : acmd.getAllMemberPositions();
+
+    // TODO The plugin should NEVER be calling methods on PersistenceHandler. Do it yourself in the query
+    storeMgr.getPersistenceHandler().fetchObject(op, fieldsToFetch);
     return pojo;
   }
 
   private static Class<?> getClass(Entity entity, AbstractClassMetaData acmd,
                                    DatastoreTable table, ClassLoaderResolver clr,
-                                   ObjectManager om) {
+                                   ExecutionContext ec) {
     JavaTypeMapping discrimMapping = table.getDiscriminatorMapping(true);
     if (discrimMapping == null) {
       return clr.classForName(acmd.getFullClassName());
@@ -663,8 +660,8 @@ public class DatastoreQuery implements Serializable {
 
     DiscriminatorMetaData dismd = discrimMapping.getDatastoreContainer().getDiscriminatorMetaData();
 
-    Class<?> discrimType = discrimMapping.getDataStoreMapping(0).getJavaTypeMapping().getJavaType();
-    String discriminatorColName = discrimMapping.getDataStoreMapping(0)
+    Class<?> discrimType = discrimMapping.getDatastoreMapping(0).getJavaTypeMapping().getJavaType();
+    String discriminatorColName = discrimMapping.getDatastoreMapping(0)
         .getDatastoreField().getIdentifier().getIdentifierName();
     Object discrimValue = entity.getProperty(discriminatorColName);
 
@@ -687,9 +684,9 @@ public class DatastoreQuery implements Serializable {
         rowClassName = baseCmd.getFullClassName();
       } else {
         // Go through all possible subclasses to find one with this value
-        for (Object o : om.getStoreManager().getSubClassesForClass(baseCmd.getFullClassName(), true, clr)) {
+        for (Object o : ec.getStoreManager().getSubClassesForClass(baseCmd.getFullClassName(), true, clr)) {
           String className = (String) o;
-          AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(className, clr);
+          AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(className, clr);
           discrimMDValue = cmd.getInheritanceMetaData().getDiscriminatorMetaData().getValue();
           if (discrimType == Long.class) {
             discrimMDValue = Long.parseLong((String) discrimMDValue);
@@ -703,12 +700,10 @@ public class DatastoreQuery implements Serializable {
     }
 
     if (rowClassName == null) {
-      throw new NucleusUserException(
-          "Cannot get the class for entity " + entity + "\n" +
-          "This can happen if the meta data for the subclasses of "
-          + acmd.getFullClassName() +
-          " is not yet loaded! You may want to consider using the datanucleus autostart mechanism"
-          + " to tell datanucleus about these classes.");
+      throw new NucleusUserException("Cannot get the class for entity " + entity + "\n" +
+          "This can happen if the meta data for the subclasses of " + acmd.getFullClassName() +
+          " is not yet loaded! You may want to consider using the datanucleus autostart mechanism" +
+          " to tell datanucleus about these classes.");
     }
 
     return clr.classForName(rowClassName);
@@ -716,37 +711,34 @@ public class DatastoreQuery implements Serializable {
 
   /**
    * Converts the provided entity to its pojo primary key representation.
-   *
    * @param entity The entity to convert
    * @param acmd The meta data for the pojo class
    * @param clr The classloader resolver
    * @param storeMgr The store manager
-   * @param om The object manager
+   * @param ec The executionContext
    * @return The pojo that corresponds to the id of the provided entity.
    */
   private static Object entityToPojoPrimaryKey(final Entity entity, final AbstractClassMetaData acmd,
-      ClassLoaderResolver clr, final DatastoreManager storeMgr, ObjectManager om) {
+      ClassLoaderResolver clr, final DatastoreManager storeMgr, ExecutionContext ec) {
     storeMgr.validateMetaDataForClass(acmd, clr);
     FieldValues fv = new FieldValues() {
-      public void fetchFields(StateManager sm) {
-        sm.replaceFields(
-            acmd.getPKMemberPositions(), new DatastoreFieldManager(
-                sm, storeMgr, entity, DatastoreFieldManager.Operation.READ));
+      public void fetchFields(ObjectProvider op) {
+        op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
       }
-      public void fetchNonLoadedFields(StateManager sm) {
-      }
+      public void fetchNonLoadedFields(ObjectProvider op) {}
       public FetchPlan getFetchPlanForLoading() {
         return null;
       }
     };
-    return om.findObjectUsingAID(clr.classForName(acmd.getFullClassName()), fv, false, true);
+    // TODO This method is deprecated, so use IdentityUtils etc
+    return ec.findObjectUsingAID(new Type(clr.classForName(acmd.getFullClassName())), fv, false, true);
   }
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, DatastoreTable table,
                              final ClassLoaderResolver clr, boolean isJDO) {
     if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
-      throw new FatalNucleusUserException("Only select and delete statements are supported.");
+      throw new NucleusFatalUserException("Only select and delete statements are supported.");
     }
 
     // We don't support in-memory query fulfillment, so if the query contains
@@ -769,7 +761,7 @@ public class DatastoreQuery implements Serializable {
     if (resultType == ResultType.KEYS_ONLY) {
       resultTransformer = new Function<Entity, Object>() {
         public Object apply(Entity from) {
-          return entityToPojoPrimaryKey(from, acmd, clr, getDatastoreManager(), getObjectManager());
+          return entityToPojoPrimaryKey(from, acmd, clr, getDatastoreManager(), getExecutionContext());
         }
       };
     } else {
@@ -790,11 +782,11 @@ public class DatastoreQuery implements Serializable {
     if (!projectionFields.isEmpty()) {
       // Wrap the existing transformer with a transformer that will apply the
       // appropriate projection to each Entity in the result set.
-      resultTransformer = new ProjectionResultTransformer(resultTransformer, getObjectManager(),
+      resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
                                                           projectionFields, compilation.getCandidateAlias());
     }
-    QueryData qd = new QueryData(
-        parameters, acmd, table, compilation, new Query(kind), resultType, resultTransformer, isJDO);
+    QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 
+        resultTransformer, isJDO);
 
     if (compilation.getExprFrom() != null) {
       for (Expression fromExpr : compilation.getExprFrom()) {
@@ -866,12 +858,7 @@ public class DatastoreQuery implements Serializable {
   // TODO(maxr) Split this out into a more generic utility if we start
   // handling other operators explicitly
   private boolean isCountOperation(String operation) {
-    if (getStoreManager().isJPA()) {
-      // jpa keywords are case-insensitive
-      return operation.toLowerCase().equals("count");
-    } else {
-      return operation.equals("count") || operation.equals("COUNT");
-    }
+    return operation.toLowerCase().equals("count");
   }
 
   private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {
@@ -881,7 +868,6 @@ public class DatastoreQuery implements Serializable {
     return new UnsupportedDatastoreFeatureException(
         "Cannot combine an aggregate results with row results.");
   }
-
 
   private void processFromExpression(QueryData qd, Expression expr) {
     if (expr instanceof JoinExpression) {
@@ -901,8 +887,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * Adds sorts to the given {@link Query} by examining the compiled order
-   * expression.
+   * Adds sorts to the given {@link Query} by examining the compiled order expression.
    */
   private void addSorts(QueryData qd) {
     Expression[] orderBys = qd.compilation.getExprOrdering();
@@ -925,37 +910,34 @@ public class DatastoreQuery implements Serializable {
       boolean includeSubclasses = query.isSubclasses();
       boolean restrictDiscriminator = true;
 
-      // Use discriminator metadata from the place where the discriminator
-      // mapping is defined
+      // Use discriminator metadata from the place where the discriminator mapping is defined
       DiscriminatorMetaData dismd = discriminatorMapping.getDatastoreContainer().getDiscriminatorMetaData();
       boolean hasDiscriminator = dismd.getStrategy() != DiscriminatorStrategy.NONE;
 
       if (hasDiscriminator) {
-	DatastoreManager storeMgr = getStoreManager();
-	if (includeSubclasses &&
-	    candidateTable.getDiscriminatorMapping(false) != null && 
-	    !storeMgr.getOMFContext().getMetaDataManager().isPersistentDefinitionImplementation(className)) {
-	  // no use in restricting if there is only one managed class
-	  restrictDiscriminator = candidateTable.getManagedClasses().size() > 1;
-	}
-
-	if (restrictDiscriminator) {
-	  List<Object> discriminatorValues = new ArrayList<Object>();
-	  ClassLoaderResolver clr = getClassLoaderResolver();
-	  Object discriminatorValue = getDiscriminatorValue(qd.acmd, dismd, candidateTable);
-	  discriminatorValues.add(discriminatorValue);
-	  if (includeSubclasses) {
-	    for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
-	      discriminatorValue = getDiscriminatorValue(
-                  storeMgr.getMetaDataManager().getMetaDataForClass(subClassName, clr), dismd, candidateTable);
-	      discriminatorValues.add(discriminatorValue);
+        DatastoreManager storeMgr = getStoreManager();
+        if (includeSubclasses && candidateTable.getDiscriminatorMapping(false) != null && 
+          !storeMgr.getNucleusContext().getMetaDataManager().isPersistentDefinitionImplementation(className)) {
+          // no use in restricting if there is only one managed class
+	      restrictDiscriminator = candidateTable.getManagedClasses().length > 1;
 	    }
-	  }
+
+        if (restrictDiscriminator) {
+          List<Object> discriminatorValues = new ArrayList<Object>();
+          ClassLoaderResolver clr = getClassLoaderResolver();
+          Object discriminatorValue = getDiscriminatorValue(qd.acmd, dismd, candidateTable);
+          discriminatorValues.add(discriminatorValue);
+          if (includeSubclasses) {
+            for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
+              discriminatorValue = getDiscriminatorValue(
+                storeMgr.getMetaDataManager().getMetaDataForClass(subClassName, clr), dismd, candidateTable);
+              discriminatorValues.add(discriminatorValue);
+            }
+          }
 	  
-	  String discriminatorPropertyName = discriminatorMapping.getDataStoreMapping(0)
-	  	.getDatastoreField().getIdentifier().getIdentifierName();
-	  qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
-	}
+	      String discriminatorPropertyName = discriminatorMapping.getDatastoreMapping(0).getDatastoreField().getIdentifier().getIdentifierName();
+	      qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
+	    }
       }
     }
   }
@@ -965,11 +947,10 @@ public class DatastoreQuery implements Serializable {
     // Default to the "class-name" discriminator strategy
     Object discriminatorValue = targetCmd.getFullClassName();
     if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
-      discriminatorValue = targetCmd.getInheritanceMetaData()
-	  .getDiscriminatorMetaData().getValue();
+      discriminatorValue = targetCmd.getInheritanceMetaData().getDiscriminatorMetaData().getValue();
       JavaTypeMapping mapping = candidateTable.getDiscriminatorMapping(true);
-      if (mapping.getDataStoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
-	discriminatorValue = Long.parseLong((String)discriminatorValue);
+      if (mapping.getDatastoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
+        discriminatorValue = Long.parseLong((String)discriminatorValue);
       }
     }
     return discriminatorValue;
@@ -1021,12 +1002,11 @@ public class DatastoreQuery implements Serializable {
   }
 
   private DatastoreManager getStoreManager() {
-    return (DatastoreManager) getObjectManager().getStoreManager();
+    return (DatastoreManager) getExecutionContext().getStoreManager();
   }
 
   /**
-   * Adds filters to the given {@link Query} by examining the compiled filter
-   * expression.
+   * Adds filters to the given {@link Query} by examining the compiled filter expression.
    */
   private void addFilters(QueryData qd) {
     Expression filter = qd.compilation.getExprFilter();
@@ -1037,10 +1017,8 @@ public class DatastoreQuery implements Serializable {
    * Recursively walks the given expression, adding filters to the given
    * {@link Query} where appropriate.
    *
-   * @throws UnsupportedDatastoreOperatorException If we encounter an operator
-   *           that we don't support.
-   * @throws UnsupportedDatastoreFeatureException If the query uses a feature
-   *           that we don't support.
+   * @throws UnsupportedDatastoreOperatorException If we encounter an operator that we don't support.
+   * @throws UnsupportedDatastoreFeatureException If the query uses a feature that we don't support.
    */
   private void addExpression(Expression expr, QueryData qd) {
     if (expr == null) {
@@ -1094,7 +1072,7 @@ public class DatastoreQuery implements Serializable {
     } else if (expr instanceof VariableExpression) {
       // We usually end up with this when there's a field that can't be resolved
       VariableExpression varExpr = (VariableExpression) expr;
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Unexpected expression type while parsing query.  Are you certain that a field named " +
           varExpr.getId() + " exists on your object?");
     } else {
@@ -1132,7 +1110,7 @@ public class DatastoreQuery implements Serializable {
       matchesExprObj = matchesExprObj.toString();
     }
     if (!(matchesExprObj instanceof String)) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Prefix matching only supported on strings (received a "
           + matchesExprObj.getClass().getName() + ").");
     }
@@ -1147,7 +1125,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private String getWildcardExpression() {
-    if (getStoreManager().isJPA()) {
+    if (getStoreManager().getApiAdapter().getName().equalsIgnoreCase("JPA")) {
       return "%";
     }
     return ".*";
@@ -1161,13 +1139,12 @@ public class DatastoreQuery implements Serializable {
 
   /**
    * We fulfill startsWith by adding a >= filter for the method argument and a
-   * < filter for the method argument translated into an upper limit for the
-   * scan.
+   * < filter for the method argument translated into an upper limit for the scan.
    */
   private void handleStartsWithOperation(InvokeExpression invocation, Expression expr,
                                          QueryData qd) {
     Expression param = (Expression) invocation.getArguments().get(0);
-    param.bind();
+    param.bind(getSymbolTable());
     if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
       addPrefix((PrimaryExpression) expr.getLeft(), param, (String) ((Literal) param).getLiteral(), qd);
     } else if (expr.getLeft() instanceof PrimaryExpression &&
@@ -1182,14 +1159,14 @@ public class DatastoreQuery implements Serializable {
 
   private void handleContainsOperation(InvokeExpression invocation, Expression expr, QueryData qd) {
     Expression param = (Expression) invocation.getArguments().get(0);
-    param.bind();
+    param.bind(getSymbolTable());
     if (expr.getLeft() instanceof PrimaryExpression) {
       PrimaryExpression left = (PrimaryExpression) expr.getLeft();
-      // treat contains as equality since that's how the low-level
-      // api does checks on multi-value properties.
+      // treat contains as equality since that's how the low-level api does checks on multi-value properties.
+      // TODO This is simply wrong and needs removing. If wanting to support GQL then provide a GQL converter
+      // through the API. JDOQL is not for "syntax adaptation"
 
-      // TODO(maxr): Validate that the lhs of contains
-      // is a Collection of some sort.
+      // TODO(maxr): Validate that the lhs of contains is a Collection of some sort.
       addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
     } else if (expr.getLeft() instanceof ParameterExpression &&
                param instanceof PrimaryExpression) {
@@ -1226,11 +1203,11 @@ public class DatastoreQuery implements Serializable {
     if (pe.getPosition() != -1) {
       // implicit param
       // If this is JDO then the parameter is keyed by position.
-      // If this is JPA then the paramter is keyed by id.
+      // If this is JPA then the parameter is keyed by id.
+      // TODO Understand what that comment means. JDOQL support named or positional params
       Object paramValue = null;
       try {
-        paramValue =
-            qd.isJDO ?
+        paramValue = qd.isJDO ?
             qd.parameters.get(pe.getPosition()) :
             qd.parameters.get(Integer.parseInt(pe.getId()));
       } catch (NumberFormatException nfe) {
@@ -1295,7 +1272,7 @@ public class DatastoreQuery implements Serializable {
       datastoreQuery = qd.joinQuery;
       if (datastoreQuery == null) {
         // Query doesn't exist so create it
-        String kind = EntityUtils.determineKind(acmd, getObjectManager());
+        String kind = EntityUtils.determineKind(acmd, getExecutionContext());
         datastoreQuery = new Query(kind);
         datastoreQuery.setKeysOnly();
         qd.joinQuery = datastoreQuery;
@@ -1306,7 +1283,7 @@ public class DatastoreQuery implements Serializable {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
     JavaTypeMapping mapping = getMappingForFieldWithName(tuples, qd, acmd);
-    if (mapping instanceof PersistenceCapableMapping) {
+    if (mapping instanceof PersistableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
     } else if (isParentPK(ammd)) {
       addParentFilter(op, internalPkToKey(acmd, value), qd.primaryDatastoreQuery);
@@ -1373,18 +1350,17 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private AbstractClassMetaData getJoinClassMetaData(Expression expr, List<String> tuples,
-                                                     QueryData qd) {
+  private AbstractClassMetaData getJoinClassMetaData(Expression expr, List<String> tuples, QueryData qd) {
     if (expr instanceof VariableExpression) {
       // Change the class meta data to the meta-data for the joined class
       if (qd.joinVariableExpression == null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             query.getSingleStringQuery()
             + ": Encountered a variable expression that isn't part of a join.  Maybe you're "
             + "referencing a non-existent field of an embedded class.");
       }
       if (!((VariableExpression) expr).getId().equals(qd.joinVariableExpression.getId())) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             query.getSingleStringQuery()
             + ": Encountered a variable (" + ((VariableExpression) expr).getId()
             + ") that doesn't match the join variable ("
@@ -1399,9 +1375,8 @@ public class DatastoreQuery implements Serializable {
   }
 
   private OrderExpression createJoinOrderExpression(PrimaryExpression expression) {
-    SymbolTable symTable = getSymbolTable();
-    PrimaryExpression primaryOrderExpr = new PrimaryExpression(symTable, expression.getTuples());
-    return new OrderExpression(symTable, primaryOrderExpr);
+    PrimaryExpression primaryOrderExpr = new PrimaryExpression(expression.getTuples());
+    return new OrderExpression(primaryOrderExpr);
   }
 
   private SymbolTable getSymbolTable() {
@@ -1411,7 +1386,7 @@ public class DatastoreQuery implements Serializable {
   private void processPotentialBatchGet(QueryData qd, Collection value,
                                  AbstractClassMetaData acmd, Query.FilterOperator op) {
     if (!op.equals(Query.FilterOperator.EQUAL)) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Batch lookup by primary key is only supported with the equality operator.");
     }
     // If it turns out there aren't any other filters or sorts we'll fulfill
@@ -1476,7 +1451,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private NucleusException noMetaDataException(String member, String fullClassName) {
-    return new FatalNucleusUserException(
+    return new NucleusFatalUserException(
         "No meta-data for member named " + member + " on class " + fullClassName
             + ".  Are you sure you provided the correct member name in your query?");
   }
@@ -1525,7 +1500,7 @@ public class DatastoreQuery implements Serializable {
     for (String tuple : tuples.subList(1, tuples.size())) {
       EmbeddedMetaData emd = ammd.getEmbeddedMetaData();
       if (emd == null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             query.getSingleStringQuery() + ": Can only reference properties of a sub-object if "
             + "the sub-object is embedded.");
       }
@@ -1565,33 +1540,22 @@ public class DatastoreQuery implements Serializable {
       // provide the id itself rather than the object containing the id.
       jdoPrimaryKey = value;
     } else if (value instanceof Long || value instanceof Integer) {
-      String kind = EntityUtils.determineKind(acmd, getObjectManager());
+      String kind = EntityUtils.determineKind(acmd, getExecutionContext());
       jdoPrimaryKey = KeyFactory.createKey(kind, ((Number) value).longValue());
     } else if (value == null) {
       jdoPrimaryKey = null;
     } else {
-      ApiAdapter apiAdapter = getObjectManager().getApiAdapter();
+      ApiAdapter apiAdapter = getExecutionContext().getApiAdapter();
       jdoPrimaryKey =
           apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
       if (jdoPrimaryKey == null) {
-        // JDO couldn't find a primary key value on the object, but that
-        // doesn't mean the object doesn't have a pk.  It could instead mean
-        // that the object is transient and doesn't have an associated state
-        // manager.  In this scenario we need to work harder to extract the pk.
-        // We'll create a StateManager for a fresh PC object and then copy the
-        // pk field of the parameter value into the fresh PC object.  We will
-        // the extract the PK value from the fresh PC object.  The reason we
-        // don't want to associate the state manager with the parameter value is
-        // that this would be a very surprising (and meaningful) side effect.
-        StateManager sm = apiAdapter.newStateManager(getObjectManager(), acmd);
-        sm.initialiseForHollow(null, null, value.getClass());
-        sm.copyFieldsFromObject((PersistenceCapable) value, acmd.getPKMemberPositions());
-        jdoPrimaryKey = sm.provideField(acmd.getPKMemberPositions()[0]);
+        // JDO couldn't find a primary key value on the object, but that doesn't mean
+        // the object doesn't have the PK field(s) set, so access it via IdentityUtils
+        Object jdoID = apiAdapter.getNewApplicationIdentityObjectId(value, acmd);
+        jdoPrimaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(jdoID);
       }
       if (jdoPrimaryKey == null) {
-        throw new FatalNucleusUserException(
-            query.getSingleStringQuery() + ": Parameter value " + value
-            + " does not have an id.");
+        throw new NucleusFatalUserException(query.getSingleStringQuery() + ": Parameter value " + value + " does not have an id.");
       }
     }
     Key valueKey = null;
@@ -1611,12 +1575,12 @@ public class DatastoreQuery implements Serializable {
         // User is asking for parents where child is null.  Unfortunately we
         // don't have a way to fulfill this because one-to-one is actually
         // implemented as a one-to-many
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             query.getSingleStringQuery() + ": Cannot query for parents with null children.");
       }
 
       if (valueKey.getParent() == null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             query.getSingleStringQuery() + ": Key of parameter value does not have a parent.");
       }
 
@@ -1625,7 +1589,7 @@ public class DatastoreQuery implements Serializable {
       qd.primaryDatastoreQuery.addFilter(
           Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.EQUAL, valueKey.getParent());
     } else if (valueKey == null) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           query.getSingleStringQuery() + ": The datastore does not support querying for objects with null parents.");
     } else {
       addParentFilter(op, valueKey, qd.primaryDatastoreQuery);
@@ -1638,7 +1602,7 @@ public class DatastoreQuery implements Serializable {
     String fieldKind =
         getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     if (!keyKind.equals(fieldKind)) {
-      throw new FatalNucleusUserException(query.getSingleStringQuery() + ": Field "
+      throw new org.datanucleus.exceptions.NucleusFatalUserException(query.getSingleStringQuery() + ": Field "
                                  + ammd.getFullFieldName() + " maps to kind " + fieldKind + " but"
                                  + " parameter value contains Key of kind " + keyKind );
     }
@@ -1650,7 +1614,7 @@ public class DatastoreQuery implements Serializable {
       // the datsatore doesn't support filtering or sorting by the individual
       // components of the key, so if the field corresponds to one of these
       // components it's a mistake by the user
-      throw new FatalNucleusUserException(query.getSingleStringQuery() + ": Field "
+      throw new org.datanucleus.exceptions.NucleusFatalUserException(query.getSingleStringQuery() + ": Field "
         + ammd.getFullFieldName() + " is a sub-component of the primary key.  The "
         + "datastore does not support filtering or sorting by primary key components, only the "
         + "entire primary key.");
@@ -1718,25 +1682,24 @@ public class DatastoreQuery implements Serializable {
     return latestDatastoreQuery;
   }
 
-  private ObjectManager getObjectManager() {
-    return query.getObjectManager();
+  private ExecutionContext getExecutionContext() {
+    return query.getExecutionContext();
   }
 
   private DatastoreManager getDatastoreManager() {
-    return (DatastoreManager) getObjectManager().getStoreManager();
+    return (DatastoreManager) getExecutionContext().getStoreManager();
   }
 
   private MetaDataManager getMetaDataManager() {
-    return getObjectManager().getMetaDataManager();
+    return getExecutionContext().getMetaDataManager();
   }
 
   private ClassLoaderResolver getClassLoaderResolver() {
-    return getObjectManager().getClassLoaderResolver();
+    return getExecutionContext().getClassLoaderResolver();
   }
 
   // Specialization just exists to support tests
-  static class UnsupportedDatastoreOperatorException extends
-      UnsupportedOperationException {
+  static class UnsupportedDatastoreOperatorException extends NucleusUserException {
     private final String queryString;
     private final Expression.Operator operator;
     private final String msg;
@@ -1767,9 +1730,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   // Specialization just exists to support tests
-  class UnsupportedDatastoreFeatureException extends
-      UnsupportedOperationException {
-
+  class UnsupportedDatastoreFeatureException extends NucleusUserException {
     UnsupportedDatastoreFeatureException(String msg) {
       super("Problem with query <" + query.getSingleStringQuery() + ">: " + msg);
     }

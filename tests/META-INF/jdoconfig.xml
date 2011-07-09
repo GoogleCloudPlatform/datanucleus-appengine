@@ -22,6 +22,7 @@ limitations under the License.
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
     </persistence-manager-factory>
 
     <persistence-manager-factory name="nontransactional">
@@ -30,23 +31,23 @@ limitations under the License.
         <property name="javax.jdo.option.NontransactionalRead" value="true"/>
         <property name="javax.jdo.option.NontransactionalWrite" value="true"/>
         <property name="javax.jdo.option.RetainValues" value="true"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
         <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
     </persistence-manager-factory>
 
     <persistence-manager-factory name="datastoreserviceconfigprops">
-        <property name="javax.jdo.PersistenceManagerFactoryClass"
-            value="com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
         <property name="javax.jdo.option.NontransactionalRead" value="true"/>
         <property name="javax.jdo.option.NontransactionalWrite" value="true"/>
         <property name="javax.jdo.option.RetainValues" value="true"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="true"/>
 
         <property name="javax.jdo.option.DatastoreReadTimeoutMillis" value="5000"/>
         <property name="javax.jdo.option.DatastoreWriteTimeoutMillis" value="10000"/>
         <property name="datanucleus.appengine.datastoreReadConsistency" value="EVENTUAL"/>
-
     </persistence-manager-factory>
 </jdoconfig>

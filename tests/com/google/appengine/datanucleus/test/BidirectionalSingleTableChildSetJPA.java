@@ -32,7 +32,7 @@ import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOn
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManySetJPA;
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManyUnencodedStringPkSetJPA;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import javax.persistence.DiscriminatorColumn;
 import javax.persistence.DiscriminatorType;

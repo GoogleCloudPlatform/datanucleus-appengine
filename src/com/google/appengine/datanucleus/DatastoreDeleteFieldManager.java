@@ -17,7 +17,7 @@ package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.Entity;
 
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ObjectProvider;
 
 /**
  * A {@link DatastoreFieldManager} extension that ignores attempts to
@@ -25,10 +25,10 @@ import org.datanucleus.StateManager;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreDeleteFieldManager extends DatastoreFieldManager {
+class DatastoreDeleteFieldManager extends StoreFieldManager {
 
-  DatastoreDeleteFieldManager(StateManager stateManager, DatastoreManager storeManager, Entity datastoreEntity) {
-    super(stateManager, storeManager, datastoreEntity, Operation.DELETE);
+  DatastoreDeleteFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity) {
+    super(op, storeManager, datastoreEntity, Operation.DELETE);
   }
 
   @Override

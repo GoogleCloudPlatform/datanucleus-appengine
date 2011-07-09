@@ -36,14 +36,14 @@ import java.util.Map;
  *
  * @author Erick Armbrust <earmbrust@google.com>
  */
-class DatastoreServiceRecordingImpl implements DatastoreService {
+public class DatastoreServiceRecordingImpl implements DatastoreService {
 
   private final DatastoreService recorder;
   private final DatastoreService delegate;
   private final Transaction txnRecorder;
   private final TxnIdAnswer txnIdAnswer;
 
-  DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate, Transaction txnRecorder,
+  public DatastoreServiceRecordingImpl(DatastoreService recorder, DatastoreService delegate, Transaction txnRecorder,
       TxnIdAnswer txnIdAnswer) {
     this.recorder = recorder;
     this.delegate = delegate;

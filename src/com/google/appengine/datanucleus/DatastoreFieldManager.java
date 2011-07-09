@@ -15,39 +15,28 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
-import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.api.datastore.Text;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
-import org.datanucleus.metadata.NullValue;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.state.StateManagerFactory;
 
-import com.google.appengine.datanucleus.jpa.DatastoreJPACallbackHandler;
-
-import org.datanucleus.store.fieldmanager.FieldManager;
-import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.state.ObjectProviderFactory;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.fieldmanager.AbstractFieldManager;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
@@ -55,13 +44,9 @@ import java.util.Map;
 import java.util.Set;
 
 import javax.jdo.spi.JDOImplHelper;
-import javax.jdo.spi.PersistenceCapable;
 
-// TODO(maxr): Make this a base class and extract 2 subclasses - one for
-// reads and one for writes.
 /**
- * FieldManager for converting app engine datastore entities into POJOs and
- * vice-versa.
+ * FieldManager for converting app engine datastore entities into POJOs and vice-versa.
  *
  * Most of the complexity in this class is due to the fact that the datastore
  * automatically promotes certain types:
@@ -82,85 +67,57 @@ import javax.jdo.spi.PersistenceCapable;
  *
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreFieldManager implements FieldManager {
-
-  public enum Operation { INSERT, UPDATE, DELETE, READ };
-
-  private static final String ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT =
-      "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
-          + "mapped to %s, which cannot accept null values.";
+public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
   private static final int[] NOT_USED = {0};
 
   private static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
 
-  // Stack used to maintain the current field state manager to use.  We push on
-  // to this stack as we encounter embedded classes and then pop when we're
-  // done.
-  private final LinkedList<FieldManagerState> fieldManagerStateStack =
+  // Stack used to maintain the current field manager state to use.  We push on
+  // to this stack as we encounter embedded classes and then pop when we're done.
+  protected final LinkedList<FieldManagerState> fieldManagerStateStack =
       new LinkedList<FieldManagerState>();
 
   // true if we instantiated the entity ourselves.
-  private final boolean createdWithoutEntity;
+  protected final boolean createdWithoutEntity;
 
-  private final DatastoreManager storeManager;
+  protected final DatastoreManager storeManager;
 
-  private final DatastoreRelationFieldManager relationFieldManager;
+  protected final DatastoreRelationFieldManager relationFieldManager;
 
-  private final SerializationManager serializationManager;
+  protected ObjectProvider op;
 
-  private final Operation operation;
+  // Not final because we will reallocate if we hit a parent pk field and the
+  // key of the current value does not have a parent, or if the pk gets set.
+  protected Entity datastoreEntity;
 
-  // Not final because we will reallocate if we hit a parent pk field
-  // and the key of the current value does not have a parent, or if the pk
-  // gets set.
-  private Entity datastoreEntity;
-
-  // We'll assign this if we have a parent member and we store a value
-  // into it.
+  // We'll assign this if we have a parent member and we store a value into it.
   private AbstractMemberMetaData parentMemberMetaData;
 
-  private boolean parentAlreadySet = false;
-  private boolean keyAlreadySet = false;
-  private Integer pkIdPos = null;
-  private boolean repersistingForChildKeys = false;
+  protected boolean parentAlreadySet = false;
+  protected boolean keyAlreadySet = false;
+  protected Integer pkIdPos = null;
+  protected boolean repersistingForChildKeys = false;
 
-  private static final String PARENT_ALREADY_SET =
-      "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
-            + "generate an id for you, set the parent pk field to be the value of your parent key "
-            + "and leave the primary key field blank.  If you wish to "
-            + "provide a named key, leave the parent pk field blank and set the primary key to be a "
-            + "Key object made up of both the parent key and the named child.";
-
-  /**
-   * Relation types where we want to store child keys on the parent
-   */
-  private static final Set<Integer> PARENT_RELATION_TYPES =
-      Collections.synchronizedSet(Utils.newHashSet(
-          Relation.ONE_TO_MANY_BI,
-          Relation.ONE_TO_MANY_UNI,
-          Relation.ONE_TO_ONE_BI,
-          Relation.ONE_TO_ONE_UNI));
-
-  private DatastoreFieldManager(StateManager sm, boolean createdWithoutEntity,
-      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
+  private DatastoreFieldManager(ObjectProvider op, boolean createdWithoutEntity,
+      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
         return getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
       }
     };
+    this.op = op;
     this.createdWithoutEntity = createdWithoutEntity;
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
-    InsertMappingConsumer mappingConsumer = buildMappingConsumer(sm.getClassMetaData(), sm.getObjectManager().getClassLoaderResolver(), fieldNumbers);
-    this.fieldManagerStateStack.addFirst(new FieldManagerState(sm, ammdProvider, mappingConsumer, false));
+    InsertMappingConsumer mappingConsumer = buildMappingConsumer(op.getClassMetaData(), 
+        op.getExecutionContext().getClassLoaderResolver(), fieldNumbers);
+    this.fieldManagerStateStack.addFirst(new FieldManagerState(op, ammdProvider, mappingConsumer, false));
     this.relationFieldManager = new DatastoreRelationFieldManager(this);
-    this.serializationManager = new SerializationManager();
-    this.operation = operation;
 
     // Sanity check
-    String expectedKind = EntityUtils.determineKind(getClassMetaData(), sm.getObjectManager());
+    String expectedKind = EntityUtils.determineKind(getClassMetaData(), op.getExecutionContext());
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
           "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
@@ -176,181 +133,44 @@ public class DatastoreFieldManager implements FieldManager {
    * has been returned by the datastore (get or query), or after the entity has
    * been put into the datastore.
    */
-  DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
-      Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
-    this(stateManager, false, storeManager, datastoreEntity, fieldNumbers, operation);
+  DatastoreFieldManager(ObjectProvider op, DatastoreManager storeManager,
+      Entity datastoreEntity, int[] fieldNumbers) {
+    this(op, false, storeManager, datastoreEntity, fieldNumbers);
   }
 
-  public DatastoreFieldManager(StateManager stateManager, DatastoreManager storeManager,
-      Entity datastoreEntity, Operation operation) {
-    this(stateManager, false, storeManager, datastoreEntity, new int[0], operation);
+  public DatastoreFieldManager(ObjectProvider op, DatastoreManager storeManager,
+      Entity datastoreEntity) {
+    this(op, false, storeManager, datastoreEntity, new int[0]);
   }
 
-  DatastoreFieldManager(StateManager stateManager, String kind,
-      DatastoreManager storeManager, Operation operation) {
-    this(stateManager, true, storeManager, new Entity(kind), new int[0], operation);
+  DatastoreFieldManager(ObjectProvider op, String kind,
+      DatastoreManager storeManager) {
+    this(op, true, storeManager, new Entity(kind), new int[0]);
   }
 
-  public String fetchStringField(int fieldNumber) {
-    if (isPK(fieldNumber)) {
-      return fetchStringPKField(fieldNumber);
-    } else if (isParentPK(fieldNumber)) {
-      return fetchParentStringPKField(fieldNumber);
-    } else if (isPKNameField(fieldNumber)) {
-      if (!fieldIsOfTypeString(fieldNumber)) {
-        throw new FatalNucleusUserException(
-            "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
-      }
-      return fetchPKNameField();
-    }
-    Object fieldVal = fetchObjectField(fieldNumber);
-    if (fieldVal instanceof Text) {
-      // must be a lob field
-      fieldVal = ((Text) fieldVal).getValue();
-    }
-    return (String) fieldVal;
-  }
-
-  private String fetchPKNameField() {
-    Key key = datastoreEntity.getKey();
-    if (key.getName() == null) {
-      throw new FatalNucleusUserException(
-          "Attempting to fetch field with \"" + DatastoreManager.PK_NAME + "\" extension but the "
-          + "entity is identified by an id, not a name.");
-    }
-    return datastoreEntity.getKey().getName();
-  }
-
-  private long fetchPKIdField() {
-    Key key = datastoreEntity.getKey();
-    if (key.getName() != null) {
-      throw new FatalNucleusUserException(
-          "Attempting to fetch field with \"" + DatastoreManager.PK_ID + "\" extension but the "
-          + "entity is identified by a name, not an id.");
-    }
-    return datastoreEntity.getKey().getId();
-  }
-
-  private String fetchParentStringPKField(int fieldNumber) {
-    Key parentKey = datastoreEntity.getKey().getParent();
-    if (parentKey == null) {
-      return null;
-    }
-    return KeyFactory.keyToString(parentKey);
-  }
-
-  private String fetchStringPKField(int fieldNumber) {
-    if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
-      // If this is an encoded pk field, transform the Key into its String
-      // representation.
-      return KeyFactory.keyToString(datastoreEntity.getKey());
-    } else {
-      if (datastoreEntity.getKey().isComplete() && datastoreEntity.getKey().getName() == null) {
-        // This is trouble, probably an incorrect mapping.
-        throw new FatalNucleusUserException(
-            "The primary key for " + getClassMetaData().getFullClassName() + " is an unencoded "
-            + "string but the key of the corresponding entity in the datastore does not have a "
-            + "name.  You may want to either change the primary key to be an encoded string "
-            + "(add the \"" + DatastoreManager.ENCODED_PK + "\" extension), change the "
-            + "primary key to be of type " + Key.class.getName() + ", or, if you're certain that "
-            + "this class will never have a parent, change the primary key to be of type Long.");
-      }
-      return datastoreEntity.getKey().getName();
-    }
-  }
-
-  public short fetchShortField(int fieldNumber) {
-    return (Short) fetchObjectField(fieldNumber);
-  }
-
-  private boolean fieldIsOfTypeKey(int fieldNumber) {
+  protected boolean fieldIsOfTypeKey(int fieldNumber) {
     // Key is final so we don't need to worry about checking for subclasses.
     return getMetaData(fieldNumber).getType().equals(Key.class);
   }
 
-  private boolean fieldIsOfTypeString(int fieldNumber) {
+  protected boolean fieldIsOfTypeString(int fieldNumber) {
     // String is final so we don't need to worry about checking for subclasses.
     return getMetaData(fieldNumber).getType().equals(String.class);
   }
 
-  private boolean fieldIsOfTypeLong(int fieldNumber) {
+  protected boolean fieldIsOfTypeLong(int fieldNumber) {
     // Long is final so we don't need to worry about checking for subclasses.
     return getMetaData(fieldNumber).getType().equals(Long.class);
   }
 
-  private RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
+  protected RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
     return new IllegalStateException(
         fieldType + " for type " + getClassMetaData().getName()
             + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
             + " (must be String, Long, or " + Key.class.getName() + ")");
   }
 
-  public Object fetchObjectField(int fieldNumber) {
-    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    if (ammd.getEmbeddedMetaData() != null) {
-      return fetchEmbeddedField(ammd, fieldNumber);
-    } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !ammd.isSerialized()) {
-      return relationFieldManager.fetchRelationField(getClassLoaderResolver(), ammd);
-    }
-
-    if (isPK(fieldNumber)) {
-      if (fieldIsOfTypeKey(fieldNumber)) {
-        // If this is a pk field, transform the Key into its String
-        // representation.
-        return datastoreEntity.getKey();
-      } else if(fieldIsOfTypeLong(fieldNumber)) {
-        return datastoreEntity.getKey().getId();
-      }
-      throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
-    } else if (isParentPK(fieldNumber)) {
-      if (fieldIsOfTypeKey(fieldNumber)) {
-        return datastoreEntity.getKey().getParent();
-      }
-      throw exceptionForUnexpectedKeyType("Parent key", fieldNumber);
-    } else if (isPKIdField(fieldNumber)) {
-      return fetchPKIdField();
-    } else {
-      Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
-      ClassLoaderResolver clr = getClassLoaderResolver();
-      if (ammd.isSerialized()) {
-        if (value != null) {
-          // If the field is serialized we know it's a Blob that we
-          // can deserialize without any conversion necessary.
-          value = deserializeFieldValue(value, clr, ammd);
-        }
-      } else {
-        if (ammd.getAbsoluteFieldNumber() == -1) {
-          // Embedded fields don't have their field number set because
-          // we pull the field from the EmbeddedMetaData, not the
-          // ClassMetaData.  So, if the field doesn't know its field number
-          // we'll pull the metadata from the ClassMetaData instead and use
-          // that one from this point forward.
-          ammd = getClassMetaData().getMetaDataForMember(ammd.getName());
-        }
-        // Datanucleus invokes this method for the object versions
-        // of primitive types as well as collections of non-persistent types.
-        // We need to make sure we convert appropriately.
-        value = getConversionUtils().datastoreValueToPojoValue(clr, value, getStateManager(), ammd);
-        if (value != null && Enum.class.isAssignableFrom(ammd.getType())) {
-          @SuppressWarnings("unchecked")
-          Class<Enum> enumClass = ammd.getType();
-          value = Enum.valueOf(enumClass, (String) value);
-        }
-      }
-      return value;
-    }
-  }
-
-  private Object deserializeFieldValue(
-      Object value, ClassLoaderResolver clr, AbstractMemberMetaData ammd) {
-    if (!(value instanceof Blob)) {
-      throw new NucleusException(
-          "Datastore value is of type " + value.getClass().getName() + " (must be Blob).").setFatal();
-    }
-    return serializationManager.deserialize(clr, ammd, (Blob) value);
-  }
-
-  private AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
+  protected AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
       final InsertMappingConsumer consumer) {
     // This implementation gets the meta data from the mapping consumer.
     // This is needed to ensure we see column overrides that are specific to
@@ -363,7 +183,7 @@ public class DatastoreFieldManager implements FieldManager {
     };
   }
 
-  private StateManager getEmbeddedStateManager(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
+  protected ObjectProvider getEmbeddedObjectProvider(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
     if (value == null) {
       // Not positive this is the right approach, but when we read the values
       // of an embedded field out of the datastore we have no way of knowing
@@ -376,184 +196,16 @@ public class DatastoreFieldManager implements FieldManager {
       // the object back out.  Seems like the only safe thing to do here is
       // instantiate a fresh instance of the embeddable class using the default
       // constructor and then persist that.
+        // TODO Use metadata nullIndicatorColumn/Value
       value = JDOImplHelper.getInstance().newInstance(
-          ammd.getType(), (javax.jdo.spi.StateManager) getStateManager());
+          ammd.getType(), (javax.jdo.spi.StateManager) getObjectProvider());
     }
-    ObjectManager objMgr = getObjectManager();
-    StateManager embeddedStateMgr = objMgr.findStateManager(value);
-    if (embeddedStateMgr == null) {
-      embeddedStateMgr = StateManagerFactory.newStateManagerForEmbedded(objMgr, value, false);
-      embeddedStateMgr.addEmbeddedOwner(getStateManager(), fieldNumber);
-      embeddedStateMgr.setPcObjectType(StateManager.EMBEDDED_PC);
+    ObjectProvider embeddedOP = getExecutionContext().findObjectProvider(value);
+    if (embeddedOP == null) {
+        embeddedOP = ObjectProviderFactory.newForEmbedded(getExecutionContext(), value, false, getObjectProvider(), fieldNumber);
+        embeddedOP.setPcObjectType(ObjectProvider.EMBEDDED_PC);
     }
-    return embeddedStateMgr;
-  }
-
-  /**
-   * We can't trust the fieldNumber on the ammd provided because some embedded
-   * fields don't have this set.  That's why we pass it in as a separate param.
-   */
-  private Object fetchEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber) {
-    StateManager esm = getEmbeddedStateManager(ammd, fieldNumber, null);
-    // We need to build a mapping consumer for the embedded class so that we
-    // get correct fieldIndex --> metadata mappings for the class in the proper
-    // embedded context
-    // TODO(maxr) Consider caching this
-    InsertMappingConsumer mappingConsumer = buildMappingConsumer(
-        esm.getClassMetaData(), getClassLoaderResolver(),
-        esm.getClassMetaData().getAllMemberPositions(),
-        ammd.getEmbeddedMetaData());
-    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
-    fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mappingConsumer, true));
-    AbstractClassMetaData acmd = esm.getClassMetaData();
-    esm.replaceFields(acmd.getAllMemberPositions(), this);
-    fieldManagerStateStack.removeFirst();
-    return esm.getObject();
-  }
-
-  /**
-   * Ensures that the given value is not null.  Throws
-   * {@link NullPointerException} with a helpful error message if it is.
-   */
-  private Object checkAssignmentToNotNullField(Object val, int fieldNumber) {
-    if (val != null) {
-      // not null so no problem
-      return val;
-    }
-    // Put together a really helpful error message
-    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    String propertyName = getPropertyName(fieldNumber);
-    final String msg = String.format(ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT,
-        datastoreEntity.getKind(), datastoreEntity.getKey(), propertyName,
-        ammd.getFullFieldName());
-    throw new NullPointerException(msg);
-  }
-
-  public long fetchLongField(int fieldNumber) {
-    return (Long) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public int fetchIntField(int fieldNumber) {
-    return (Integer) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public float fetchFloatField(int fieldNumber) {
-    return (Float) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public double fetchDoubleField(int fieldNumber) {
-    return (Double) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public char fetchCharField(int fieldNumber) {
-    return (Character) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public byte fetchByteField(int fieldNumber) {
-    return (Byte) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public boolean fetchBooleanField(int fieldNumber) {
-    return (Boolean) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
-  }
-
-  public void storeStringField(int fieldNumber, String value) {
-    if (isPK(fieldNumber)) {
-      storeStringPKField(fieldNumber, value);
-    } else if (isParentPK(fieldNumber)) {
-      storeParentStringField(value);
-    } else if (isPKNameField(fieldNumber)) {
-      storePKNameField(fieldNumber, value);
-    } else {
-      // could be a JPA "lob" field, in which case we want to store it as
-      // Text.  DataNucleus sets a cmd with a jdbc type of CLOB
-      // if this is the case.
-      Object valueToStore = value;
-      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      if (ammd.getColumnMetaData() != null &&
-          ammd.getColumnMetaData().length == 1 &&
-          "CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
-        valueToStore = new Text(value);
-      }
-      storeObjectField(fieldNumber, valueToStore);
-    }
-  }
-
-  void storePKIdField(int fieldNumber, Object value) {
-    if (!fieldIsOfTypeLong(fieldNumber)) {
-      throw new FatalNucleusUserException(
-          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long");
-    }
-    Key key = null;
-    if (value != null) {
-      key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
-    }
-    storeKeyPK(key);
-    pkIdPos = fieldNumber;
-  }
-
-  private void storePKNameField(int fieldNumber, String value) {
-    // TODO(maxr) make sure the pk is an encoded string
-    if (!fieldIsOfTypeString(fieldNumber)) {
-      throw new FatalNucleusUserException(
-          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String");
-    }
-    Key key = null;
-    if (value != null) {
-      key = KeyFactory.createKey(datastoreEntity.getParent(), datastoreEntity.getKind(), value);
-    }
-    storeKeyPK(key);
-  }
-  
-  private void storeParentStringField(String value) {
-    Key key = null;
-    if (value != null) {
-      try {
-        key = KeyFactory.stringToKey(value);
-      } catch (IllegalArgumentException iae) {
-        throw new FatalNucleusUserException(
-            "Attempt was made to set parent to " + value
-            + " but this cannot be converted into a Key.");
-      }
-    }
-    storeParentKeyPK(key);
-  }
-
-  private void storeStringPKField(int fieldNumber, String value) {
-    Key key = null;
-    if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
-      if (value != null) {
-        try {
-          key = KeyFactory.stringToKey(value);
-        } catch (IllegalArgumentException iae) {
-          throw new FatalNucleusUserException(
-              "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  The "
-              + "primary key field is an encoded String but an unencoded value has been provided. "
-              + "If you want to set an unencoded value on this field you can either change its "
-              + "type to be an unencoded String (remove the \"" + DatastoreManager.ENCODED_PK
-              + "\" extension), change its type to be a " + Key.class.getName() + " and then set "
-              + "the Key's name field, or create a separate String field for the name component "
-              + "of your primary key and add the \"" + DatastoreManager.PK_NAME
-              + "\" extension.");
-        }
-      }
-    } else {
-      if (value == null) {
-        throw new FatalNucleusUserException(
-            "Invalid primary key for " + getClassMetaData().getFullClassName() + ".  Cannot have "
-            + "a null primary key field if the field is unencoded and of type String.  "
-            + "Please provide a value or, if you want the datastore to generate an id on your "
-            + "behalf, change the type of the field to Long.");
-      }
-      if (value != null) {
-        if (datastoreEntity.getParent() != null) {
-          key = new Entity(datastoreEntity.getKey().getKind(), value, datastoreEntity.getParent()).getKey();
-        } else {
-          key = new Entity(datastoreEntity.getKey().getKind(), value).getKey();
-        }
-      }
-    }
-    storeKeyPK(key);
+    return embeddedOP;
   }
 
   /**
@@ -568,9 +220,8 @@ public class DatastoreFieldManager implements FieldManager {
    * not an external foreign key mapping but is labeled as a "parent
    * provider" (this is an app engine orm term).  In this case, as with
    * #2, we can use the key of that field as the parent.
-   * 4) It's possible that we have attached a unidirectional child to a
-   * detached parent in JPA.  In this case we consult the
-   * {@link DatastoreJPACallbackHandler} to see if we can find a parent.
+   * 4) If part of the attachment process we can consult the ExecutionContext
+   * for the owner of this object (that caused the attach of this object).
    *
    * It _should_ be possible to get rid of at least one of these
    * mechanisms, most likely the first.
@@ -583,24 +234,32 @@ public class DatastoreFieldManager implements FieldManager {
   Object establishEntityGroup() {
     Key parentKey = getEntity().getParent();
     if (parentKey == null) {
-      StateManager sm = getStateManager();
+      ObjectProvider op = getObjectProvider();
       // Mechanism 1
-      parentKey = KeyRegistry.getKeyRegistry(getObjectManager()).getRegisteredKey(sm.getObject());
+      parentKey = KeyRegistry.getKeyRegistry(getExecutionContext()).getRegisteredKey(op.getObject());
       if (parentKey == null) {
         // Mechanism 2
-        parentKey = getParentKeyFromExternalFKMappings(sm);
+        parentKey = getParentKeyFromExternalFKMappings(op);
       }
       if (parentKey == null) {
         // Mechanism 3
-        parentKey = getParentKeyFromParentField(sm);
+        parentKey = getParentKeyFromParentField(op);
       }
       if (parentKey == null) {
-        // Mechanism 4
-        Object parentPojo = DatastoreJPACallbackHandler.getAttachingParent(sm.getObject());
-        if (parentPojo != null) {
+        // Mechanism 4, use attach parent info from ExecutionContext
+        ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
+        if (ownerOP != null) {
+          Object parentPojo = ownerOP.getObject();
           parentKey = getKeyFromParentPojo(parentPojo);
         }
       }
+//      if (parentKey == null) {
+//        // Mechanism 4
+//        Object parentPojo = DatastoreJPACallbackHandler.getAttachingParent(op.getObject());
+//        if (parentPojo != null) {
+//          parentKey = getKeyFromParentPojo(parentPojo);
+//        }
+//      }
       if (parentKey != null) {
         recreateEntityWithParent(parentKey);
       }
@@ -608,49 +267,6 @@ public class DatastoreFieldManager implements FieldManager {
     if (parentKey != null && getParentMemberMetaData() != null) {
       return getParentMemberMetaData().getType().equals(Key.class)
           ? parentKey : KeyFactory.keyToString(parentKey);
-    }
-    return null;
-  }
-
-  private Key getKeyFromParentPojo(Object mergeEntity) {
-    StateManager sm = getObjectManager().findStateManager(mergeEntity);
-    if (sm == null) {
-      return null;
-    }
-    return EntityUtils.getPrimaryKeyAsKey(getObjectManager().getApiAdapter(), sm);
-  }
-
-  private Key getKeyForObject(Object pc) {
-    ApiAdapter adapter = getStoreManager().getOMFContext().getApiAdapter();
-    Object internalPk = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
-    ObjectManager om = getObjectManager();
-    AbstractClassMetaData acmd =
-        om.getMetaDataManager().getMetaDataForClass(pc.getClass(), getClassLoaderResolver());
-    return EntityUtils.getPkAsKey(internalPk, acmd, om);
-  }
-
-  private Key getParentKeyFromParentField(StateManager sm) {
-    AbstractMemberMetaData parentField = getInsertMappingConsumer().getParentMappingField();
-    if (parentField == null) {
-      return null;
-    }
-    Object parent = sm.provideField(parentField.getAbsoluteFieldNumber());
-    return parent == null ? null : getKeyForObject(parent);
-  }
-
-  private Key getParentKeyFromExternalFKMappings(StateManager sm) {
-    // We don't have a registered key for the object associated with the
-    // state manager but there might be one tied to the foreign key
-    // mappings for this object.  If this is the Many side of a bidirectional
-    // One To Many it might also be available on the parent object.
-    // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of
-    // the KeyRegistry.
-    Set<JavaTypeMapping> externalFKMappings = getInsertMappingConsumer().getExternalFKMappings();
-    for (JavaTypeMapping fkMapping : externalFKMappings) {
-      Object fkValue = sm.getAssociatedValue(fkMapping);
-      if (fkValue != null) {
-        return getKeyForObject(fkValue);
-      }
     }
     return null;
   }
@@ -666,37 +282,45 @@ public class DatastoreFieldManager implements FieldManager {
     copyProperties(old, datastoreEntity);
   }
 
-  private void storeKeyPK(Key key) {
-    if (key != null && !datastoreEntity.getKind().equals(key.getKind())) {
-      throw new FatalNucleusUserException(
-          "Attempt was made to set the primray key of an entity with kind "
-          + datastoreEntity.getKind() + " to a key with kind " + key.getKind());
+  private Key getKeyFromParentPojo(Object mergeEntity) {
+    ObjectProvider mergeOP = getExecutionContext().findObjectProvider(mergeEntity);
+    if (mergeOP == null) {
+      return null;
     }
-    if (datastoreEntity.getKey().isComplete()) {
-      // this modification is only okay if it's actually a no-op
-      if (!datastoreEntity.getKey().equals(key)) {
-        if (!keyAlreadySet) {
-          // Different key provided so the update isn't allowed.
-          throw new FatalNucleusUserException(
-              "Attempt was made to modify the primary key of an object of type "
-              + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + "  Primary keys are immutable.  "
-              + "(New value: " + key);
-        }
-      }
-    } else if (key != null) {
-      Entity old = datastoreEntity;
-      if (key.getParent() != null) {
-        if (keyAlreadySet) {
-          // can't provide a key and a parent - one or the other
-          throw new FatalNucleusUserException(PARENT_ALREADY_SET);
-        }
-        parentAlreadySet = true;
-      }
-      datastoreEntity = new Entity(key);
-      copyProperties(old, datastoreEntity);
-      keyAlreadySet = true;
+    return EntityUtils.getPrimaryKeyAsKey(getExecutionContext().getApiAdapter(), mergeOP);
+  }
+
+  private Key getKeyForObject(Object pc) {
+    ApiAdapter adapter = getStoreManager().getApiAdapter();
+    Object internalPk = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
+    AbstractClassMetaData acmd =
+        getExecutionContext().getMetaDataManager().getMetaDataForClass(pc.getClass(), getClassLoaderResolver());
+    return EntityUtils.getPkAsKey(internalPk, acmd, getExecutionContext());
+  }
+
+  private Key getParentKeyFromParentField(ObjectProvider op) {
+    AbstractMemberMetaData parentField = getInsertMappingConsumer().getParentMappingField();
+    if (parentField == null) {
+      return null;
     }
+    Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
+    return parent == null ? null : getKeyForObject(parent);
+  }
+
+  private Key getParentKeyFromExternalFKMappings(ObjectProvider op) {
+    // We don't have a registered key for the object associated with the
+    // state manager but there might be one tied to the foreign key
+    // mappings for this object.  If this is the Many side of a bidirectional
+    // One To Many it might also be available on the parent object.
+    // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
+    Set<JavaTypeMapping> externalFKMappings = getInsertMappingConsumer().getExternalFKMappings();
+    for (JavaTypeMapping fkMapping : externalFKMappings) {
+      Object fkValue = op.getAssociatedValue(fkMapping);
+      if (fkValue != null) {
+        return getKeyForObject(fkValue);
+      }
+    }
+    return null;
   }
 
   private static final Field PROPERTY_MAP_FIELD;
@@ -732,15 +356,15 @@ public class DatastoreFieldManager implements FieldManager {
     }
   }
 
-  private boolean isPKNameField(int fieldNumber) {
+  protected boolean isPKNameField(int fieldNumber) {
     return DatastoreManager.isPKNameField(getClassMetaData(), fieldNumber);
   }
 
-  private boolean isPKIdField(int fieldNumber) {
+  protected boolean isPKIdField(int fieldNumber) {
     return DatastoreManager.isPKIdField(getClassMetaData(), fieldNumber);
   }
 
-  private boolean isParentPK(int fieldNumber) {
+  protected boolean isParentPK(int fieldNumber) {
     boolean result = DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
     if (result) {
       // ew, side effect
@@ -749,322 +373,30 @@ public class DatastoreFieldManager implements FieldManager {
     return result;
   }
 
-  private boolean isUnindexedProperty(AbstractMemberMetaData ammd) {
-    return ammd.hasExtension(DatastoreManager.UNINDEXED_PROPERTY);
-  }
-
-  public void storeShortField(int fieldNumber, short value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  private void storePrimaryKey(int fieldNumber, Object value) {
-    if (fieldIsOfTypeLong(fieldNumber)) {
-      Key key = null;
-      if (value != null) {
-        key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
-      }
-      storeKeyPK(key);
-    } else if (fieldIsOfTypeKey(fieldNumber)) {
-      Key key = (Key) value;
-      if (key != null && key.getParent() != null && parentAlreadySet) {
-        throw new FatalNucleusUserException(PARENT_ALREADY_SET);
-      }
-      storeKeyPK((Key) value);
-    } else {
-      throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
-    }
-  }
-
-  void storeParentField(int fieldNumber, Object value) {
-    if (fieldIsOfTypeKey(fieldNumber)) {
-      storeParentKeyPK((Key) value);
-    } else {
-      throw exceptionForUnexpectedKeyType("Parent primary key", fieldNumber);
-    }
-  }
-
-  public void storeObjectField(int fieldNumber, Object value) {
-    if (isPK(fieldNumber)) {
-      storePrimaryKey(fieldNumber, value);
-    } else if (isParentPK(fieldNumber)) {
-      storeParentField(fieldNumber, value);
-    } else if (isPKIdField(fieldNumber)) {
-      storePKIdField(fieldNumber, value);
-    } else {
-      ClassLoaderResolver clr = getClassLoaderResolver();
-      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      if (repersistingForChildKeys && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
-        // nothing for us to store
-        return;
-      }
-      if (value != null ) {
-        if (ammd.isSerialized()) {
-          // If the field is serialized we don't need to apply
-          // any conversions before setting it on the entity since
-          // the serialization is guaranteed to produce a Blob.
-          value = serializationManager.serialize(clr, ammd, value);
-        } else {
-          if (Enum.class.isAssignableFrom(ammd.getType())) {
-            value = ((Enum) value).name();
-          }
-          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
-        }
-      }
-      if (ammd.getEmbeddedMetaData() != null) {
-        storeEmbeddedField(ammd, fieldNumber, value);
-      } else if ((operation == Operation.INSERT && isInsertable(ammd)) ||
-                 (operation == Operation.UPDATE && isUpdatable(ammd))) {
-        if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
-          if (!repersistingForChildKeys) {
-            // register a callback for later
-            relationFieldManager.storeRelationField(
-                getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
-          }
-          DatastoreTable table = getDatastoreTable();
-          if (table != null && table.isParentKeyProvider(ammd)) {
-            // a parent key provider is either a many-to-one or the child side of a
-            // one-to-one.  Either way we don't want the entity to have a property
-            // corresponding to this field because this information is available in
-            // the key itself
-            return;
-          }
-
-          if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
-            // don't write child keys to the parent if the storage version isn't high enough
-            return;
-          }
-
-          // We still want to write the entity property with the keys
-          value = extractRelationKeys(value);
-        }
-        // unwrap SCO values so that the datastore api doesn't
-        // honk on unknown types
-        value = unwrapSCOField(fieldNumber, value);
-        String propName = EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
-        // validate null values against ammd
-        checkNullValue(ammd, propName, value);
-        if (isUnindexedProperty(ammd)) {
-          datastoreEntity.setUnindexedProperty(propName, value);
-        } else {
-          datastoreEntity.setProperty(propName, value);
-        }
-      }
-    }
-  }
-
-  private ColumnMetaData getColumnMetaData(AbstractMemberMetaData ammd) {
-    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
-      return ammd.getColumnMetaData()[0];
-    }
-    // A OneToMany has its column metadata stored inside
-    // ElementMetaData so look there as well
-    if (ammd.getElementMetaData() != null &&
-        ammd.getElementMetaData().getColumnMetaData() != null &&
-        ammd.getElementMetaData().getColumnMetaData().length > 0) {
-      return ammd.getElementMetaData().getColumnMetaData()[0];
-    }
-    return null;
-  }
-  private boolean isInsertable(AbstractMemberMetaData ammd) {
-    ColumnMetaData cmd = getColumnMetaData(ammd);
-    return cmd == null || cmd.getInsertable();
-  }
-
-  private boolean isUpdatable(AbstractMemberMetaData ammd) {
-    ColumnMetaData cmd = getColumnMetaData(ammd);
-    return cmd == null || cmd.getUpdateable();
-  }
-
-  private Object extractRelationKeys(Object value) {
-    if (value == null) {
-      return null;
-    }
-    if (value instanceof Collection) {
-      Collection coll = (Collection) value;
-      int size = coll.size();
-      List<Key> keys = extractRelationKeys((Collection) value);
-      // if we have fewer keys than objects then there is at least one child
-      // object that still needs to be inserted.  communicate
-      // this upstream.
-      getStateManager().setAssociatedValue(
-          DatastorePersistenceHandler.MISSING_RELATION_KEY,
-           repersistingForChildKeys && size != keys.size() ? true : null);
-      return keys;
-    }
-    Key key = extractChildKey(value);
-    // if we didn't come up with a key that there is a child object that
-    // still needs to be inserted.  communicate this upstream.
-    getStateManager().setAssociatedValue(
-        DatastorePersistenceHandler.MISSING_RELATION_KEY,
-        repersistingForChildKeys && key == null ? true : null);
-    return key;
-  }
-
-  private List<Key> extractRelationKeys(Collection<?> values) {
-    List<Key> keys = Utils.newArrayList();
-    for (Object obj : values) {
-      Key key = extractChildKey(obj);
-      if (key != null) {
-        keys.add(key);
-      }
-    }
-    return keys;
-  }
-
-  /**
-   * @param value The object from which to extract a key.
-   * @return The key of the object.  Returns {@code null} if the object is
-   * being deleted or the object does not yet have a key.
-   */
-  private Key extractChildKey(Object value) {
-    if (value == null) {
-      return null;
-    }
-    ObjectManager om = getObjectManager();
-    StateManager sm = om.findStateManager(value);
-    if (sm == null) {
-      // that's fine, it just means the object hasn't been saved or that it is detached
-      return null;
-    }
-    if (sm.isDeleted((PersistenceCapable) sm.getObject()) ) {
-      return null;
-    }
-    Object primaryKey = storeManager.getApiAdapter().getTargetKeyForSingleFieldIdentity(
-        sm.getInternalObjectId());
-    if (primaryKey == null) {
-      // this is ok, it just means the object has not yet been persisted
-      return null;
-    }
-    Key key = EntityUtils.getPrimaryKeyAsKey(storeManager.getApiAdapter(), sm);
-    if (key == null) {
-      throw new NullPointerException("Could not extract a key from " + value);
-    }
-
-    // We only support owned relationships so this key should be a child
-    // of the entity we are persisting.
-    if (key.getParent() == null) {
-      throw new DatastoreRelationFieldManager.ChildWithoutParentException(datastoreEntity.getKey(), key);
-    } else if (!key.getParent().equals(datastoreEntity.getKey())) {
-      throw new DatastoreRelationFieldManager.ChildWithWrongParentException(datastoreEntity.getKey(), key);
-    }
-    return key;
-  }
-
-  Object unwrapSCOField(int fieldNumber, Object value) {
-    return getStateManager().unwrapSCOField(fieldNumber, value, false);
-  }
-
   /**
    * @see DatastoreRelationFieldManager#storeRelations
    */
   boolean storeRelations() {
-    return relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getObjectManager()));
+    return relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getExecutionContext()));
   }
 
   ClassLoaderResolver getClassLoaderResolver() {
-    return getObjectManager().getClassLoaderResolver();
+    return getExecutionContext().getClassLoaderResolver();
   }
 
-  StateManager getStateManager() {
-    return fieldManagerStateStack.getFirst().stateManager;
+  ObjectProvider getObjectProvider() {
+    return fieldManagerStateStack.getFirst().op;
   }
 
-  ObjectManager getObjectManager() {
-    return getStateManager().getObjectManager();
+  ExecutionContext getExecutionContext() {
+    return getObjectProvider().getExecutionContext();
   }
 
   InsertMappingConsumer getInsertMappingConsumer() {
     return fieldManagerStateStack.getFirst().mappingConsumer;
   }
 
-  /**
-   * We can't trust the fieldNumber on the ammd provided because some embedded
-   * fields don't have this set.  That's why we pass it in as a separate param.
-   */
-  private void storeEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
-    StateManager esm = getEmbeddedStateManager(ammd, fieldNumber, value);
-    // We need to build a mapping consumer for the embedded class so that we
-    // get correct fieldIndex --> metadata mappings for the class in the proper
-    // embedded context
-    // TODO(maxr) Consider caching this
-    InsertMappingConsumer mc = buildMappingConsumer(
-        esm.getClassMetaData(), getClassLoaderResolver(),
-        esm.getClassMetaData().getAllMemberPositions(),
-        ammd.getEmbeddedMetaData());
-    AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mc);
-    fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mc, true));
-    AbstractClassMetaData acmd = esm.getClassMetaData();
-    esm.provideFields(acmd.getAllMemberPositions(), this);
-    fieldManagerStateStack.removeFirst();
-  }
-
-  private void storeParentKeyPK(Key key) {
-    if (key != null && parentAlreadySet) {
-      throw new FatalNucleusUserException(PARENT_ALREADY_SET);
-    }
-    if (datastoreEntity.getParent() != null) {
-      // update is ok if it's a no-op
-      if (!datastoreEntity.getParent().equals(key)) {
-        if (!parentAlreadySet) {
-          throw new FatalNucleusUserException(
-              "Attempt was made to modify the parent of an object of type "
-              + getStateManager().getClassMetaData().getFullClassName() + " identified by "
-              + "key " + datastoreEntity.getKey() + ".  Parents are immutable (changed value is " + key + ").");
-        }
-      }
-    } else if (key != null) {
-      if (!createdWithoutEntity) {
-        // Shouldn't even happen.
-        throw new FatalNucleusUserException("You can only rely on this class to properly handle "
-            + "parent pks if you instantiated the class without providing a datastore "
-            + "entity to the constructor.");
-      }
-
-      if (keyAlreadySet) {
-        throw new FatalNucleusUserException(PARENT_ALREADY_SET);
-      }
-
-      // If this field is labeled as a parent PK we need to recreate the Entity, passing
-      // the value of this field as an arg to the Entity constructor and then moving all
-      // properties on the old entity to the new entity.
-      recreateEntityWithParent(key);
-      parentAlreadySet = true;
-    } else {
-      // Null parent.  Parent is defined on a per-instance basis so
-      // annotating a field as a parent is not necessarily a commitment
-      // to always having a parent.  Null parent is fine.
-    }
-  }
-
-  public void storeLongField(int fieldNumber, long value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeIntField(int fieldNumber, int value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeFloatField(int fieldNumber, float value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeDoubleField(int fieldNumber, double value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeCharField(int fieldNumber, char value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeByteField(int fieldNumber, byte value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  public void storeBooleanField(int fieldNumber, boolean value) {
-    storeObjectField(fieldNumber, value);
-  }
-
-  private boolean isPK(int fieldNumber) {
+  protected boolean isPK(int fieldNumber) {
     // ignore the pk annotations if this object is embedded
     if (fieldManagerStateStack.getFirst().isEmbedded) {
       return false;
@@ -1074,41 +406,16 @@ public class DatastoreFieldManager implements FieldManager {
     return pkPositions != null && pkPositions[0] == fieldNumber;
   }
 
-  private String getPropertyName(int fieldNumber) {
-    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    return EntityUtils.getPropertyName(getIdentifierFactory(), ammd);
-  }
-
-  private AbstractMemberMetaData getMetaData(int fieldNumber) {
+  protected AbstractMemberMetaData getMetaData(int fieldNumber) {
     return fieldManagerStateStack.getFirst().abstractMemberMetaDataProvider.get(fieldNumber);
-  }
-  
-  private void checkNullValue(AbstractMemberMetaData ammd, String propName, Object value) {
-    if (value == null) {
-      // This test goes against the member meta data, since the member meta data
-      // says how to behave in case of unwanted null values (but JDO only).
-      // All other cases of unwanted null values will be handled
-      // by the DatastoreTable as the proxy for "tables" in the datastore.
-      if (ammd.getNullValue() == NullValue.EXCEPTION) {
-      // always throw a JDOUserException as required by the jdo spec
-        throw new NucleusUserException(
-            "Field "
-            + ammd.getFullFieldName()
-            + " is null, but is mandatory as it's described in the jdo metadata");
-      }
-    }
   }
 
   AbstractClassMetaData getClassMetaData() {
-    return getStateManager().getClassMetaData();
+    return getObjectProvider().getClassMetaData();
   }
 
   Entity getEntity() {
     return datastoreEntity;
-  }
-
-  private IdentifierFactory getIdentifierFactory() {
-    return storeManager.getIdentifierFactory();
   }
 
   AbstractMemberMetaData getParentMemberMetaData() {
@@ -1148,11 +455,11 @@ public class DatastoreFieldManager implements FieldManager {
         delayWrite = true;
         // DataNucleus hides the value in the state manager, keyed by the
         // mapping for the order field.
-        Object orderValue = getStateManager().getAssociatedValue(orderMapping);
+        Object orderValue = getObjectProvider().getAssociatedValue(orderMapping);
         if (orderValue != null) {
           // We got a value!  Set it on the entity.
           delayWrite = false;
-          orderMapping.setObject(getObjectManager(), getEntity(), NOT_USED, orderValue);
+          orderMapping.setObject(getExecutionContext(), getEntity(), NOT_USED, orderValue);
         }
       }
     }
@@ -1168,7 +475,7 @@ public class DatastoreFieldManager implements FieldManager {
    * provided that means we need to construct the consumer in an embedded
    * context.
    */
-  private InsertMappingConsumer buildMappingConsumer(
+  protected InsertMappingConsumer buildMappingConsumer(
       AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers, EmbeddedMetaData emd) {
     DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
     if (table == null) {
@@ -1176,6 +483,7 @@ public class DatastoreFieldManager implements FieldManager {
       // strategy that does not have a parent
       throw new NoPersistenceInformationException(acmd.getFullClassName());
     }
+
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     if (emd == null) {
       table.provideDatastoreIdMappings(consumer);
@@ -1184,10 +492,10 @@ public class DatastoreFieldManager implements FieldManager {
       // skip pk mappings if embedded
     }
     table.provideParentMappingField(consumer);
+
     if (createdWithoutEntity || emd != null) {
       // This is the insert case or we're dealing with an embedded field.
-      // Either way we want to fill the consumer with mappings
-      // for everything.
+      // Either way we want to fill the consumer with mappings for everything.
       table.provideNonPrimaryKeyMappings(consumer, emd != null);
       table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
       table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
@@ -1208,6 +516,7 @@ public class DatastoreFieldManager implements FieldManager {
       AbstractMemberMetaData parentField = (AbstractMemberMetaData) emd.getParent();
       EmbeddedMapping embeddedMapping =
           (EmbeddedMapping) parentTable.getMappingForFullFieldName(parentField.getFullFieldName());
+
       // Build a map that takes us from full field name to member meta data.
       // The member meta data in this map comes from the embedded mapping,
       // which means it will have subclass fields and column overrides.
@@ -1219,8 +528,7 @@ public class DatastoreFieldManager implements FieldManager {
         embeddedMetaDataByFullFieldName.put(ammd.getFullFieldName(), ammd);
       }
 
-      // We're going to update the consumer's map so make a copy over which we
-      // can safely iterate.
+      // We're going to update the consumer's map so make a copy over which we can safely iterate.
       Map<Integer, AbstractMemberMetaData> map =
           new HashMap<Integer, AbstractMemberMetaData>(consumer.getFieldIndexToMemberMetaData());
       for (Map.Entry<Integer, AbstractMemberMetaData> entry : map.entrySet()) {
@@ -1262,25 +570,24 @@ public class DatastoreFieldManager implements FieldManager {
   /**
    * Translates field numbers into {@link AbstractMemberMetaData}.
    */
-  private interface AbstractMemberMetaDataProvider {
+  protected interface AbstractMemberMetaDataProvider {
     AbstractMemberMetaData get(int fieldNumber);
   }
 
-  private static final class FieldManagerState {
-    private final StateManager stateManager;
+  protected static final class FieldManagerState {
+    private final ObjectProvider op;
     private final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
     private final InsertMappingConsumer mappingConsumer;
     private final boolean isEmbedded;
 
-    private FieldManagerState(StateManager stateManager,
+    protected FieldManagerState(ObjectProvider op,
         AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,
         InsertMappingConsumer mappingConsumer,
         boolean isEmbedded) {
-      this.stateManager = stateManager;
+      this.op = op;
       this.abstractMemberMetaDataProvider = abstractMemberMetaDataProvider;
       this.mappingConsumer = mappingConsumer;
       this.isEmbedded = isEmbedded;
     }
   }
-
 }

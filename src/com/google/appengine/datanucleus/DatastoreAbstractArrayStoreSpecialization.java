@@ -16,8 +16,8 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.scostore.AbstractArrayStore;
 import org.datanucleus.store.mapped.scostore.AbstractArrayStoreSpecialization;
@@ -37,7 +37,7 @@ public class DatastoreAbstractArrayStoreSpecialization extends DatastoreAbstract
     super(localiser, clr, storeMgr);
   }
 
-  public void clear(StateManager ownerSM, ElementContainerStore ecs) {
+  public void clear(ObjectProvider ownerOP, ElementContainerStore ecs) {
     // The purpose of this method is to null out the fk on the child table,
     // but the only the fks the datastore supports (currently) are parent
     // keys that are part of the child key.  There is no way to modify
@@ -47,7 +47,7 @@ public class DatastoreAbstractArrayStoreSpecialization extends DatastoreAbstract
     // clearing and then rewriting all the fks.
   }
 
-  public int[] internalAdd(StateManager ownerSM, AbstractArrayStore aas, Object element,
+  public int[] internalAdd(ObjectProvider ownerOP, AbstractArrayStore aas, Object element,
       ManagedConnection mconn, boolean batched, int orderId,
       boolean executeNow) throws MappedDatastoreException {
     // TODO(maxr) Figure out when this gets called.

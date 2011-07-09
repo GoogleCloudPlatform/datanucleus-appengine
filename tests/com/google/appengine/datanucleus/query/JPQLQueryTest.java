@@ -26,16 +26,14 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
-import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
-import com.google.appengine.datanucleus.FatalNucleusUserException;
-import com.google.appengine.datanucleus.JPATestCase;
 import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
+import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.BidirectionalChildListJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkListJPA;
 import com.google.appengine.datanucleus.test.BidirectionalGrandchildListJPA;
@@ -72,10 +70,9 @@ import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.Un
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
 
-import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.jpa.EntityManagerImpl;
-import org.datanucleus.jpa.JPAQuery;
+import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.api.jpa.JPAQuery;
 import org.datanucleus.query.expression.Expression;
 import org.easymock.EasyMock;
 
@@ -154,7 +151,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testUnsupportedFilters_NoResultExpr() {
-    String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
+    String baseQuery = "SELECT FROM " + Book.class.getName() + " b ";
     testUnsupportedFilters(baseQuery);
   }
 
@@ -170,7 +167,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author HAVING title = 'foo'",
                                 DatastoreQuery.GROUP_BY_OP);
     assertQueryUnsupportedByOrm(
-        "select avg(firstPublished) from " + Book.class.getName(),
+        "select avg(firstPublished) from " + Book.class.getName() + " b ",
         new Expression.Operator("avg", 0));
 
     Set<Expression.Operator> unsupportedOps =
@@ -207,8 +204,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     // multiple inequality filters
     // TODO(maxr) Make this pass against the real datastore.
-    // We need to have it return BadRequest instead of NeedIndex for that to
-    // happen.
+    // We need to have it return BadRequest instead of NeedIndex for that to happen.
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2 AND isbn < 4)", IllegalArgumentException.class);
     // inequality filter prop is not the same as the first order by prop
     assertQueryUnsupportedByDatastore(baseQuery + "(title > 2) order by isbn", IllegalArgumentException.class);
@@ -222,7 +218,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testSupportedFilters_NoResultExpr() {
-    String baseQuery = "SELECT FROM " + Book.class.getName() + " ";
+    String baseQuery = "SELECT FROM " + Book.class.getName() + " b ";
     testSupportedFilters(baseQuery);
   }
 
@@ -252,7 +248,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertQuerySupported(baseQuery + "isbn < 4", Utils.newArrayList(ISBN_LT_4), NO_SORTS);
     assertQuerySupported(baseQuery + "isbn <= 4", Utils.newArrayList(ISBN_LTE_4), NO_SORTS);
 
-    baseQuery = "SELECT FROM " + Book.class.getName() + " ";
+    baseQuery = "SELECT FROM " + Book.class.getName() + " b ";
     assertQuerySupported(baseQuery + "ORDER BY title ASC", NO_FILTERS,
                          Utils.newArrayList(TITLE_ASC));
     assertQuerySupported(baseQuery + "ORDER BY isbn DESC", NO_FILTERS,
@@ -293,7 +289,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
+                             Book.class.getName() + " b" +
                              " WHERE author = 'Joe Blow'" +
                              " ORDER BY title DESC, isbn ASC");
 
@@ -315,7 +311,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
+                             Book.class.getName() + " b" +
                              " WHERE author = 'Joe Blow'" +
                              " ORDER BY title");
 
@@ -337,7 +333,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
 
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
+                             Book.class.getName() + " b" + 
                              " WHERE author = 'Joe Blow'" +
                              " ORDER BY title DESC, isbn ASC");
 
@@ -367,7 +363,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
     ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
+                             Book.class.getName() + " b" + 
                              " WHERE author = 'Joe Blow'" +
                              " ORDER BY title DESC, isbn ASC");
 
@@ -398,7 +394,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Joe Blow", "54321", "A Book"));
     ds.put(Book.newBookEntity("Jane Blow", "13579", "Baz Book"));
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
+                             Book.class.getName() + " b" + 
                              " WHERE author = 'Joe Blow'" +
                              " ORDER BY title DESC, isbn ASC");
 
@@ -443,7 +439,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testSerialization() throws IOException {
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b ");
     q.getResultList();
 
     JPQLQuery innerQuery = (JPQLQuery) ((JPAQuery) q).getInternalQuery();
@@ -455,18 +451,17 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testBindVariables() {
 
-    assertQuerySupported("select from " + Book.class.getName() + " where title = :title",
-                         Utils.newArrayList(TITLE_EQ_2), NO_SORTS, "title", 2L);
+    assertQuerySupported("select from " + Book.class.getName() + " b where title = :titleParam",
+                         Utils.newArrayList(TITLE_EQ_2), NO_SORTS, "titleParam", 2L);
 
-    assertQuerySupported("select from " + Book.class.getName()
-                         + " where title = :title AND isbn = :isbn",
-                         Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4), NO_SORTS, "title", 2L, "isbn",
-                         4L);
+    assertQuerySupported("select from " + Book.class.getName() + " b" + 
+                         " where title = :titleParam AND isbn = :isbnParam",
+                         Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4), NO_SORTS, "titleParam", 2L, "isbnParam", 4L);
 
-    assertQuerySupported("select from " + Book.class.getName()
-                         + " where title = :title AND isbn = :isbn order by title asc, isbn desc",
+    assertQuerySupported("select from " + Book.class.getName() + " b" + 
+                         " where title = :titleParam AND isbn = :isbnParam order by title asc, isbn desc",
                          Utils.newArrayList(TITLE_EQ_2, ISBN_EQ_4),
-                         Utils.newArrayList(TITLE_ASC, ISBN_DESC), "title", 2L, "isbn", 4L);
+                         Utils.newArrayList(TITLE_ASC, ISBN_DESC), "titleParam", 2L, "isbnParam", 4L);
   }
 
   public void testKeyQuery() {
@@ -474,7 +469,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where id = :key");
+        "select from " + Book.class.getName() + " b where id = :key");
     q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
@@ -497,22 +492,22 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(entityWithId);
 
     Query q = em.createQuery(
-        "select from " + HasKeyPkJPA.class.getName() + " where id = :key");
+        "select from " + HasKeyPkJPA.class.getName() + " b where id = :key");
     q.setParameter("key", entityWithName.getKey());
     HasKeyPkJPA result = (HasKeyPkJPA) q.getSingleResult();
     assertEquals(entityWithName.getKey(), result.getId());
 
-    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykey");
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " b where id = :mykey");
     q.setParameter("mykey", entityWithId.getKey());
     result = (HasKeyPkJPA) q.getSingleResult();
     assertEquals(entityWithId.getKey(), result.getId());
 
-    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykeyname");
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " b where id = :mykeyname");
     q.setParameter("mykeyname", entityWithName.getKey().getName());
     result = (HasKeyPkJPA) q.getSingleResult();
     assertEquals(entityWithName.getKey(), result.getId());
 
-    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " where id = :mykeyid");
+    q = em.createQuery("select from " + HasKeyPkJPA.class.getName() + " b where id = :mykeyid");
     q.setParameter("mykeyid", entityWithId.getKey().getId());
     result = (HasKeyPkJPA) q.getSingleResult();
     assertEquals(entityWithId.getKey(), result.getId());
@@ -523,8 +518,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName()
-        + " where id = :key order by isbn ASC");
+        "select from " + Book.class.getName() + " c where id = :key order by isbn ASC");
     q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
@@ -537,8 +531,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(bookEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + Book.class.getName()
-        + " where id = :key and isbn = \"67890\"");
+        "select from " + Book.class.getName() + " c where id = :key and isbn = \"67890\"");
     q.setParameter("key", KeyFactory.keyToString(bookEntity.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
@@ -555,7 +548,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
-        + " where id > :key");
+        + " b where id > :key");
     q.setParameter("key", KeyFactory.keyToString(bookEntity1.getKey()));
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
@@ -572,7 +565,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + Book.class.getName()
-        + " order by id DESC");
+        + " b order by id DESC");
     @SuppressWarnings("unchecked")
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(2, books.size());
@@ -582,20 +575,20 @@ public class JPQLQueryTest extends JPATestCase {
   public void testKeyQuery_FilterAndSortByKeyComponent() {
     // filter by pk-id
     assertQueryUnsupportedByDatastore(
-        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " where id = 4",
-        FatalNucleusUserException.class);
+        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " b where id = 4",
+        NucleusFatalUserException.class);
     // sort by pk-id
     assertQueryUnsupportedByDatastore(
-        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " order by id",
-        FatalNucleusUserException.class);
+        "select from " + HasEncodedStringPkSeparateIdFieldJPA.class.getName() + " b order by id",
+        NucleusFatalUserException.class);
     // filter by pk-id
     assertQueryUnsupportedByDatastore(
-        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " where name = 4",
-        FatalNucleusUserException.class);
+        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " b where name = 4",
+        NucleusFatalUserException.class);
     // sort by pk-id
     assertQueryUnsupportedByDatastore(
-        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " order by name",
-        FatalNucleusUserException.class);
+        "select from " + HasEncodedStringPkSeparateNameFieldJPA.class.getName() + " b order by name",
+        NucleusFatalUserException.class);
   }
 
   public void testAncestorQuery() {
@@ -608,7 +601,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     javax.persistence.Query q = em.createQuery(
         "select from " + HasStringAncestorStringPkJPA.class.getName()
-        + " where ancestorId = :ancId");
+        + " b where ancestorId = :ancId");
     q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
 
     @SuppressWarnings("unchecked")
@@ -633,14 +626,19 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(hasAncestorEntity);
 
     javax.persistence.Query q = em.createQuery(
-        "select from " + HasStringAncestorStringPkJPA.class.getName()
+        "select from " + HasStringAncestorStringPkJPA.class.getName() + " b"
         + " where ancestorId > :ancId");
     q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
     try {
       q.getResultList();
       fail("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
   }
 
@@ -650,8 +648,8 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("Joe Blow", "12345", "Foo Book", 2001));
 
     Query q = em.createQuery("SELECT FROM " +
-                             Book.class.getName() +
-                             " WHERE author = 'Joe Blow'" +
+                             Book.class.getName() + " b" +
+                             " WHERE b.author = 'Joe Blow'" +
                              " ORDER BY firstPublished ASC");
 
     @SuppressWarnings("unchecked")
@@ -692,7 +690,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", book);
     List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -712,7 +710,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where id = :parentId and book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where id = :parentId and book = :b");
     q.setParameter("parentId", KeyFactory.keyToString(bookEntity.getKey()));
     q.setParameter("b", book);
     List<HasOneToOneJPA> result = (List<HasOneToOneJPA>) q.getResultList();
@@ -739,13 +737,18 @@ public class JPQLQueryTest extends JPATestCase {
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book > :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book > :b");
     q.setParameter("b", book);
     try {
       q.getResultList();
       fail("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
   }
 
@@ -762,7 +765,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", book);
     try {
       q.getResultList();
@@ -782,7 +785,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(parentEntity);
 
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", parentEntity.getKey());
     try {
       q.getResultList();
@@ -797,7 +800,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity bookEntity = new Entity(Book.class.getSimpleName(), parent);
 
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", bookEntity.getKey());
 
     assertTrue(q.getResultList().isEmpty());
@@ -811,7 +814,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Book book = new Book();
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book = :b");
+        "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", book);
     try {
       q.getResultList();
@@ -835,7 +838,7 @@ public class JPQLQueryTest extends JPATestCase {
         em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     Query q = em.createQuery("SELECT FROM " +
                              BidirectionalChildListJPA.class.getName() +
-                             " WHERE parent = :p");
+                             " c WHERE parent = :p");
 
     q.setParameter("p", parent);
     @SuppressWarnings("unchecked")
@@ -858,7 +861,7 @@ public class JPQLQueryTest extends JPATestCase {
     HasOneToManyLongPkListJPA parent =
         em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     Query q = em.createQuery("SELECT FROM " +
-                             BidirectionalChildLongPkListJPA.class.getName() + " WHERE parent = :p");
+                             BidirectionalChildLongPkListJPA.class.getName() + " c WHERE parent = :p");
 
     q.setParameter("p", parent.getId());
     @SuppressWarnings("unchecked")
@@ -881,7 +884,7 @@ public class JPQLQueryTest extends JPATestCase {
     HasOneToManyLongPkListJPA parent =
         em.find(HasOneToManyLongPkListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     Query q = em.createQuery("SELECT FROM " +
-                             BidirectionalChildLongPkListJPA.class.getName() + " WHERE parent = :p");
+                             BidirectionalChildLongPkListJPA.class.getName() + " c WHERE parent = :p");
 
     q.setParameter("p", parent.getId().intValue());
     @SuppressWarnings("unchecked")
@@ -906,7 +909,7 @@ public class JPQLQueryTest extends JPATestCase {
     BidirectionalChildListJPA child =
         em.find(BidirectionalChildListJPA.class, KeyFactory.keyToString(childEntity.getKey()));
     Query q = em.createQuery(
-        "select from " + BidirectionalGrandchildListJPA.class.getName() + " where parent = :p");
+        "select from " + BidirectionalGrandchildListJPA.class.getName() + " c where parent = :p");
     q.setParameter("p", child);
     @SuppressWarnings("unchecked")
     List<BidirectionalGrandchildListJPA> result = (List<BidirectionalGrandchildListJPA>) q.getResultList();
@@ -930,7 +933,7 @@ public class JPQLQueryTest extends JPATestCase {
         em.find(HasOneToManyListJPA.class, KeyFactory.keyToString(parentEntity.getKey()));
     Query q = em.createQuery("SELECT FROM " +
                              BidirectionalChildListJPA.class.getName() +
-                             " WHERE parent = :p");
+                             " c WHERE parent = :p");
 
     q.setParameter("p", parent.getId());
     @SuppressWarnings("unchecked")
@@ -954,7 +957,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery("SELECT FROM " +
                              BidirectionalChildListJPA.class.getName() +
-                             " WHERE parent = :p");
+                             " c WHERE parent = :p");
 
     q.setParameter("p", parentEntity.getKey());
     @SuppressWarnings("unchecked")
@@ -974,7 +977,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where strList = :p1 AND strList = :p2");
+        + " c where strList = :p1 AND strList = :p2");
     q.setParameter("p1", "1");
     q.setParameter("p2", "3");
     @SuppressWarnings("unchecked")
@@ -987,8 +990,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(0, result2.size());
 
     q = em.createQuery(
-        "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where keyList = :p1 AND keyList = :p2");
+        "select from " + HasMultiValuePropsJPA.class.getName() + " c where keyList = :p1 AND keyList = :p2");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
     assertEquals(1, result.size());
@@ -1015,7 +1017,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where strList MEMBER OF :p1 AND strList MEMBER OF :p2");
+        + " c where strList MEMBER OF :p1 AND strList MEMBER OF :p2");
     q.setParameter("p1", "1");
     q.setParameter("p2", "3");
     @SuppressWarnings("unchecked")
@@ -1029,7 +1031,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where keyList MEMBER OF :p1 AND keyList MEMBER OF :p2");
+        + " c where keyList MEMBER OF :p1 AND keyList MEMBER OF :p2");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
     result = q.getResultList();
@@ -1051,7 +1053,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where :p1 MEMBER OF strList AND :p2 MEMBER OF strList");
+        + " c where :p1 MEMBER OF strList AND :p2 MEMBER OF strList");
     q.setParameter("p1", "1");
     q.setParameter("p2", "3");
     @SuppressWarnings("unchecked")
@@ -1065,7 +1067,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where :p1 MEMBER OF keyList AND :p2 MEMBER OF keyList");
+        + " c where :p1 MEMBER OF keyList AND :p2 MEMBER OF keyList");
     q.setParameter("p1", KeyFactory.createKey("be", "bo"));
     q.setParameter("p2", KeyFactory.createKey("bo", "be"));
     result = q.getResultList();
@@ -1079,7 +1081,7 @@ public class JPQLQueryTest extends JPATestCase {
     // try one with a literal value
     q = em.createQuery(
         "select from " + HasMultiValuePropsJPA.class.getName()
-        + " where '1' MEMBER OF strList");
+        + " c where '1' MEMBER OF strList");
     result = q.getResultList();
     assertEquals(1, result.size());
   }
@@ -1093,7 +1095,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(entity);
 
     Query q = em.createQuery(
-        "select from " + Person.class.getName() + " where name.first = \"max\"");
+        "select from " + Person.class.getName() + " c where name.first = \"max\"");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(1, result.size());
@@ -1109,7 +1111,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
-        + " where anotherName.last = \"notross\"");
+        + " c where anotherName.last = \"notross\"");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(1, result.size());
@@ -1125,7 +1127,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
-        + " where name.first = \"max\" AND anotherName.last = \"notross\"");
+        + " c where name.first = \"max\" AND anotherName.last = \"notross\"");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(1, result.size());
@@ -1134,7 +1136,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterBySubObject_UnknownField() {
     try {
       em.createQuery(
-          "select from " + Flight.class.getName() + " where origin.first = \"max\"")
+          "select from " + Flight.class.getName() + " c where origin.first = \"max\"")
           .getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -1145,7 +1147,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testFilterBySubObject_NotEmbeddable() {
     try {
       em.createQuery(
-          "select from " + HasOneToOneJPA.class.getName() + " where flight.origin = \"max\"")
+          "select from " + HasOneToOneJPA.class.getName() + " c where flight.origin = \"max\"")
           .getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -1168,7 +1170,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("anotherLast", "notross2");
     ds.put(entity);
 
-    Query q = em.createQuery("select from " + Person.class.getName() + " order by name.first desc");
+    Query q = em.createQuery("select from " + Person.class.getName() + " c order by name.first desc");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(2, result.size());
@@ -1192,7 +1194,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(entity);
 
     Query q =
-        em.createQuery("select from " + Person.class.getName() + " order by anotherName.last desc");
+        em.createQuery("select from " + Person.class.getName() + " c order by anotherName.last desc");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(2, result.size());
@@ -1224,7 +1226,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     Query q = em.createQuery(
         "select from " + Person.class.getName()
-        + " order by name.first asc, anotherName.last desc");
+        + " c order by name.first asc, anotherName.last desc");
     @SuppressWarnings("unchecked")
     List<Person> result = (List<Person>) q.getResultList();
     assertEquals(3, result.size());
@@ -1236,7 +1238,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testSortBySubObject_UnknownField() {
     try {
       em.createQuery(
-          "select from " + Book.class.getName() + " order by author.first").getResultList();
+          "select from " + Book.class.getName() + " c order by author.first").getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -1246,7 +1248,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testSortBySubObject_NotEmbeddable() {
     try {
       em.createQuery(
-          "select from " + HasOneToOneJPA.class.getName() + " order by book.author")
+          "select from " + HasOneToOneJPA.class.getName() + " c order by book.author")
           .getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -1259,7 +1261,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     Query q = em.createQuery(
-        "select from " + KitchenSink.class.getName() + " where bigDecimal = :bd");
+        "select from " + KitchenSink.class.getName() + " c where bigDecimal = :bd");
     q.setParameter("bd", new BigDecimal(2.444d));
     @SuppressWarnings("unchecked")
     List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
@@ -1270,12 +1272,12 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("auth", "123432", "title", -40));
 
     Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where firstPublished = -40");
+        "select from " + Book.class.getName() + " c where firstPublished = -40");
     @SuppressWarnings("unchecked")
     List<Book> results = (List<Book>) q.getResultList();
     assertEquals(1, results.size());
     q = em.createQuery(
-        "select from " + Book.class.getName() + " where firstPublished > -41");
+        "select from " + Book.class.getName() + " c where firstPublished > -41");
     @SuppressWarnings("unchecked")
     List<Book> results2 = (List<Book>) q.getResultList();
     assertEquals(1, results2.size());
@@ -1287,7 +1289,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     Query q = em.createQuery(
-        "select from " + HasDoubleJPA.class.getName() + " where aDouble > -2.25");
+        "select from " + HasDoubleJPA.class.getName() + " c where aDouble > -2.25");
     @SuppressWarnings("unchecked")
     List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
     assertEquals(1, results.size());
@@ -1297,7 +1299,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(Book.newBookEntity("auth", "123432", "title", -40));
 
     Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where firstPublished = :p");
+        "select from " + Book.class.getName() + " c where firstPublished = :p");
     q.setParameter("p", -40);
     @SuppressWarnings("unchecked")
     List<Book> results = (List<Book>) q.getResultList();
@@ -1308,7 +1310,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasUnencodedStringPkJPA.class.getSimpleName(), "yar");
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :p");
+        "select from " + HasUnencodedStringPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey().getName());
     @SuppressWarnings("unchecked")
     List<HasUnencodedStringPkJPA> results =
@@ -1317,7 +1319,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(e.getKey().getName(), results.get(0).getId());
 
     q = em.createQuery(
-        "select from " + HasUnencodedStringPkJPA.class.getName() + " where id = :p");
+        "select from " + HasUnencodedStringPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey());
     @SuppressWarnings("unchecked")
     List<HasUnencodedStringPkJPA> results2 =
@@ -1330,7 +1332,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasLongPkJPA.class.getSimpleName());
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + HasLongPkJPA.class.getName() + " where id = :p");
+        "select from " + HasLongPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey().getId());
     @SuppressWarnings("unchecked")
     List<HasLongPkJPA> results = (List<HasLongPkJPA>) q.getResultList();
@@ -1338,7 +1340,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(Long.valueOf(e.getKey().getId()), results.get(0).getId());
 
     q = em.createQuery(
-        "select from " + HasLongPkJPA.class.getName() + " where id = :p");
+        "select from " + HasLongPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey().getId());
     @SuppressWarnings("unchecked")
     List<HasLongPkJPA> results2 = (List<HasLongPkJPA>) q.getResultList();
@@ -1349,17 +1351,17 @@ public class JPQLQueryTest extends JPATestCase {
   public void testKeyQueryWithEncodedStringPk() {
     Entity e = new Entity(HasEncodedStringPkJPA.class.getSimpleName(), "yar");
     ds.put(e);
-    Query q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
+    Query q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey().getName());
     HasEncodedStringPkJPA result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
 
-    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
+    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey());
     result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
 
-    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " where id = :p");
+    q = em.createQuery("select from " + HasEncodedStringPkJPA.class.getName() + " c where id = :p");
     q.setParameter("p", e.getKey().getName());
     result = (HasEncodedStringPkJPA) q.getSingleResult();
     assertEquals(KeyFactory.keyToString(e.getKey()), result.getId());
@@ -1369,7 +1371,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("max", "12345", "t1");
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where title = :p");
+        "select from " + Book.class.getName() + " c where title = :p");
     q.setParameter("p", "t1");
     Book pojo = (Book) q.getSingleResult();
     assertEquals(e.getKey(), KeyFactory.stringToKey(pojo.getId()));
@@ -1379,7 +1381,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = Book.newBookEntity("max", "12345", "t1");
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where title = :p");
+        "select from " + Book.class.getName() + " c where title = :p");
     q.setParameter("p", "not t1");
     try {
       q.getSingleResult();
@@ -1395,7 +1397,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     ds.put(e2);
     Query q = em.createQuery(
-        "select from " + Book.class.getName() + " where title = :p");
+        "select from " + Book.class.getName() + " c where title = :p");
     q.setParameter("p", "t1");
     try {
       q.getSingleResult();
@@ -1408,7 +1410,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSortByUnknownProperty() {
     try {
-      em.createQuery("select from " + Book.class.getName() + " order by dne").getResultList();
+      em.createQuery("select from " + Book.class.getName() + " c order by dne").getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -1439,7 +1441,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     try {
       javax.persistence.Query q = em.createQuery(
-          "select from " + Book.class.getName());
+          "select from " + Book.class.getName() + " c");
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       try {
@@ -1473,7 +1475,7 @@ public class JPQLQueryTest extends JPATestCase {
     setDelegateForThread(dd);
 
     try {
-      Query q = em.createQuery("select from " + Book.class.getName());
+      Query q = em.createQuery("select from " + Book.class.getName() + " b");
       try {
         q.getResultList();
         fail("expected exception");
@@ -1491,13 +1493,13 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     assertEquals(2, q.getSingleResult());
 
-    q = em.createQuery("select COUNT(id) from " + Book.class.getName());
+    q = em.createQuery("select COUNT(id) from " + Book.class.getName() + " c");
     assertEquals(2, q.getSingleResult());
 
-    q = em.createQuery("select Count(id) from " + Book.class.getName());
+    q = em.createQuery("select Count(id) from " + Book.class.getName() + " c");
     assertEquals(2, q.getSingleResult());
   }
 
@@ -1507,7 +1509,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     ds.put(e2);
     Query q = em.createQuery(
-            "select count(id) from " + Book.class.getName() + " where firstPublished = 2003");
+            "select count(id) from " + Book.class.getName() + " c" + " where firstPublished = 2003");
     assertEquals(1, q.getSingleResult());
   }
 
@@ -1516,7 +1518,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query q = em.createQuery("select count(doesnotexist) from " + Book.class.getName());
+    Query q = em.createQuery("select count(doesnotexist) from " + Book.class.getName() + " c");
     try {
       q.getSingleResult();
       fail("expected exception");
@@ -1530,7 +1532,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setFirstResult(1);
     assertEquals(1, q.getSingleResult());
   }
@@ -1540,7 +1542,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setMaxResults(1);
     assertEquals(1, q.getSingleResult());
   }
@@ -1552,23 +1554,17 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     ds.put(e2);
     ds.put(e3);
-    Query q = em.createQuery("select count(id) from " + Book.class.getName());
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setFirstResult(1);
     q.setMaxResults(1);
     assertEquals(1, q.getSingleResult());
-  }
-
-  public void testQueryCacheDisabled() {
-    ObjectManager om = ((EntityManagerImpl) em).getObjectManager();
-    JPQLQuery q = new JPQLQuery(om, "select from " + Book.class.getName());
-    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached", true));
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
     Entity e = new Entity(HasEnumJPA.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
     ds.put(e);
-    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
+    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " c" + " where myEnum = :p1");
     q.setParameter("p1", HasEnumJPA.MyEnum.V1.name());
     List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1578,7 +1574,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasEnumJPA.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
     ds.put(e);
-    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " where myEnum = :p1");
+    Query q = em.createQuery("select from " + HasEnumJPA.class.getName() + " c" + " where myEnum = :p1");
     q.setParameter("p1", HasEnumJPA.MyEnum.V1);
     List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1589,7 +1585,7 @@ public class JPQLQueryTest extends JPATestCase {
     e.setProperty("myEnum", HasEnumJPA.MyEnum.V1.name());
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + HasEnumJPA.class.getName() + " where myEnum = '"
+        "select from " + HasEnumJPA.class.getName() + " c" + " where myEnum = '"
         + HasEnumJPA.MyEnum.V1.name() + "'");
     List<HasEnumJPA> result = (List<HasEnumJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1602,7 +1598,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
     Query
         q =
-        em.createQuery("select from " + HasBytesJPA.class.getName() + " where shortBlob = :p1");
+        em.createQuery("select from " + HasBytesJPA.class.getName() + " c" + " where shortBlob = :p1");
     q.setParameter("p1", new ShortBlob("short blob".getBytes()));
     List<HasBytesJPA> result = (List<HasBytesJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1615,7 +1611,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
     Query
         q =
-        em.createQuery("select from " + HasBytesJPA.class.getName() + " where primBytes = :p1");
+        em.createQuery("select from " + HasBytesJPA.class.getName() + " c" + " where primBytes = :p1");
     q.setParameter("p1", "short blob".getBytes());
     List<HasBytesJPA> result = (List<HasBytesJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1626,7 +1622,7 @@ public class JPQLQueryTest extends JPATestCase {
     e.setProperty("onePrimByte", 8L);
     e.setProperty("bytes", new ShortBlob("short blob".getBytes()));
     ds.put(e);
-    Query q = em.createQuery("select from " + HasBytesJPA.class.getName() + " where bytes = :p1");
+    Query q = em.createQuery("select from " + HasBytesJPA.class.getName() + " c" + " where bytes = :p1");
     q.setParameter("p1", PrimitiveArrays.asList("short blob".getBytes()).toArray(new Byte[0]));
     List<HasBytesJPA> result = (List<HasBytesJPA>) q.getResultList();
     assertEquals(1, result.size());
@@ -1703,7 +1699,7 @@ public class JPQLQueryTest extends JPATestCase {
     e.setProperty("string", null);
     ds.put(e);
 
-    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = null");
+    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " c where string = null");
     @SuppressWarnings("unchecked")
     List<NullDataJPA> results = (List<NullDataJPA>) q.getResultList();
     assertEquals(1, results.size());
@@ -1714,7 +1710,7 @@ public class JPQLQueryTest extends JPATestCase {
     e.setProperty("string", null);
     ds.put(e);
 
-    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " where string = :p");
+    Query q = em.createQuery("select from " + NullDataJPA.class.getName() + " c where string = :p");
     q.setParameter("p", null);
     @SuppressWarnings("unchecked")
     List<NullDataJPA> results = (List<NullDataJPA>) q.getResultList();
@@ -1726,7 +1722,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyKeyPkSetJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyKeyPkSetJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<HasOneToManyKeyPkSetJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1739,7 +1735,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyKeyPkListJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyKeyPkListJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<HasOneToManyKeyPkListJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1752,7 +1748,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyLongPkSetJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyLongPkSetJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<HasOneToManyLongPkSetJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1765,7 +1761,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyLongPkListJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyLongPkListJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<HasOneToManyLongPkListJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1778,7 +1774,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkSetJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkSetJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<HasOneToManyUnencodedStringPkSetJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1791,7 +1787,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     beginTxn();
-    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkListJPA.class.getName());
+    Query q = em.createQuery("select from " + HasOneToManyUnencodedStringPkListJPA.class.getName() + " c ");
     @SuppressWarnings("unchecked")
     List<HasOneToManyUnencodedStringPkListJPA> results = q.getResultList();
     assertEquals(1, results.size());
@@ -1811,7 +1807,7 @@ public class JPQLQueryTest extends JPATestCase {
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
-      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where id = :ids");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
@@ -1835,7 +1831,7 @@ public class JPQLQueryTest extends JPATestCase {
     Key key = KeyFactory.createKey("yar", "does not exist");
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
-      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where id = :ids");
       q.setParameter("ids", Utils.newArrayList(
           KeyFactory.keyToString(key),
           KeyFactory.keyToString(e1.getKey()),
@@ -1862,7 +1858,7 @@ public class JPQLQueryTest extends JPATestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Key key = KeyFactory.createKey("yar", "does not exist");
-      Query q = em.createQuery("select from " + Book.class.getName() + " where id IN (:ids)");
+      Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where id IN (:ids)");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
@@ -1870,7 +1866,7 @@ public class JPQLQueryTest extends JPATestCase {
       assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
       assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
-      q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q = em.createQuery("select from " + Book.class.getName() + " c" + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
       q.setParameter("id2", e1.getKey());
       q.setParameter("id3", e2.getKey());
@@ -1879,7 +1875,7 @@ public class JPQLQueryTest extends JPATestCase {
       assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
       assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
-      q = em.createQuery("select from " + Book.class.getName() + " where "
+      q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                          + "id IN (:id1, :id3) OR id IN (:id2)");
       q.setParameter("id1", key);
       q.setParameter("id2", e1.getKey());
@@ -1905,7 +1901,7 @@ public class JPQLQueryTest extends JPATestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Key key = KeyFactory.createKey("yar", "does not exist");
-      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id = :ids");
+      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id = :ids");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       int count = (Integer) q.getSingleResult();
       assertEquals(2, count);
@@ -1926,12 +1922,12 @@ public class JPQLQueryTest extends JPATestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Key key = KeyFactory.createKey("yar", "does not exist");
-      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " where id IN (:ids)");
+      Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id IN (:ids)");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       int count = (Integer) q.getSingleResult();
       assertEquals(2, count);
 
-      q = em.createQuery("select count(id) from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
       q.setParameter("id2", e1.getKey());
       q.setParameter("id3", e2.getKey());
@@ -1953,7 +1949,7 @@ public class JPQLQueryTest extends JPATestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
-      Query q = em.createQuery("select from " + Book.class.getName() + " where id = :ids");
+      Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where id = :ids");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
@@ -1976,7 +1972,7 @@ public class JPQLQueryTest extends JPATestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Key key = KeyFactory.createKey(e1.getKey(), "yar", "does not exist");
-      Query q = em.createQuery("select from " + Book.class.getName() + " where id IN (:ids)");
+      Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where id IN (:ids)");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
@@ -1984,7 +1980,7 @@ public class JPQLQueryTest extends JPATestCase {
       assertEquals(e1.getKey(), KeyFactory.stringToKey(books.get(0).getId()));
       assertEquals(e2.getKey(), KeyFactory.stringToKey(books.get(1).getId()));
 
-      q = em.createQuery("select from " + Book.class.getName() + " where id IN (:id1, :id2, :id3)");
+      q = em.createQuery("select from " + Book.class.getName() + " c" + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
       q.setParameter("id2", e1.getKey());
       q.setParameter("id3", e2.getKey());
@@ -1999,7 +1995,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testBatchGet_Illegal() {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
-    Query q = em.createQuery("select from " + Flight.class.getName() + " where origin = :ids");
+    Query q = em.createQuery("select from " + Flight.class.getName() + " c" + " where origin = :ids");
     q.setParameter("ids", Utils.newArrayList());
     try {
       q.getResultList();
@@ -2008,7 +2004,7 @@ public class JPQLQueryTest extends JPATestCase {
       // good
     }
     q = em.createQuery(
-        "select from " + Flight.class.getName() + " where id = :ids and origin = :origin");
+        "select from " + Flight.class.getName() + " c" + " where id = :ids and origin = :origin");
     q.setParameter("ids", Utils.newArrayList());
     q.setParameter("origin", "bos");
     try {
@@ -2018,7 +2014,7 @@ public class JPQLQueryTest extends JPATestCase {
       // good
     }
     q = em.createQuery(
-        "select from " + Flight.class.getName() + " where origin = :origin and id = :ids");
+        "select from " + Flight.class.getName() + " c" + " where origin = :origin and id = :ids");
     q.setParameter("origin", "bos");
     q.setParameter("ids", Utils.newArrayList());
     try {
@@ -2027,7 +2023,7 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (PersistenceException e) {
       // good
     }
-    q = em.createQuery("select from " + Flight.class.getName() + " where id > :ids");
+    q = em.createQuery("select from " + Flight.class.getName() + " c" + " where id > :ids");
     q.setParameter("ids", Utils.newArrayList());
     try {
       q.getResultList();
@@ -2035,7 +2031,7 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (PersistenceException e) {
       // good
     }
-    q = em.createQuery("select from " + Flight.class.getName() + " where id = :ids order by id");
+    q = em.createQuery("select from " + Flight.class.getName() + " c" + " where id = :ids order by id");
     q.setParameter("ids", Utils.newArrayList());
     try {
       q.getResultList();
@@ -2067,7 +2063,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select title from " + Book.class.getName());
+    Query q = em.createQuery("select title from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<String> titles = (List<String>) q.getResultList();
     assertEquals(1, titles.size());
@@ -2091,7 +2087,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e2);
 
     beginTxn();
-    Query q = em.createQuery("select id from " + Book.class.getName());
+    Query q = em.createQuery("select id from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<String> ids = (List<String>) q.getResultList();
     assertEquals(2, ids.size());
@@ -2111,7 +2107,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_TwoFields() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select author, isbn from " + Book.class.getName());
+    Query q = em.createQuery("select author, isbn from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2136,7 +2132,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_TwoIdFields() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select id, id from " + Book.class.getName());
+    Query q = em.createQuery("select id, id from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2161,7 +2157,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_TwoIdFields_IdIsFirst() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select id, author from " + Book.class.getName());
+    Query q = em.createQuery("select id, author from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2186,7 +2182,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_TwoIdFields_IdIsSecond() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select author, id from " + Book.class.getName());
+    Query q = em.createQuery("select author, id from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2213,7 +2209,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "author", "12345", "the title");
     ds.put(e2);
-    Query q = em.createQuery("select id, book from " + HasOneToOneJPA.class.getName());
+    Query q = em.createQuery("select id, book from " + HasOneToOneJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2228,7 +2224,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     Entity e2 = Book.newBookEntity(e1.getKey(), "author", "12345", "the title");
     ds.put(e2);
-    Query q = em.createQuery("select id, books from " + HasOneToManyListJPA.class.getName());
+    Query q = em.createQuery("select id, books from " + HasOneToManyListJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();
     assertEquals(1, results.size());
@@ -2253,20 +2249,30 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFieldsAndCount() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
-    Query q = em.createQuery("select count(id), isbn from " + Book.class.getName());
+    Query q = em.createQuery("select count(id), isbn from " + Book.class.getName() + " c");
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
-    q = em.createQuery("select isbn, count(id) from " + Book.class.getName());
+    q = em.createQuery("select isbn, count(id) from " + Book.class.getName() + " c");
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
   }
 
@@ -2278,7 +2284,7 @@ public class JPQLQueryTest extends JPATestCase {
     entity.setProperty("anotherLast", "notross");
     ds.put(entity);
 
-    Query q = em.createQuery("select name.first, anotherName.last from " + Person.class.getName());
+    Query q = em.createQuery("select name.first, anotherName.last from " + Person.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> result = (List<Object[]>) q.getResultList();
     assertEquals(1, result.size());
@@ -2287,7 +2293,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testIsNull() {
     Entity e = Book.newBookEntity("author", null, "title");
     ds.put(e);
-    Query q = em.createQuery("select from " + Book.class.getName() + " where isbn is NULL");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where isbn is NULL");
     @SuppressWarnings("unchecked")
     List<Book> books = q.getResultList();
     assertEquals(1, books.size());
@@ -2296,9 +2302,9 @@ public class JPQLQueryTest extends JPATestCase {
   public void testIsNotNull() {
     Entity e = Book.newBookEntity("auth", "isbn", null);
     ds.put(e);
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title is not null");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title is not null");
     assertTrue(q.getResultList().isEmpty());
-    Query q2 = em.createQuery("select from " + Book.class.getName() + " where title <> null");
+    Query q2 = em.createQuery("select from " + Book.class.getName() + " c" + " where title <> null");
     assertTrue(q2.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not null");
     ds.put(e);
@@ -2311,7 +2317,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testIsNotNull_Param() {
     Entity e = Book.newBookEntity("auth", "isbn", null);
     ds.put(e);
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title <> :p");
     q.setParameter("p", null);
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not null");
@@ -2323,7 +2329,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testNotEqual() {
     Entity e = Book.newBookEntity("auth", "isbn", "yar");
     ds.put(e);
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> 'yar'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title <> 'yar'");
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not yar");
     ds.put(e);
@@ -2334,7 +2340,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testNotEqual_Param() {
     Entity e = Book.newBookEntity("auth", "isbn", "yar");
     ds.put(e);
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title <> :p");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title <> :p");
     q.setParameter("p", "yar");
     assertTrue(q.getResultList().isEmpty());
     e = Book.newBookEntity("auth2", "isbn2", "not yar");
@@ -2348,13 +2354,13 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN ('auth1', 'auth3')");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where author IN ('auth1', 'auth3')");
     List<Book> books = q.getResultList();
     assertEquals(2, books.size());
     assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title IN (null, 'yar1')");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title IN (null, 'yar1')");
     books = q.getResultList();
     assertEquals(2, books.size());
     assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(0).getId());
@@ -2366,7 +2372,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1, :p2)");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where author IN (:p1, :p2)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
     List<Book> books = q.getResultList();
@@ -2374,7 +2380,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() +
+    q = em.createQuery("select from " + Book.class.getName() + " c" +
                        " where author IN (:p1) OR author IN (:p2)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2389,14 +2395,14 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where author IN (:p1)");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where author IN (:p1)");
     q.setParameter("p1", Arrays.asList("auth1", "auth3"));
     List<Book> books = q.getResultList();
     assertEquals(2, books.size());
     assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() +
+    q = em.createQuery("select from " + Book.class.getName() + " c" +
                        " where author IN (:p1) OR author IN (:p2)");
     q.setParameter("p1", Arrays.asList("auth1"));
     q.setParameter("p2", Arrays.asList("auth3"));
@@ -2411,13 +2417,13 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "author IN ('auth1', 'auth3') AND isbn IN ('isbn3', 'isbn2')");
     List<Book> books = q.getResultList();
     assertEquals(1, books.size());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where "
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "author IN ('auth1') OR author IN ('auth4', 'auth2')");
     books = q.getResultList();
     assertEquals(2, books.size());
@@ -2430,7 +2436,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "author IN (:p1, :p2) AND isbn IN (:p3, :p4)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2440,7 +2446,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, books.size());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(0).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where "
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "author IN (:p1, :p2) OR author IN (:p3, :p4)");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2457,7 +2463,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "id IN (:p1) AND isbn IN (:p2, :p3)");
     q.setParameter("p1", e2.getKey());
     q.setParameter("p2", "isbn2");
@@ -2467,7 +2473,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, books.size());
     assertEquals(KeyFactory.keyToString(e2.getKey()), books.get(0).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where "
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "(id = :p1 or id = :p2) AND isbn IN (:p3, :p4)");
     q.setParameter("p1", e2.getKey());
     q.setParameter("p2", e3.getKey());
@@ -2483,14 +2489,14 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", null);
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() +
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" +
                              " where author = 'auth1' or author = 'auth3'");
     List<Book> books = q.getResultList();
     assertEquals(2, books.size());
     assertEquals(KeyFactory.keyToString(e.getKey()), books.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), books.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() +
+    q = em.createQuery("select from " + Book.class.getName() + " c" +
                        " where title is null or title = 'yar1'");
     books = q.getResultList();
     assertEquals(2, books.size());
@@ -2503,7 +2509,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() +
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" +
                              " where author = :p1 or author = :p2");
     q.setParameter("p1", "auth1");
     q.setParameter("p2", "auth3");
@@ -2518,7 +2524,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "(author  = 'auth1' or author = 'auth3') AND "
                              + "(isbn = 'isbn3' or isbn = 'isbn2')");
     List<Book> books = q.getResultList();
@@ -2531,7 +2537,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("auth2", "isbn2", "yar2");
     Entity e3 = Book.newBookEntity("auth3", "isbn3", "yar3");
     ds.put(Arrays.asList(e, e2, e3));
-    Query q = em.createQuery("select from " + Book.class.getName() + " where "
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where "
                              + "(author = :p1 or author = :p2) AND "
                              + "(isbn = :p3 or isbn = :p4)");
     q.setParameter("p1", "auth1");
@@ -2547,7 +2553,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e = new Entity(HasOneToOneJPA.class.getSimpleName());
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + HasOneToOneJPA.class.getName() + " where book is null");
+        "select from " + HasOneToOneJPA.class.getName() + " c" + " where book is null");
     try {
       q.getResultList();
       fail("expected");
@@ -2562,7 +2568,7 @@ public class JPQLQueryTest extends JPATestCase {
     e = new Entity(HasOneToOneParentJPA.class.getSimpleName(), key);
     ds.put(e);
     Query q = em.createQuery(
-        "select from " + HasOneToOneParentJPA.class.getName() + " where parent is null");
+        "select from " + HasOneToOneParentJPA.class.getName() + " c" + " where parent is null");
     try {
       q.getResultList();
       fail("expected");
@@ -2583,7 +2589,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     assertEquals(b, q.getResultList().get(0));
 
-    q = em.createQuery("select from bookalias where title = 'yam'");
+    q = em.createQuery("select from bookalias b where title = 'yam'");
     assertEquals(b, q.getResultList().get(0));
 
     q = em.createQuery("select from bookalias b where b.title = 'yam'");
@@ -2591,7 +2597,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testQueryWithSingleCharacterLiteral() {
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title = 'y'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title = 'y'");
     assertTrue(q.getResultList().isEmpty());
 
     Entity e = Book.newBookEntity("author", "12345", "y");
@@ -2635,7 +2641,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
     HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
     Query q = em.createQuery(
-        "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
+        "select from " + HasOneToOneParentJPA.class.getName() + " c" + " where parent = :p");
     q.setParameter("p", parent);
     q.setFirstResult(1);
     HasOneToOneParentJPA child = (HasOneToOneParentJPA) q.getSingleResult();
@@ -2651,7 +2657,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(child2);
     HasOneToOneJPA parent = em.find(HasOneToOneJPA.class, key);
     Query q = em.createQuery(
-        "select from " + HasOneToOneParentJPA.class.getName() + " where parent = :p");
+        "select from " + HasOneToOneParentJPA.class.getName() + " c" + " where parent = :p");
     q.setParameter("p", parent);
     q.setMaxResults(1);
     HasOneToOneParentJPA child = (HasOneToOneParentJPA) q.getSingleResult();
@@ -2664,7 +2670,7 @@ public class JPQLQueryTest extends JPATestCase {
       ds.put(e);
     }
     beginTxn();
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " c");
     List<Book> results = q.getResultList();
     Iterator<Book> iter = results.iterator();
     iter.next();
@@ -2683,9 +2689,9 @@ public class JPQLQueryTest extends JPATestCase {
 
     beginTxn();
     // Not used, but associates the txn with the book's entity group
-    Book b = em.find(Book.class, e1.getKey());
+    /*Book b = */em.find(Book.class, e1.getKey());
     Query q = em.createQuery(
-        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
+        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " c" + " where ancestorKey = :p");
     q.setParameter("p", KeyFactory.keyToString(KeyFactory.createKey("yar", 33L)));
     try {
       q.getResultList().iterator();
@@ -2715,7 +2721,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e4 = Book.newBookEntity("this", "that", "z");
     ds.put(e4);
 
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y%'");
     @SuppressWarnings("unchecked")
     List<Book> result = q.getResultList();
 
@@ -2723,14 +2729,14 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e2.getKey()), result.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), result.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'z%'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'z%'");
     @SuppressWarnings("unchecked")
     List<Book> result2 = q.getResultList();
 
     assertEquals(1, result2.size());
     assertEquals(KeyFactory.keyToString(e4.getKey()), result2.get(0).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'za%'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'za%'");
     @SuppressWarnings("unchecked")
     List<Book> result3 = q.getResultList();
     assertTrue(result3.isEmpty());
@@ -2742,7 +2748,7 @@ public class JPQLQueryTest extends JPATestCase {
       ds.put(e1);
     }
 
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'x%'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'x%'");
     @SuppressWarnings("unchecked")
     List<Book> result = q.getResultList();
 
@@ -2759,7 +2765,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e4 = Book.newBookEntity("this", "that", "z");
     ds.put(e4);
 
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE :p");
     q.setParameter("p", "y%");
 
     @SuppressWarnings("unchecked")
@@ -2769,7 +2775,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(KeyFactory.keyToString(e2.getKey()), result.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), result.get(1).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'z%'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'z%'");
     q.setParameter("p", "y%");
     @SuppressWarnings("unchecked")
     List<Book> result2 = q.getResultList();
@@ -2777,7 +2783,7 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(1, result2.size());
     assertEquals(KeyFactory.keyToString(e4.getKey()), result2.get(0).getId());
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'za%'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'za%'");
     q.setParameter("p", "y%");
     @SuppressWarnings("unchecked")
     List<Book> result3 = q.getResultList();
@@ -2785,31 +2791,46 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testLikeQuery_InvalidLiteral() {
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE '%y'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE '%y'");
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%y'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y%y'");
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y'");
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE 'y%' and author LIKE 'z%'");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y%' and author LIKE 'z%'");
     try {
       q.getResultList().iterator();
       fail("expected exception");
@@ -2819,29 +2840,44 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testLikeQuery_InvalidParameter() {
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE :p");
     q.setParameter("p", "%y");
     try {
       q.getResultList().iterator();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     q.setParameter("p", "y%y");
     try {
       q.getResultList().iterator();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     q.setParameter("p", "y");
     try {
       q.getResultList().iterator();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     q.setParameter("p", 23);
@@ -2852,7 +2888,7 @@ public class JPQLQueryTest extends JPATestCase {
       // good
     }
 
-    q = em.createQuery("select from " + Book.class.getName() + " where title LIKE :p and author LIKE :q");
+    q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE :p and author LIKE :q");
     q.setParameter("p", "y%");
     q.setParameter("q", "y%");
     try {
@@ -2873,12 +2909,18 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e4 = Book.newBookEntity("this", "that", "z");
     ds.put(e4);
 
-    Query q = em.createQuery("select from " + Book.class.getName() + " where title LIKE '%^' ESCAPE '^'");
+    Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE '%^' ESCAPE '^'");
     try {
       q.getResultList();
       fail("DataNucleus must now be parsing 'ESCAPE'.  Hooray!");
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+            // Not good, but correct because DataNuc doesn't handle ESCAPE yet.
+        }
+        else {
+          throw pe;
+        }
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException uefe) {
-      // Not good, but correct because DataNuc doesn't handle ESCAPE yet.
     }
 
 //    assertEquals(2, result.size());
@@ -2903,13 +2945,18 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testNullAncestorParam() {
     Query q = em.createQuery(
-        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " where ancestorKey = :p");
+        "select from " + HasKeyAncestorStringPkJPA.class.getName() + " c" + " where ancestorKey = :p");
     q.setParameter("p", null);
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
   }
 
@@ -2918,8 +2965,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
 
     for (String dateFunc : Arrays.asList("CURRENT_TIMESTAMP", "CURRENT_DATE")) {
-      Query q = em.createQuery("select from " + KitchenSink.class.getName() +
-                               " where dateVal < " + dateFunc);
+      Query q = em.createQuery("select from " + KitchenSink.class.getName() + " c where dateVal < " + dateFunc);
       @SuppressWarnings("unchecked")
       List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
       assertEquals(1, results.size());
@@ -2976,7 +3022,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     assertEquals(b, q.getResultList().get(0));
 
-    q = em.createQuery("select from bookalias where title = 'yam'");
+    q = em.createQuery("select from bookalias c where title = 'yam'");
     assertEquals(b, q.getResultList().get(0));
 
     q = em.createQuery("select from bookalias b where b.title = 'yam'");
@@ -3007,8 +3053,8 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testSubclassesNotSupported() {
-    JPQLQuery q = new JPQLQuery(getObjectManager());
-    q.setClass(Base1.class);
+    JPQLQuery q = new JPQLQuery(getExecutionContext());
+    q.setCandidateClass(Base1.class);
     q.setSubclasses(false);
     try {
       q.setSubclasses(true);
@@ -3016,7 +3062,7 @@ public class JPQLQueryTest extends JPATestCase {
     } catch (NucleusUserException nue) {
       // good
     }
-    q.setClass(UnidirTop.class);
+    q.setCandidateClass(UnidirTop.class);
     q.setSubclasses(false);
     q.setSubclasses(true);
   }
@@ -3037,7 +3083,7 @@ public class JPQLQueryTest extends JPATestCase {
     setDelegateForThread(delegate);
 
     try {
-      Query q = em.createQuery("select from " + Book.class.getName());
+      Query q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("javax.persistence.query.timeout", 3000);
       try {
         q.getResultList().iterator();
@@ -3077,7 +3123,7 @@ public class JPQLQueryTest extends JPATestCase {
 
     try {
       javax.persistence.Query q = em.createQuery(
-          "select from " + Book.class.getName());
+          "select from " + Book.class.getName() + " c");
       @SuppressWarnings("unchecked")
       List<Book> books = (List<Book>) q.getResultList();
       try {
@@ -3105,7 +3151,7 @@ public class JPQLQueryTest extends JPATestCase {
                                 FailoverMsMatcher.eqFailoverMs(null),
                                 ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
-      Query q = em.createQuery("select from " + Book.class.getName());
+      Query q = em.createQuery("select from " + Book.class.getName() + " c");
       q.getResultList();
       EasyMock.verify(delegate);
 
@@ -3117,7 +3163,7 @@ public class JPQLQueryTest extends JPATestCase {
                                 FailoverMsMatcher.eqFailoverMs(null),
                                 ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
-      q = em.createQuery("select from " + Book.class.getName());
+      q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", null);
       q.getResultList();
       EasyMock.verify(delegate);
@@ -3130,7 +3176,7 @@ public class JPQLQueryTest extends JPATestCase {
                                 FailoverMsMatcher.eqFailoverMs(null),
                                 ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
-      q = em.createQuery("select from " + Book.class.getName());
+      q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "STRONG");
       q.getResultList();
       EasyMock.verify(delegate);
@@ -3143,7 +3189,7 @@ public class JPQLQueryTest extends JPATestCase {
                                 FailoverMsMatcher.eqFailoverMs(-1L),
                                 ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
       EasyMock.replay(delegate);
-      q = em.createQuery("select from " + Book.class.getName());
+      q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "EVENTUAL");
       q.getResultList();
       EasyMock.verify(delegate);
@@ -3166,8 +3212,8 @@ public class JPQLQueryTest extends JPATestCase {
                                 ChunkMatcher.eqChunkSize(33),
                                 ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
       EasyMock.replay(delegate, result);
-      Query q = em.createQuery("select from " + Flight.class.getName());
-      q.setHint(DatastoreManager.JPA_QUERY_CHUNK_SIZE_PROPERTY, 33);
+      Query q = em.createQuery("select from " + Flight.class.getName() + " c");
+      q.setHint("datanucleus.query.fetchSize", 33);
       q.getResultList();
       EasyMock.verify(delegate);
     } finally {
@@ -3193,12 +3239,17 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(query);
     try {
       q.getResultList();
-      fail("expected UnsupportedOperationException for query <" + query + ">");
-    } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
-      // Good.
-      // Expression.Operator doesn't override equals
-      // so we just compare the string representation.
-      assertEquals(unsupportedOp.toString(), uoe.getOperation().toString());
+      fail("expected PersistenceException->UnsupportedOperationException for query <" + query + ">");
+    } catch (PersistenceException e) {
+      Throwable cause = e.getCause();
+      if (cause instanceof DatastoreQuery.UnsupportedDatastoreOperatorException) {
+        // Good. Expression.Operator doesn't override equals
+        // so we just compare the string representation. Operator case-insensitive
+        assertEquals(unsupportedOp.toString().toLowerCase(), ((DatastoreQuery.UnsupportedDatastoreOperatorException)cause).getOperation().toString().toLowerCase());
+      }
+      else {
+        throw e;
+      }
     }
   }
 
@@ -3214,8 +3265,13 @@ public class JPQLQueryTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected UnsupportedDatastoreFeatureException for query <" + query + ">");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // Good.
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
   }
 

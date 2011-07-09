@@ -19,7 +19,7 @@ import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ObjectManager;
-import org.datanucleus.jpa.EntityTransactionImpl;
+import org.datanucleus.api.jpa.JPAEntityTransaction;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
@@ -33,10 +33,12 @@ import org.datanucleus.util.NucleusLogger;
  * transaction when a current transaction exists, it's important that
  * a datastore transaction actually be active once the user has called
  * em.getTransaction().begin().
+ * TODO Move this into ConnectionFactoryImpl and register a listener for transaction calls so
+ * we can start when the begin is called
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
+public class DatastoreEntityTransactionImpl extends JPAEntityTransaction {
 
   private final DatastoreServiceConfig config;
 
@@ -55,8 +57,7 @@ public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
   @Override
   public void commit() {
     super.commit();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config)
-        .getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was committed via the connection
     } else {
@@ -71,8 +72,7 @@ public class DatastoreEntityTransactionImpl extends EntityTransactionImpl {
   @Override
   public void rollback() {
     super.rollback();
-    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config)
-        .getCurrentTransaction(null);
+    Transaction txn = DatastoreServiceFactoryInternal.getDatastoreService(config).getCurrentTransaction(null);
     if (txn == null) {
       // this is ok, it means the txn was rolled back via the connection
     } else {

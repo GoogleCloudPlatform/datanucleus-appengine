@@ -36,17 +36,14 @@ import javax.transaction.xa.Xid;
  */
 class DatastoreXAResource extends EmulatedXAResource {
 
-  /**
-   * The datastore service we'll use to perform datastore operations.
-   */
+  /** The datastore service we'll use to perform datastore operations. */
   private final DatastoreService datastoreService;
 
-  /**
-   * The current datastore transaction.
-   */
+  /** The current datastore transaction. */
   private DatastoreTransaction currentTxn;
 
   public DatastoreXAResource(DatastoreService datastoreService) {
+      NucleusLogger.GENERAL.info(">> DatastoreXAResource.ctr");
     this.datastoreService = datastoreService;
   }
 
@@ -57,11 +54,14 @@ class DatastoreXAResource extends EmulatedXAResource {
 
   @Override
   public void start(Xid xid, int flags) throws XAException {
+    NucleusLogger.GENERAL.info(">> DatastoreXAResource.start");
     super.start(xid, flags);
-    // A transaction will only be started if non-transactional reads/writes
-    // are turned off.
+
+    // A transaction will only be started if non-transactional reads/writes are turned off.
     if (currentTxn == null) {
-      Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
+//      Transaction datastoreTxn = datastoreService.beginTransaction();
+//      NucleusLogger.DATASTORE.debug("Started new datastore transaction (DatastoreXAResource): " + datastoreTxn.getId());
+
       // Typically the transaction will have been established when the user
       // calls pm.currentTransaction().begin() or em.getTransaction().begin(),
       // but if the datasource is non-transactional and the user is not
@@ -71,6 +71,7 @@ class DatastoreXAResource extends EmulatedXAResource {
       // ourselves.  This isn't a problem for transactional tasks because
       // the user isn't actually managing transactions, it's just DataNucleus
       // doing it under the hood in order to force things to flush.
+      Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
       if (datastoreTxn == null) {
         datastoreTxn = datastoreService.beginTransaction();
       }
@@ -82,6 +83,7 @@ class DatastoreXAResource extends EmulatedXAResource {
 
   @Override
   public void commit(Xid arg0, boolean arg1) throws XAException {
+      NucleusLogger.GENERAL.info(">> DatastoreXAResource.commit");
     super.commit(arg0, arg1);
     if (currentTxn != null) {
       try {
@@ -101,6 +103,7 @@ class DatastoreXAResource extends EmulatedXAResource {
 
   @Override
   public void rollback(Xid xid) throws XAException {
+      NucleusLogger.GENERAL.info(">> DatastoreXAResource.rollback");
     super.rollback(xid);
     if (currentTxn != null) {
       currentTxn.rollback();

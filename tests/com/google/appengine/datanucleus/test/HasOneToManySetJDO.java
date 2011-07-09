@@ -63,7 +63,10 @@ public class HasOneToManySetJDO implements HasOneToManyJDO {
   }
 
   public Set<Flight> getFlights() {
-    return new HashSet<Flight>(flights);
+    if (flights == null) {
+      flights = new HashSet<Flight>();
+    }
+    return flights;
   }
 
   public void addFlight(Flight flight) {
@@ -71,7 +74,10 @@ public class HasOneToManySetJDO implements HasOneToManyJDO {
   }
 
   public Set<HasKeyPkJDO> getHasKeyPks() {
-    return new HashSet<HasKeyPkJDO>(hasKeyPks);
+    if (hasKeyPks == null) {
+      hasKeyPks = new HashSet<HasKeyPkJDO>();
+      }
+    return hasKeyPks;
   }
 
   public void addHasKeyPk(HasKeyPkJDO hasKeyPk) {

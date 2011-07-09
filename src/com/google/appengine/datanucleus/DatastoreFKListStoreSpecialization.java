@@ -22,9 +22,9 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.store.mapped.scostore.FKListStore;
@@ -58,72 +58,74 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
    * location in the list that is being written to, delete the dependent
    * object.
    */
-  public Object set(StateManager ownerSm, int index, Object element, boolean allowDependentField,
+  public Object set(ObjectProvider ownerOP, int index, Object element, boolean allowDependentField,
       ElementContainerStore ecs, Object obj) {
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     JavaTypeMapping orderMapping = ecs.getOrderMapping();
-    ObjectManager om = ownerSm.getObjectManager();
+    ExecutionContext ec = ownerOP.getExecutionContext();
     if (orderMapping != null) {
-      StateManager childSm = om.findStateManager(element);
+      ObjectProvider childOP = ec.findObjectProvider(element);
       // See DatastoreFieldManager.handleIndexFields for info on why this
       // absurdity is necessary.
       Entity childEntity =
-          (Entity) childSm.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+          (Entity) childOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
       if (childEntity != null) {
-        childSm.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
-        childSm.setAssociatedValue(ecs.getOrderMapping(), index);
-        handler.insertObject(childSm);
+          childOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
+          childOP.setAssociatedValue(ecs.getOrderMapping(), index);
+        handler.insertObject(childOP);
       }
     }
 
     if (ecs.getOwnerMemberMetaData().getCollection().isDependentElement() &&
         allowDependentField && obj != null) {
-      ownerSm.getObjectManager().deleteObjectInternal(obj);
+      ec.deleteObjectInternal(obj);
     }
-    if (!om.getTransaction().isActive()) {
-      om.getTransaction().addTransactionEventListener(
-          new ForceFlushPreCommitTransactionEventListener(ownerSm));
+    if (!ec.getTransaction().isActive()) {
+      ec.getTransaction().addTransactionEventListener(
+          new ForceFlushPreCommitTransactionEventListener(ownerOP));
     }
     return obj;
   }
 
-  public boolean updateElementFk(StateManager sm, Object element, Object parent, int index,
-      ObjectManager om, ElementContainerStore ecs) {
+  public boolean updateElementFk(ObjectProvider op, Object element, Object parent, int index,
+      ExecutionContext ec, ElementContainerStore ecs) {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    DatastoreRelationFieldManager.checkForParentSwitch(element, sm);
+    DatastoreRelationFieldManager.checkForParentSwitch(element, op);
 
     if (ecs.getOrderMapping() == null) {
       return false;
     }
-    StateManager elementSm = om.findStateManager(element);
+    ObjectProvider elementOP = ec.findObjectProvider(element);
     // The fk is already set but we still need to set the index
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     // See DatastoreFieldManager.handleIndexFields for info on why this
     // absurdity is necessary.
     Entity entity =
-        (Entity) elementSm.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+        (Entity) elementOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
     if (entity != null) {
-      elementSm.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
-      elementSm.setAssociatedValue(ecs.getOrderMapping(), index);
+      elementOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
+      elementOP.setAssociatedValue(ecs.getOrderMapping(), index);
       if (entity.getParent() == null) {
-        StateManager parentSm = om.findStateManager(parent);
+        ObjectProvider parentOP = ec.findObjectProvider(parent);
         // need to register the proper parent for this entity
-        Key parentKey = EntityUtils.getPrimaryKeyAsKey(om.getApiAdapter(), parentSm);
-        KeyRegistry.getKeyRegistry(om).registerKey(element, parentKey, elementSm, ecs.getElementType());
+        Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), parentOP);
+        // TODO This was (1.1) ecs.getElementType
+        KeyRegistry.getKeyRegistry(ec).registerKey(element, parentKey, elementOP, 
+            ecs.getOwnerMemberMetaData().getCollection().getElementType());
       }
-      handler.insertObject(elementSm);
+      handler.insertObject(elementOP);
     }
     return true;
   }
 
-  public void clearWithoutDelete(ObjectManager om, StateManager ownerSM,
+  public void clearWithoutDelete(ExecutionContext ec, ObjectProvider ownerOP,
       ElementContainerStore ecs) {
     throw new UnsupportedOperationException("Non-owned relationships are not currently supported");
   }
 
-  public void removeAt(StateManager sm, int index, int size, boolean nullify,
+  public void removeAt(ObjectProvider op, int index, int size, boolean nullify,
       FKListStore fkListStore) {
     if (removing.get()) {
       return;
@@ -134,15 +136,15 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
           "Non-owned relationships are not currently supported.");
     } else {
       // first we need to delete the element
-      ObjectManager om = sm.getObjectManager();
-      Object element = fkListStore.get(sm, index);
-      StateManager elementStateManager = om.findStateManager(element);
+      ExecutionContext ec = op.getExecutionContext();
+      Object element = fkListStore.get(op, index);
+      ObjectProvider elementOP = ec.findObjectProvider(element);
       DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
       // the delete call can end up cascading back here, so set a thread-local
       // to make sure we don't do it more than once
       removing.set(true);
       try {
-        handler.deleteObject(elementStateManager);
+        handler.deleteObject(elementOP);
       } finally {
         removing.set(false);
       }
@@ -156,17 +158,17 @@ class DatastoreFKListStoreSpecialization extends DatastoreAbstractListStoreSpeci
         String kind =
             storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
         Query q = new Query(kind);
-        Key key = EntityUtils.getPrimaryKeyAsKey(sm.getObjectManager().getApiAdapter(), sm);
+        Key key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op);
         q.setAncestor(key);
         // create an entity just to capture the name of the index property
         Entity entity = new Entity(kind);
-        orderMapping.setObject(om, entity, new int[] {1}, index);
+        orderMapping.setObject(ec, entity, new int[] {1}, index);
         String indexProp = entity.getProperties().keySet().iterator().next();
         q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN, index);
         for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
           Long pos = (Long) shiftMe.getProperty(indexProp);
           shiftMe.setProperty(indexProp, pos - 1);
-          handler.put(om, acmd, shiftMe);
+          handler.put(ec, acmd, shiftMe);
         }
       }
     }

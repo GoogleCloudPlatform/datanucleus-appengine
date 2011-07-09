@@ -15,7 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.test;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import java.util.HashSet;
 import java.util.Set;

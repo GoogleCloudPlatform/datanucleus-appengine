@@ -15,7 +15,8 @@
  */
 package com.google.appengine.datanucleus;
 
-import org.datanucleus.StateManager;
+import org.datanucleus.TransactionEventListener;
+import org.datanucleus.store.ObjectProvider;
 
 /**
  * If an element is being added to a list outside of a txn
@@ -28,31 +29,58 @@ import org.datanucleus.StateManager;
  * in order to get all outstanding updates to flush.  Right before the
  * txn commits we're going to force the parent to repersist itself.
  * Dang this is hard.
+ * 
+ * This is basically wrong. If in non-tx context then the List is a wrapper
+ * which informs the owning object of a change and is marked dirty. This plugin then
+ * can take appropriate action. Hacks like this should be removed and address the
+ * real problem. Where is a testcase that demonstrates the need for this? Andy 23/06/2011
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-class ForceFlushPreCommitTransactionEventListener extends BaseTransactionEventListener {
+class ForceFlushPreCommitTransactionEventListener implements TransactionEventListener {
 
   static final String ALREADY_PERSISTED_RELATION_KEYS_KEY =
       ForceFlushPreCommitTransactionEventListener.class.getName() + ".already_persisted_relation_keys";
 
-  private final StateManager sm;
+  private final ObjectProvider op;
 
-  ForceFlushPreCommitTransactionEventListener(StateManager sm) {
-    this.sm = sm;
+  ForceFlushPreCommitTransactionEventListener(ObjectProvider op) {
+    this.op = op;
   }
 
-  @Override
+  public void transactionStarted() {
+  }
+
+  public void transactionEnded() {
+  }
+
+  public void transactionFlushed() {
+  }
+
   public void transactionPreCommit() {
-    DatastoreManager storeMgr = (DatastoreManager) sm.getObjectManager().getStoreManager();
-    // make sure we only force the repersist once
-    if (storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS) &&
-        sm.getAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY) == null) {
-      sm.setAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
-      for (int pos : sm.getClassMetaData().getAllMemberPositions()) {
-        sm.makeDirty(pos);
-      }
-      sm.flush();
+    if (op.getObject() == null) {
+      // Maybe the ObjectProvider was already processed and disconnected
+      return;
     }
+
+    DatastoreManager storeMgr = (DatastoreManager) op.getExecutionContext().getStoreManager();
+    // make sure we only force the re-persist once
+    if (storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS) &&
+        op.getAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY) == null) {
+      op.setAssociatedValue(ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
+      for (int pos : op.getClassMetaData().getAllMemberPositions()) {
+        op.makeDirty(pos);
+      }
+      op.flush();
+    }
+  }
+
+  public void transactionCommitted() {
+  }
+
+  public void transactionPreRollBack() {
+  }
+
+  public void transactionRolledBack() {
   }
 }

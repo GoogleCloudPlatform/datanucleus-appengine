@@ -46,7 +46,7 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
     this.field = (DatastoreProperty) field;
     if (mapping != null) {
       // Register this datastore mapping with the owning JavaTypeMapping
-      mapping.addDataStoreMapping(this);
+      mapping.addDatastoreMapping(this);
     }
   }
 

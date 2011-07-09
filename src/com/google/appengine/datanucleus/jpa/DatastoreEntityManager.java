@@ -15,51 +15,29 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.jpa.EntityManagerImpl;
+import org.datanucleus.NucleusContext;
+import org.datanucleus.api.jpa.JPAEntityManager;
 
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManager;
 
-import javax.jdo.PersistenceManagerFactory;
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.PersistenceContextType;
-import javax.persistence.PersistenceException;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreEntityManager extends EntityManagerImpl {
+public class DatastoreEntityManager extends JPAEntityManager {
 
-  public DatastoreEntityManager(EntityManagerFactory emf, PersistenceManagerFactory pmf,
+  public DatastoreEntityManager(EntityManagerFactory emf, NucleusContext nucCtx,
       PersistenceContextType contextType) {
-    super(emf, pmf, contextType);
+    super(emf, nucCtx, contextType);
     if (tx != null) {
-      DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
+      DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
       if (storeMgr.connectionFactoryIsTransactional()) {
         // install our own transaction object
+        // TODO Remove this and just put it into ConnectionFactoryImpl like all other plugins
         tx = new DatastoreEntityTransactionImpl(om);
       }
     }
-  }
-
-  /**
-   * @see DatastoreJDOPersistenceManager#getObjectById(Class, Object)
-   */
-  @Override
-  public Object find(Class cls, Object key) {
-    try {
-      key = EntityUtils.idToInternalKey(getObjectManager(), cls, key, false);
-    } catch (NucleusUserException e) {
-      throw new PersistenceException(e);
-    }
-    return super.find(cls, key);
-  }
-
-  @Override
-  public void close() {
-    DatastoreJPACallbackHandler.clearAttaching();
-    super.close();
   }
 }

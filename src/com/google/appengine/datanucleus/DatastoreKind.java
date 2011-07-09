@@ -18,8 +18,7 @@ package com.google.appengine.datanucleus;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
 
 /**
- * Describes a 'kind' in the datastore.  This is datanucleus'
- * name for it, not the actual kind of the entities we store.
+ * Describes a 'kind' in the datastore.  This is the name used here not the actual kind of the entities we store.
  *
  * @author Max Ross <maxr@google.com>
  */

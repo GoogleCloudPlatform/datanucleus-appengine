@@ -21,6 +21,8 @@ import com.google.appengine.datanucleus.Utils.Supplier;
 
 import java.util.Iterator;
 
+import org.datanucleus.api.ApiAdapter;
+
 /**
  * {@link Iterable} implementation that catches runtime exceptions thrown by
  * the datastore api and translates them to the appropriate JDO or JPA exception.
@@ -31,26 +33,24 @@ import java.util.Iterator;
  */
 class RuntimeExceptionWrappingIterable implements Iterable<Entity>, RuntimeExceptionObserver {
 
-  private final boolean isJPA;
+  private final ApiAdapter api;
+
   private final Supplier<Iterator<Entity>> iteratorSupplier;
   private boolean hasError = false;
 
-  RuntimeExceptionWrappingIterable(final Iterable<Entity> inner, boolean isJPA) {
+  RuntimeExceptionWrappingIterable(ApiAdapter api, final Iterable<Entity> inner) {
     if (inner == null) {
       throw new NullPointerException("inner cannot be null");
     }
-    this.isJPA = isJPA;
+    this.api = api;
     Supplier<Iterator<Entity>> supplier = QueryExceptionWrappers.datastoreToDataNucleus(
         new Supplier<Iterator<Entity>>() {
           public Iterator<Entity> get() {
             return newIterator(inner.iterator());
           }
         });
-    if (isJPA) {
-      this.iteratorSupplier = QueryExceptionWrappers.dataNucleusToJPA(supplier);
-    } else {
-      this.iteratorSupplier = QueryExceptionWrappers.dataNucleusToJDO(supplier);
-    }
+
+    this.iteratorSupplier = QueryExceptionWrappers.dataNucleusToApi(api, supplier);
   }
 
   public Iterator<Entity> iterator() {
@@ -58,7 +58,7 @@ class RuntimeExceptionWrappingIterable implements Iterable<Entity>, RuntimeExcep
   }
 
   Iterator<Entity> newIterator(Iterator<Entity> innerIter) {
-    return new RuntimeExceptionWrappingIterator(innerIter, isJPA, this);
+    return new RuntimeExceptionWrappingIterator(api, innerIter, this);
   }
 
   public void onException() {

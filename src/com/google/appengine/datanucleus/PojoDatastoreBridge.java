@@ -19,8 +19,8 @@ import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.appengine.datanucleus.query.DatastoreQuery;
@@ -37,20 +37,19 @@ import java.util.Map;
  */
 class PojoDatastoreBridge {
 
-  <T> List<T> toPojoResult(final ObjectManager om, Class<T> cls, Iterable<Entity> queryResultIterable, Cursor endCursor) {
-    final ClassLoaderResolver clr = om.getClassLoaderResolver();
-    final AbstractClassMetaData acmd = om.getMetaDataManager().getMetaDataForClass(cls, clr);
+  <T> List<T> toPojoResult(final ExecutionContext ec, Class<T> cls, Iterable<Entity> queryResultIterable, Cursor endCursor) {
+    final ClassLoaderResolver clr = ec.getClassLoaderResolver();
+    final AbstractClassMetaData acmd = ec.getMetaDataManager().getMetaDataForClass(cls, clr);
     Utils.Function<Entity, Object> func = new Utils.Function<Entity, Object>() {
       public Object apply(Entity from) {
-        return DatastoreQuery.entityToPojo(from, acmd, clr, om, true, om.getFetchPlan().getCopy());
+        return DatastoreQuery.entityToPojo(from, acmd, clr, ec, true, ec.getFetchPlan().getCopy());
       }
     };
-    AbstractJavaQuery query = new DummyQuery(om);
-    DatastoreManager dm = (DatastoreManager) om.getStoreManager();
-    ManagedConnection mconn = om.getStoreManager().getConnection(om);
+    AbstractJavaQuery query = new DummyQuery(ec);
+    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     try {
       return (List<T>) DatastoreQuery.newStreamingQueryResultForEntities(
-          queryResultIterable, func, mconn, endCursor, query, dm.isJPA());
+          queryResultIterable, func, mconn, endCursor, query);
     } finally {
       mconn.release();
     }
@@ -58,15 +57,15 @@ class PojoDatastoreBridge {
 
   private static final class DummyQuery extends AbstractJavaQuery {
 
-    private DummyQuery(ObjectManager om) {
-      super(om);
+    private DummyQuery(ExecutionContext ec) {
+      super(ec);
     }
 
     public String getSingleStringQuery() {
       throw new UnsupportedOperationException();
     }
 
-    protected void compileInternal(boolean forExecute, Map parameterValues) {
+    protected void compileInternal(Map parameterValues) {
       throw new UnsupportedOperationException();
     }
 

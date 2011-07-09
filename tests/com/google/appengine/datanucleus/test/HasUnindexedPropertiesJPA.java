@@ -18,7 +18,7 @@ package com.google.appengine.datanucleus.test;
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Text;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import java.util.List;
 

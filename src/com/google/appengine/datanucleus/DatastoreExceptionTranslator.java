@@ -23,6 +23,7 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.store.query.QueryTimeoutException;
 
 import java.util.ConcurrentModificationException;
@@ -40,7 +41,7 @@ public final class DatastoreExceptionTranslator {
 
   public static NucleusException wrapIllegalArgumentException(IllegalArgumentException e) {
     // Bad input, so mark fatal to let user know not to retry.
-    return new FatalNucleusUserException("Illegal argument", e);
+    return new NucleusFatalUserException("Illegal argument", e);
   }
 
   public static NucleusDataStoreException wrapDatastoreFailureException(
@@ -62,14 +63,6 @@ public final class DatastoreExceptionTranslator {
   }
 
   public static QueryTimeoutException wrapDatastoreTimeoutExceptionForQuery(final DatastoreTimeoutException e) {
-    QueryTimeoutException qte = new QueryTimeoutException(e.getMessage()) {
-      @Override
-      public Throwable getCause() {
-        // hack to make the cause available because QueryTimeoutException
-        // implicitly sets it to null.
-        return e;
-      }
-    };
-    return qte;
+    return new QueryTimeoutException(e.getMessage(), e);
   }
 }

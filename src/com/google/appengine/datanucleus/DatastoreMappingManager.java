@@ -23,9 +23,9 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ColumnMetaDataContainer;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.FieldRole;
+import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.plugin.PluginManager;
-import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.DatastoreIdentifier;
@@ -148,7 +148,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
     } else {
       // User has specified a name, so try to keep this unmodified
       identifier = idFactory.newDatastoreFieldIdentifier(colmds[datastoreFieldIndex].getName(),
-          storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
+          storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
           FieldRole.ROLE_CUSTOM);
     }
 
@@ -203,7 +203,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
       prop = datastoreContainer.addDatastoreField(
           javaType,
           idFactory.newDatastoreFieldIdentifier(colmd.getName(),
-          storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
+          storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
           FieldRole.ROLE_CUSTOM),
           mapping,
           colmd);
@@ -232,7 +232,7 @@ class DatastoreMappingManager extends AbstractMappingManager {
       identifier = idFactory.newForeignKeyFieldIdentifier(
           relatedMmds != null ? relatedMmds[0] : null,
           fmd, reference.getIdentifier(),
-          storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
+          storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(fmd.getType()),
           FieldRole.ROLE_OWNER);
       colmd.setName(identifier.getIdentifierName());
     } else {
@@ -274,11 +274,6 @@ class DatastoreMappingManager extends AbstractMappingManager {
   }
 
   @Override
-  public void registerDatastoreMapping(String javaTypeName, Class datastoreMappingType,
-      String jdbcType, String sqlType, boolean dflt) {
-  }
-
-  @Override
   protected Class getOverrideMappingClass(Class mappingClass, AbstractMemberMetaData fmd, int roleForField) {
     if (roleForField == FieldRole.ROLE_FIELD && fmd.isPrimaryKey() && mappingClass.equals(
         SerialisedMapping.class) && fmd.getType().equals(Key.class)) {
@@ -298,22 +293,21 @@ class DatastoreMappingManager extends AbstractMappingManager {
   }
 
   /**
-   * An extension of {@link EmbeddedPCMapping} that always has its
-   * EmbeddedMetaData set.
+   * An extension of {@link EmbeddedPCMapping} that always has its EmbeddedMetaData set.
    */
   public static final class DatastoreEmbeddedPCMapping extends EmbeddedPCMapping {
-
     @Override
-    public void initialize(DatastoreAdapter dba, AbstractMemberMetaData fmd,
-                           DatastoreContainerObject container, ClassLoaderResolver clr) {
-      if (fmd.getEmbeddedMetaData() == null) {
+    public void initialize(AbstractMemberMetaData mmd, DatastoreContainerObject container, 
+            ClassLoaderResolver clr) {
+      MetaDataManager mmgr = container.getStoreManager().getMetaDataManager();
+      if (mmd.getEmbeddedMetaData() == null) {
         EmbeddedMetaData embmd = new EmbeddedMetaData();
-        embmd.setOwnerMember(fmd.getName());
-        fmd.setEmbeddedMetaData(embmd);
-        embmd.populate(clr, null);
-        embmd.initialise(clr);
+        embmd.setOwnerMember(mmd.getName());
+        mmd.setEmbeddedMetaData(embmd);
+        embmd.populate(clr, null, mmgr);
+        embmd.initialise(clr, mmgr);
       }
-      super.initialize(dba, fmd, container, clr);
+      super.initialize(mmd, container, clr);
     }
   }
 }

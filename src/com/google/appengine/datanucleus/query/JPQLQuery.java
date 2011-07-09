@@ -16,12 +16,12 @@ limitations under the License.
 package com.google.appengine.datanucleus.query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.FatalNucleusUserException;
 
+import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.query.AbstractJPQLQuery;
 import org.datanucleus.store.query.QueryInvalidParametersException;
 
@@ -42,21 +42,21 @@ public class JPQLQuery extends AbstractJPQLQuery {
   /**
    * Constructs a new query instance that uses the given object manager.
    *
-   * @param om The associated ObjectManager for this query.
+   * @param ec ExecutionContext
    */
-  public JPQLQuery(ObjectManager om) {
-    this(om, (JPQLQuery) null);
+  public JPQLQuery(ExecutionContext ec) {
+    this(ec, (JPQLQuery) null);
   }
 
   /**
    * Constructs a new query instance having the same criteria as the given
    * query.
    *
-   * @param om The ObjectManager.
+   * @param ec ExecutionContext
    * @param q The query from which to copy criteria.
    */
-  public JPQLQuery(ObjectManager om, JPQLQuery q) {
-    super(om, q);
+  public JPQLQuery(ExecutionContext ec, JPQLQuery q) {
+    super(ec, q);
     datastoreQuery = new DatastoreQuery(this);
   }
 
@@ -64,11 +64,11 @@ public class JPQLQuery extends AbstractJPQLQuery {
    * Constructor for a JPQL query where the query is specified using the
    * "Single-String" format.
    *
-   * @param om The object manager.
+   * @param ec ExecutionContext
    * @param query The JPQL query string.
    */
-  public JPQLQuery(ObjectManager om, String query) {
-    super(om, query);
+  public JPQLQuery(ExecutionContext ec, String query) {
+    super(ec, query);
     datastoreQuery = new DatastoreQuery(this);
   }
 
@@ -85,6 +85,11 @@ public class JPQLQuery extends AbstractJPQLQuery {
   // Exposed for tests.
   DatastoreQuery getDatastoreQuery() {
     return datastoreQuery;
+  }
+
+  @Override
+  protected boolean supportsTimeout() {
+      return true; // GAE/J Datastore supports timeouts
   }
 
   @Override
@@ -131,20 +136,18 @@ public class JPQLQuery extends AbstractJPQLQuery {
 
   @Override
   public void setSubclasses(boolean subclasses) {
-    // We don't support queries that also return subclasses
-    if (subclasses && !allowSubClasses()) {
-      throw new FatalNucleusUserException(
-      	"The App Engine datastore only supports queries that return subclass entities with the " +
-      	"SINGLE_TABLE interitance mapping strategy.");
+    // TODO Enable this!
+    // We support only queries that also return subclasses if all subclasses belong to the same kind.
+    if (subclasses) {
+      DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
+      ClassLoaderResolver clr = ec.getClassLoaderResolver();
+      AbstractClassMetaData acmd = storeMgr.getMetaDataManager().getMetaDataForClass(getCandidateClass(), clr);
+      if (!DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
+        throw new NucleusFatalUserException(
+            "The App Engine datastore only supports queries that return subclass entities with the " +
+            "SINGLE_TABLE interitance mapping strategy.");
+      }
     }
     super.setSubclasses(subclasses);
   }
-  
-  private boolean allowSubClasses() {
-    DatastoreManager storeMgr = (DatastoreManager) om.getStoreManager();
-    ClassLoaderResolver clr = om.getClassLoaderResolver();
-    AbstractClassMetaData acmd = storeMgr.getMetaDataManager().getMetaDataForClass(getCandidateClass(), clr);
-    return DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd);
-  }
-
 }

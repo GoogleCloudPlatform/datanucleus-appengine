@@ -20,8 +20,8 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.JPATestCase;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.Book;
 import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJPA;
 import com.google.appengine.datanucleus.test.HasOneToManyListJPA;
@@ -39,7 +39,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
-    Query q = em.createQuery("DELETE FROM " + Book.class.getName());
+    Query q = em.createQuery("DELETE FROM " + Book.class.getName() + " b");
     beginTxn();
     try {
       q.executeUpdate();
@@ -55,7 +55,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
-    Query q = em.createQuery("DELETE FROM " + Book.class.getName());
+    Query q = em.createQuery("DELETE FROM " + Book.class.getName() + " b");
     beginTxn();
     try {
       q.executeUpdate();
@@ -72,7 +72,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67890"));
     ds.put(Book.newBookEntity("Bar Book", "Joe Blow", "67891"));
 
-    Query q = em.createQuery("DELETE FROM " + Book.class.getName());
+    Query q = em.createQuery("DELETE FROM " + Book.class.getName() + " b");
     assertEquals(2, q.executeUpdate());
     assertEquals(0, countForClass(Book.class));
   }
@@ -85,7 +85,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(pojo1);
     ds.put(pojo2);
 
-    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
+    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " b WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
     beginTxn();
     assertEquals(2, q.executeUpdate());
@@ -101,7 +101,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(pojo1);
     ds.put(pojo2);
 
-    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
+    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " b WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
     beginTxn();
     assertEquals(2, q.executeUpdate());
@@ -118,7 +118,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(pojo1);
     ds.put(pojo2);
 
-    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " WHERE ancestorKey = :p1");
+    Query q = em.createQuery("DELETE FROM " + HasKeyAncestorKeyPkJPA.class.getName() + " b WHERE ancestorKey = :p1");
     q.setParameter("p1", parentKey);
     assertEquals(2, q.executeUpdate());
     assertEquals(0, countForClass(HasKeyAncestorKeyPkJPA.class));
@@ -134,7 +134,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
-    Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
+    Query q = em.createQuery("delete from " + Book.class.getName() + " b where id = :ids");
     q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
     assertEquals(3, q.executeUpdate());
     assertEquals(1, countForClass(Book.class));
@@ -150,7 +150,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(e3);
 
     Key key = KeyFactory.createKey("yar", "does not exist");
-    Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
+    Query q = em.createQuery("delete from " + Book.class.getName() + " b where id = :ids");
     q.setHint(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY, true);
     q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
     assertEquals(2, q.executeUpdate());
@@ -167,7 +167,7 @@ public class JPQLDeleteTest extends JPATestCase {
     ds.put(e3);
 
     beginTxn();
-    Query q = em.createQuery("delete from " + Book.class.getName() + " where id = :ids");
+    Query q = em.createQuery("delete from " + Book.class.getName() + " b where id = :ids");
     q.setParameter("ids", Utils.newArrayList(parent, e1.getKey(), e2.getKey()));
     assertEquals(3, q.executeUpdate());
     assertEquals(3, countForClass(Book.class));
@@ -186,7 +186,7 @@ public class JPQLDeleteTest extends JPATestCase {
     assertEquals(1, countForClass(Book.class));
     assertEquals(1, countForClass(HasOneToManyListJPA.class));
     beginTxn();
-    Query q = em.createQuery("delete from " + HasOneToManyListJPA.class.getName());
+    Query q = em.createQuery("delete from " + HasOneToManyListJPA.class.getName() + " b");
     assertEquals(1, q.executeUpdate());
     assertEquals(1, countForClass(Book.class));
     assertEquals(1, countForClass(HasOneToManyListJPA.class));

@@ -1,8 +1,3 @@
-package com.google.appengine.datanucleus;
-
-import org.datanucleus.PersistenceConfiguration;
-
-import java.util.Arrays;
 /*
  * Copyright (C) 2010 Google Inc
  *
@@ -18,6 +13,12 @@ import java.util.Arrays;
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+package com.google.appengine.datanucleus;
+
+import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.store.StoreManager;
+
+import java.util.Arrays;
 
 /**
  * The storage versions we support.
@@ -62,7 +63,7 @@ public enum StorageVersion {
    * Config property that determines the action we take when we encounter
    * ignorable meta-data.
    */
-  static final String STORAGE_VERSION_PROPERTY = "datanucleus.appengine.storageVersion";
+  public static final String STORAGE_VERSION_PROPERTY = "datanucleus.appengine.storageVersion";
 
   /**
    * The default storage version.  If {@link #STORAGE_VERSION_PROPERTY} is not
@@ -70,17 +71,16 @@ public enum StorageVersion {
    */
   private static final StorageVersion DEFAULT = PARENTS_DO_NOT_REFER_TO_CHILDREN;
 
-  static StorageVersion fromConfig(PersistenceConfiguration pc) {
-    String val = pc.getStringProperty(STORAGE_VERSION_PROPERTY);
-    // if the user hasn't specific a specific storage version we'll
-    // use the default
+  static StorageVersion fromStoreManager(StoreManager storeMgr) {
+    String val = storeMgr.getStringProperty(STORAGE_VERSION_PROPERTY);
+    // if the user hasn't specific a specific storage version we'll use the default
     if (val == null) {
       return DEFAULT;
     }
     try {
       return StorageVersion.valueOf(val);
     } catch (IllegalArgumentException iae) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           String.format("'%s' is an unknwon value for %s.  Legal values are %s.",
                         val, STORAGE_VERSION_PROPERTY, Arrays.toString(StorageVersion.values())));
     }

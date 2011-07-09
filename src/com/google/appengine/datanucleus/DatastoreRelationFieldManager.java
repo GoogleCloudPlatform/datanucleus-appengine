@@ -23,9 +23,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaData;
@@ -34,14 +33,18 @@ import org.datanucleus.metadata.Relation;
 
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
-import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
+import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import java.util.List;
 
@@ -74,11 +77,12 @@ class DatastoreRelationFieldManager {
    * requires an update to the relation owner, {@code false} otherwise.
    */
   boolean storeRelations(KeyRegistry keyRegistry) {
+      NucleusLogger.GENERAL.info(">> RelationFM.storeRelations ");
     if (storeRelationEvents.isEmpty()) {
       return false;
     }
     if (fieldManager.getEntity().getKey() != null) {
-      keyRegistry.registerKey(getStateManager(), fieldManager);
+      keyRegistry.registerKey(getObjectProvider(), fieldManager);
     }
     for (StoreRelationEvent event : storeRelationEvents) {
       event.apply();
@@ -98,11 +102,12 @@ class DatastoreRelationFieldManager {
   void storeRelationField(final AbstractClassMetaData acmd,
                           final AbstractMemberMetaData ammd, final Object value,
                           final boolean isInsert, final InsertMappingConsumer consumer) {
+    NucleusLogger.GENERAL.info(">> RelationFM.storeRelationField " + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(value));
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
         DatastoreTable table = fieldManager.getDatastoreTable();
 
-        StateManager sm = getStateManager();
+        ObjectProvider op = getObjectProvider();
         int fieldNumber = ammd.getAbsoluteFieldNumber();
         // Based on ParameterSetter
         try {
@@ -110,10 +115,10 @@ class DatastoreRelationFieldManager {
           if (mapping instanceof EmbeddedPCMapping ||
               mapping instanceof SerialisedPCMapping ||
               mapping instanceof SerialisedReferenceMapping ||
-              mapping instanceof PersistenceCapableMapping ||
+              mapping instanceof PersistableMapping ||
               mapping instanceof InterfaceMapping) {
-            setObjectViaMapping(mapping, table, value, sm, fieldNumber);
-            sm.wrapSCOField(fieldNumber, value, false, true, true);
+            setObjectViaMapping(mapping, table, value, op, fieldNumber);
+            op.wrapSCOField(fieldNumber, value, false, true, true);
           } else {
             if (isInsert) {
               runPostInsertMappingCallbacks(consumer, value);
@@ -125,23 +130,23 @@ class DatastoreRelationFieldManager {
           if (acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber).getNullValue() == NullValue.EXCEPTION) {
             throw e;
           }
-          sm.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
+          op.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
         }
       }
 
       private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
-          StateManager sm, int fieldNumber) {
+          ObjectProvider op, int fieldNumber) {
         boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
         if (!fieldIsParentKeyProvider) {
-          checkForParentSwitch(value, sm);
+          checkForParentSwitch(value, op);
         }
         Entity entity = fieldManager.getEntity();
         mapping.setObject(
-            fieldManager.getObjectManager(),
+            fieldManager.getExecutionContext(),
             entity,
             fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
             value,
-            sm,
+            op,
             fieldNumber);
 
         // If the field we're setting is the one side of an owned many-to-one,
@@ -151,9 +156,9 @@ class DatastoreRelationFieldManager {
         // DatastoreFKMapping.setObject for all the gory details.
         Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
         if (parentKeyObj != null) {
-          AbstractClassMetaData parentCmd = sm.getMetaDataManager().getMetaDataForClass(
+          AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
               ammd.getType(), fieldManager.getClassLoaderResolver());
-          Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, fieldManager.getObjectManager());
+          Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, fieldManager.getExecutionContext());
           entity.removeProperty(PARENT_KEY_PROPERTY);
           fieldManager.recreateEntityWithParent(parentKey);
         }
@@ -169,24 +174,24 @@ class DatastoreRelationFieldManager {
     storeRelationEvents.add(event);
   }
 
-  static void checkForParentSwitch(Object child, StateManager parentSM) {
+  static void checkForParentSwitch(Object child, ObjectProvider parentOP) {
     if (child == null) {
       return;
     }
-    ObjectManager om = parentSM.getObjectManager();
-    ApiAdapter apiAdapter = om.getApiAdapter();
+    ExecutionContext ec = parentOP.getExecutionContext();
+    ApiAdapter apiAdapter = ec.getApiAdapter();
 
-    StateManager childStateMgr = om.findStateManager(child);
+    ObjectProvider childOP = ec.findObjectProvider(child);
     if (apiAdapter.isNew(child) &&
-        (childStateMgr == null ||
-         childStateMgr.getAssociatedValue(EntityUtils.getCurrentTransaction(om)) == null)) {
+        (childOP == null || childOP.getAssociatedValue(EntityUtils.getCurrentTransaction(ec)) == null)) {
       // This condition is difficult to get right.  An object that has been persisted
       // (and therefore had its primary key already established) may still be considered
       // NEW by the apiAdapter if there is a txn and the txn has not yet committed.
       // In order to determine if an object has been persisted we see if there is
       // a state manager for it.  If there isn't, there's no way it was persisted.
       // If there is, it's still possible that it hasn't been persisted so we check
-      // to see if there is an associated Entity.
+      // to see if there is an associated Entity. 
+      // TODO Just call sm.isFlushedNew(). It's not that hard
       return;
     }
     // Since we only support owned relationships right now, we can assume
@@ -205,7 +210,7 @@ class DatastoreRelationFieldManager {
     Key childKey = childKeyOrString instanceof Key
                    ? (Key) childKeyOrString : KeyFactory.stringToKey((String) childKeyOrString);
 
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentSM);
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentOP);
 
     if (childKey.getParent() == null) {
       throw new ChildWithoutParentException(parentKey, childKey);
@@ -215,16 +220,16 @@ class DatastoreRelationFieldManager {
   }
 
   private void runPostInsertMappingCallbacks(InsertMappingConsumer consumer, Object value) {
-    StateManager sm = getStateManager();
+    ObjectProvider op = getObjectProvider();
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-      callback.postInsert(sm);
+      callback.postInsert(op);
     }
   }
 
   private void runPostUpdateMappingCallbacks(InsertMappingConsumer consumer) {
-    StateManager sm = getStateManager();
+    ObjectProvider op = getObjectProvider();
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-      callback.postUpdate(sm);
+      callback.postUpdate(op);
     }
   }
 
@@ -237,10 +242,10 @@ class DatastoreRelationFieldManager {
         mapping instanceof SerialisedPCMapping ||
         mapping instanceof SerialisedReferenceMapping) {
       value = mapping.getObject(
-          fieldManager.getObjectManager(),
+          fieldManager.getExecutionContext(),
           fieldManager.getEntity(),
           NOT_USED,
-          getStateManager(),
+          getObjectProvider(),
           ammd.getAbsoluteFieldNumber());
     } else {
       int relationType = ammd.getRelationType(clr);
@@ -290,15 +295,15 @@ class DatastoreRelationFieldManager {
       }
     }
     // Return the field value (as a wrapper if wrappable)
-    return getStateManager().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
+    return getObjectProvider().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
   }
 
   private Object lookupParent(AbstractMemberMetaData ammd, JavaTypeMapping mapping, boolean allowNullParent) {
     Key parentKey = fieldManager.getEntity().getParent();
     if (parentKey == null) {
       if (!allowNullParent) {
-        String childClass = fieldManager.getStateManager().getClassMetaData().getFullClassName();
-        throw new FatalNucleusUserException("Field " + ammd.getFullFieldName() + " should be able to "
+        String childClass = fieldManager.getObjectProvider().getClassMetaData().getFullClassName();
+        throw new NucleusFatalUserException("Field " + ammd.getFullFieldName() + " should be able to "
             + "provide a reference to its parent but the entity does not have a parent.  "
             + "Did you perhaps try to establish an instance of " + childClass  +  " as "
             + "the child of an instance of " + ammd.getTypeName() + " after the child had already been "
@@ -307,14 +312,14 @@ class DatastoreRelationFieldManager {
         return null;
       }
     }
-    ObjectManager om = getStateManager().getObjectManager();
-    return mapping.getObject(om, parentKey, NOT_USED);
+
+    return mapping.getObject(getObjectProvider().getExecutionContext(), parentKey, NOT_USED);
   }
 
   private Object lookupOneToOneChild(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
-    ObjectManager om = getStateManager().getObjectManager();
+    ExecutionContext ec = getObjectProvider().getExecutionContext();
     AbstractClassMetaData childClassMetaData =
-        om.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+        ec.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(
         childClassMetaData).getIdentifierName();
     Entity parentEntity = fieldManager.getEntity();
@@ -331,7 +336,7 @@ class DatastoreRelationFieldManager {
     for (Entity e : datastoreService.prepare(q).asIterable()) {
       if (parentEntity.getKey().equals(e.getKey().getParent())) {
         // TODO(maxr) Figure out how to hook this up to a StateManager!
-        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, om, false, om.getFetchPlan());
+        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, ec, false, ec.getFetchPlan());
         // We are potentially ignoring data errors where there is more than one
         // direct child for the one to one.  Unfortunately, in order to detect
         // this we need to read all the way to the end of the Iterable and that
@@ -341,8 +346,8 @@ class DatastoreRelationFieldManager {
     return null;
   }
 
-  private StateManager getStateManager() {
-    return fieldManager.getStateManager();
+  private ObjectProvider getObjectProvider() {
+    return fieldManager.getObjectProvider();
   }
   /**
    * Supports a mechanism for delaying the storage of a relation.
@@ -351,7 +356,7 @@ class DatastoreRelationFieldManager {
     void apply();
   }
 
-  static class ChildWithoutParentException extends FatalNucleusUserException {
+  static class ChildWithoutParentException extends NucleusFatalUserException {
     public ChildWithoutParentException(Key parentKey, Key childKey) {
       super("Detected attempt to establish " + parentKey + " as the "
              + "parent of " + childKey + " but the entity identified by "
@@ -360,7 +365,7 @@ class DatastoreRelationFieldManager {
     }
   }
 
-  static class ChildWithWrongParentException extends FatalNucleusUserException {
+  static class ChildWithWrongParentException extends NucleusFatalUserException {
     public ChildWithWrongParentException(Key parentKey, Key childKey) {
       super("Detected attempt to establish " + parentKey + " as the "
          + "parent of " + childKey + " but the entity identified by "

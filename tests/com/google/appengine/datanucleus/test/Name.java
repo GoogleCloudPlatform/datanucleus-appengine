@@ -22,7 +22,7 @@ import javax.jdo.annotations.PersistenceCapable;
 /**
  * @author Max Ross <maxr@google.com>
  */
-@PersistenceCapable
+@PersistenceCapable(detachable="true")
 @EmbeddedOnly
 public class Name {
 

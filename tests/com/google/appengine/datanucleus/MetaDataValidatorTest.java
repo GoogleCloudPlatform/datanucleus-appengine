@@ -15,12 +15,13 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
-import org.datanucleus.OMFContext;
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.NucleusContext;
+import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
 import com.google.appengine.datanucleus.test.Flight;
 
 /**
@@ -30,11 +31,11 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_NoConfig() {
     setIgnorableMetaDataBehavior(null);
-    OMFContext omfContext = ((JDOPersistenceManagerFactory)pmf).getOMFContext();
-    MetaDataManager mdm = omfContext.getMetaDataManager();
+    NucleusContext nucContext = ((JDOPersistenceManagerFactory)pmf).getNucleusContext();
+    MetaDataManager mdm = nucContext.getMetaDataManager();
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
-        mdm.getMetaDataForClass(Flight.class, omfContext.getClassLoaderResolver(getClass().getClassLoader()));
+        mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
     MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
       @Override
       void warn(String msg) {
@@ -50,7 +51,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_NoneConfig() {
     setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.NONE.name());
-    MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getOMFContext().getMetaDataManager();
+    MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getNucleusContext().getMetaDataManager();
     MetaDataValidator mdv = new MetaDataValidator(null, mdm, null) {
       @Override
       void warn(String msg) {
@@ -62,11 +63,11 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_WarningConfig() {
     setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.WARN.name());
-    OMFContext omfContext = ((JDOPersistenceManagerFactory)pmf).getOMFContext();
-    MetaDataManager mdm = omfContext.getMetaDataManager();
+    NucleusContext nucContext = ((JDOPersistenceManagerFactory)pmf).getNucleusContext();
+    MetaDataManager mdm = nucContext.getMetaDataManager();
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
-        mdm.getMetaDataForClass(Flight.class, omfContext.getClassLoaderResolver(getClass().getClassLoader()));
+        mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
     MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
       @Override
       void warn(String msg) {
@@ -82,10 +83,10 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_ErrorConfig() {
     setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.ERROR.name());
-    OMFContext omfContext = ((JDOPersistenceManagerFactory)pmf).getOMFContext();
-    MetaDataManager mdm = omfContext.getMetaDataManager();
+    NucleusContext nucContext = ((JDOPersistenceManagerFactory)pmf).getNucleusContext();
+    MetaDataManager mdm = nucContext.getMetaDataManager();
     AbstractClassMetaData acmd =
-        mdm.getMetaDataForClass(Flight.class, omfContext.getClassLoaderResolver(getClass().getClassLoader()));
+        mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
     MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
       @Override
       void warn(String msg) {
@@ -104,7 +105,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
   }
 
   private void setIgnorableMetaDataBehavior(String val) {
-    ((JDOPersistenceManagerFactory)pmf).getOMFContext().getPersistenceConfiguration().setProperty(
+    ((JDOPersistenceManagerFactory)pmf).getNucleusContext().getPersistenceConfiguration().setProperty(
         "datanucleus.appengine.ignorableMetaDataBehavior", val);
   }
 }

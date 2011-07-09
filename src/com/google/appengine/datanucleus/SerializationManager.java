@@ -54,7 +54,7 @@ import java.util.Arrays;
  *
  * @author Max Ross <maxr@google.com>
  */
-class SerializationManager {
+public class SerializationManager {
 
   /**
    * The key for the serialization strategy override extension.
@@ -64,7 +64,7 @@ class SerializationManager {
   /**
    * Default serialization strategy - standard java serialization.
    */
-  static final SerializationStrategy DEFAULT_SERIALIZATION_STRATEGY = new SerializationStrategy() {
+  public static final SerializationStrategy DEFAULT_SERIALIZATION_STRATEGY = new SerializationStrategy() {
 
     /**
      * Serializes the provided object using standard java serialization.

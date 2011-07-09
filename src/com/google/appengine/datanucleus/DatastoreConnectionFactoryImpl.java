@@ -18,11 +18,12 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 
-import org.datanucleus.ConnectionFactory;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ManagedConnectionResourceListener;
-import org.datanucleus.OMFContext;
-import org.datanucleus.ObjectManager;
+import org.datanucleus.store.StoreManager;
+import org.datanucleus.store.connection.AbstractConnectionFactory;
+import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.connection.ManagedConnectionResourceListener;
+import org.datanucleus.PersistenceConfiguration;
+import org.datanucleus.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -32,15 +33,15 @@ import javax.transaction.xa.XAResource;
 
 /**
  * Factory for connections to the datastore.
+ * TODO Merge DatastoreEntityTransactionImpl into here
  *
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
+public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
 
   public static final String AUTO_CREATE_TXNS_PROPERTY =
       "datanucleus.appengine.autoCreateDatastoreTxns";
 
-  private final OMFContext omfContext;
   private final boolean isTransactional;
 
   /**
@@ -61,12 +62,12 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
    * xsi:noNamespaceSchemaLocation="http://java.sun.com/xml/ns/jdo/jdoconfig">
    *
    *  <persistence-manager-factory name="transactional">
-   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.jdo.JDOPersistenceManagerFactory"/>
+   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
    *     <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
    *  </persistence-manager-factory>
    *
    *  <persistence-manager-factory name="nontransactional">
-   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.jdo.JDOPersistenceManagerFactory"/>
+   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
    *     <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
    *     <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
    *  </persistence-manager-factory>
@@ -90,27 +91,35 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
    * </persistence-unit>
    * </pre>
    *
-   * @param omfContext The OMFContext
+   * @param nucContext The OMFContext
    * @param resourceType The resource type of the connection, either tx or
    * notx.  We ignore this parameter because it isn't a valid indication of
    * whether or not this connection factory creates transactional connections.
    */
-  public DatastoreConnectionFactoryImpl(OMFContext omfContext, String resourceType) {
-    this.omfContext = omfContext;
-    this.isTransactional = omfContext.getPersistenceConfiguration().getBooleanProperty(AUTO_CREATE_TXNS_PROPERTY);
+  public DatastoreConnectionFactoryImpl(StoreManager storeMgr, String resourceType) {
+    super(storeMgr, resourceType);
+
+    PersistenceConfiguration conf = storeMgr.getNucleusContext().getPersistenceConfiguration();
+    if (conf.getProperty(DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY) == null) {
+        // User hasn't configured the "auto-create" property, so set it
+        conf.setProperty(DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
+    }
+    this.isTransactional = conf.getBooleanProperty(AUTO_CREATE_TXNS_PROPERTY);
+  }
+
+  public void close() {}
+
+  /**
+   * {@inheritDoc}
+   */
+  public ManagedConnection getConnection(Object poolKey, Transaction txn, Map options) {
+    return storeMgr.getConnectionManager().allocateConnection(this, poolKey, txn, options);
   }
 
   /**
    * {@inheritDoc}
    */
-  public ManagedConnection getConnection(ObjectManager om, Map options) {
-    return omfContext.getConnectionManager().allocateConnection(this, om, options);
-  }
-
-  /**
-   * {@inheritDoc}
-   */
-  public ManagedConnection createManagedConnection(ObjectManager om, Map transactionOptions) {
+  public ManagedConnection createManagedConnection(Object poolKey, Map transactionOptions) {
     return new DatastoreManagedConnection(newXAResource());
   }
 
@@ -120,7 +129,7 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
 
   private XAResource newXAResource() {
     if (isTransactional()) {
-      DatastoreServiceConfig config = ((DatastoreManager) omfContext.getStoreManager()).getDefaultDatastoreServiceConfigForWrites();
+      DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
       DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
       return new DatastoreXAResource(datastoreService);
     } else {
@@ -179,11 +188,16 @@ public class DatastoreConnectionFactoryImpl implements ConnectionFactory {
       locked = false;
     }
 
-    public void flush() {
-      // Nothing to flush
-      for (ManagedConnectionResourceListener listener : listeners) {
-        listener.managedConnectionFlushed();
-      }
+    public void transactionFlushed() {
+        for (ManagedConnectionResourceListener listener : listeners) {
+            listener.transactionFlushed();
+        }
+    }
+
+    public void transactionPreClose() {
+        for (ManagedConnectionResourceListener listener : listeners) {
+            listener.transactionPreClose();
+        }
     }
 
     public void addListener(ManagedConnectionResourceListener listener) {

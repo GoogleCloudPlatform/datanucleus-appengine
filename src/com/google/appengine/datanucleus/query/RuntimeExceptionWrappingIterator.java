@@ -16,10 +16,11 @@
 package com.google.appengine.datanucleus.query;
 
 import com.google.appengine.api.datastore.Entity;
-
 import com.google.appengine.datanucleus.Utils.Supplier;
 
 import java.util.Iterator;
+
+import org.datanucleus.api.ApiAdapter;
 
 /**
  * {@link Iterator} implementation that catches runtime exceptions thrown by
@@ -31,16 +32,19 @@ import java.util.Iterator;
  */
 class RuntimeExceptionWrappingIterator implements Iterator<Entity> {
 
+  final ApiAdapter api;
+
   final Iterator<Entity> inner;
   final Supplier<Boolean> hasNextSupplier;
   final Supplier<Entity> nextSupplier;
   final Supplier<Void> removeSupplier;
 
-  RuntimeExceptionWrappingIterator(final Iterator<Entity> inner,
-                                   boolean isJPA, final RuntimeExceptionObserver exceptionObserver) {
+  RuntimeExceptionWrappingIterator(final ApiAdapter api, final Iterator<Entity> inner,
+                                   final RuntimeExceptionObserver exceptionObserver) {
     if (inner == null) {
       throw new NullPointerException("inner cannot be null");
     }
+    this.api = api;
     this.inner = inner;
     Supplier<Boolean> datastoreHasNextSupplier = QueryExceptionWrappers.datastoreToDataNucleus(
         new Supplier<Boolean>() {
@@ -90,15 +94,9 @@ class RuntimeExceptionWrappingIterator implements Iterator<Entity> {
             }
           });
 
-    if (isJPA) {
-      hasNextSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreHasNextSupplier);
-      nextSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreNextSupplier);
-      removeSupplier = QueryExceptionWrappers.dataNucleusToJPA(datastoreRemoveSupplier);
-    } else {
-      hasNextSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreHasNextSupplier);
-      nextSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreNextSupplier);
-      removeSupplier = QueryExceptionWrappers.dataNucleusToJDO(datastoreRemoveSupplier);
-    }
+    hasNextSupplier = QueryExceptionWrappers.dataNucleusToApi(api, datastoreHasNextSupplier);
+    nextSupplier = QueryExceptionWrappers.dataNucleusToApi(api, datastoreNextSupplier);
+    removeSupplier = QueryExceptionWrappers.dataNucleusToApi(api, datastoreRemoveSupplier);
   }
 
   public boolean hasNext() {

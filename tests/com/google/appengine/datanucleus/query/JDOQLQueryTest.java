@@ -30,11 +30,11 @@ import com.google.appengine.api.users.User;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
-import com.google.appengine.datanucleus.JDOTestCase;
 import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
 import com.google.appengine.datanucleus.test.BidirectionalChildListJDO;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkListJDO;
 import com.google.appengine.datanucleus.test.BidirectionalGrandchildListJDO;
@@ -70,10 +70,8 @@ import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJ
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
 
-import org.datanucleus.ObjectManager;
 import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.jdo.JDOPersistenceManager;
-import org.datanucleus.jdo.JDOQuery;
+import org.datanucleus.api.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
 import org.easymock.EasyMock;
 
@@ -96,12 +94,10 @@ import javax.jdo.Extent;
 import javax.jdo.JDODataStoreException;
 import javax.jdo.JDOException;
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOQueryTimeoutException;
 import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 
 import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
-
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -201,7 +197,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     // can't have 'or' on multiple properties
     assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin == 'yar' || dest == null");
     assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin == 4 && (dest == 'yar' || name == 'yam')");
-    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + ":p1.contains(origin) || name == 'yam'");
+    // TODO This query is flawed - defines a parameter but doesn't provide it (now an error in DN 3.x)
+//    assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + ":p1.contains(origin) || name == 'yam'");
     // can only check equality
     assertQueryRequiresUnsupportedDatastoreFeature(baseQuery + "origin > 5 || origin < 2");
   }
@@ -210,9 +207,14 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(query);
     try {
       q.execute();
-      fail("expected UnsupportedDatastoreFeatureException for query <" + query + ">");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // Good.
+      fail("expected JDOUserException->UnsupportedDatastoreFeatureException for query <" + query + ">");
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -724,8 +726,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -758,8 +765,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -1034,8 +1046,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute(flight);
       fail("expected udfe");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -1817,12 +1834,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(1, q.execute());
   }
 
-  public void testQueryCacheDisabled() {
-    ObjectManager om = ((JDOPersistenceManager)pm).getObjectManager();
-    JDOQLQuery q = new JDOQLQuery(om, "select from " + Flight.class.getName());
-    assertFalse(q.getBooleanExtensionProperty("datanucleus.query.cached", true));
-  }
-
   public void testFilterByEnum_ProvideStringExplicitly() {
     Entity e = new Entity(HasEnumJDO.class.getSimpleName());
     e.setProperty("myEnum", HasEnumJDO.MyEnum.V1.name());
@@ -2550,16 +2561,26 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     q = pm.newQuery("select origin, count(id) from " + Flight.class.getName());
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -2582,8 +2603,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -2710,24 +2736,39 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*y')");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y')");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*') && author.matches('z.*')");
@@ -2745,22 +2786,37 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       ((List<?>) q.execute(".*y")).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     try {
       ((List<?>) q.execute("y.*y")).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     try {
       ((List<?>) q.execute("y")).isEmpty();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     try {
@@ -2785,7 +2841,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e1);
 
     // Not used, but associates the txn with the flight's entity group
-    Flight f = pm.getObjectById(Flight.class, e1.getKey());
+    /*Flight f = */pm.getObjectById(Flight.class, e1.getKey());
 
     Query q = pm.newQuery(
         "select from " + HasKeyAncestorKeyPkJDO.class.getName() + " where ancestorKey == :p");
@@ -2815,8 +2871,13 @@ public class JDOQLQueryTest extends JDOTestCase {
     try {
       q.execute(null);
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException e) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
   }
 
@@ -2830,8 +2891,8 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testSubclassesNotSupported() {
-    JDOQLQuery q = new JDOQLQuery(getObjectManager());
-    q.setClass(Base1.class);
+    JDOQLQuery q = new JDOQLQuery(getExecutionContext());
+    q.setCandidateClass(Base1.class);
     q.setSubclasses(false);
     try {
       q.setSubclasses(true);
@@ -2839,7 +2900,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     } catch (NucleusUserException nue) {
       // good
     }
-    q.setClass(UnidirTop.class);
+    q.setCandidateClass(UnidirTop.class);
     q.setSubclasses(false);
     q.setSubclasses(true);
   }
@@ -2861,38 +2922,38 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     try {
       Query q = pm.newQuery(Flight.class);
-      q.setTimeoutMillis(3000);
+      q.setDatastoreReadTimeoutMillis(3000);
       try {
         ((List<?>) q.executeWithMap(new HashMap())).isEmpty();
         fail("expected exception");
-      } catch (JDOQueryTimeoutException e) {
+      } catch (JDODataStoreException e) { // TODO Catch nested as QueryTimeoutException
         // good
       }
 
       q = pm.newQuery(Flight.class);
-      q.setTimeoutMillis(3000);
+      q.setDatastoreReadTimeoutMillis(3000);
       try {
         ((List<?>) q.executeWithArray()).isEmpty();
         fail("expected exception");
-      } catch (JDOQueryTimeoutException e) {
+      } catch (JDODataStoreException e) { // TODO Catch nested as QueryTimeoutException
         // good
       }
 
       q = pm.newQuery(Flight.class);
-      q.setTimeoutMillis(3000);
+      q.setDatastoreReadTimeoutMillis(3000);
       try {
         ((List<?>) q.executeWithArray()).isEmpty();
         fail("expected exception");
-      } catch (JDOQueryTimeoutException e) {
+      } catch (JDODataStoreException e) { // TODO Catch nested as QueryTimeoutException
         // good
       }
 
       q = pm.newQuery(Flight.class);
-      q.setTimeoutMillis(3000);
+      q.setDatastoreReadTimeoutMillis(3000);
       try {
         ((List<?>) q.execute()).isEmpty();
         fail("expected exception");
-      } catch (JDOQueryTimeoutException e) {
+      } catch (JDODataStoreException e) { // TODO Catch nested as QueryTimeoutException
         // good
       }
 
@@ -2932,7 +2993,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       try {
         results.size();
         fail("expected exception");
-      } catch (JDOQueryTimeoutException e) {
+      } catch (JDODataStoreException e) {
         assertTrue(e.getCause() instanceof org.datanucleus.store.query.QueryTimeoutException);
         assertTrue(e.getCause().getCause().toString(), e.getCause().getCause() instanceof DatastoreTimeoutException);
       }
@@ -3031,10 +3092,16 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(clazz, query);
     try {
       q.execute();
-      fail("expected UnsupportedOperationException for query <" + query + ">");
-    } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
-      // good
-      assertEquals(unsupportedOp, uoe.getOperation());
+      fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");
+    } catch (JDOUserException jdoe) {
+      Throwable cause = jdoe.getCause();
+      if (cause instanceof DatastoreQuery.UnsupportedDatastoreOperatorException) {
+        // good
+        assertEquals(unsupportedOp, ((DatastoreQuery.UnsupportedDatastoreOperatorException)cause).getOperation());   
+      }
+      else {
+        throw jdoe;
+      }
     }
     unsupportedOps.remove(unsupportedOp);
   }
@@ -3053,12 +3120,17 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(query);
     try {
       q.execute();
-      fail("expected UnsupportedOperationException for query <" + query + ">");
-    } catch (DatastoreQuery.UnsupportedDatastoreOperatorException uoe) {
-      // good
-      // Expression.Operator doesn't override equals
-      // so we just compare the string representation.
-      assertEquals(unsupportedOp.toString(), uoe.getOperation().toString());
+      fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");
+    } catch (JDOUserException jdoe) {
+      Throwable cause = jdoe.getCause();
+      if (cause instanceof DatastoreQuery.UnsupportedDatastoreOperatorException) {
+        // good. Expression.Operator doesn't override equals
+        // so we just compare the string representation.
+        assertEquals(unsupportedOp.toString(), ((DatastoreQuery.UnsupportedDatastoreOperatorException)cause).getOperation().toString());
+      }
+      else {
+        throw jdoe;
+      }
     }
   }
 

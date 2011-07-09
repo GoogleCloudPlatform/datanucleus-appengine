@@ -28,7 +28,7 @@ import com.google.appengine.datanucleus.test.SubclassesJPA.MappedSuperclassParen
 import com.google.appengine.datanucleus.test.SubclassesJPA.TablePerClass;
 import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirTop;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import java.util.ArrayList;
 import java.util.Collection;

@@ -18,25 +18,28 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
-import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+
+import javax.jdo.JDOObjectNotFoundException;
 
 /**
  * Encapsulates logic that supports deletion of dependent objects.
- *
  * Code based pretty closely on the rdbms version of DeleteRequest.
  *
  * @author Max Ross <maxr@google.com>
@@ -60,36 +63,64 @@ class DependentDeleteRequest {
   }
 
   /**
-   * Actually performs the work.
+   * Perform the work of the delete request. Calls preDelete on related fields, and nulls other
+   * relations as required to allow the deletion of the owner. 
+   * @return Dependent objects that need deleting after the delete of the owner
    */
-  public void execute(StateManager sm, Entity owningEntity) {
+  public Set execute(ObjectProvider op, Entity owningEntity) {
+
+    Set relatedObjectsToDelete = null;
 
     // Process all related fields first
     // a). Delete any dependent objects
     // b). Null any non-dependent objects with FK at other side
+    ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
     for (MappingCallbacks callback : callbacks) {
-      callback.preDelete(sm);
+      callback.preDelete(op);
+
+      JavaTypeMapping mapping = (JavaTypeMapping) callback;
+      AbstractMemberMetaData mmd = mapping.getMemberMetaData();
+      int relationType = mmd.getRelationType(clr);
+      if (mmd.isDependent() && (relationType == Relation.ONE_TO_ONE_UNI ||
+          (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null))) {
+        try {
+          op.getExecutionContext().getApiAdapter().isLoaded(op, mmd.getAbsoluteFieldNumber());
+          Object relatedPc = op.provideField(mmd.getAbsoluteFieldNumber());
+          if (relatedPc != null) {
+            boolean relatedObjectDeleted = op.getExecutionContext().getApiAdapter().isDeleted(relatedPc);
+            if (!relatedObjectDeleted) {
+              if (relatedObjectsToDelete == null) {
+                relatedObjectsToDelete = new HashSet();
+              }
+              relatedObjectsToDelete.add(relatedPc);
+            }
+          }
+        } 
+        catch (JDOObjectNotFoundException onfe) {}
+      }
     }
 
     if (oneToOneNonOwnerFields != null && oneToOneNonOwnerFields.length > 0) {
       for (AbstractMemberMetaData relatedFmd : oneToOneNonOwnerFields) {
-        updateOneToOneBidirectionalOwnerObjectForField(sm, relatedFmd, owningEntity);
+        updateOneToOneBidirectionalOwnerObjectForField(op, relatedFmd, owningEntity);
       }
     }
+
+    return relatedObjectsToDelete;
   }
 
   private void updateOneToOneBidirectionalOwnerObjectForField(
-      StateManager sm, AbstractMemberMetaData fmd, Entity owningEntity) {
-    MappedStoreManager storeMgr = (MappedStoreManager) sm.getStoreManager();
-    ObjectManager om = sm.getObjectManager();
-    ClassLoaderResolver clr = om.getClassLoaderResolver();
+      ObjectProvider op, AbstractMemberMetaData fmd, Entity owningEntity) {
+    MappedStoreManager storeMgr = (MappedStoreManager) op.getExecutionContext().getStoreManager();
+    ExecutionContext ec = op.getExecutionContext();
+    ClassLoaderResolver clr = ec.getClassLoaderResolver();
     AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
     String fullClassName = ((AbstractClassMetaData) relatedMmds[0].getParent()).getFullClassName();
     DatastoreClass refTable = storeMgr.getDatastoreClass(fullClassName, clr);
     JavaTypeMapping refMapping = refTable.getMemberMapping(fmd.getMappedBy());
     if (refMapping.isNullable()) {
       // Null out the relationship to the object being deleted.
-      refMapping.setObject(om, owningEntity, new int[1], sm.getObject());
+      refMapping.setObject(ec, owningEntity, new int[1], op.getObject());
 
       // TODO(maxr): Do I need to manually request an update now?
     }
@@ -131,8 +162,8 @@ class DependentDeleteRequest {
       if (m.includeInUpdateStatement()) {
         if (fmd.isPrimaryKey()) {
           pkField = fmd.getAbsoluteFieldNumber();
-        } else if (m instanceof PersistenceCapableMapping || m instanceof ReferenceMapping) {
-          if (m.getNumberOfDatastoreFields() == 0) {
+        } else if (m instanceof PersistableMapping || m instanceof ReferenceMapping) {
+          if (m.getNumberOfDatastoreMappings() == 0) {
             // Field storing a PC object with FK at other side
             int relationType = fmd.getRelationType(clr);
             if (relationType == Relation.ONE_TO_ONE_BI) {

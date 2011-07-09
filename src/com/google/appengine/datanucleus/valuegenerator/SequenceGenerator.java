@@ -20,7 +20,7 @@ import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.KeyRange;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.OMFContext;
+import org.datanucleus.NucleusContext;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.MetaDataManager;
@@ -30,7 +30,6 @@ import org.datanucleus.store.StoreManager;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.FatalNucleusUserException;
 import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.store.valuegenerator.AbstractDatastoreGenerator;
@@ -81,7 +80,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
   @Override
   public void setStoreManager(StoreManager storeMgr) {
     super.setStoreManager(storeMgr);
-    OMFContext omfContext = getOMFContext();
+    NucleusContext omfContext = storeMgr.getNucleusContext();
     MetaDataManager mdm = omfContext.getMetaDataManager();
     ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
     AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) properties.get("class-name"), clr);
@@ -98,7 +97,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
         if (sequenceMetaData.hasExtension(KEY_CACHE_SIZE_PROPERTY)) {
           allocationSize = Integer.parseInt(sequenceMetaData.getValueForExtension(KEY_CACHE_SIZE_PROPERTY));
         } else {
-          allocationSize = longToInt(sequenceMetaData.getAllocationSize());
+          allocationSize = sequenceMetaData.getAllocationSize();
         }
         sequenceName = sequenceMetaData.getDatastoreSequence();
       } else {
@@ -135,26 +134,9 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     return ammd.getSequence() != null ? ammd.getSequence() : ammd.getValueGeneratorName();
   }
 
-  /**
-   * Conversion method that blows up if it detects overflow.
-   * We know the max batch size supported by the datastore is smaller than
-   * {@link Integer#MAX_VALUE} so we want to make sure we don't overflow
-   * and end up with a valid value that isn't what the user specified.
-   */
-  private int longToInt(Long val) {
-    if (Long.valueOf(val.intValue()).longValue() != val) {
-      throw new FatalNucleusUserException("id batch size is too big: " + val);
-    }
-    return val.intValue();
-  }
-
-  private OMFContext getOMFContext() {
-    return storeMgr.getOMFContext();
-  }
-
   // Default is the kind with _Sequence__ appended
   private String deriveSequenceNameFromClassMetaData(AbstractClassMetaData acmd) {
-    ClassLoaderResolver clr = getOMFContext().getClassLoaderResolver(getClass().getClassLoader());
+    ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(getClass().getClassLoader());
     return EntityUtils.determineKind(acmd, (DatastoreManager) storeMgr, clr) +
         SEQUENCE_POSTFIX + SEQUENCE_POSTFIX_APPENDAGE.get();
   }

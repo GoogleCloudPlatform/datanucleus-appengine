@@ -22,7 +22,7 @@ import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
-import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 
 import java.util.ArrayList;
@@ -62,8 +62,8 @@ public class InsertMappingConsumer implements MappingConsumer {
       // Make sure we only accept mappings from the correct part of any inheritance tree
       return;
     }
-    if (m.getNumberOfDatastoreFields() == 0 &&
-        (m instanceof PersistenceCapableMapping || m instanceof ReferenceMapping)) {
+    if (m.getNumberOfDatastoreMappings() == 0 &&
+        (m instanceof PersistableMapping || m instanceof ReferenceMapping)) {
       // Reachable Fields (that relate to this object but have no column in the table)
     } else {
       // Fields to be "inserted" (that have a datastore column)

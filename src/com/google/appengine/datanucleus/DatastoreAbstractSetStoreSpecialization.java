@@ -16,8 +16,8 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.scostore.AbstractSetStore;
 import org.datanucleus.store.mapped.scostore.AbstractSetStoreSpecialization;
@@ -36,7 +36,7 @@ class DatastoreAbstractSetStoreSpecialization extends DatastoreAbstractCollectio
     super(localiser, clr, storeMgr);
   }
 
-  public int[] internalAdd(StateManager sm, ManagedConnection mconn, boolean batched,
+  public int[] internalAdd(ObjectProvider op, ManagedConnection mconn, boolean batched,
       Object element, boolean processNow, AbstractSetStore abstractSetStore)
       throws MappedDatastoreException {
     // TODO(maxr) Only invoked from AbstractSetStore.addAll and add,
@@ -45,7 +45,7 @@ class DatastoreAbstractSetStoreSpecialization extends DatastoreAbstractCollectio
     throw new UnsupportedOperationException();
   }
 
-  public boolean remove(StateManager sm, Object element, int size, AbstractSetStore setStore) {
+  public boolean remove(ObjectProvider op, Object element, int size, AbstractSetStore setStore) {
     // TODO(maxr) Only invoked from AbstractSetStore.remove, but this is
     // overridden in FKSetStore, which is the only Set store we currently support.
     throw new UnsupportedOperationException();

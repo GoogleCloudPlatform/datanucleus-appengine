@@ -18,7 +18,7 @@ package com.google.appengine.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import javax.persistence.Basic;
 import javax.persistence.Entity;

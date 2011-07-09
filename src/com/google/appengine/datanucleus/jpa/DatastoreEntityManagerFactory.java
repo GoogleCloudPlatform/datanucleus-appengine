@@ -15,8 +15,9 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import org.datanucleus.jpa.EntityManagerFactoryImpl;
-import org.datanucleus.jpa.PersistenceProviderImpl;
+import org.datanucleus.NucleusContext;
+import org.datanucleus.api.jpa.JPAEntityManagerFactory;
+import org.datanucleus.api.jpa.PersistenceProviderImpl;
 
 import com.google.appengine.datanucleus.ConcurrentHashMapHelper;
 import com.google.appengine.datanucleus.Utils;
@@ -34,7 +35,7 @@ import javax.persistence.spi.PersistenceUnitInfo;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
+public class DatastoreEntityManagerFactory extends JPAEntityManagerFactory {
 
   /**
    * Keeps track of the number of instances we've allocated per EMF in this
@@ -87,20 +88,13 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
     if (!propsToReturn.containsKey("javax.persistence.provider")) {
       propsToReturn.put("javax.persistence.provider", PersistenceProviderImpl.class.getName());
     }
-    // see DatastoreJDOPersistenceManagerFactory.getPersistenceManagerFactory
-    // for an explanation of why we can't just add this as a persistence property
-    // in plugin.xml
-    if (!propsToReturn.containsKey("datanucleus.identifier.case")) {
-      propsToReturn.put("datanucleus.identifier.case", "PreserveCase");
-    }
 
     return propsToReturn;
   }
 
   @Override
-  protected EntityManager newEntityManager(PersistenceContextType contextType,
-      PersistenceManagerFactory pmf) {
-    return new DatastoreEntityManager(this, pmf, contextType);
+  protected EntityManager newEntityManager(NucleusContext nucCtx, PersistenceContextType contextType) {
+    return new DatastoreEntityManager(this, nucCtx, contextType);
   }
 
   /**
@@ -137,10 +131,6 @@ public class DatastoreEntityManagerFactory extends EntityManagerFactoryImpl {
         throw new IllegalStateException(String.format(DUPLICATE_EMF_ERROR_FORMAT, name));
       }
     }
-  }
-
-  public PersistenceManagerFactory getPersistenceManagerFactory() {
-    return pmf;
   }
 
   // visible for testing

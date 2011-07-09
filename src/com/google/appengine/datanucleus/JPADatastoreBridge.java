@@ -22,8 +22,8 @@ import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultList;
 
-import org.datanucleus.ObjectManager;
-import org.datanucleus.jpa.EntityManagerImpl;
+import org.datanucleus.api.jpa.JPAEntityManager;
+import org.datanucleus.store.ExecutionContext;
 
 import java.util.List;
 
@@ -76,7 +76,7 @@ public final class JPADatastoreBridge extends PojoDatastoreBridge {
   }
 
   private <T> List<T> toJPAResult(EntityManager em, Class<T> cls, Iterable<Entity> queryResultIterable, Cursor endCursor) {
-    ObjectManager om = ((EntityManagerImpl) em).getObjectManager();
-    return toPojoResult(om, cls, queryResultIterable, endCursor);
+    ExecutionContext ec = ((JPAEntityManager) em).getExecutionContext();
+    return toPojoResult(ec, cls, queryResultIterable, endCursor);
   }
 }

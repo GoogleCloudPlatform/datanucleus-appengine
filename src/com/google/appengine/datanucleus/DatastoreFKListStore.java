@@ -20,11 +20,11 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.OrderMetaData;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.scostore.FKListStore;
 
 import java.util.Collection;
@@ -41,14 +41,14 @@ public class DatastoreFKListStore extends FKListStore {
     super(fmd, storeMgr, clr, new DatastoreFKListStoreSpecialization(LOCALISER, clr, storeMgr));
   }
 
-  protected ListIterator listIterator(StateManager ownerSM, int startIdx, int endIdx) {
-    ObjectManager om = ownerSM.getObjectManager();
-    ApiAdapter apiAdapter = om.getApiAdapter();
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerSM);
+  protected ListIterator listIterator(ObjectProvider ownerOP, int startIdx, int endIdx) {
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    ApiAdapter apiAdapter = ec.getApiAdapter();
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerOP);
     return ((DatastoreAbstractListStoreSpecialization) specialization).getChildren(
         parentKey,
         getFilterPredicates(startIdx, endIdx),
-        getSortPredicates(), this, om).listIterator();
+        getSortPredicates(), this, ec).listIterator();
   }
 
   private List<Query.FilterPredicate> getFilterPredicates(int startIdx, int endIdx) {
@@ -83,7 +83,7 @@ public class DatastoreFKListStore extends FKListStore {
       // I'm not sure what we should do if this mapping doesn't exist so for now
       // we'll just blow up.
       propertyName =
-          orderMapping.getDataStoreMappings()[0].getDatastoreField().getIdentifier().getIdentifierName();
+          orderMapping.getDatastoreMappings()[0].getDatastoreField().getIdentifier().getIdentifierName();
     } else {
       propertyName = orderMapping.getMemberMetaData().getName();
       AbstractMemberMetaData ammd = orderMapping.getMemberMetaData();
@@ -114,8 +114,7 @@ public class DatastoreFKListStore extends FKListStore {
         if (isPrimaryKey) {
           if (fieldOrder.isForward() && sortPredicates.isEmpty()) {
             // Don't even bother adding if the first sort is id ASC (this is the
-            // default sort so there's no point in making the datastore figure this
-            // out).
+            // default sort so there's no point in making the datastore figure this out).
             break;
           }
           // sorting by id requires us to use a reserved property name
@@ -141,11 +140,11 @@ public class DatastoreFKListStore extends FKListStore {
   }
 
   @Override
-  protected boolean internalAdd(final StateManager sm, int startAt, boolean atEnd, Collection c, int size) {
-    ObjectManager om = sm.getObjectManager();
-    if (super.internalAdd(sm, startAt, atEnd, c, size) && !om.getTransaction().isActive()) {
-      om.getTransaction().addTransactionEventListener(
-          new ForceFlushPreCommitTransactionEventListener(sm));
+  protected boolean internalAdd(final ObjectProvider op, int startAt, boolean atEnd, Collection c, int size) {
+    ExecutionContext ec = op.getExecutionContext();
+    if (super.internalAdd(op, startAt, atEnd, c, size) && !ec.getTransaction().isActive()) {
+      ec.getTransaction().addTransactionEventListener(
+          new ForceFlushPreCommitTransactionEventListener(op));
       return true;
     }
     return false;

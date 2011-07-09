@@ -17,13 +17,13 @@ package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.Key;
 
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 
@@ -68,16 +68,16 @@ class KeyRegistry {
    * and if it has we use that Key as the parent key for the new Entity we
    * are creating.
    */
-  void registerKey(StateManager stateMgr,
+  void registerKey(ObjectProvider op,
       DatastoreFieldManager fieldMgr) {
     DatastoreTable dt = fieldMgr.getDatastoreTable();
     SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();
-    AbstractClassMetaData acmd = stateMgr.getClassMetaData();
+    AbstractClassMetaData acmd = op.getClassMetaData();
     for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
       // Make sure we only provide the field for the correct part of any inheritance tree
       if (dependent.getAbstractClassMetaData().isSameOrAncestorOf(acmd)) {
-        stateMgr.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
+        op.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
         Object childValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
         if (childValue != null) {
           if (childValue instanceof Object[]) {
@@ -88,12 +88,12 @@ class KeyRegistry {
             // when we iterate over the values.
             String expectedType = getExpectedChildType(dependent);
             for (Object element : (Iterable) childValue) {
-              addToParentKeyMap(element, key, stateMgr, expectedType, true);
+              addToParentKeyMap(element, key, op, expectedType, true);
             }
           } else {
             boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
             addToParentKeyMap(
-                childValue, key, stateMgr, getExpectedChildType(dependent), checkForPolymorphism);
+                childValue, key, op, getExpectedChildType(dependent), checkForPolymorphism);
           }
         }
       }
@@ -111,8 +111,8 @@ class KeyRegistry {
     return dependent.getTypeName();
   }
     
-  void registerKey(Object childValue, Key key, StateManager stateMgr, String expectedType) {
-    addToParentKeyMap(childValue, key, stateMgr, expectedType, false);
+  void registerKey(Object childValue, Key key, ObjectProvider op, String expectedType) {
+    addToParentKeyMap(childValue, key, op, expectedType, false);
   }
 
   Key getRegisteredKey(Object object) {
@@ -124,20 +124,18 @@ class KeyRegistry {
   }
 
   private void addToParentKeyMap(Object childValue, Key key,
-                                 StateManager stateMgr, String expectedType,
+                                 ObjectProvider op, String expectedType,
                                  boolean checkForPolymorphism) {
     if (checkForPolymorphism && childValue != null && !childValue.getClass().getName()
         .equals(expectedType)) {
-      AbstractClassMetaData acmd = stateMgr.getMetaDataManager().getMetaDataForClass(
-          childValue.getClass(), stateMgr.getObjectManager().getClassLoaderResolver());
+      AbstractClassMetaData acmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
+          childValue.getClass(), op.getExecutionContext().getClassLoaderResolver());
       if (!DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
         // TODO cache the result of this evaluation to improve performance
-        boolean isJPA = ((DatastoreManager) stateMgr.getStoreManager()).isJPA();
         throw new UnsupportedOperationException(
-            "Received a child of type " + childValue.getClass().getName() + " for a field of type "
-            + expectedType
-            + ". Unfortunately polymorphism in relationships is only supported for the " +
-            (isJPA ? "SINGLE_TABLE" : "superclass-table") + " inheritance mapping strategy.");
+            "Received a child of type " + childValue.getClass().getName() + " for a field of type " +
+            expectedType + ". Unfortunately polymorphism in relationships is only supported for the " +
+            "superclass-table inheritance mapping strategy.");
       }
     }
     parentKeyMap.put(childValue, key);
@@ -158,9 +156,9 @@ class KeyRegistry {
    * Note that even if nontransactional writes are enabled, if there
    * is already a connection available then setting the property is a no-op.
    */
-  static KeyRegistry getKeyRegistry(ObjectManager om) {
-    StoreManager storeManager = om.getStoreManager();
-    ManagedConnection mconn = storeManager.getConnection(om);
+  static KeyRegistry getKeyRegistry(ExecutionContext ec) {
+    StoreManager storeManager = ec.getStoreManager();
+    ManagedConnection mconn = storeManager.getConnection(ec);
     return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();
   }
 

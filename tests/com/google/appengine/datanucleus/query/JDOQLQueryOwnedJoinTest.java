@@ -16,7 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.query;
 
 
-import com.google.appengine.datanucleus.JDOTestCase;
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
 import com.google.appengine.datanucleus.test.OwnedJoinsJDO.Course;
 import com.google.appengine.datanucleus.test.OwnedJoinsJDO.Major;
 import com.google.appengine.datanucleus.test.OwnedJoinsJDO.Student;
@@ -27,6 +27,7 @@ import static com.google.appengine.datanucleus.test.OwnedJoinsJDO.newStudent;
 
 import java.util.Collections;
 
+import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 
 /**
@@ -144,8 +145,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+      if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+        // good
+      }
+      else {
+        throw jdoe;
+      }
     }
 
     // all filters on parent must be equality filters
@@ -157,8 +163,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+      if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+        // good
+      }
+      else {
+        throw jdoe;
+      }
     }
 
     // all filters on child must be equality filters
@@ -170,8 +181,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     // sort on parent can only be by join column in asc order
@@ -183,8 +199,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     // sort is by the join column but in the wrong order
@@ -196,8 +217,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
 
     // can't sort by child property
@@ -209,8 +235,13 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
     try {
       q.execute();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (JDOUserException jdoe) {
+        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw jdoe;
+        }
     }
     commitTxn();
   }

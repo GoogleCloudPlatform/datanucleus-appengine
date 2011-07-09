@@ -28,7 +28,7 @@ import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJPA.HasOneTo
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJPA.HasOneToManyUnencodedStringPkJPA;
 import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirTop;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import java.util.Collection;
 import java.util.HashSet;

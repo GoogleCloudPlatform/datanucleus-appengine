@@ -15,19 +15,18 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
-
 import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.Course;
 import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.Major;
 import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newCourse;
 import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newMajor;
 import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newStudent;
 
-import com.google.appengine.datanucleus.JPATestCase;
+import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.OwnedJoinsJPA.Student;
-
 
 import java.util.Collections;
 
+import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 
 /**
@@ -168,8 +167,13 @@ public class JPQLQueryOwnedJoinTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     // all filters on child must be equality filters
@@ -180,8 +184,13 @@ public class JPQLQueryOwnedJoinTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     // sort on parent can only be by join column in asc order
@@ -192,8 +201,13 @@ public class JPQLQueryOwnedJoinTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     // sort is by the join column but in the wrong order
@@ -204,8 +218,13 @@ public class JPQLQueryOwnedJoinTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
 
     // can't sort by child property
@@ -216,8 +235,13 @@ public class JPQLQueryOwnedJoinTest extends JPATestCase {
     try {
       q.getResultList();
       fail("expected exception");
-    } catch (DatastoreQuery.UnsupportedDatastoreFeatureException udfe) {
-      // good
+    } catch (PersistenceException pe) {
+        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
+          // good
+        }
+        else {
+          throw pe;
+        }
     }
     commitTxn();
   }

@@ -18,9 +18,9 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Key;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.scostore.AbstractCollectionStore;
@@ -43,31 +43,30 @@ abstract class DatastoreAbstractCollectionStoreSpecialization
     super(localiser, clr, storeMgr);
   }
 
-  public boolean updateEmbeddedElement(StateManager sm, Object element, int fieldNumber,
+  public boolean updateEmbeddedElement(ObjectProvider op, Object element, int fieldNumber,
       Object value, JavaTypeMapping fieldMapping, ElementContainerStore ecs) {
     // TODO(maxr)
     throw new UnsupportedOperationException();
   }
 
-  public boolean contains(StateManager ownerSM, Object element, AbstractCollectionStore acs) {
+  public boolean contains(ObjectProvider ownerOP, Object element, AbstractCollectionStore acs) {
     // Since we only support owned relationships right now, we can
     // check containment simply by looking to see if the element's
     // Key contains the parent Key.
-    ObjectManager om = ownerSM.getObjectManager();
-    Key childKey = extractElementKey(om, element);
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    Key childKey = extractElementKey(ec, element);
     // Child key can be null if element has not yet been persisted
     if (childKey == null || childKey.getParent() == null) {
       return false;
     }
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(om.getApiAdapter(), ownerSM);
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), ownerOP);
     return childKey.getParent().equals(parentKey);
   }
 
-  public int[] internalRemove(StateManager ownerSM, ManagedConnection conn, boolean batched,
+  public int[] internalRemove(ObjectProvider ownerOP, ManagedConnection conn, boolean batched,
                               Object element, boolean executeNow, AbstractCollectionStore acs)
   throws MappedDatastoreException {
-    // TODO(maxr) Only used by Map key and value stores, which we do not yet
-    // support.
+    // TODO(maxr) Only used by Map key and value stores, which we do not yet support.
     throw new UnsupportedOperationException();
   }
 }

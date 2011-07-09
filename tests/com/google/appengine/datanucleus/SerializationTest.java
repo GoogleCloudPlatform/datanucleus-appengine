@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
 import com.google.appengine.datanucleus.test.Flight;
 import com.google.appengine.datanucleus.test.HasSerializableJDO;
 import com.google.apphosting.api.DatastorePb;
-
 
 import java.util.List;
 

@@ -15,20 +15,20 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import org.datanucleus.jpa.exceptions.NoPersistenceUnitException;
-import org.datanucleus.jpa.exceptions.NoPersistenceXmlException;
-import org.datanucleus.jpa.exceptions.NotProviderException;
+import org.datanucleus.api.jpa.PersistenceProviderImpl;
+import org.datanucleus.api.jpa.exceptions.NoPersistenceUnitException;
+import org.datanucleus.api.jpa.exceptions.NoPersistenceXmlException;
+import org.datanucleus.api.jpa.exceptions.NotProviderException;
 
 import java.util.Map;
 
 import javax.persistence.EntityManagerFactory;
-import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastorePersistenceProvider implements PersistenceProvider {
+public class DatastorePersistenceProvider extends PersistenceProviderImpl {
 
   public EntityManagerFactory createEntityManagerFactory(String unitInfo, Map properties) {
     try {

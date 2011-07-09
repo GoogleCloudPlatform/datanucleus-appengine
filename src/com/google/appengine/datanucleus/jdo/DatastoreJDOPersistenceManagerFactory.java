@@ -15,8 +15,8 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import org.datanucleus.jdo.JDOPersistenceManager;
-import org.datanucleus.jdo.JDOPersistenceManagerFactory;
+import org.datanucleus.api.jdo.JDOPersistenceManager;
+import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 
 import com.google.appengine.datanucleus.ConcurrentHashMapHelper;
 import com.google.appengine.datanucleus.Utils;
@@ -107,22 +107,7 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
     if (overridingMap == null) {
       overridingMap = Utils.newHashMap();
     }
-    // This is an unfortunate way to do things, but I'm not aware of another
-    // way to provide a default value for a specific persistence property
-    // that already has a default value in the core plugin.xml.
-    // plugin.xml in core assigns a default value of UPPERCASE for this
-    // property, but we want a different default value for the app engine
-    // pluging.  If I add this is a persistence property to our own
-    // plugin.xml it doesn't always get honored because the plugin
-    // persistence properties are not always read in the same order (there's
-    // a Hashmap buried in there), and the default value is whichever one
-    // gets read first.  So, in order to provide a plugin-specific default
-    // value that conflicts with the default value for another plugin,
-    // we set the property to the default value unless the user has
-    // explicitly provided their own value in their config file.
-    if (!overridingMap.containsKey("datanucleus.identifier.case")) {
-      overridingMap.put("datanucleus.identifier.case", "PreserveCase");
-    }
+
     // Create the PMF and freeze it (JDO spec $11.7)
     final DatastoreJDOPersistenceManagerFactory pmf = new DatastoreJDOPersistenceManagerFactory(overridingMap);
     pmf.freezeConfiguration();
@@ -131,8 +116,7 @@ public class DatastoreJDOPersistenceManagerFactory extends JDOPersistenceManager
       try {
         pmf.close();
       } finally {
-        // this exception is more important than any exception that might be
-        // raised by close()
+        // this exception is more important than any exception that might be raised by close()
         throw new JDOFatalUserException(String.format(DUPLICATE_PMF_ERROR_FORMAT, pmf.getName()));
       }
     }

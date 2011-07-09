@@ -19,8 +19,8 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Link;
-import com.google.appengine.datanucleus.JDOTestCase;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
 
 
 import java.util.Arrays;

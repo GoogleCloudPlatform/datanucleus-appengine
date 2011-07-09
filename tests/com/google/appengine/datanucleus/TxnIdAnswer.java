@@ -17,6 +17,9 @@ package com.google.appengine.datanucleus;
 
 import org.easymock.IAnswer;
 
+import com.google.appengine.datanucleus.jdo.JDOTransactionTest;
+import com.google.appengine.datanucleus.jpa.JPATransactionTest;
+
 /**
  * Useful for tests that need to configure mock transactions.
  *
@@ -25,7 +28,7 @@ import org.easymock.IAnswer;
  *
  * @author Max Ross <maxr@google.com>
  */
-class TxnIdAnswer implements IAnswer<String> {
+public class TxnIdAnswer implements IAnswer<String> {
   private String expectedTxnId;
   public String answer() {
     return expectedTxnId;

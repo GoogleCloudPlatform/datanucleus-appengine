@@ -20,6 +20,9 @@ import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 
+import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.api.jdo.JDOAdapter;
+import org.datanucleus.api.jpa.JPAAdapter;
 import org.datanucleus.store.query.QueryTimeoutException;
 import org.easymock.EasyMock;
 
@@ -28,7 +31,6 @@ import java.util.Iterator;
 
 import javax.jdo.JDODataStoreException;
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOQueryTimeoutException;
 import javax.persistence.PersistenceException;
 
 /**
@@ -58,8 +60,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
     Entity e1 = new Entity("foo");
     Entity e2 = new Entity("foo");
     Entity e3 = new Entity("foo");
+    ApiAdapter api = new JPAAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(Arrays.asList(e1, e2, e3).iterator(), true, observer);
+        new RuntimeExceptionWrappingIterator(api, Arrays.asList(e1, e2, e3).iterator(), observer);
     int count = 0;
     while (rewi.hasNext()) {
       rewi.next();
@@ -70,8 +73,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJPA_IllegalArg() {
     setUpIterator(new IllegalArgumentException("boom"));
+    ApiAdapter api = new JPAAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, true, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
@@ -106,8 +110,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJPA_DatastoreFailure() {
     setUpIterator(new DatastoreFailureException("boom"));
+    ApiAdapter api = new JPAAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, true, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
@@ -142,8 +147,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJPA_Timeout() {
     setUpIterator(new DatastoreTimeoutException("boom"));
+    ApiAdapter api = new JPAAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, true, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
@@ -182,8 +188,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
     Entity e1 = new Entity("foo");
     Entity e2 = new Entity("foo");
     Entity e3 = new Entity("foo");
+    ApiAdapter api = new JDOAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(Arrays.asList(e1, e2, e3).iterator(), false, observer);
+        new RuntimeExceptionWrappingIterator(api, Arrays.asList(e1, e2, e3).iterator(), observer);
     int count = 0;
     while (rewi.hasNext()) {
       rewi.next();
@@ -194,8 +201,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJDO_IllegalArg() {
     setUpIterator(new IllegalArgumentException("boom"));
+    ApiAdapter api = new JDOAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, false, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
@@ -230,8 +238,9 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJDO_DatastoreFailure() {
     setUpIterator(new DatastoreFailureException("boom"));
+    ApiAdapter api = new JDOAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, false, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
@@ -266,12 +275,13 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
 
   public void testExceptionsJDO_Timeout() {
     setUpIterator(new DatastoreTimeoutException("boom"));
+    ApiAdapter api = new JDOAdapter();
     RuntimeExceptionWrappingIterator rewi =
-        new RuntimeExceptionWrappingIterator(iter, false, observer);
+        new RuntimeExceptionWrappingIterator(api, iter, observer);
     try {
       rewi.hasNext();
       fail("expected exception");
-    } catch (JDOQueryTimeoutException jqte) {
+    } catch (JDODataStoreException jqte) {
       // good
       assertTrue(jqte.getCause() instanceof QueryTimeoutException);
       assertTrue(jqte.getCause().getCause() instanceof DatastoreTimeoutException);
@@ -282,7 +292,7 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
     try {
       rewi.next();
       fail("expected exception");
-    } catch (JDOQueryTimeoutException jqte) {
+    } catch (JDODataStoreException jqte) {
       // good
       assertTrue(jqte.getCause() instanceof QueryTimeoutException);
       assertTrue(jqte.getCause().getCause() instanceof DatastoreTimeoutException);
@@ -293,7 +303,7 @@ public class RuntimeExceptionWrappingIteratorTest extends DatastoreTestCase {
     try {
       rewi.remove();
       fail("expected exception");
-    } catch (JDOQueryTimeoutException jqte) {
+    } catch (JDODataStoreException jqte) {
       // good
       assertTrue(jqte.getCause() instanceof QueryTimeoutException);
       assertTrue(jqte.getCause().getCause() instanceof DatastoreTimeoutException);

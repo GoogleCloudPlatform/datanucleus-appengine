@@ -18,8 +18,8 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.store.mapped.scostore.FKArrayStoreSpecialization;
@@ -38,16 +38,16 @@ public class DatastoreFKArrayStoreSpecialization extends DatastoreAbstractArrayS
     super(localiser, clr, storeMgr);
   }
 
-  public boolean getUpdateElementFk(StateManager sm, Object element, Object owner, int index,
+  public boolean getUpdateElementFk(ObjectProvider op, Object element, Object owner, int index,
       ElementContainerStore ecs) {
     JavaTypeMapping orderMapping = ecs.getOrderMapping();
     if (orderMapping != null) {
       DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-      ObjectManager om = sm.getObjectManager();
-      StateManager childSm = om.findStateManager(element);
-      Entity childEntity = handler.getAssociatedEntityForCurrentTransaction(childSm);
-      orderMapping.setObject(sm.getObjectManager(), childEntity, new int[1], index);
-      handler.put(om, childSm.getClassMetaData(), childEntity);
+      ExecutionContext ec = op.getExecutionContext();
+      ObjectProvider childOP = ec.findObjectProvider(element);
+      Entity childEntity = handler.getAssociatedEntityForCurrentTransaction(childOP);
+      orderMapping.setObject(ec, childEntity, new int[1], index);
+      handler.put(ec, childOP.getClassMetaData(), childEntity);
       return true;
     }
     return false;

@@ -21,7 +21,7 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 import javax.persistence.PersistenceException;
 
-import static com.google.appengine.datanucleus.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
+import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
 
 /**
  * @author Max Ross <maxr@google.com>

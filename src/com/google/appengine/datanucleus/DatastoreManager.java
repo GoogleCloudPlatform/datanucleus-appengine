@@ -20,50 +20,41 @@ import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ConnectionFactory;
-import org.datanucleus.ConnectionFactoryRegistry;
+import org.datanucleus.plugin.PluginManager;
+import org.datanucleus.plugin.PluginRegistry;
+import org.datanucleus.store.connection.ConnectionFactory;
 import org.datanucleus.FetchPlan;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.OMFContext;
-import org.datanucleus.ObjectManager;
+import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.NucleusContext;
 import org.datanucleus.PersistenceConfiguration;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
-import org.datanucleus.jpa.JPAAdapter;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
-import org.datanucleus.plugin.PluginManager;
-import org.datanucleus.plugin.PluginRegistry;
 import org.datanucleus.store.DefaultCandidateExtent;
+import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.exceptions.NoExtentException;
 import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.fieldmanager.FieldManager;
-import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
-import org.datanucleus.store.mapped.FetchStatement;
-import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementClassMapping;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.scostore.FKArrayStore;
 import org.datanucleus.store.mapped.scostore.FKListStore;
-import org.datanucleus.store.mapped.scostore.FKMapStore;
 import org.datanucleus.store.mapped.scostore.FKSetStore;
-import org.datanucleus.store.mapped.scostore.JoinArrayStore;
-import org.datanucleus.store.mapped.scostore.JoinListStore;
-import org.datanucleus.store.mapped.scostore.JoinMapStore;
-import org.datanucleus.store.mapped.scostore.JoinSetStore;
 import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.util.ClassUtils;
+import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.lang.reflect.Field;
@@ -71,20 +62,17 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Date;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
-import javax.persistence.InheritanceType;
-
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreManager extends MappedStoreManager {
+
+    protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
+        "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
   /**
    * Classes whose metadata we've validated.  This set gets hit on every
@@ -95,62 +83,38 @@ public class DatastoreManager extends MappedStoreManager {
 
   private static final String EXTENSION_PREFIX = "gae.";
 
-  /**
-   * The name of the annotation extension that marks a field as an parent.
-   */
+  /** The name of the annotation extension that marks a field as an parent. */
   public static final String PARENT_PK = EXTENSION_PREFIX + "parent-pk";
 
-  /**
-   * The name of the annotation extension that marks a field as an encoded pk
-   */
+  /** The name of the annotation extension that marks a field as an encoded pk. */
   public static final String ENCODED_PK = EXTENSION_PREFIX + "encoded-pk";
 
-  /**
-   * The name of the annotation extension that marks a field as a primary key name
-   */
+  /** The name of the annotation extension that marks a field as a primary key name. */
   public static final String PK_NAME = EXTENSION_PREFIX + "pk-name";
 
-  /**
-   * The name of the annotation extension that marks a field as a primary key id
-   */
+  /** The name of the annotation extension that marks a field as a primary key id. */
   public static final String PK_ID = EXTENSION_PREFIX + "pk-id";
 
-  /**
-   * The name of the annotation extension that marks a field as unindexed
-   */
+  /** The name of the annotation extension that marks a field as unindexed. */
   public static final String UNINDEXED_PROPERTY = EXTENSION_PREFIX + "unindexed";
 
-  /**
-   * The name of the extension that indicates the query should be excluded from
-   * the current transaction.
-   */
+  /** The name of the extension that indicates the query should be excluded from the current transaction. */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
   /**
-   * If the user sets javax.jdo.option.DatastoreReadTimeoutMillis it will be
+   * If the user sets javax.jdo.option.DatastoreReadTimeoutMillis or javax.persistence.query,timeout it will be
    * available via a config property with this name.
    */
-  private static final String READ_TIMEOUT_PROPERTY = "datanucleus.datastoreReadTimeout";
-
-  /**
-   * If the user sets javax.persistence.query.timeout it will be available via
-   * a config property with this name.
-   * TODO(maxr): Remove this when we upgrade to DataNuc 2.0
-   */
-  static final String LEGACY_READ_TIMEOUT_PROPERTY = "datanucleus.query.timeout";
+  public static final String READ_TIMEOUT_PROPERTY = "datanucleus.datastoreReadTimeout";
 
   /**
    * If the user sets javax.jdo.option.DatastoreWriteTimeoutMillis it will be
    * available via a config property with this name.
    */
-  private static final String WRITE_TIMEOUT_PROPERTY = "datanucleus.datastoreWriteTimeout";
+  public static final String WRITE_TIMEOUT_PROPERTY = "datanucleus.datastoreWriteTimeout";
 
   public static final String DATASTORE_READ_CONSISTENCY_PROPERTY =
       "datanucleus.appengine.datastoreReadConsistency";
-
-  public static final String JPA_QUERY_TIMEOUT_PROPERTY = "javax.persistence.query.timeout";
-
-  public static final String JPA_QUERY_CHUNK_SIZE_PROPERTY = "javax.persistence.query.chunkSize";
 
   /**
    * The name of the extension that indicates the return value of the batch
@@ -172,34 +136,34 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
       "datanucleus.appengine.getExtentCanReturnSubclasses";
 
-  private static final Map<InheritanceStrategy, String> INHERITANCE_STRATEGY_MAP =
-      new ConcurrentHashMap<InheritanceStrategy, String>();
-
-  static {
-    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.SUBCLASS_TABLE, "MappedSuperclass");
-    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.COMPLETE_TABLE, InheritanceType.TABLE_PER_CLASS.name());
-    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.NEW_TABLE, InheritanceType.JOINED.name());
-    INHERITANCE_STRATEGY_MAP.put(InheritanceStrategy.SUPERCLASS_TABLE, InheritanceType.SINGLE_TABLE.name());
-  }
-
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
 
+  protected SerializationManager serializationMgr = null;
 
   /**
-   * Construct a DatsatoreManager
-   *
+   * Construct a DatastoreManager.
    * @param clr The ClassLoaderResolver
-   * @param omfContext The OMFContext
+   * @param nucContext The NucleusContext
+   * @param props Properties to store on this StoreManager
    */
-  public DatastoreManager(ClassLoaderResolver clr, OMFContext omfContext)
+  public DatastoreManager(ClassLoaderResolver clr, NucleusContext nucContext, Map<String, Object> props)
       throws NoSuchFieldException, IllegalAccessException {
-    // Make sure we add required property values before we invoke
-    // out parent's constructor.
-    super("appengine", clr, addDefaultPropertyValues(omfContext));
+    super("appengine", clr, nucContext, props);
+
+    // Override some of the default property values for AppEngine
+    PersistenceConfiguration conf = nucContext.getPersistenceConfiguration();
+    conf.setProperty("datanucleus.attachSameDatastore", Boolean.TRUE.toString()); // Always only one datastore
+    // We'd like to respect the user's selection here, but the default value is 1.
+    // This is problematic for us in the situation where, for example, an embedded object
+    // gets updated more than once in a txn because we end up putting the same entity twice.
+    // TODO(maxr) Remove this once we support multiple puts
+    conf.setProperty("datanucleus.datastoreTransactionFlushLimit", Integer.MAX_VALUE);
+    // Install our key translator
+    conf.setProperty("datanucleus.identityKeyTranslatorType", "appengine");
 
     // Check if datastore api is in CLASSPATH.  Don't let the hard-coded
     // jar name upset you, it's just used for error messages.  The check will
@@ -208,25 +172,79 @@ public class DatastoreManager extends MappedStoreManager {
         clr, "com.google.appengine.api.datastore.DatastoreService", "appengine-api.jar");
 
     defaultDatastoreServiceConfigPrototypeForReads =
-        createDatastoreServiceConfigPrototypeForReads(omfContext.getPersistenceConfiguration());
+        createDatastoreServiceConfigPrototypeForReads(nucContext.getPersistenceConfiguration());
     defaultDatastoreServiceConfigPrototypeForWrites =
-        createDatastoreServiceConfigPrototypeForWrites(omfContext.getPersistenceConfiguration());
+        createDatastoreServiceConfigPrototypeForWrites(nucContext.getPersistenceConfiguration());
+
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
-    initialiseIdentifierFactory(omfContext);
-    setCustomPluginManager();
+    initialiseIdentifierFactory(nucContext);
+    if (nucContext.getApiAdapter().getName().equalsIgnoreCase("JDO")) {
+      // TODO Drop this when remove DatastoreJDOMetaDataManager
+      setCustomPluginManager();
+    }
     addTypeManagerMappings();
-    PersistenceConfiguration persistenceConfig = omfContext.getPersistenceConfiguration();
-    storageVersion = StorageVersion.fromConfig(persistenceConfig);
+
+    storageVersion = StorageVersion.fromStoreManager(this);
     initialiseAutoStart(clr);
+
     logConfiguration();
+  }
+
+  @Override
+  public void close() {
+    validatedClasses.clear();
+    super.close();
+  }
+
+  public SerializationManager getSerializationManager() {
+    if (serializationMgr == null) {
+      serializationMgr = new SerializationManager();
+    }
+    return serializationMgr;
+  }
+
+  /**
+   * Convenience method to log the configuration of this store manager.
+   */
+  protected void logConfiguration()
+  {
+    super.logConfiguration();
+
+    if (NucleusLogger.DATASTORE.isDebugEnabled())
+    {
+        NucleusLogger.DATASTORE.debug("StorageVersion : " + storageVersion.toString());
+        NucleusLogger.DATASTORE.debug("===========================================================");
+    }
+  }
+
+  @Override
+  public void transactionStarted(ExecutionContext ec) {
+    NucleusLogger.GENERAL.info(">> DatastoreMgr.txnStarted");
+    // Obtain a connection. This will create it now that the user has selected tx.begin()
+//    getConnection(ec);
+    super.transactionStarted(ec);
+  }
+
+  @Override
+  public void transactionCommitted(ExecutionContext ec) {
+      NucleusLogger.GENERAL.info(">> DatastoreMgr.txnCommitted");
+    // TODO Make use of this to notify the ConnectionFactoryImpl that it should start a DatastoreTransaction
+    super.transactionCommitted(ec);
+  }
+
+  @Override
+  public void transactionRolledBack(ExecutionContext ec) {
+      NucleusLogger.GENERAL.info(">> DatastoreMgr.txnRolledBack");
+    // TODO Make use of this to notify the ConnectionFactoryImpl that it should start a DatastoreTransaction
+    super.transactionRolledBack(ec);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
       PersistenceConfiguration persistenceConfig) {
     return createDatastoreServiceConfigPrototype(
-        persistenceConfig, READ_TIMEOUT_PROPERTY, LEGACY_READ_TIMEOUT_PROPERTY);
+        persistenceConfig, READ_TIMEOUT_PROPERTY);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
@@ -250,7 +268,7 @@ public class DatastoreManager extends MappedStoreManager {
       try {
         datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
       } catch (IllegalArgumentException iae) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Illegal value for " + DATASTORE_READ_CONSISTENCY_PROPERTY +
             ".  Valid values are " + Arrays.toString(Consistency.values()));
       }
@@ -258,11 +276,21 @@ public class DatastoreManager extends MappedStoreManager {
     return datastoreServiceConfig;
   }
 
+  private void setCustomPluginManager() throws NoSuchFieldException, IllegalAccessException {
+    // Replaces the configured plugin registry with our own implementation.
+    // Reflection is required because there's no public mutator for this field.
+    PluginManager pluginMgr = getNucleusContext().getPluginManager();
+    Field registryField = PluginManager.class.getDeclaredField("registry");
+    registryField.setAccessible(true);
+    registryField.set(
+        pluginMgr, new DatastorePluginRegistry((PluginRegistry) registryField.get(pluginMgr)));
+  }
+
   private void addTypeManagerMappings() throws NoSuchFieldException, IllegalAccessException {
     Field javaTypes = TypeManager.class.getDeclaredField("javaTypes");
     javaTypes.setAccessible(true);
     @SuppressWarnings("unchecked")
-    Map<String, Object> map = (Map<String, Object>) javaTypes.get(omfContext.getTypeManager());
+    Map<String, Object> map = (Map<String, Object>) javaTypes.get(nucleusContext.getTypeManager());
     Object arrayListValue = map.get(ArrayList.class.getName());
     // Arrays$ArrayList is an inner class that is used for the results of
     // Arrays.asList().  We want the same sco behavior for instances of
@@ -271,51 +299,16 @@ public class DatastoreManager extends MappedStoreManager {
     map.put("java.util.Arrays$ArrayList", arrayListValue);
   }
 
-  private void setCustomPluginManager() throws NoSuchFieldException, IllegalAccessException {
-    // Replaces the configured plugin registry with our own implementation.
-    // Reflection is required because there's no public mutator for this field.
-    PluginManager pluginMgr = omfContext.getPluginManager();
-    Field registryField = PluginManager.class.getDeclaredField("registry");
-    registryField.setAccessible(true);
-    registryField.set(
-        pluginMgr, new DatastorePluginRegistry((PluginRegistry) registryField.get(pluginMgr)));
-  }
-
-  private static OMFContext addDefaultPropertyValues(OMFContext omfContext) {
-
-    PersistenceConfiguration conf = omfContext.getPersistenceConfiguration();
-    // There is only one datastore so set this to true no matter what.
-    conf.setProperty("datanucleus.attachSameDatastore", Boolean.TRUE.toString());
-    // Only set this if a value has not been provided
-    if (conf.getProperty(DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY) == null) {
-      conf.setProperty(
-          DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
-    }
-    // We'd like to respect the user's selection here, but the default value is 1.
-    // This is problematic for us in the situation where, for example, an embedded object
-    // gets updated more than once in a txn because we end up putting the same
-    // entity twice.
-    // TODO(maxr) Remove this once we support multiple puts
-    conf.setProperty("datanucleus.datastoreTransactionFlushLimit", Integer.MAX_VALUE);
-    /*
-     * The DataNucleus query cache has a pretty nasty bug where it caches the symbol table along with
-     * the compiled query.  The query cache uses weak references so it doesn't always happen, but if
-     * you get a cache hit and your param values are different from the param values in the cached
-     * symbol table, your query will execute with old param values and return incorrect results.
-     */
-    conf.setProperty("datanucleus.query.cached", false);
-    return omfContext;
-  }
-
+  // TODO This is wrong. It returns NucleusConnectionImpl where mc.getConnection is null hence does NOT give access
+  // to the 
   @Override
-  public NucleusConnection getNucleusConnection(ObjectManager om) {
-    ConnectionFactory cf = getOMFContext().getConnectionFactoryRegistry()
-        .lookupConnectionFactory(txConnectionFactoryName);
+  public NucleusConnection getNucleusConnection(ExecutionContext ec) {
+    ConnectionFactory cf = connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
 
     final ManagedConnection mc;
     final boolean enlisted;
-    enlisted = om.getTransaction().isActive();
-    mc = cf.getConnection(enlisted ? om : null, null); // Will throw exception if already locked
+    enlisted = ec.getTransaction().isActive();
+    mc = cf.getConnection(enlisted ? ec : null, ec.getTransaction(), null); // Will throw exception if already locked
 
     // Lock the connection now that it is in use by the user
     mc.lock();
@@ -332,86 +325,41 @@ public class DatastoreManager extends MappedStoreManager {
     return new NucleusConnectionImpl(mc.getConnection(), closeRunnable);
   }
 
+  // TODO Remove this when we support subclasses from a query
   @Override
-  public Date getDatastoreDate() {
-    throw new UnsupportedOperationException();
-  }
-
-  @Override
-  public Extent getExtent(ObjectManager om, Class c, boolean subclasses) {
-    AbstractClassMetaData cmd = getMetaDataManager().getMetaDataForClass(c, om.getClassLoaderResolver());
-    validateMetaDataForClass(cmd, om.getClassLoaderResolver());
+  public Extent getExtent(ExecutionContext ec, Class c, boolean subclasses) {
+    AbstractClassMetaData cmd = getMetaDataManager().getMetaDataForClass(c, ec.getClassLoaderResolver());
+    validateMetaDataForClass(cmd, ec.getClassLoaderResolver());
     if (!cmd.isRequiresExtent()) {
-        throw new NoExtentException(c.getName());
+      throw new NoExtentException(c.getName());
     }
-    if (!getMetaDataManager().getOMFContext().getPersistenceConfiguration()
-            .getBooleanProperty(GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY)) {
+    if (!getBooleanProperty(GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY, false)) {
       subclasses = false;
     }
     // In order to avoid breaking existing apps I'm hard-coding subclasses to
     // be false.  This breaks spec compliance since the no-arg overload of
     // PersistenceManager.getExtent() is supposed to return subclasses.
-    return new DefaultCandidateExtent(om, c, subclasses, cmd);
-  }
-/**
-   * Method to create the IdentifierFactory to be used by this store.
-   * Relies on the datastore adapter existing before creation
-   * @param omfContext ObjectManagerFactory context
-   */
-  protected void initialiseIdentifierFactory(OMFContext omfContext) {
-    PersistenceConfiguration conf = omfContext.getPersistenceConfiguration();
-    String idFactoryName = conf.getStringProperty("datanucleus.identifierFactory");
-    String idFactoryClassName = omfContext.getPluginManager()
-        .getAttributeValueForExtension("org.datanucleus.store_identifierfactory",
-            "name", idFactoryName, "class-name");
-    if (idFactoryClassName == null) {
-      throw new FatalNucleusUserException(idFactoryName);
-    }
-    Map<String, String> props = new HashMap<String, String>();
-    addStringPropIfNotNull(conf, props, "datanucleus.mapping.Catalog", "DefaultCatalog");
-    addStringPropIfNotNull(conf, props, "datanucleus.mapping.Schema", "DefaultSchema");
-    addStringPropIfNotNull(conf, props, "datanucleus.identifier.case", "RequiredCase");
-    addStringPropIfNotNull(conf, props, "datanucleus.identifier.wordSeparator", "WordSeparator");
-    addStringPropIfNotNull(conf, props, "datanucleus.identifier.tablePrefix", "TablePrefix");
-    addStringPropIfNotNull(conf, props, "datanucleus.identifier.tableSuffix", "TableSuffix");
-    try {
-      // Create the IdentifierFactory
-      Class cls = Class.forName(idFactoryClassName);
-      Class[] argTypes = new Class[]
-          {org.datanucleus.store.mapped.DatastoreAdapter.class, ClassLoaderResolver.class, Map.class};
-      Object[] args = {dba, omfContext.getClassLoaderResolver(null), props};
-      identifierFactory = (IdentifierFactory) ClassUtils.newInstance(cls, argTypes, args);
-    }
-    catch (ClassNotFoundException cnfe) {
-      throw new FatalNucleusUserException(
-          idFactoryName + ":" + idFactoryClassName, cnfe);
-    }
-    catch (Exception e) {
-      NucleusLogger.PERSISTENCE.error(e);
-      throw new FatalNucleusUserException(idFactoryClassName, e);
-    }
+    return new DefaultCandidateExtent(ec, c, subclasses, cmd);
   }
 
-  private void addStringPropIfNotNull(
-      PersistenceConfiguration conf, Map<String, String> map, String propName, String mapKeyName) {
-    String val = conf.getStringProperty(propName);
-    if (val != null) {
-      map.put(mapKeyName, val);
-    }
+  /**
+   * Method to return the default identifier case.
+   * @return Identifier case to use if not specified by the user
+   */
+  public String getDefaultIdentifierCase() {
+    return "PreserveCase";
   }
+
   @Override
   public Collection<String> getSupportedOptions() {
     Set<String> opts = new HashSet<String>();
     opts.add("TransactionIsolationLevel.read-committed");
     opts.add("BackedSCO");
     opts.add("ApplicationIdentity");
+//    opts.add("DatastoreIdentity"); // TODO Support DatastoreIdentity
     opts.add("OptimisticTransaction");
+    opts.add("ORM");
     return opts;
-  }
-
-  @Override
-  public FetchStatement getFetchStatement(DatastoreContainerObject table) {
-    throw new UnsupportedOperationException();
   }
 
   @Override
@@ -419,7 +367,6 @@ public class DatastoreManager extends MappedStoreManager {
       ClassLoaderResolver clr) {
     return null;
   }
-
 
   @Override
   protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
@@ -432,7 +379,7 @@ public class DatastoreManager extends MappedStoreManager {
       // Just add the SchemaData entry with no table - managed by subclass
       return buildStoreDataWithNoTable(cmd);
     } else if (strat == InheritanceStrategy.COMPLETE_TABLE) {
-      if (cmd.isAbstractPersistenceCapable()) {
+      if (cmd.isAbstract()) {
         // Abstract class with "complete-table" so gets no table
         return buildStoreDataWithNoTable(cmd);
       }
@@ -459,32 +406,11 @@ public class DatastoreManager extends MappedStoreManager {
         }
       }
     }
-    String unsupportedMsg = buildUnsupportedInheritanceStrategyMessage(cmd);
+
+    boolean jpa = getApiAdapter().getName().equalsIgnoreCase("JPA");
+    String unsupportedMsg = GAE_LOCALISER.msg(jpa ? "AppEngine.BadInheritance.JPA" : "AppEngine.BadInheritance.JDO", 
+        cmd.getInheritanceMetaData().getStrategy(), cmd.getFullClassName(), getApiAdapter().getName());
     throw new UnsupportedInheritanceStrategyException(unsupportedMsg);
-  }
-
-  private static final String BAD_INHERITANCE_MESSAGE =
-      "Found inheritance strategy '%s' on %s.  This strategy is not supported in this context.  "
-      + "Please see the documentation for information on using inheritance with %s: %s";
-
-  private static final String JPA_INHERITANCE_DOCS_URL =
-      "http://code.google.com/appengine/docs/java/datastore/usingjpa.html#Inheritance";
-  private static final String JDO_INHERITANCE_DOCS_URL =
-      "http://code.google.com/appengine/docs/java/datastore/dataclasses.html#Inheritance";
-
-  private String buildUnsupportedInheritanceStrategyMessage(ClassMetaData cmd) {
-    InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
-    if (isJPA()) {
-      // make sure our exception msg has the jpa inheritance identifiers in it
-      String jpaInheritanceType = getJPAInheritanceType(strat);
-      return String.format(BAD_INHERITANCE_MESSAGE, jpaInheritanceType, cmd.getFullClassName(), "JPA", JPA_INHERITANCE_DOCS_URL);
-    }
-    // internal inheritance identifiers are jdo so no need to do any translation
-    return String.format(BAD_INHERITANCE_MESSAGE, strat, cmd.getFullClassName(), "JDO", JDO_INHERITANCE_DOCS_URL);
-  }
-
-  private String getJPAInheritanceType(InheritanceStrategy strat) {
-    return INHERITANCE_STRATEGY_MAP.get(strat); 
   }
 
   private StoreData buildStoreDataWithNoTable(ClassMetaData cmd) {
@@ -504,8 +430,7 @@ public class DatastoreManager extends MappedStoreManager {
     DatastoreTable table = new DatastoreTable(tableName, this, cmd, clr, dba);
     StoreData sd = new MappedStoreData(cmd, table, true);
     registerStoreData(sd);
-    // needs to be called after we register the store data to avoid stack
-    // overflow
+    // needs to be called after we register the store data to avoid stack overflow
     table.buildMapping();
     return sd;
   }
@@ -534,73 +459,46 @@ public class DatastoreManager extends MappedStoreManager {
     return false;
   }
 
-  public FieldManager getFieldManagerForResultProcessing(StateManager sm, Object obj,
+  public FieldManager getFieldManagerForResultProcessing(ObjectProvider op, Object resultSet,
                                                          StatementClassMapping resultMappings) {
-    ObjectManager om = sm.getObjectManager();
-    Class<?> cls = om.getClassLoaderResolver().classForName(sm.getClassMetaData().getFullClassName());
-    Object internalKey = EntityUtils.idToInternalKey(sm.getObjectManager(), cls, obj, true);
+    ExecutionContext ec = op.getExecutionContext();
+    Class<?> cls = ec.getClassLoaderResolver().classForName(op.getClassMetaData().getFullClassName());
+    Object internalKey = EntityUtils.idToInternalKey(ec, cls, resultSet, true);
     // Need to provide this to the field manager in the form of the pk
     // of the type: Key, Long, encoded String, or unencoded String
     return new KeyOnlyFieldManager(internalKey);
   }
 
-  public FieldManager getFieldManagerForStatementGeneration(StateManager sm, Object stmt,
+  @Override
+  public FieldManager getFieldManagerForResultProcessing(ExecutionContext ec, Object resultSet, 
+          StatementClassMapping resultMappings, AbstractClassMetaData cmd) {
+    Class<?> cls = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
+    Object internalKey = EntityUtils.idToInternalKey(ec, cls, resultSet, true);
+    // Need to provide this to the field manager in the form of the pk
+    // of the type: Key, Long, encoded String, or unencoded String
+    return new KeyOnlyFieldManager(internalKey);
+  }
+
+  public FieldManager getFieldManagerForStatementGeneration(ObjectProvider op, Object stmt,
                                                             StatementClassMapping stmtMappings,
                                                             boolean checkNonNullable) {
     return null;
   }
 
-  public ResultObjectFactory newResultObjectFactory(DatastoreClass table,
-                                                    AbstractClassMetaData acmd,
+  public ResultObjectFactory newResultObjectFactory(AbstractClassMetaData acmd,
                                                     StatementClassMapping mappingDefinition,
-                                                    boolean ignoreCache, boolean discriminator,
-                                                    FetchPlan fetchPlan, Class persistentClass) {
+                                                    boolean ignoreCache, FetchPlan fetchPlan, 
+                                                    Class persistentClass) {
     return null;
-  }
-
-  protected FKArrayStore newFKArrayStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
-    throw new UnsupportedOperationException("FK Arrays not supported.");
   }
 
   protected FKListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
     return new DatastoreFKListStore(ammd, this, clr);
   }
 
-  protected JoinArrayStore newJoinArrayStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
-                                             DatastoreContainerObject arrayTable) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Arrays not supported.");
-  }
-
-  protected JoinMapStore newJoinMapStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
-                                         DatastoreContainerObject mapTable) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Maps not supported.");
-  }
-
   @Override
   protected FKSetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
     return new DatastoreFKSetStore(ammd, this, clr);
-  }
-
-  @Override
-  protected FKMapStore newFKMapStore(AbstractMemberMetaData clr, ClassLoaderResolver amd) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("FK Maps not supported.");
-  }
-
-  @Override
-  protected JoinListStore newJoinListStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
-      DatastoreContainerObject table) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Lists not supported.");
-  }
-
-  @Override
-  protected JoinSetStore newJoinSetStore(AbstractMemberMetaData amd, ClassLoaderResolver clr,
-      DatastoreContainerObject table) {
-    // TODO(maxr)
-    throw new UnsupportedOperationException("Join Sets not supported.");
   }
 
   public BatchPutManager getBatchPutManager() {
@@ -615,123 +513,9 @@ public class DatastoreManager extends MappedStoreManager {
     return getStorageVersion().ordinal() >= storageVersion.ordinal();
   }
 
-  /**
-   * A {@link FieldManager} implementation that can only be used for managing
-   * keys.  Everything else throws {@link UnsupportedOperationException}.
-   */
-  private static final class KeyOnlyFieldManager implements FieldManager {
-    private final Object key;
-
-    private KeyOnlyFieldManager(Object key) {
-      this.key = key;
-    }
-
-    public void storeBooleanField(int fieldNumber, boolean value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeByteField(int fieldNumber, byte value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeCharField(int fieldNumber, char value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeDoubleField(int fieldNumber, double value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeFloatField(int fieldNumber, float value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeIntField(int fieldNumber, int value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeLongField(int fieldNumber, long value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeShortField(int fieldNumber, short value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeStringField(int fieldNumber, String value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public void storeObjectField(int fieldNumber, Object value) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public boolean fetchBooleanField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public byte fetchByteField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public char fetchCharField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public double fetchDoubleField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public float fetchFloatField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public int fetchIntField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public long fetchLongField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public short fetchShortField(int fieldNumber) {
-      throw new UnsupportedOperationException("Should only be using this for keys.");
-    }
-
-    public String fetchStringField(int fieldNumber) {
-      // Trust that a value of the right type was provided.
-      return (String) key;
-    }
-
-    public Object fetchObjectField(int fieldNumber) {
-      return key;
-    }
-  }
-
   @Override
   public DatastorePersistenceHandler getPersistenceHandler() {
     return (DatastorePersistenceHandler) super.getPersistenceHandler();
-  }
-
-  // For testing
-  String getTxConnectionFactoryName() {
-    return txConnectionFactoryName;
-  }
-
-  // For testing
-  String getNonTxConnectionFactoryName() {
-    return nontxConnectionFactoryName;
-  }
-
-  /**
-   * Helper method to determine if the connection factory associated with this
-   * manager is transactional.
-   */
-  public boolean connectionFactoryIsTransactional() {
-    ConnectionFactoryRegistry registry = getOMFContext().getConnectionFactoryRegistry();
-    DatastoreConnectionFactoryImpl connFactory =
-        (DatastoreConnectionFactoryImpl) registry.lookupConnectionFactory(txConnectionFactoryName);
-    return connFactory.isTransactional();
   }
 
   @Override
@@ -747,22 +531,16 @@ public class DatastoreManager extends MappedStoreManager {
         return (DatastoreTable) super.getDatastoreClass(className, clr);
       }
     } catch (NoTableManagedException e) {
-      // Our parent class throws this when the class isn't PersistenceCapable.
-      // The error message is mis-leading so we'll swallow the exception and
-      // throw something clearer.  We still need to throw
-      // NoTableManagedException because in some scenarios this isn't really
-      // an error and DataNucleus catches it.  If we throw something else we'll
-      // get exceptions about java.lang.String not being PersistenceCapable.
-      // Really.  I saw it with my own eyes.
+      // Our parent class throws this when the class isn't PersistenceCapable also.
       Class cls = clr.classForName(className);
       ApiAdapter api = getApiAdapter();
       if (cls != null && !cls.isInterface() && !api.isPersistable(cls)) {
         throw new NoTableManagedException(
-            "Class " + className + " does not seem to have been enhanced.  You may want to rerun "
-            + "the enhancer and check for errors in the output.");
+            "Class " + className + " does not seem to have been enhanced. You may want to rerun " +
+            "the enhancer and check for errors in the output.");
+        // Suggest you address why this method is being called before any check on whether it is persistable
+        // then you can remove this error message
       }
-      // Some othe problem.  Parent class's inaccurate error message is no
-      // worse than our best guess.
       throw e;
     }
   }
@@ -819,24 +597,24 @@ public class DatastoreManager extends MappedStoreManager {
     }
   }
 
-  @Override
-  public void close() {
-    validatedClasses.clear();
-    super.close();
-  }
-
-  public boolean isJPA() {
-    return JPAAdapter.class.isAssignableFrom(omfContext.getApiAdapter().getClass());
-  }
-
   public StorageVersion getStorageVersion() {
     return storageVersion;
   }
   
-  static final class UnsupportedInheritanceStrategyException extends FatalNucleusUserException {
+  public static final class UnsupportedInheritanceStrategyException extends NucleusFatalUserException {
     UnsupportedInheritanceStrategyException(String msg) {
       super(msg);
     }
+  }
+
+  /**
+   * Helper method to determine if the connection factory associated with this
+   * manager is transactional.
+   */
+  public boolean connectionFactoryIsTransactional() {
+    DatastoreConnectionFactoryImpl connFactory = 
+        (DatastoreConnectionFactoryImpl) connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
+    return connFactory.isTransactional();
   }
 
   /**
@@ -853,6 +631,16 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public DatastoreServiceConfig getDefaultDatastoreServiceConfigForWrites() {
     return copyDatastoreServiceConfig(defaultDatastoreServiceConfigPrototypeForWrites);
+  }
+
+  // For testing
+  String getTxConnectionFactoryName() {
+    return txConnectionFactoryName;
+  }
+
+  // For testing
+  String getNonTxConnectionFactoryName() {
+    return nontxConnectionFactoryName;
   }
 
   // visible for testing

@@ -21,28 +21,34 @@ limitations under the License.
 
     <!-- QUERY LANGUAGES -->
     <extension point="org.datanucleus.store_query_query">
-        <query class-name="com.google.appengine.datanucleus.query.JDOQLQuery" datastore="appengine" name="javax.jdo.query.JDOQL"/>
-        <query class-name="com.google.appengine.datanucleus.query.JDOQLQuery" datastore="appengine" name="JDOQL"/>
-        <query class-name="com.google.appengine.datanucleus.query.JPQLQuery" datastore="appengine" name="javax.jdo.query.JPQL"/>
-        <query class-name="com.google.appengine.datanucleus.query.JPQLQuery" datastore="appengine" name="JPQL"/>
+        <query name="JDOQL" class-name="com.google.appengine.datanucleus.query.JDOQLQuery" datastore="appengine"/>
+        <query name="JPQL" class-name="com.google.appengine.datanucleus.query.JPQLQuery" datastore="appengine"/>
     </extension>
 
     <!-- CONNECTION FACTORY -->
     <extension point="org.datanucleus.store_connectionfactory">
-        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" transactional="true"
-            datastore="appengine"/>
+		<!-- TODO Why using the same name ? See JPASingleTableInheritanceTest -->
+        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl"
+			transactional="true" datastore="appengine"/>
+        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" 
+			transactional="false" datastore="appengine"/>
     </extension>
-    <extension point="org.datanucleus.store_connectionfactory">
-        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" transactional="false"
-            datastore="appengine"/>
-    </extension>
+
+	<!-- VALUE GENERATOR -->
     <extension point="org.datanucleus.store_valuegenerator">
-        <valuegenerator name="sequence" class-name="com.google.appengine.datanucleus.valuegenerator.SequenceGenerator" datastore="appengine"/>
+        <valuegenerator name="sequence" class-name="com.google.appengine.datanucleus.valuegenerator.SequenceGenerator" 
+			datastore="appengine"/>
+    </extension>
+
+    <!-- IDENTITY KEY TRANSLATOR -->
+    <extension point="org.datanucleus.identity_key_translator">
+        <identitystringtranslator name="appengine" class-name="com.google.appengine.datanucleus.DatastoreIdentityKeyTranslator"/>
     </extension>
 
     <!--
-         Types that we want in the default fetch group.  If you're updating this list
-         you best updated DatastoreJDOMetaDataManager as well
+        Types that we want in the default fetch group.  
+		If you're updating this list you best updated DatastoreJDOMetaDataManager as well
+		TODO Remove this. DFG is defined by JDO not by a store plugin, and besides the enhancer would need updates
      -->
     <extension point="org.datanucleus.java_type">
         <java-type name="com.google.appengine.api.datastore.Blob" persistent="true" dfg="true" embedded="true"/>
@@ -75,17 +81,10 @@ limitations under the License.
         <java-type name="[Lcom.google.appengine.api.users.User;" persistent="true" dfg="true" embedded="true"/>
     </extension>
 
-    <!-- TODO(maxr): Get rid of this when we upgrade to datanuc 2.0 -->
+    <!-- PERSISTENCE PROPERTIES -->
     <extension point="org.datanucleus.persistence_properties">
-        <persistence-property name="datanucleus.datastoreReadTimeout"
-            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
-        <persistence-property name="datanucleus.datastoreWriteTimeout"
-            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
-        <persistence-property name="javax.jdo.option.DatastoreReadTimeoutMillis"
-            internal-name="datanucleus.datastoreReadTimeout" value="0"
-            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
-        <persistence-property name="javax.jdo.option.DatastoreWriteTimeoutMillis"
-            internal-name="datanucleus.datastoreWriteTimeout" value="0"
-            validator="org.datanucleus.properties.IntegerPropertyValidator"/>
+        <persistence-property name="datanucleus.appengine.storageversion" datastore="true"/>
+        <persistence-property name="datanucleus.appengine.ignorablemetadatabehavior"/> <!-- Make this datastore="true"-->
+		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"/>
     </extension>
 </plugin>

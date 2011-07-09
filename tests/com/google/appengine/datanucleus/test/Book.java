@@ -18,7 +18,7 @@ package com.google.appengine.datanucleus.test;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
-import org.datanucleus.jpa.annotations.Extension;
+import org.datanucleus.api.jpa.annotations.Extension;
 
 import java.io.Serializable;
 
@@ -33,7 +33,7 @@ import javax.persistence.NamedQuery;
  * @author Max Ross <maxr@google.com>
  */
 @Entity(name = "bookalias")
-@NamedQuery(name="namedQuery", query = "SELECT from com.google.appengine.datanucleus.test.Book where title = 'yam'")
+@NamedQuery(name="namedQuery", query = "SELECT from com.google.appengine.datanucleus.test.Book b where title = 'yam'")
 public class Book implements Serializable {
   @Id
   @GeneratedValue(strategy=GenerationType.IDENTITY)

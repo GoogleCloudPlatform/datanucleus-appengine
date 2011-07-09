@@ -172,7 +172,6 @@ final class Ints {
     }
 
     @Override public List<Integer> subList(int fromIndex, int toIndex) {
-      int size = size();
       if (fromIndex == toIndex) {
         return Collections.emptyList();
       }

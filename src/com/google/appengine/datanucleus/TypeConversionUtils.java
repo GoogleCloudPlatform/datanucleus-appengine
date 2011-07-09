@@ -17,13 +17,13 @@ package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.ShortBlob;
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.StateManager;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ContainerMetaData;
-import org.datanucleus.sco.SCOUtils;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.types.sco.SCOUtils;
 
 import com.google.appengine.datanucleus.Utils.Function;
 
@@ -297,7 +297,7 @@ class TypeConversionUtils {
    * @param clr class loader resolver to use for string to class
    * conversions
    * @param value The datastore value.  Can be null.
-   * @param ownerSM The owning state manager.  Used for creating change-detecting
+   * @param ownerOP The owning state manager.  Used for creating change-detecting
    * wrappers.
    * @param ammd The meta data for the pojo property which will eventually
    * receive the result of the conversion.
@@ -306,12 +306,12 @@ class TypeConversionUtils {
    * on the pojo.
    */
   Object datastoreValueToPojoValue(
-      ClassLoaderResolver clr, Object value, StateManager ownerSM, AbstractMemberMetaData ammd) {
+      ClassLoaderResolver clr, Object value, ObjectProvider ownerOP, AbstractMemberMetaData ammd) {
     ContainerMetaData cmd = ammd.getContainer();
     if (pojoPropertyIsArray(ammd)) {
       value = datastoreValueToPojoArray(value, ammd);
     } else if (pojoPropertyIsCollection(cmd)) {
-      value = datastoreValueToPojoCollection(clr, value, ownerSM, ammd, cmd);
+      value = datastoreValueToPojoCollection(clr, value, ownerOP, ammd, cmd);
     } else { // neither array nor collection
       if (value != null) {
         // nothing to convert
@@ -325,13 +325,13 @@ class TypeConversionUtils {
    *
    * @param clr
    * @param value Can be null.
-   * @param ownerSM
+   * @param ownerOP
    * @param ammd
    * @param cmd
    * @return
    */
   private Object datastoreValueToPojoCollection(ClassLoaderResolver clr, Object value,
-                                                StateManager ownerSM, AbstractMemberMetaData ammd,
+                                                ObjectProvider ownerOP, AbstractMemberMetaData ammd,
                                                 ContainerMetaData cmd) {
     CollectionMetaData collMetaData = (CollectionMetaData) cmd;
     String memberTypeStr = collMetaData.getElementType();
@@ -358,7 +358,7 @@ class TypeConversionUtils {
       Class<? extends Collection> listType = ammd.getType();
       value = convertDatastoreListToPojoCollection(datastoreList, memberType, listType, conversionFunc);
     }
-    return wrap(ownerSM, ammd, value);
+    return wrap(ownerOP, ammd, value);
   }
 
   /**
@@ -387,11 +387,11 @@ class TypeConversionUtils {
     return value;
   }
 
-  Object wrap(StateManager ownerSM, AbstractMemberMetaData ammd, Object value) {
+  Object wrap(ObjectProvider ownerOP, AbstractMemberMetaData ammd, Object value) {
     // Wrap the provided value in a state-manager aware object.  This allows
     // us to detect changes to Lists, Sets, etc.
     return SCOUtils.newSCOInstance(
-        ownerSM, ammd, ammd.getType(), value.getClass(), value, false, false, true);
+        ownerOP, ammd, ammd.getType(), value.getClass(), value, false, false, true);
   }
 
   /**

@@ -21,8 +21,8 @@ import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.QueryResultIterator;
-import com.google.appengine.datanucleus.JPATestCase;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.Book;
 
 
@@ -46,7 +46,7 @@ public class JPQLCursorTest extends JPATestCase {
     ds.put(Arrays.asList(e1, e2, e3));
 
     beginTxn();
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b");
     q.setMaxResults(1);
     List<Book> books = (List<Book>) q.getResultList();
     assertEquals(1, books.size());
@@ -99,7 +99,7 @@ public class JPQLCursorTest extends JPATestCase {
     entityIter.next();
     lowLevelCursors.add(entityIter.getCursor());
 
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b");
     Iterator<Book> bookIter = q.getResultList().iterator();
     List<Cursor> ormCursors = Utils.newArrayList();
     ormCursors.add(JPACursorHelper.getCursor(bookIter));
@@ -126,7 +126,7 @@ public class JPQLCursorTest extends JPATestCase {
     }
 
     beginTxn();
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b");
     Iterator<Book> bookIter = q.getResultList().iterator();
     assertCursorResults(JPACursorHelper.getCursor(bookIter), keys);
     int index = 0;
@@ -153,7 +153,7 @@ public class JPQLCursorTest extends JPATestCase {
     }
 
     beginTxn();
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b");
     // no limit specified so what we get back doesn't have an end cursor
     List<Book> bookList = q.getResultList();
     assertNull(JPACursorHelper.getCursor(bookList));
@@ -164,7 +164,7 @@ public class JPQLCursorTest extends JPATestCase {
   }
 
   private void assertCursorResults(Cursor cursor, List<Key> expectedKeys) {
-    Query q = em.createQuery("select from " + Book.class.getName());
+    Query q = em.createQuery("select from " + Book.class.getName() + " b");
     q.setHint(JPACursorHelper.QUERY_CURSOR_PROPERTY_NAME, cursor);
     // if FlushModeType is AUTO and there is another query in progress
     // in this txn, that query result will get flushed before this one

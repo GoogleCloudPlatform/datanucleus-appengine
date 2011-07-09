@@ -30,9 +30,8 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * The orm's view of a datastore transaction.  Delegates
- * to a {@link Transaction} and also functions as a txn-level
- * cache.
+ * The orm's view of a datastore transaction.  
+ * Delegates to a {@link Transaction} and also functions as a txn-level cache.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -62,6 +61,8 @@ public class DatastoreTransaction {
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (ConcurrentModificationException e) {
+      // TODO Remove this. You can throw NucleusCanRetryException!
+
       // Weirdness.  For JDO we ultimately want a JDOCanRetryException to be
       // thrown, but the only way to get JDO to interpret an exception thrown
       // during commit as something that can be retried is to throw a

@@ -26,12 +26,12 @@ import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.api.ApiAdapter;
 
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.scostore.BaseElementContainerStoreSpecialization;
 import org.datanucleus.store.mapped.scostore.ElementContainerStore;
 import org.datanucleus.util.Localiser;
@@ -59,16 +59,16 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
     this.storeMgr = storeMgr;
   }
 
-  public void executeClear(StateManager ownerSM, ElementContainerStore elementContainerStore) {
+  public void executeClear(ObjectProvider ownerOP, ElementContainerStore elementContainerStore) {
     // TODO(maxr)
   }
 
-  public int getSize(StateManager sm, ElementContainerStore ecs) {
+  public int getSize(ObjectProvider op, ElementContainerStore ecs) {
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    Entity parentEntity = handler.getAssociatedEntityForCurrentTransaction(sm);
+    Entity parentEntity = handler.getAssociatedEntityForCurrentTransaction(op);
     if (parentEntity == null) {
-      handler.locateObject(sm);
-      parentEntity = handler.getAssociatedEntityForCurrentTransaction(sm);
+      handler.locateObject(op);
+      parentEntity = handler.getAssociatedEntityForCurrentTransaction(op);
     }
     return getNumChildren(parentEntity.getKey(), ecs);
   }
@@ -101,14 +101,14 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
   }
 
   List<?> getChildren(Key parentKey, Iterable<FilterPredicate> filterPredicates,
-      Iterable<SortPredicate> sortPredicates, ElementContainerStore ecs, ObjectManager om) {
+      Iterable<SortPredicate> sortPredicates, ElementContainerStore ecs, ExecutionContext ec) {
     List<Object> result = new ArrayList<Object>();
     int numChildren = 0;
     for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, false, ecs).asIterable()) {
       // We only want direct children
       if (parentKey.equals(e.getKey().getParent())) {
         numChildren++;
-        result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, om, false, om.getFetchPlan()));
+        result.add(DatastoreQuery.entityToPojo(e, ecs.getEmd(), clr, ec, false, ec.getFetchPlan()));
         if (logger.isDebugEnabled()) {
           logger.debug("Retrieved entity with key " + e.getKey());
         }
@@ -135,8 +135,8 @@ abstract class DatastoreElementContainerStoreSpecialization extends BaseElementC
     return count;
   }
 
-  protected Key extractElementKey(ObjectManager om, Object element) {
-    ApiAdapter apiAdapter = om.getApiAdapter();
+  protected Key extractElementKey(ExecutionContext ec, Object element) {
+    ApiAdapter apiAdapter = ec.getApiAdapter();
     Object id = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(element));
     if (id == null) {
       return null;

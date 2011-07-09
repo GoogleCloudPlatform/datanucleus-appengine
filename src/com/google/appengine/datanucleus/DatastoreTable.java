@@ -18,6 +18,7 @@ package com.google.appengine.datanucleus;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -37,7 +38,7 @@ import org.datanucleus.metadata.PropertyMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.plugin.ConfigurationElement;
-import org.datanucleus.sco.SCOUtils;
+import org.datanucleus.store.types.sco.SCOUtils;
 import org.datanucleus.store.exceptions.NoSuchPersistentFieldException;
 import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.mapped.DatastoreAdapter;
@@ -58,7 +59,7 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.LongMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.OIDMapping;
-import org.datanucleus.store.mapped.mapping.PersistenceCapableMapping;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.util.MultiMap;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -181,7 +182,7 @@ public class DatastoreTable implements DatastoreClass {
     return cmd.getIdentityType();
   }
 
-  public boolean isObjectIDDatastoreAttributed() {
+  public boolean isObjectIdDatastoreAttributed() {
     return true;
   }
 
@@ -208,7 +209,7 @@ public class DatastoreTable implements DatastoreClass {
     return cmd.getFullClassName().equals(className);
   }
 
-  public JavaTypeMapping getDataStoreObjectIdMapping() {
+  public JavaTypeMapping getDatastoreObjectIdMapping() {
     return datastoreIDMapping;
   }
 
@@ -239,7 +240,7 @@ public class DatastoreTable implements DatastoreClass {
 
   // Mostly copied from AbstractTable.addDatastoreField
   public DatastoreProperty addDatastoreField(String storedJavaType, DatastoreIdentifier name,
-      JavaTypeMapping mapping, MetaData colmd) {
+      JavaTypeMapping mapping, ColumnMetaData colmd) {
 
     // Create the column
     DatastoreProperty prop =
@@ -325,7 +326,7 @@ public class DatastoreTable implements DatastoreClass {
     Class<?> fieldStoredJavaTypeClass = null;
     Class<?> existingColStoredJavaTypeClass = null;
     try {
-      ClassLoaderResolver clr = storeMgr.getOMFContext().getClassLoaderResolver(null);
+      ClassLoaderResolver clr = storeMgr.getNucleusContext().getClassLoaderResolver(null);
       fieldStoredJavaTypeClass = clr.classForName(col.getStoredJavaType());
       existingColStoredJavaTypeClass = clr.classForName(col.getStoredJavaType());
     }
@@ -348,7 +349,7 @@ public class DatastoreTable implements DatastoreClass {
     return getDatastoreField(identifier.getIdentifierName());
   }
 
-  public JavaTypeMapping getIDMapping() {
+  public JavaTypeMapping getIdMapping() {
     return idMapping;
   }
 
@@ -405,13 +406,14 @@ public class DatastoreTable implements DatastoreClass {
    *
    * @return Names of the classes managed (stored) here
    */
-  public List<String> getManagedClasses() {
-    return Utils
+  public String[] getManagedClasses() {
+    List<String> list = Utils
         .transform(managedClassMetaData, new Utils.Function<AbstractClassMetaData, String>() {
           public String apply(AbstractClassMetaData cmd) {
             return cmd.getFullClassName();
           }
         });
+    return list.toArray(new String[list.size()]);
   }
 
   private void initializeNonPK() {
@@ -472,8 +474,7 @@ public class DatastoreTable implements DatastoreClass {
                                AbstractMemberMetaData fmd) {
     // Primary key fields are added by the initialisePK method
     if (fmd.isPrimaryKey()) {
-      // We need to know about this mapping when accessing the class as an
-      // embedded field.
+      // We need to know about this mapping when accessing the class as an embedded field.
       embeddedFieldMappingsMap.put(fmd, pkMappings[0]);
     } else {
       if (managesField(fmd.getFullFieldName())) {
@@ -492,7 +493,7 @@ public class DatastoreTable implements DatastoreClass {
           if (isPrimary) {
             // Add the field to this table
             JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
-                this, fmd, dba, clr, FieldRole.ROLE_FIELD);
+                this, fmd, clr, FieldRole.ROLE_FIELD);
             addFieldMapping(mapping);
             embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
           } else {
@@ -534,7 +535,7 @@ public class DatastoreTable implements DatastoreClass {
         if (needsFKToContainerOwner) {
           // 1-N uni/bidirectional using FK, so update the element side with a FK
           if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
-              (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd))) {
+              (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd, storeMgr.getMetaDataManager()))) {
             // 1-N ForeignKey collection/array, so add FK to element table
             AbstractClassMetaData elementCmd;
             if (fmd.hasCollection()) {
@@ -680,7 +681,7 @@ public class DatastoreTable implements DatastoreClass {
   void addDatastoreId(ColumnMetaDataContainer columnContainer, DatastoreClass refTable,
       AbstractClassMetaData cmd) {
     datastoreIDMapping = new OIDMapping();
-    datastoreIDMapping.initialize(dba, cmd.getFullClassName());
+    datastoreIDMapping.initialize(storeMgr, cmd.getFullClassName());
 
     // Create a ColumnMetaData in the container if none is defined
     ColumnMetaData colmd;
@@ -696,12 +697,12 @@ public class DatastoreTable implements DatastoreClass {
       if (refTable != null) {
         colmd.setName(storeMgr.getIdentifierFactory()
             .newDatastoreFieldIdentifier(refTable.getIdentifier().getIdentifierName(),
-                this.storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(OID.class),
+                this.storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(OID.class),
                 FieldRole.ROLE_OWNER).getIdentifierName());
       } else {
         colmd.setName(
             storeMgr.getIdentifierFactory().newDatastoreFieldIdentifier(identifier.getIdentifierName(),
-                this.storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(OID.class),
+                this.storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(OID.class),
                 FieldRole.ROLE_NONE).getIdentifierName());
       }
     }
@@ -721,12 +722,12 @@ public class DatastoreTable implements DatastoreClass {
     // Check the POID type being stored
     Class poidClass = Long.class;
     ConfigurationElement elem =
-        storeMgr.getOMFContext().getPluginManager().getConfigurationElementForExtension(
+        storeMgr.getNucleusContext().getPluginManager().getConfigurationElementForExtension(
             "org.datanucleus.store_valuegenerator",
             new String[]{"name", "unique"}, new String[]{strategyName, "true"});
     if (elem == null) {
       // Not datastore-independent, so try for this datastore
-      elem = storeMgr.getOMFContext().getPluginManager().getConfigurationElementForExtension(
+      elem = storeMgr.getNucleusContext().getPluginManager().getConfigurationElementForExtension(
           "org.datanucleus.store_valuegenerator",
           new String[]{"name", "datastore"},
           new String[]{strategyName, storeMgr.getStoreManagerKey()});
@@ -735,7 +736,7 @@ public class DatastoreTable implements DatastoreClass {
       // Set the generator name (for use by the PoidManager)
       String generatorClassName = elem.getAttribute("class-name");
       Class generatorClass =
-          getStoreManager().getOMFContext().getClassLoaderResolver(null)
+          getStoreManager().getNucleusContext().getClassLoaderResolver(null)
               .classForName(generatorClassName);
       try {
         poidClass = (Class) generatorClass.getMethod("getStorageClass").invoke(null);
@@ -752,7 +753,7 @@ public class DatastoreTable implements DatastoreClass {
         .createDatastoreMapping(datastoreIDMapping, idColumn, poidClass.getName());
 
     // Handle any auto-increment requirement
-    if (isObjectIDDatastoreAttributed()) {
+    if (isObjectIdDatastoreAttributed()) {
       // Only the base class can be autoincremented
 //      idColumn.setAutoIncrement(true);
     }
@@ -870,7 +871,7 @@ public class DatastoreTable implements DatastoreClass {
         try {
           DatastoreClass datastoreClass = getStoreManager()
               .getDatastoreClass(fieldsToAdd[i].getType().getName(), clr);
-          if (datastoreClass.getIDMapping() == null) {
+          if (datastoreClass.getIdMapping() == null) {
             throw new NucleusException(
                 "Unsupported relationship with field " + fieldsToAdd[i].getFullFieldName())
                 .setFatal();
@@ -880,7 +881,7 @@ public class DatastoreTable implements DatastoreClass {
           //do nothing
         }
         JavaTypeMapping fieldMapping = dba.getMappingManager(storeMgr)
-            .getMapping(this, fieldsToAdd[i], dba, clr, FieldRole.ROLE_FIELD);
+            .getMapping(this, fieldsToAdd[i], clr, FieldRole.ROLE_FIELD);
         addFieldMapping(fieldMapping);
         pkMappings[i] = fieldMapping;
       }
@@ -926,8 +927,8 @@ public class DatastoreTable implements DatastoreClass {
       return;
     }
 
-    final PersistenceCapableMapping mapping = new PersistenceCapableMapping();
-    mapping.initialize(getStoreManager().getDatastoreAdapter(), cmd.getFullClassName());
+    final PersistableMapping mapping = new PersistableMapping();
+    mapping.initialize(getStoreManager(), cmd.getFullClassName());
     if (getIdentityType() == IdentityType.DATASTORE) {
       mapping.addJavaTypeMapping(datastoreIDMapping);
     } else if (getIdentityType() == IdentityType.APPLICATION) {
@@ -968,13 +969,13 @@ public class DatastoreTable implements DatastoreClass {
 
       // Loop through each id column in the reference table and add the same here
       // applying the required names from the columnContainer
-      for (int j = 0; j < mapping.getNumberOfDatastoreFields(); j++) {
+      for (int j = 0; j < mapping.getNumberOfDatastoreMappings(); j++) {
         JavaTypeMapping m = masterMapping;
-        DatastoreField refColumn = mapping.getDataStoreMapping(j).getDatastoreField();
-        if (mapping instanceof PersistenceCapableMapping) {
+        DatastoreField refColumn = mapping.getDatastoreMapping(j).getDatastoreField();
+        if (mapping instanceof PersistableMapping) {
           m = storeMgr.getMappingManager()
               .getMapping(clr.classForName(refColumn.getJavaTypeMapping().getType()));
-          ((PersistenceCapableMapping) masterMapping).addJavaTypeMapping(m);
+          ((PersistableMapping) masterMapping).addJavaTypeMapping(m);
         }
 
         ColumnMetaData userdefinedColumn = null;
@@ -1006,7 +1007,7 @@ public class DatastoreTable implements DatastoreClass {
               m, refColumn.getColumnMetaData());
         }
         if (mapping != null
-            && mapping.getDataStoreMapping(j).getDatastoreField().getColumnMetaData() != null) {
+            && mapping.getDatastoreMapping(j).getDatastoreField().getColumnMetaData() != null) {
           refColumn.copyConfigurationTo(idColumn);
         }
         idColumn.setAsPrimaryKey();
@@ -1028,7 +1029,7 @@ public class DatastoreTable implements DatastoreClass {
     consumer.preConsumeMapping(highestFieldNumber + 1);
 
     if (getIdentityType() == IdentityType.DATASTORE) {
-      consumer.consumeMapping(getDataStoreObjectIdMapping(), MappingConsumer.MAPPING_TYPE_DATASTORE_ID);
+      consumer.consumeMapping(getDatastoreObjectIdMapping(), MappingConsumer.MAPPING_TYPE_DATASTORE_ID);
     }
   }
 
@@ -1207,13 +1208,13 @@ public class DatastoreTable implements DatastoreClass {
         } else {
           // Unidirectional (element knows nothing about the owner)
           String ownerClassName = callback.ownerClassName;
-          JavaTypeMapping fkMapping = new PersistenceCapableMapping();
-          fkMapping.initialize(dba, ownerClassName);
+          JavaTypeMapping fkMapping = new PersistableMapping();
+          fkMapping.initialize(storeMgr, ownerClassName);
           JavaTypeMapping orderMapping = null;
 
           // Get the owner id mapping of the "1" end
           JavaTypeMapping ownerIdMapping =
-              storeMgr.getDatastoreClass(ownerClassName, clr).getIDMapping();
+              storeMgr.getDatastoreClass(ownerClassName, clr).getIdMapping();
           ColumnMetaDataContainer colmdContainer = null;
           if (ownerFmd.hasCollection() || ownerFmd.hasArray()) {
             // 1-N Collection/array
@@ -1229,15 +1230,15 @@ public class DatastoreTable implements DatastoreClass {
           }
           CorrespondentColumnsMapper correspondentColumnsMapping =
               new CorrespondentColumnsMapper(colmdContainer, ownerIdMapping, true);
-          int countIdFields = ownerIdMapping.getNumberOfDatastoreFields();
+          int countIdFields = ownerIdMapping.getNumberOfDatastoreMappings();
           for (int i = 0; i < countIdFields; i++) {
-            DatastoreMapping refDatastoreMapping = ownerIdMapping.getDataStoreMapping(i);
+            DatastoreMapping refDatastoreMapping = ownerIdMapping.getDatastoreMapping(i);
             JavaTypeMapping mapping = storeMgr.getMappingManager()
                     .getMapping(refDatastoreMapping.getJavaTypeMapping().getJavaType());
             ColumnMetaData colmd = correspondentColumnsMapping.getColumnMetaDataByIdentifier(
                     refDatastoreMapping.getDatastoreField().getIdentifier());
             if (colmd == null) {
-              throw new FatalNucleusUserException(
+              throw new NucleusFatalUserException(
                   String.format("Primary Key column \"%s\" for table \"%s\" is not mapped.",
                   refDatastoreMapping.getDatastoreField().getIdentifier(),
                   toString()));
@@ -1249,7 +1250,7 @@ public class DatastoreTable implements DatastoreClass {
               // No user provided name so generate one
               identifier = idFactory.newForeignKeyFieldIdentifier(
                   ownerFmd, null, refDatastoreMapping.getDatastoreField().getIdentifier(),
-                  storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(mapping.getJavaType()),
+                  storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(mapping.getJavaType()),
                   FieldRole.ROLE_OWNER);
             } else {
               // User-defined name
@@ -1275,10 +1276,10 @@ public class DatastoreTable implements DatastoreClass {
                   storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
               // this is needed for one-to-many sets
               addOwningClassMetaData(colmd.getName(), acmd);
-              fkMapping.addDataStoreMapping(getStoreManager().getMappingManager()
+              fkMapping.addDatastoreMapping(getStoreManager().getMappingManager()
                   .createDatastoreMapping(mapping, refColumn,
                                           refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
-              ((PersistenceCapableMapping) fkMapping).addJavaTypeMapping(mapping);
+              ((PersistableMapping) fkMapping).addJavaTypeMapping(mapping);
             }
           }
 
@@ -1330,7 +1331,7 @@ public class DatastoreTable implements DatastoreClass {
   private JavaTypeMapping addOrderColumn(AbstractMemberMetaData fmd) {
     Class indexType = Integer.class;
     JavaTypeMapping indexMapping = new IndexMapping();
-    indexMapping.initialize(dba, indexType.getName());
+    indexMapping.initialize(storeMgr, indexType.getName());
     IdentifierFactory idFactory = storeMgr.getIdentifierFactory();
     DatastoreIdentifier indexColumnName = null;
     ColumnMetaData colmd = null;
@@ -1370,7 +1371,7 @@ public class DatastoreTable implements DatastoreClass {
       // No name defined so generate one
       indexColumnName = idFactory.newForeignKeyFieldIdentifier(
           fmd, null, null,
-          storeMgr.getOMFContext().getTypeManager().isDefaultEmbeddedType(indexType),
+          storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(indexType),
           FieldRole.ROLE_INDEX);
     }
 
@@ -1429,7 +1430,7 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public String toString() {
-    return cmd.toString();
+    return cmd.getFullClassName();
   }
 
   public AbstractClassMetaData getClassMetaData() {

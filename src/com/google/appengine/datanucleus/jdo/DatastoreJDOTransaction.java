@@ -18,7 +18,8 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Transaction;
 
-import org.datanucleus.jdo.JDOTransaction;
+import org.datanucleus.api.jdo.JDOPersistenceManager;
+import org.datanucleus.api.jdo.JDOTransaction;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
@@ -28,6 +29,10 @@ import org.datanucleus.util.NucleusLogger;
 import javax.jdo.PersistenceManager;
 
 /**
+ * TODO Remove this. StoreManager has callback methods
+ * transactionStarted/transactionCommitted/transactionRolledBack so just use
+ * those to get such a hook.
+ * 
  * Datastore-specific extension that aggressively starts transactions.
  * DataNucleus delays the start of the transaction until the first
  * read or write, but since task queue tasks auto-enlist in the current
@@ -42,7 +47,7 @@ class DatastoreJDOTransaction extends JDOTransaction {
   private final DatastoreServiceConfig config;
 
   public DatastoreJDOTransaction(PersistenceManager pm, DatastoreManager storeMgr, org.datanucleus.Transaction tx) {
-    super(pm, tx);
+    super((JDOPersistenceManager) pm, tx);
     config = storeMgr.getDefaultDatastoreServiceConfigForWrites();
   }
 

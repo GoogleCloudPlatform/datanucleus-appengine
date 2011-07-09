@@ -172,7 +172,6 @@ final class Longs {
     }
 
     @Override public List<Long> subList(int fromIndex, int toIndex) {
-      int size = size();
       if (fromIndex == toIndex) {
         return Collections.emptyList();
       }

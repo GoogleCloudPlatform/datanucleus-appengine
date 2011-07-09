@@ -15,10 +15,13 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
-import org.datanucleus.StateManager;
-import org.datanucleus.jdo.JDOPersistenceManager;
+import org.datanucleus.api.jdo.JDOPersistenceManager;
+import org.datanucleus.store.ObjectProvider;
 import org.easymock.EasyMock;
 
+import com.google.appengine.datanucleus.jdo.JDOTestCase;
+
+import java.util.HashMap;
 import java.util.List;
 
 /**
@@ -45,8 +48,8 @@ public class BatchManagerTest extends JDOTestCase {
     assertFalse(bm.batchOperationInProgress());
   }
 
-  private StateManager newStateManagerMock() {
-    return EasyMock.createNiceMock(StateManager.class);
+  private ObjectProvider newStateManagerMock() {
+    return EasyMock.createNiceMock(ObjectProvider.class);
   }
 
   public void testLegalWorkflow() throws IllegalAccessException, NoSuchFieldException {
@@ -60,13 +63,13 @@ public class BatchManagerTest extends JDOTestCase {
     assertFalse(bm.batchOperationInProgress());
     bm.start();
     assertTrue(bm.batchOperationInProgress());
-    final StateManager sm1 = newStateManagerMock();
-    final StateManager sm2 = newStateManagerMock();
+    final ObjectProvider sm1 = newStateManagerMock();
+    final ObjectProvider sm2 = newStateManagerMock();
     bm.add(sm1);
     bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
-            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getOMFContext());
+            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getNucleusContext(), new HashMap<String, Object>());
     bm.finish(new DatastorePersistenceHandler(dm));
     assertEquals(Utils.newArrayList(sm1, sm2), providedBatchStateList);
     assertFalse(bm.batchOperationInProgress());
@@ -82,13 +85,13 @@ public class BatchManagerTest extends JDOTestCase {
     assertFalse(bm.batchOperationInProgress());
     bm.start();
     assertTrue(bm.batchOperationInProgress());
-    final StateManager sm1 = newStateManagerMock();
-    final StateManager sm2 = newStateManagerMock();
+    final ObjectProvider sm1 = newStateManagerMock();
+    final ObjectProvider sm2 = newStateManagerMock();
     bm.add(sm1);
     bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
-            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getOMFContext());
+            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getNucleusContext(), new HashMap<String, Object>());
     try {
       bm.finish(new DatastorePersistenceHandler(dm));
       fail("expected rte");

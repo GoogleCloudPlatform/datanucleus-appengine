@@ -229,11 +229,7 @@ public class MetaDataValidator {
       // Look for "eager" relationships.  Not supported but not necessarily an error
       // since we can always fall back to "lazy."
       if (ammd.isDefaultFetchGroup() && !ammd.isEmbedded()) {
-        // We have separate error messages for JPA vs JDO because eagerness is configured
-        // differently between the two.
-        String msg = isJPA() ?
-                     "The datastore does not support joins and therefore cannot honor requests to eagerly load related objects." :
-                     "The datastore does not support joins and therefore cannot honor requests to place related objects in the default fetch group.";
+        String msg = "The datastore does not support joins and therefore cannot honor requests to place related objects in the default fetch group.";
         handleIgnorableMapping(ammd, msg, "The field will be fetched lazily on first access.");
       }
 
@@ -286,19 +282,14 @@ public class MetaDataValidator {
                     + relationClass.getName() + ": " + field1 + " and " + field2 + ".  This is not yet supported.");
   }
 
-  boolean isJPA() {
-    DatastoreManager storeMgr = (DatastoreManager) metaDataManager.getOMFContext().getStoreManager();
-    return storeMgr.isJPA();
-  }
-
   private boolean getBooleanConfigProperty(String configProperty) {
-    return metaDataManager.getOMFContext().getPersistenceConfiguration()
+    return metaDataManager.getNucleusContext().getPersistenceConfiguration()
         .getBooleanProperty(configProperty);
   }
 
   private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {
     return IgnorableMetaDataBehavior.valueOf(
-        metaDataManager.getOMFContext().getPersistenceConfiguration()
+        metaDataManager.getNucleusContext().getStoreManager()
             .getStringProperty(IGNORABLE_META_DATA_BEHAVIOR_PROPERTY), IgnorableMetaDataBehavior.WARN);
   }
 
@@ -344,9 +335,9 @@ public class MetaDataValidator {
     AbstractClassMetaData childAcmd = null;
     if (relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) {
       if (ammd.getCollection() != null) {
-        childAcmd = ammd.getCollection().getElementClassMetaData(clr);
+        childAcmd = ammd.getCollection().getElementClassMetaData(clr, metaDataManager);
       } else if (ammd.getArray() != null) {
-        childAcmd = ammd.getArray().getElementClassMetaData(clr);
+        childAcmd = ammd.getArray().getElementClassMetaData(clr, metaDataManager);
       } else {
         // don't know how to verify
         NucleusLogger.METADATA.warn("Unable to validate one-to-many relation " + ammd.getFullFieldName());
@@ -449,7 +440,7 @@ public class MetaDataValidator {
     return ammd.getValueStrategy() != null && ammd.getValueStrategy().equals(strat);
   }
 
-  static final class DatastoreMetaDataException extends NucleusUserException {
+  public static final class DatastoreMetaDataException extends NucleusUserException {
     private static final String MSG_FORMAT_CLASS_ONLY = "Error in meta-data for %s: %s";
     private static final String MSG_FORMAT = "Error in meta-data for %s.%s: %s";
 

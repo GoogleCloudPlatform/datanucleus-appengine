@@ -24,9 +24,9 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -55,9 +55,9 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     super(localiser, clr, storeMgr);
   }
 
-  public int indexOf(StateManager parentSm, Object element, ElementContainerStore ecs) {
-    StateManager elementSm = parentSm.getObjectManager().findStateManager(element);
-    Key elementKey = EntityUtils.getPrimaryKeyAsKey(elementSm.getObjectManager().getApiAdapter(), elementSm);
+  public int indexOf(ObjectProvider parentOP, Object element, ElementContainerStore ecs) {
+    ObjectProvider elementOP = parentOP.getExecutionContext().findObjectProvider(element);
+    Key elementKey = EntityUtils.getPrimaryKeyAsKey(elementOP.getExecutionContext().getApiAdapter(), elementOP);
     if (elementKey == null) {
       throw new NucleusUserException("Collection element does not have a primary key.");
     } else if (elementKey.getParent() == null) {
@@ -68,13 +68,13 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
     try {
       Entity e = service.get(elementKey);
-      return extractIndexProperty(e, ecs, elementSm.getObjectManager());
+      return extractIndexProperty(e, ecs, elementOP.getExecutionContext());
     } catch (EntityNotFoundException enfe) {
       throw new NucleusDataStoreException("Could not determine index of entity.", enfe);
     }
   }
 
-  public int lastIndexOf(StateManager sm, Object element, ElementContainerStore ecs) {
+  public int lastIndexOf(ObjectProvider op, Object element, ElementContainerStore ecs) {
     // TODO(maxr) Only seems to be called when useCache on the List
     // is false, but it's true in all my tests and it looks like you
     // need to set datanucleus-specific properties to get it to be false.
@@ -82,7 +82,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     throw new UnsupportedOperationException();
   }
 
-  public int[] getIndicesOf(StateManager sm, Collection elements, ElementContainerStore ecs) {
+  public int[] getIndicesOf(ObjectProvider op, Collection elements, ElementContainerStore ecs) {
     // invoked when List.removeAll() is called.
     // Since the datastore doesn't support 'or' we're going to sort the keys
     // in memory, issue an ancestor query that fetches all children between
@@ -95,7 +95,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     List<Key> keys = Utils.newArrayList();
     Set<Key> keySet = Utils.newHashSet();
     for (Object ele : elements) {
-      ApiAdapter apiAdapter = sm.getObjectManager().getApiAdapter();
+      ApiAdapter apiAdapter = op.getExecutionContext().getApiAdapter();
       Object keyOrString =
           apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(ele));
       Key key = keyOrString instanceof Key ? (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
@@ -126,7 +126,7 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     int index = 0;
     for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       if (keySet.contains(e.getKey())) {
-        indices[index++] = extractIndexProperty(e, ecs, sm.getObjectManager());
+        indices[index++] = extractIndexProperty(e, ecs, op.getExecutionContext());
       }
     }
     if (index != indices.length) {
@@ -136,16 +136,16 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     return indices;
   }
 
-  private int extractIndexProperty(Entity e, ElementContainerStore ecs, ObjectManager om) {
+  private int extractIndexProperty(Entity e, ElementContainerStore ecs, ExecutionContext ec) {
     JavaTypeMapping orderMapping = ecs.getOrderMapping();
-    Long indexVal = (Long) orderMapping.getObject(om, e, new int[1]);
+    Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
     if (indexVal == null) {
       throw new NucleusDataStoreException("Null index value");
     }
     return indexVal.intValue();
   }
 
-  public int[] internalShift(StateManager ownerSM, ManagedConnection conn, boolean batched,
+  public int[] internalShift(ObjectProvider ownerOP, ManagedConnection conn, boolean batched,
       int oldIndex, int amount, boolean executeNow,
       ElementContainerStore ecs) throws MappedDatastoreException {
     JavaTypeMapping orderMapping = ecs.getOrderMapping();
@@ -158,21 +158,21 @@ abstract class DatastoreAbstractListStoreSpecialization extends DatastoreAbstrac
     String kind =
         storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     Query q = new Query(kind);
-    ObjectManager om = ownerSM.getObjectManager();
-    Object id = om.getApiAdapter().getTargetKeyForSingleFieldIdentity(
-        ownerSM.getInternalObjectId());
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    Object id = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(
+        ownerOP.getInternalObjectId());
     Key key = id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
     q.setAncestor(key);
     // create an entity just to capture the name of the index property
     Entity entity = new Entity(kind);
-    orderMapping.setObject(om, entity, new int[] {1}, oldIndex);
+    orderMapping.setObject(ec, entity, new int[] {1}, oldIndex);
     String indexProp = entity.getProperties().keySet().iterator().next();
     q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN_OR_EQUAL, oldIndex);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       Long pos = (Long) shiftMe.getProperty(indexProp);
       shiftMe.setProperty(indexProp, pos + amount);
-      handler.put(om, acmd, shiftMe);
+      handler.put(ec, acmd, shiftMe);
     }
     return null;
   }

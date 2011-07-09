@@ -15,23 +15,22 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ObjectProvider;
 
 import java.util.List;
 
 /**
- * Manages batch inserts that are initiated via standard JDO and JPA
- * calls.
+ * Manages batch inserts that are initiated via standard JDO and JPA calls.
  *
  * @author Max Ross <maxr@google.com>
  */
-public class BatchPutManager extends BatchManager<StateManager> {
+public class BatchPutManager extends BatchManager<ObjectProvider> {
 
   String getOperation() {
     return "insert";
   }
 
-  void processBatchState(DatastorePersistenceHandler handler, List<StateManager> smList) {
-    handler.insertObjects(smList);
+  void processBatchState(DatastorePersistenceHandler handler, List<ObjectProvider> opList) {
+    handler.insertObjectsInternal(opList);
   }
 }

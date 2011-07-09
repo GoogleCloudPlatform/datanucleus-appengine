@@ -20,11 +20,12 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ManagedConnection;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
@@ -44,8 +45,7 @@ import org.datanucleus.store.mapped.MappedStoreManager;
  */
 public final class EntityUtils {
 
-  public static String getPropertyName(
-      IdentifierFactory idFactory, AbstractMemberMetaData ammd) {
+  public static String getPropertyName(IdentifierFactory idFactory, AbstractMemberMetaData ammd) {
     // TODO(maxr): See if there is a better way than field name comparison to
     // determine if this is a version field
     AbstractClassMetaData acmd = ammd.getAbstractClassMetaData();
@@ -91,9 +91,9 @@ public final class EntityUtils {
     return columnMetaData[0].getName();
   }
 
-  public static String determineKind(AbstractClassMetaData acmd, ObjectManager om) {
-    MappedStoreManager storeMgr = (MappedStoreManager) om.getStoreManager();
-    return determineKind(acmd, storeMgr, om.getClassLoaderResolver());
+  public static String determineKind(AbstractClassMetaData acmd, ExecutionContext ec) {
+    MappedStoreManager storeMgr = (MappedStoreManager) ec.getStoreManager();
+    return determineKind(acmd, storeMgr, ec.getClassLoaderResolver());
   }
 
   public static String determineKind(AbstractClassMetaData acmd, MappedStoreManager storeMgr, ClassLoaderResolver clr) {
@@ -120,18 +120,18 @@ public final class EntityUtils {
    * When the pk field is an encoded String you can give us an unencoded
    * String, an encoded String, or a Key.
    */
-  public static Object idToInternalKey(ObjectManager om, Class<?> cls, Object val, boolean allowSubclasses) {
-    AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
-        cls, om.getClassLoaderResolver());
-    String kind = determineKind(cmd, om);
-    AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(om, cls);
-    return idToInternalKey(kind, pkMemberMetaData, cls, val, om, allowSubclasses);
+  public static Object idToInternalKey(ExecutionContext ec, Class<?> cls, Object val, boolean allowSubclasses) {
+    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(
+        cls, ec.getClassLoaderResolver());
+    String kind = determineKind(cmd, ec);
+    AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(ec, cls);
+    return idToInternalKey(kind, pkMemberMetaData, cls, val, ec, allowSubclasses);
   }
 
   // broken out for testing
   static Object idToInternalKey(
       String kind, AbstractMemberMetaData pkMemberMetaData, Class<?> cls, Object val,
-      ObjectManager om, boolean allowSubclasses) {
+      ExecutionContext ec, boolean allowSubclasses) {
     Object result = null;
     Class<?> pkType = pkMemberMetaData.getType();
     if (val instanceof String) {
@@ -139,11 +139,11 @@ public final class EntityUtils {
     } else if (val instanceof Long || val instanceof Integer) {
       result = intOrLongToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
     } else if (val instanceof Key) {
-      result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, (Key) val, om, allowSubclasses);
+      result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, (Key) val, ec, allowSubclasses);
     }
     if (result == null && val != null) {
       // missed a case somewhere
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Received a request to find an object of type " + cls.getName() + " identified by "
           + val + ".  This is not a valid representation of a primary key for an instance of "
           + cls.getName() + ".");
@@ -151,7 +151,7 @@ public final class EntityUtils {
     return result;
   }
 
-  static Key getPkAsKey(Object pk, AbstractClassMetaData acmd, ObjectManager om) {
+  static Key getPkAsKey(Object pk, AbstractClassMetaData acmd, ExecutionContext ec) {
     if (pk == null) {
       throw new IllegalStateException(
           "Primary key for object of type " + acmd.getName() + " is null.");
@@ -161,11 +161,11 @@ public final class EntityUtils {
       if (DatastoreManager.hasEncodedPKField(acmd)) {
         return KeyFactory.stringToKey((String) pk);
       } else {
-        String kind = EntityUtils.determineKind(acmd, om);
+        String kind = EntityUtils.determineKind(acmd, ec);
         return KeyFactory.createKey(kind, (String) pk);
       }
     } else if (pk instanceof Long) {
-      String kind = EntityUtils.determineKind(acmd, om);
+      String kind = EntityUtils.determineKind(acmd, ec);
       return KeyFactory.createKey(kind, (Long) pk);
     } else {
       throw new IllegalStateException(
@@ -176,7 +176,7 @@ public final class EntityUtils {
   }
 
   private static boolean keyKindIsValid(String kind, AbstractMemberMetaData pkMemberMetaData,
-                                        Class<?> cls, Key key, ObjectManager om, boolean allowSubclasses) {
+                                        Class<?> cls, Key key, ExecutionContext ec, boolean allowSubclasses) {
 
     if (key.getKind().equals(kind)) {
       return true;
@@ -186,13 +186,13 @@ public final class EntityUtils {
       return false;
     }
 
-    MetaDataManager mdm = pkMemberMetaData.getMetaDataManager();
+    MetaDataManager mdm = ec.getMetaDataManager();
     // see if the key kind is a subclass of the requested kind
     String[] subclasses = mdm.getSubclassesForClass(cls.getName(), true);
     if (subclasses != null) {
       for (String subclass : subclasses) {
-        AbstractClassMetaData subAcmd = mdm.getMetaDataForClass(subclass, om.getClassLoaderResolver());
-        if (key.getKind().equals(determineKind(subAcmd, om))) {
+        AbstractClassMetaData subAcmd = mdm.getMetaDataForClass(subclass, ec.getClassLoaderResolver());
+        if (key.getKind().equals(determineKind(subAcmd, ec))) {
           return true;
         }
       }
@@ -205,15 +205,15 @@ public final class EntityUtils {
   // object lookups.
   private static Object keyToInternalKey(String kind, Class<?> pkType,
                                          AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
-                                         Key key, ObjectManager om, boolean allowSubclasses) {
+                                         Key key, ExecutionContext ec, boolean allowSubclasses) {
     Object result = null;
-    if (!keyKindIsValid(kind, pkMemberMetaData, cls, key, om, allowSubclasses)) {
-      throw new FatalNucleusUserException(
+    if (!keyKindIsValid(kind, pkMemberMetaData, cls, key, ec, allowSubclasses)) {
+      throw new NucleusFatalUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is a Key for kind " + key.getKind());
     }
     if (!key.isComplete()) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is is an incomplete Key");
     }
@@ -225,7 +225,7 @@ public final class EntityUtils {
           // By definition, classes with unencoded string pks
           // do not have parents.  Since this key has a parent
           // this isn't valid input.
-          throw new FatalNucleusUserException(
+          throw new NucleusFatalUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the Key that was provided as an argument has a "
@@ -238,14 +238,14 @@ public final class EntityUtils {
         // By definition, classes with unencoded string pks
         // do not have parents.  Since this key has a parent
         // this isn't valid input.
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the Key that was provided as an argument has a "
             + "parent.");
       }
       if (key.getName() != null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long.  However, the encoded string "
             + "representation of the Key that was provided as an argument has its name field "
@@ -266,7 +266,7 @@ public final class EntityUtils {
       if (pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
         result = KeyFactory.keyToString(keyWithId);
       } else {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is an unencoded String.  However, the provided value is of type "
             + val.getClass().getName() + ".");
@@ -286,7 +286,7 @@ public final class EntityUtils {
     try {
       decodedKey = KeyFactory.stringToKey((String) val);
       if (!decodedKey.isComplete()) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of kind " + kind + " but the provided "
             + "identifier is the String representation of an incomplete Key for kind "
             + decodedKey.getKind());
@@ -295,7 +295,7 @@ public final class EntityUtils {
       if (pkType.equals(Long.class)) {
         // We were given an unencoded String and the pk type is Long.
         // There's no way that can be valid
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + " identified by the String "
             + val + ", but the primary key of " + cls.getName() + " is of type Long.");
       }
@@ -303,7 +303,7 @@ public final class EntityUtils {
       decodedKey = KeyFactory.createKey(kind, (String) val);
     }
     if (!decodedKey.getKind().equals(kind)) {
-      throw new FatalNucleusUserException(
+      throw new NucleusFatalUserException(
           "Received a request to find an object of kind " + kind + " but the provided "
           + "identifier is the String representation of a Key for kind "
           + decodedKey.getKind());
@@ -314,7 +314,7 @@ public final class EntityUtils {
         result = KeyFactory.keyToString(decodedKey);
       } else {
         if (decodedKey.getParent() != null) {
-          throw new FatalNucleusUserException(
+          throw new NucleusFatalUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String, which means instances of this type "
               + "never have parents.  However, the encoded string representation of the Key that "
@@ -324,7 +324,7 @@ public final class EntityUtils {
         // component.  However, we need to make sure the provided key actually
         // contains a name component.
         if (decodedKey.getName() == null) {
-          throw new FatalNucleusUserException(
+          throw new NucleusFatalUserException(
               "Received a request to find an object of type " + cls.getName() + ".  The primary "
               + "key for this type is an unencoded String.  However, the encoded string "
               + "representation of the Key that was provided as an argument has its id field "
@@ -334,7 +334,7 @@ public final class EntityUtils {
       }
     } else if (pkType.equals(Long.class)) {
       if (decodedKey.getParent() != null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
             + "key for this type is a Long, which means instances of this type "
             + "never have parents.  However, the encoded string representation of the Key that "
@@ -342,7 +342,7 @@ public final class EntityUtils {
       }
 
       if (decodedKey.getName() != null) {
-        throw new FatalNucleusUserException(
+        throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + " identified by the "
             + "encoded String representation of "
             + decodedKey + ", but the primary key of " + cls.getName() + " is of type Long and the "
@@ -357,9 +357,9 @@ public final class EntityUtils {
     return result;
   }
 
-  private static AbstractMemberMetaData getPKMemberMetaData(ObjectManager om, Class<?> cls) {
-    AbstractClassMetaData cmd = om.getMetaDataManager().getMetaDataForClass(
-            cls, om.getClassLoaderResolver());
+  private static AbstractMemberMetaData getPKMemberMetaData(ExecutionContext ec, Class<?> cls) {
+    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(
+            cls, ec.getClassLoaderResolver());
     return cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]);
   }
 
@@ -369,16 +369,16 @@ public final class EntityUtils {
    * is not currently active.  This method will return null if the connection
    * factory associated with the store manager is nontransactional
    */
-  public static DatastoreTransaction getCurrentTransaction(ObjectManager om) {
-    ManagedConnection mconn = om.getStoreManager().getConnection(om);
+  public static DatastoreTransaction getCurrentTransaction(ExecutionContext ec) {
+    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
   }
 
-  public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, StateManager sm) {
-    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(sm.getInternalObjectId());
+  public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
+    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
 
     String kind =
-        EntityUtils.determineKind(sm.getClassMetaData(), sm.getObjectManager());
+        EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
     if (primaryKey instanceof Key) {
       return (Key) primaryKey;
     } else if (primaryKey instanceof Long) {

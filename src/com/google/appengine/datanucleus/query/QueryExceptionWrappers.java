@@ -19,15 +19,11 @@ import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 
 import org.datanucleus.exceptions.NucleusException;
-import org.datanucleus.jdo.NucleusJDOHelper;
-import org.datanucleus.jpa.NucleusJPAHelper;
+import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.store.query.QueryTimeoutException;
 
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Supplier;
-
-import org.datanucleus.store.query.QueryTimeoutException;
-
-import javax.jdo.JDOException;
 
 import static com.google.appengine.datanucleus.DatastoreExceptionTranslator.wrapDatastoreFailureException;
 import static com.google.appengine.datanucleus.DatastoreExceptionTranslator.wrapDatastoreTimeoutExceptionForQuery;
@@ -62,55 +58,18 @@ final class QueryExceptionWrappers {
     };
   }
 
-
-  static final class JDOQueryTimeoutException extends javax.jdo.JDOQueryTimeoutException {
-    private final Throwable cause;
-
-    JDOQueryTimeoutException(Throwable cause) {
-      this.cause = cause;
-    }
-
-    @Override
-    public Throwable getCause() {
-      // hack to make the cause available (DataNucleus' JDOQueryTimeoutException
-      // sets it to null).
-      return cause;
-    }
-  }
-
   /**
-   * Translates DataNucleus runtime exceptions to JDO runtime exceptions.
+   * Translates DataNucleus runtime exceptions to Api runtime exceptions.
    */
-  static <T> Supplier<T> dataNucleusToJDO(final Supplier<T> supplier) {
+  static <T> Supplier<T> dataNucleusToApi(final ApiAdapter api, final Supplier<T> supplier) {
     return new Supplier<T>() {
       public T get() {
         try {
           return supplier.get();
-        } catch (QueryTimeoutException qte) {
-          throw new JDOQueryTimeoutException(qte);
+        } catch (QueryTimeoutException te) {
+          throw api.getApiExceptionForNucleusException(te);
         } catch (NucleusException ne) {
-          throw NucleusJDOHelper.getJDOExceptionForNucleusException(ne);
-        }
-      }
-    };
-  }
-
-  /**
-   * Translates DataNucleus runtime exceptions to JPA runtime exceptions. 
-   */
-  static <T> Supplier<T> dataNucleusToJPA(final Supplier<T> supplier) {
-    return new Supplier<T>() {
-      public T get() {
-        try {
-          return supplier.get();
-        } catch (QueryTimeoutException qte) {
-          RuntimeException rte = new javax.persistence.QueryTimeoutException();
-          rte.initCause(qte);
-          throw rte;
-        } catch (NucleusException ne) {
-          throw NucleusJPAHelper.getJPAExceptionForNucleusException(ne);
-        } catch (JDOException je) {
-          throw NucleusJPAHelper.getJPAExceptionForJDOException(je);
+          throw api.getApiExceptionForNucleusException(ne);
         }
       }
     };

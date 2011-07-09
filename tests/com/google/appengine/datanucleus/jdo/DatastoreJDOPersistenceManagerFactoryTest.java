@@ -25,7 +25,7 @@ import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
 
-import static com.google.appengine.datanucleus.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
+import static com.google.appengine.datanucleus.jdo.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
 
 /**
  * @author Max Ross <maxr@google.com>

@@ -18,14 +18,14 @@ package com.google.appengine.datanucleus.query;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.ObjectManager;
-import org.datanucleus.StateManager;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreTable;
 import com.google.appengine.datanucleus.Utils;
 
+import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 
@@ -42,31 +42,31 @@ import javax.jdo.spi.PersistenceCapable;
 class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
 
   private final Utils.Function<Entity, Object> entityToPojoFunc;
-  private final ObjectManager objectManager;
+  private final ExecutionContext ec;
   private final List<String> projectionFields;
   private final String alias;
 
   ProjectionResultTransformer(Utils.Function<Entity, Object> entityToPojoFunc,
-                              ObjectManager objectManager,
+                              ExecutionContext ec,
                               List<String> projectionFields,
                               String alias) {
     this.entityToPojoFunc = entityToPojoFunc;
-    this.objectManager = objectManager;
+    this.ec = ec;
     this.projectionFields = projectionFields;
     this.alias = alias;
   }
 
   public Object apply(Entity from) {
     PersistenceCapable pc = (PersistenceCapable) entityToPojoFunc.apply(from);
-    StateManager sm = objectManager.findStateManager(pc);
+    ObjectProvider op = ec.findObjectProvider(pc);
     List<Object> values = Utils.newArrayList();
     // Need to fetch the fields one at a time instead of using
     // sm.provideFields() because that method doesn't respect the ordering
     // of the field numbers and that ordering is important here.
     for (String projectionField : projectionFields) {
-      StateManager currentStateManager = sm;
-      DatastoreManager storeMgr = (DatastoreManager) objectManager.getStoreManager();
-      ClassLoaderResolver clr = objectManager.getClassLoaderResolver();
+      ObjectProvider currentOP = op;
+      DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
+      ClassLoaderResolver clr = ec.getClassLoaderResolver();
       List<String> fieldNames = getTuples(projectionField, alias);
       JavaTypeMapping typeMapping;
       Object curValue = null;
@@ -75,10 +75,10 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
         if (shouldBeDone) {
           throw new RuntimeException(
               "Unable to extract field " + projectionField + " from " +
-              sm.getClassMetaData().getFullClassName() + ".  This is most likely an App Engine bug.");
+              op.getClassMetaData().getFullClassName() + ".  This is most likely an App Engine bug.");
         }
         DatastoreTable table = storeMgr.getDatastoreClass(
-            currentStateManager.getClassMetaData().getFullClassName(), clr);
+            currentOP.getClassMetaData().getFullClassName(), clr);
         typeMapping = table.getMappingForSimpleFieldName(fieldName);
         if (typeMapping instanceof EmbeddedMapping) {
           // reset the mapping to be the mapping for the next embedded field
@@ -90,13 +90,13 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
           shouldBeDone = true;
         }
         AbstractMemberMetaData curMemberMetaData = typeMapping.getMemberMetaData();
-        curValue = currentStateManager.provideField(curMemberMetaData.getAbsoluteFieldNumber());
+        curValue = currentOP.provideField(curMemberMetaData.getAbsoluteFieldNumber());
         if (curValue == null) {
           // If we hit a null value we're done even if we haven't consumed
           // all the tuple fields
           break;
         }
-        currentStateManager = objectManager.findStateManager(curValue);
+        currentOP = ec.findObjectProvider(curValue);
       }
       // the value we have left at the end is the embedded field value we want to return
       values.add(curValue);

@@ -15,6 +15,8 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
+import org.datanucleus.api.ApiAdapter;
+
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.QueryResultIterator;
@@ -25,9 +27,9 @@ import com.google.appengine.api.datastore.QueryResultIterator;
 class RuntimeExceptionWrappingQueryResultIterator extends RuntimeExceptionWrappingIterator
     implements QueryResultIterator<Entity> {
 
-  RuntimeExceptionWrappingQueryResultIterator(RuntimeExceptionWrappingIterable iterable,
-                                              QueryResultIterator<Entity> inner, boolean isJPA) {
-    super(inner, isJPA, iterable);
+  RuntimeExceptionWrappingQueryResultIterator(ApiAdapter api, RuntimeExceptionWrappingIterable iterable,
+                                              QueryResultIterator<Entity> inner) {
+    super(api, inner, iterable);
   }
 
   public Cursor getCursor() {
