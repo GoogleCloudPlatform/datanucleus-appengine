@@ -15,8 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import org.datanucleus.util.NucleusLogger;
-
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkSetJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildSetJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkSetJPA;
@@ -46,7 +44,6 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
   }
 
   public void testInsert_ExistingParentNewChild_NoTxn() throws Exception {
-      NucleusLogger.GENERAL.info(">> testInsert_ExistingParentNewChild START");
     testInsert_ExistingParentNewChild(new BidirectionalChildSetJPA(), new HasOneToManySetJPA(),
                                       NEW_EM_START_END);
   }
