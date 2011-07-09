@@ -693,8 +693,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     startEnd.start();
     pojo2.getBooks().add(b1);
-    em.persist(pojo2);
     try {
+      em.persist(pojo2);
       startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -722,8 +722,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     pojo.getBooks().add(book);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -744,8 +744,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     pojo.getBooks().add(book);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {
