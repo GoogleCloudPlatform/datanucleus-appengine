@@ -48,7 +48,6 @@ import org.easymock.EasyMock;
 import java.lang.reflect.Method;
 import java.util.List;
 
-import javax.jdo.JDOHelper;
 import javax.persistence.PersistenceException;
 
 /**
@@ -167,23 +166,18 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParent(hasParent);
     pojo.setHasParentKeyPK(hasParentKeyPk);
 
-    NucleusLogger.GENERAL.info(">> START");
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> persisting pojo with book, hasKeyPk, hasParent, hasParentKeyPK");
-    em.persist(pojo);
     try {
-        NucleusLogger.GENERAL.info(">> END");
+      em.persist(pojo);
       startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
-        NucleusLogger.GENERAL.info(">> exception thrown ", e);
       if (em.getTransaction().isActive()) {
         rollbackTxn();
       }
     }
 
     // TODO This is crap. AFter a PersistenceException above everything is rolledback. No "id" is set
-NucleusLogger.GENERAL.info(">> pojo id="+ pojo.getId() + " state=" + JDOHelper.getObjectState(pojo));
     assertNotNull(pojo.getId());
 
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
@@ -931,8 +925,8 @@ NucleusLogger.GENERAL.info(">> pojo id="+ pojo.getId() + " state=" + JDOHelper.g
     em.close();
     em = emf.createEntityManager();
     pojo.setBook(book);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -954,8 +948,8 @@ NucleusLogger.GENERAL.info(">> pojo id="+ pojo.getId() + " state=" + JDOHelper.g
     em.close();
     em = emf.createEntityManager();
     pojo.setBook(book);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {

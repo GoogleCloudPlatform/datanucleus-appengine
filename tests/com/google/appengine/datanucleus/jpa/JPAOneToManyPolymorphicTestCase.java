@@ -553,10 +553,12 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
                               Class<? extends BidirTop> bidirClass,
                               UnidirLevel unidirLevel, String bidirKind) throws Exception {
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-    // force a new emf to get created after we've installed our own
-    // DatastoreService mock
-    emf.close();
+    // force a new emf to get created after we've installed our own DatastoreService mock
+    if (emf.isOpen()) {
+      emf.close();
+    }
     tearDown();
+
     DatastoreService mockDatastore = EasyMock.createMock(DatastoreService.class);
     DatastoreService original = DatastoreServiceFactoryInternal.getDatastoreService(config);
     DatastoreServiceFactoryInternal.setDatastoreService(mockDatastore);
@@ -757,8 +759,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
 
     startEnd.start();
     pojo2.getUnidirChildren().add(b1);
-    em.persist(pojo2);
     try {
+      em.persist(pojo2);
       startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -786,8 +788,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     pojo.getUnidirChildren().add(unidir);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {
@@ -808,8 +810,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     em.close();
     em = emf.createEntityManager();
     pojo.getUnidirChildren().add(unidir);
-    em.persist(pojo);
     try {
+      em.persist(pojo);
       em.close();
       fail("expected exception");
     } catch (PersistenceException e) {
