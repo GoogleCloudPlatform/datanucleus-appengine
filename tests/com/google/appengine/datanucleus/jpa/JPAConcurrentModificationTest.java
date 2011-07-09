@@ -107,8 +107,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     try {
       beginTxn();
       Book b = em.find(Book.class, e.getKey());
-      b.setFirstPublished(1998);
       try {
+        b.setFirstPublished(1998);
         commitTxn();
         fail("expected exception");
       } catch (RollbackException ex) {
@@ -229,9 +229,9 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     setDelegateForThread(dd);
 
     try {
-      // update attached object
-      b.setFirstPublished(1988);
       try {
+        // update attached object
+        b.setFirstPublished(1988);
         commitTxn();
         fail("expected exception");
       } catch (RollbackException ex) {
@@ -465,9 +465,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
     try {
       Book b = em.find(Book.class, e.getKey());
-
-      em.remove(b);
       try {
+        em.remove(b);
         em.close();
         fail("expected exception");
       } catch (PersistenceException ex) {

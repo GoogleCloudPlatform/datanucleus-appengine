@@ -25,7 +25,6 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.DatastoreServiceInterceptor.Policy;
 import com.google.appengine.datanucleus.test.BidirectionalChildJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkJPA;
@@ -39,15 +38,12 @@ import com.google.appengine.datanucleus.test.HasOneToManyWithOrderByJPA;
 
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 
-import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 
-import javax.jdo.JDOHelper;
 import javax.persistence.PersistenceException;
 
 /**
@@ -114,13 +110,9 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
                                          StartEnd startEnd) throws Exception {
     pojo.setVal("yar");
 
-    NucleusLogger.GENERAL.info(">> testInsert_ExistingParentNewChild begin");
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> testInsert_ExistingParentNewChild em.persist");
     em.persist(pojo);
-    NucleusLogger.GENERAL.info(">> testInsert_ExistingParentNewChild commit");
     startEnd.end();
-    NucleusLogger.GENERAL.info(">> testInsert_ExistingParentNewChild pojo.state="+JDOHelper.getObjectState(pojo));
     assertNotNull(pojo.getId());
     assertTrue(pojo.getBooks().isEmpty());
     assertTrue(pojo.getHasKeyPks().isEmpty());
