@@ -42,7 +42,7 @@ limitations under the License.
 
     <!-- IDENTITY KEY TRANSLATOR -->
     <extension point="org.datanucleus.identity_key_translator">
-        <identitystringtranslator name="appengine" class-name="com.google.appengine.datanucleus.DatastoreIdentityKeyTranslator"/>
+        <identitykeytranslator name="appengine" class-name="com.google.appengine.datanucleus.DatastoreIdentityKeyTranslator"/>
     </extension>
 
     <!--
