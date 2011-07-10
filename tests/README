@@ -3,7 +3,7 @@ A note about running tests:
 Unless you want to add bytecode enhancement as a post-compilation step you must pass the following
 flag to the jvm in order for the tests to pass:
 
--javaagent:lib/datanucleus-enhancer-1.1.4.jar=com.google.appengine.datanucleus.test
+-javaagent:lib/datanucleus-enhancer-3.0.0-m6.jar=com.google.appengine.datanucleus.test
 
 This tells Datanucleus to perform runtime enhancement on any classes it encounters that live in the
 com.google.appengine.datanucleus.test package.  The enhancer ignores classes in com.google.appengine.datanucleus unless

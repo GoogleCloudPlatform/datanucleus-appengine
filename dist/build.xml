@@ -26,10 +26,11 @@
   <property name="orm.testresults.dir" value="/tmp/testresults"/>
 
   <path id="appengine.plugin.compile.deps">
-    <pathelement location="${orm.lib.dir}/datanucleus-core-1.1.5.jar"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-jpa-1.1.5.jar"/>
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.3-eb.jar"/>
-    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.1.1.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-core-3.0.0-m6.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-api-jdo-3.0.0-m6.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-api-jpa-3.0.0-m6.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo-api-3.1-SNAPSHOT-20110319.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_2.0_spec-1.0.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api.jar"/>
   </path>
 
@@ -47,14 +48,14 @@
   </path>
 
   <path id="helloorm.compile.deps">
-    <pathelement location="${orm.lib.dir}/jdo2-api-2.3-eb.jar"/>
-    <pathelement location="${orm.lib.dir}/geronimo-jpa_3.0_spec-1.1.1.jar"/>
+    <pathelement location="${orm.lib.dir}/jdo-api-3.1-SNAPSHOT-20110319.jar"/>
+    <pathelement location="${orm.lib.dir}/geronimo-jpa_2.0_spec-1.0.jar"/>
     <pathelement location="${orm.lib.dir}/geronimo-servlet_2.5_spec-1.2.jar"/>
   </path>
 
   <path id="enhancer.deps">
     <path refid="appengine.plugin.compile.deps"/>
-    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-1.1.4.jar"/>
+    <pathelement location="${orm.lib.dir}/datanucleus-enhancer-3.0.0-m6.jar"/>
     <pathelement location="${orm.jar}"/>
     <pathelement location="${orm.lib.dir}/log4j-1.2.9.jar"/>
     <pathelement location="${orm.lib.dir}/junit.jar"/>
@@ -146,9 +147,9 @@
     <war destfile="helloorm.war" webxml="${helloorm.src.dir}/WEB-INF/web.xml">
       <lib dir="${orm.lib.dir}">
         <include name="datanucleus-core*.jar"/>
-        <include name="datanucleus-jpa*.jar"/>
+        <include name="datanucleus-api-*.jar"/>
         <include name="geronimo*.jar"/>
-        <include name="jdo2-api*.jar"/>
+        <include name="jdo-api*.jar"/>
         <include name="appengine-api.jar"/>
       </lib>
       <lib dir=".">
@@ -201,7 +202,7 @@
         <attribute name="Bundle-SymbolicName" value="com.google.appengine.datanucleus;singleton:=true"/>
         <attribute name="Bundle-Version" value="${version}"/>
         <attribute name="Bundle-Vendor" value="Google"/>
-        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;[1.0.4, 1.1.5.final)&quot;"/>
+        <attribute name="Require-Bundle" value="org.datanucleus;bundle-version=&quot;(2.9, 4.0)&quot;"/>
         <attribute name="Import-Package" value="javax.jdo, javax.jdo.annotations, javax.jdo.datastore, javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.persistence.spi"/>
       </manifest>
     </jar>
@@ -233,25 +234,25 @@
       </zipfileset>
       <zipfileset prefix="lib/tools/orm" dir="${orm.lib.dir}">
         <include name="asm*.jar"/>
-        <include name="jdo2-api*.jar"/>
+        <include name="jdo-api*.jar"/>
         <include name="geronimo-jpa*.jar"/>
         <include name="geronimo-jta*.jar"/>
         <include name="datanucleus-enhancer*.jar"/>
-        <include name="datanucleus-jpa*.jar"/>
+        <include name="datanucleus-api-*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
       <zipfileset prefix="lib/user/orm" dir="${orm.lib.dir}">
-        <include name="jdo2-api*.jar"/>
+        <include name="jdo-api*.jar"/>
         <include name="geronimo-jpa*.jar"/>
         <include name="geronimo-jta*.jar"/>
-        <include name="datanucleus-jpa*.jar"/>
+        <include name="datanucleus-api-*.jar"/>
         <include name="datanucleus-core*.jar"/>
       </zipfileset>
       <zipfileset prefix="lib/user/orm" file="${orm.jar}"/>
       <zipfileset prefix="src/orm" file="${orm.source.zip}"/>
       <zipfileset prefix="src/orm" dir="${orm.lib.dir}">
         <include name="datanucleus-*src*"/>
-        <include name="jdo2-api-*src*"/>
+        <include name="jdo-api-*src*"/>
       </zipfileset>
       <zipfileset dir=".">
         <include name="README.ORM"/>
