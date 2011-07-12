@@ -17,7 +17,6 @@ package com.google.appengine.datanucleus;
 
 //import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 
-import com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManagerFactory;
 import com.google.appengine.datanucleus.jpa.DatastoreEntityManagerFactory;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
@@ -52,11 +51,6 @@ public class DatastoreTestCase extends TestCase {
         f.set(null, new ThreadLocalMap((Map) f.get(null)));
       }
     }
-    synchronized (DatastoreJDOPersistenceManagerFactory.class) {
-      System.setProperty(
-          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY,
-          Boolean.TRUE.toString());
-    }
     synchronized (DatastoreEntityManagerFactory.class) {
       System.setProperty(DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY,
                          Boolean.TRUE.toString());
@@ -67,12 +61,6 @@ public class DatastoreTestCase extends TestCase {
   @Override
   protected void tearDown() throws Exception {
     helper.tearDown();
-    // Do NOT clear out these properties.  System properties are global and if
-    // we're running multiple tests concurrently, clearing them will cause other
-    // tests to fail.  We want these properties set at all times so this is ok.
-//    System.clearProperty(
-//        DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
-//    System.clearProperty(DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
     super.tearDown();
   }
 

@@ -17,71 +17,71 @@ package com.google.appengine.datanucleus.jdo;
 
 import junit.framework.TestCase;
 
-import com.google.appengine.datanucleus.Utils;
-
-import java.util.Map;
-
-import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
-
-import static com.google.appengine.datanucleus.jdo.JDOTestCase.PersistenceManagerFactoryName.nontransactional;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreJDOPersistenceManagerFactoryTest extends TestCase {
 
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    DatastoreJDOPersistenceManagerFactory.getNumInstancesPerPersistenceUnit().clear();
-  }
+  public void testAllocationOfDuplicateNamedPMFAsSingleton() {
+    PersistenceManagerFactory pmf1 = null;
+    PersistenceManagerFactory pmf2 = null;
+    try {
+      pmf1 = JDOHelper.getPersistenceManagerFactory("nontransactional-singleton");
 
-  public void testExceptionOnDuplicatePMF() {
-    // we're mucking with system properties.  in order to stay thread-safe
-    // we need to prevent other tests that muck with this system property from
-    // running at the same time
-    synchronized (DatastoreJDOPersistenceManagerFactory.class) {
-      boolean propertyWasSet = System.getProperties().containsKey(
-          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
-      System.clearProperty(
-          DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY);
-      try {
-        PersistenceManagerFactory pmf =
-            JDOHelper.getPersistenceManagerFactory(nontransactional.name());
-        // Close it so we can verify that closing doesn't affect our exception
-        // throwing.
-        pmf.close();
+      pmf2 = JDOHelper.getPersistenceManagerFactory("nontransactional-singleton");
 
-        // Now allocate another with the same name
-        try {
-          JDOHelper.getPersistenceManagerFactory(nontransactional.name());
-          fail("expected exception");
-        } catch (JDOFatalUserException e) {
-          // good
+      assertTrue(pmf1 == pmf2);
+    }
+    catch (Exception e) {
+      fail("Exception thrown during allocation of two PMFs with same name requiring singleton");
+    }
+    finally {
+      if (pmf1 != pmf2) {
+        if (pmf1 != null) {
+          pmf1.close();
         }
-      } finally {
-        if (propertyWasSet) {
-          System.setProperty(
-              DatastoreJDOPersistenceManagerFactory.DISABLE_DUPLICATE_PMF_EXCEPTION_PROPERTY,
-              Boolean.TRUE.toString());
+        if (pmf2 != null) {
+          pmf2.close();
+        }
+      }
+      else {
+        if (pmf1 != null) {
+          pmf1.close();
         }
       }
     }
   }
 
-  public void testPMFWithoutName() {
-    Map<String, String> propMap = Utils.newHashMap();
-    propMap.put("javax.jdo.PersistenceManagerFactoryClass",
-                DatastoreJDOPersistenceManagerFactory.class.getName());
-    propMap.put("javax.jdo.option.ConnectionURL", "appengine");
-    PersistenceManagerFactory pmf =
-        JDOHelper.getPersistenceManagerFactory(propMap);
-    pmf.close();
-    // Make sure our duplicate detection is disabled for pmfs that don't have
-    // names.
-    pmf = JDOHelper.getPersistenceManagerFactory(propMap);
-    pmf.close();
+  public void testAllocationOfDuplicateNamedPMF() {
+    PersistenceManagerFactory pmf1 = null;
+    PersistenceManagerFactory pmf2 = null;
+    try {
+      pmf1 = JDOHelper.getPersistenceManagerFactory("nontransactional");
+
+      pmf2 = JDOHelper.getPersistenceManagerFactory("nontransactional");
+
+      assertTrue(pmf1 != pmf2);
+    }
+    catch (Exception e) {
+      fail("Exception thrown during allocation of two PMFs with same name");
+    }
+    finally {
+      if (pmf1 != pmf2) {
+        if (pmf1 != null) {
+          pmf1.close();
+        }
+        if (pmf2 != null) {
+          pmf2.close();
+        }
+      }
+      else {
+        if (pmf1 != null) {
+          pmf1.close();
+        }
+      }
+    }
   }
 }
