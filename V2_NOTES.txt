@@ -3,6 +3,9 @@ The major change with version 2 is to use DataNucleus v3.x. This brings with it 
   Set persistence property "datanucleus.cache.level2.type" to "none" to get the previous behaviour.
 * Datastore IdentifierFactory has changed to default to "datanucleus2". 
   Set persistence property "datanucleus.identifierFactory" to "datanucleus1" to get the previous behaviour.
+* Non-transactional calls to pm.makePersistent, pm.deletePersistent, em.persist, em.merge, em.remove are now
+  executed atomically, whereas before you waited til the next transaction or pm.close/em.close
+* JPA has "retainValues" enabled so so have the values of loaded fields retained in objects after commit.
 * "javax.persistence.query.chunkSize" is no longer used (invalid name anyway). Use "datanucleus.query.fetchSize" instead.
 * There is now no longer an exception on duplicate PMF allocation. Instead if you have the persistence property
   "datanucleus.singletonPMFForName" set to "true" then it will return the currently allocated singleton PMF for that name.
