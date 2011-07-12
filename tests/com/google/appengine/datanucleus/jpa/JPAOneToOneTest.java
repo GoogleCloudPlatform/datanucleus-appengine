@@ -42,7 +42,6 @@ import com.google.appengine.datanucleus.test.HasOneToOneStringPkParentKeyPkJPA;
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentNull;
 
-import org.datanucleus.util.NucleusLogger;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
@@ -133,7 +132,6 @@ public class JPAOneToOneTest extends JPATestCase {
   }
 
   public void testInsert_NewParentExistingChild() throws Exception {
-      NucleusLogger.GENERAL.info(">> testInsert_NewParentExistingChild");
     testInsert_NewParentExistingChild(TXN_START_END);
   }
   public void testInsert_NewParentExistingChild_NoTxn() throws Exception {
@@ -1093,7 +1091,7 @@ public class JPAOneToOneTest extends JPATestCase {
   }
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
     // 1 put for all updates
-    int expectedPutsOnChildDelete = 1;
+    int expectedPutsOnChildDelete = 3; // Deletes will happen immediately with DN3
     testOnlyOneParentPutOnChildDelete(NEW_EM_START_END, expectedPutsOnChildDelete);
   }
   private void testOnlyOneParentPutOnChildDelete(JPATestCase.StartEnd startEnd,
@@ -1103,24 +1101,17 @@ public class JPAOneToOneTest extends JPATestCase {
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
     PutPolicy policy = setupPutPolicy(pojo, hasParent, startEnd);
     try {
-        NucleusLogger.GENERAL.info(">> START");
       startEnd.start();
       pojo = em.find(pojo.getClass(), pojo.getId());
-      NucleusLogger.GENERAL.info(">> pojo.setStr()");
       pojo.setStr("another val");
-      NucleusLogger.GENERAL.info(">> pojo.setBook(null)");
       pojo.setBook(null);
-      NucleusLogger.GENERAL.info(">> pojo.setHasParent(null)");
       pojo.setHasParent(null);
-      NucleusLogger.GENERAL.info(">> pojo.setHasKeyPK(null)");
       pojo.setHasKeyPK(null);
-      NucleusLogger.GENERAL.info(">> END");
       startEnd.end();
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
-    NucleusLogger.GENERAL.info(">> numPuts="+ policy.putParamList.size());
-    // datanuc issues 1 put for each relation we blank out
+
     assertEquals(expectedPutsOnChildDelete, policy.putParamList.size());
   }
   
