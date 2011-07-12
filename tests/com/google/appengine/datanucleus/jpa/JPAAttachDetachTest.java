@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * **********************************************************************/
-
 package com.google.appengine.datanucleus.jpa;
 
 import com.google.appengine.api.datastore.Entity;
@@ -42,8 +41,6 @@ import java.util.List;
 import javax.jdo.JDOHelper;
 import javax.jdo.ObjectState;
 
-import org.datanucleus.util.NucleusLogger;
-
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -69,9 +66,9 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo.setDate(now);
     em.persist(pojo);
     commitTxn();
-    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
     assertEquals(Date.class, pojo.getDate().getClass());
-    em.close();
+    em.close(); // Detaches objects in L1 cache
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     em = emf.createEntityManager();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
@@ -90,7 +87,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo = em.merge(pojo);
     assertEquals(ObjectState.PERSISTENT_DIRTY, JDOHelper.getObjectState(pojo));
     commitTxn();
-    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
     Entity e = ds.get(KeyFactory.createKey(DetachableJPA.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
     assertEquals(differentNow, e.getProperty("date"));
@@ -103,8 +100,8 @@ public class JPAAttachDetachTest extends JPATestCase {
     Date now = new Date();
     pojo.setDate(now);
     em.persist(pojo);
-    assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
-    em.close();
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
+    em.close(); // Detaches objects in L1 cache
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     assertEquals(Date.class, pojo.getDate().getClass());
     em = emf.createEntityManager();
@@ -119,7 +116,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo.setDate(differentNow);
     assertEquals(ObjectState.DETACHED_DIRTY, JDOHelper.getObjectState(pojo));
     em.merge(pojo);
-    em.close();
+    em.close(); // Detaches objects in L1 cache
     Entity e = ds.get(KeyFactory.createKey(DetachableJPA.class.getSimpleName(), pojo.getId()));
     assertEquals("not yar", e.getProperty("val"));
     assertEquals(differentNow, e.getProperty("date"));
@@ -154,8 +151,8 @@ public class JPAAttachDetachTest extends JPATestCase {
     pojo.setStrList(Utils.newArrayList("c", "d"));
     em.persist(pojo);
     commitTxn();
-    assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
-    em.close();
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
+    em.close(); // Detaches objects in L1 cache
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     em = emf.createEntityManager();
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
@@ -234,7 +231,6 @@ public class JPAAttachDetachTest extends JPATestCase {
   }
 
   public void testSerializeWithOneToMany_AddGrandchildToUnidirectionalDetached() throws Exception {
-    NucleusLogger.GENERAL.info(">> test txn.start");
     beginTxn();
     HasGrandchildJPA hasGrandchild = new HasGrandchildJPA();
     HasOneToManySetJPA pojo = new HasOneToManySetJPA();
@@ -243,11 +239,8 @@ public class JPAAttachDetachTest extends JPATestCase {
     Book b = new Book();
     b.setAuthor("harry");
     pojo.getBooks().add(b);
-    NucleusLogger.GENERAL.info(">> test em.persist(hasGrandchild) A->bs[i]->cs");
     em.persist(hasGrandchild);
-    NucleusLogger.GENERAL.info(">> test txn.end");
     commitTxn();
-    NucleusLogger.GENERAL.info(">> test em.close so detach all");
     em.close();
     em = emf.createEntityManager();
 
@@ -261,11 +254,8 @@ public class JPAAttachDetachTest extends JPATestCase {
     // Don't set the parent - this ref won't get updated when we call
     // merge and we'll get an exception.
 //    bidir2.setParent(pojo);
-    NucleusLogger.GENERAL.info(">> test txn.start");
     beginTxn();
-    NucleusLogger.GENERAL.info(">> test em.merge");
     hasGrandchild = em.merge(hasGrandchild);
-    NucleusLogger.GENERAL.info(">> test txn.end");
     commitTxn();
     Entity e = ds.get(KeyFactory.stringToKey(b2.getId()));
     assertEquals(KeyFactory.stringToKey(pojo.getId()), e.getKey().getParent());
@@ -304,7 +294,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     Date now = new Date();
     pojo.setDate(now);
     em.persist(pojo);
-    em.close();
+    em.close(); // Detaches objects in L1 cache
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     em = emf.createEntityManager();
     pojo = em.find(pojo.getClass(), pojo.getId());
@@ -315,7 +305,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     // this is wrong and it will start to fail when we upgrade to DN 2.0
     // We're tracking this with bug
     // http://code.google.com/p/datanucleus-appengine/issues/detail?id=142
-    assertEquals(ObjectState.PERSISTENT_NEW, JDOHelper.getObjectState(pojo));
+    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
 //    assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
 //    em.remove(pojo);
 //    assertEquals(ObjectState.PERSISTENT_NEW_DELETED, JDOHelper.getObjectState(pojo));
