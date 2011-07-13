@@ -73,6 +73,7 @@ import com.google.apphosting.api.DatastorePb;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.api.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
+
 import org.easymock.EasyMock;
 
 import java.io.ByteArrayOutputStream;
@@ -83,6 +84,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -96,6 +98,8 @@ import javax.jdo.JDOException;
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
 import javax.jdo.Query;
+
+import junit.framework.Assert;
 
 import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
 
@@ -215,6 +219,44 @@ public class JDOQLQueryTest extends JDOTestCase {
         else {
           throw jdoe;
         }
+    }
+  }
+
+  public void testEvaluateInMemory() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 1, 2));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    // This is impossible in the datastore, so run totally in-memory
+    String query = "SELECT FROM " + Flight.class.getName() + " WHERE origin == 'yar' || dest == null";
+    Query q = pm.newQuery(query);
+    q.addExtension("datanucleus.query.evaluateInMemory", "true");
+    try {
+       List<Flight> results = (List<Flight>) q.execute();
+       Assert.assertEquals("Number of results was wrong", 2, results.size());
+    } catch (JDOException jdoe) {
+      fail("Threw exception when evaluating query in-memory, but should have run");
+    }
+  }
+
+  public void testCandidateCollectionInMemory() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 1, 2));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    Collection<Flight> coll = new HashSet<Flight>();
+    Iterator<Flight> iter = pm.getExtent(Flight.class).iterator();
+    while (iter.hasNext()) {
+      coll.add(iter.next());
+    }
+
+    // Query is impossible in-datastore, and run against candidates so has to be in-memory
+    String query = "SELECT FROM " + Flight.class.getName() + " WHERE origin == 'yar' || dest == null";
+    Query q = pm.newQuery(query);
+    q.setCandidates(coll);
+    try {
+       List<Flight> results = (List<Flight>) q.execute();
+       Assert.assertEquals("Number of results was wrong", 2, results.size());
+    } catch (JDOException jdoe) {
+      fail("Threw exception when evaluating query in-memory, but should have run");
     }
   }
 

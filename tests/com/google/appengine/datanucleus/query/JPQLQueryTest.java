@@ -15,6 +15,8 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
+import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
+
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
@@ -94,6 +96,8 @@ import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.persistence.QueryTimeoutException;
+
+import junit.framework.Assert;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -215,6 +219,22 @@ public class JPQLQueryTest extends JPATestCase {
                                                        Expression.OP_NEG, Expression.OP_IS,
                                                        Expression.OP_LIKE,
                                                        Expression.OP_ISNOT)), unsupportedOps);
+  }
+
+  public void testEvaluateInMemory() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 1, 2));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    // This is impossible in the datastore, so run totally in-memory
+    String query = "SELECT f FROM " + Flight.class.getName() + " f WHERE origin = 'yar' OR dest IS null";
+    Query q = em.createQuery(query);
+    q.setHint("datanucleus.query.evaluateInMemory", "true");
+    try {
+       List<Flight> results = (List<Flight>) q.getResultList();
+       Assert.assertEquals("Number of results was wrong", 2, results.size());
+    } catch (RuntimeException e) {
+      fail("Threw exception when evaluating query in-memory, but should have run");
+    }
   }
 
   public void testSupportedFilters_NoResultExpr() {
