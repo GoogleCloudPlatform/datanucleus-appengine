@@ -187,6 +187,7 @@ public class DatastoreManager extends MappedStoreManager {
     addTypeManagerMappings();
 
     storageVersion = StorageVersion.fromStoreManager(this);
+
     initialiseAutoStart(clr);
 
     logConfiguration();
@@ -545,30 +546,30 @@ public class DatastoreManager extends MappedStoreManager {
     }
   }
 
-  private static boolean memberHasExtension(AbstractClassMetaData acmd, int pos, String extensionName) {
-    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pos);
+  private static boolean memberHasExtension(AbstractClassMetaData acmd, int fieldNumber, String extensionName) {
+    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
     return ammd.hasExtension(extensionName);
   }
 
   static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
-    int pkPos = acmd.getPKMemberPositions()[0];
-    return isEncodedPKField(acmd, pkPos);
+    int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs
+    return isEncodedPKField(acmd, pkFieldNumber);
   }
 
-  static boolean isEncodedPKField(AbstractClassMetaData acmd, int pos) {
-    return memberHasExtension(acmd, pos, ENCODED_PK);
+  static boolean isEncodedPKField(AbstractClassMetaData acmd, int fieldNumber) {
+    return memberHasExtension(acmd, fieldNumber, ENCODED_PK);
   }
 
-  static boolean isParentPKField(AbstractClassMetaData acmd, int pos) {
-    return memberHasExtension(acmd, pos, PARENT_PK);
+  static boolean isParentPKField(AbstractClassMetaData acmd, int fieldNumber) {
+    return memberHasExtension(acmd, fieldNumber, PARENT_PK);
   }
 
-  static boolean isPKNameField(AbstractClassMetaData acmd, int pos) {
-    return memberHasExtension(acmd, pos, PK_NAME);
+  static boolean isPKNameField(AbstractClassMetaData acmd, int fieldNumber) {
+    return memberHasExtension(acmd, fieldNumber, PK_NAME);
   }
 
-  static boolean isPKIdField(AbstractClassMetaData acmd, int pos) {
-    return memberHasExtension(acmd, pos, PK_ID);
+  static boolean isPKIdField(AbstractClassMetaData acmd, int fieldNumber) {
+    return memberHasExtension(acmd, fieldNumber, PK_ID);
   }
   
   public static boolean isNewOrSuperclassTableInheritanceStrategy(AbstractClassMetaData cmd) {
