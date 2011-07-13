@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.jpa;
 
 import org.datanucleus.api.jpa.PersistenceProviderImpl;
+import org.datanucleus.api.jpa.SingletonEMFException;
 import org.datanucleus.api.jpa.exceptions.NoPersistenceUnitException;
 import org.datanucleus.api.jpa.exceptions.NoPersistenceXmlException;
 import org.datanucleus.api.jpa.exceptions.NotProviderException;
@@ -30,9 +31,11 @@ import javax.persistence.spi.PersistenceUnitInfo;
  */
 public class DatastorePersistenceProvider extends PersistenceProviderImpl {
 
-  public EntityManagerFactory createEntityManagerFactory(String unitInfo, Map properties) {
+  public EntityManagerFactory createEntityManagerFactory(String unitName, Map properties) {
     try {
-      return new DatastoreEntityManagerFactory(unitInfo, properties);
+      return new DatastoreEntityManagerFactory(unitName, properties);
+    } catch (SingletonEMFException se) {
+      return se.getSingleton();
     } catch (NotProviderException npe) {
     }
     // spec says to not let exceptions propagate, just return null
@@ -43,6 +46,8 @@ public class DatastorePersistenceProvider extends PersistenceProviderImpl {
       PersistenceUnitInfo unitInfo, Map properties) {
     try {
       return new DatastoreEntityManagerFactory(unitInfo, properties);
+    } catch (SingletonEMFException se) {
+      return se.getSingleton();
     } catch (NotProviderException npe) {
     } catch (NoPersistenceUnitException npue) {
     } catch (NoPersistenceXmlException npxe) {

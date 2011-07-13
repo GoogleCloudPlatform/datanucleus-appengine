@@ -19,52 +19,67 @@ import junit.framework.TestCase;
 
 import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
-import javax.persistence.PersistenceException;
-
-import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
 
 /**
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreEntityManagerFactoryTest extends TestCase {
 
-  @Override
-  protected void setUp() throws Exception {
-    super.setUp();
-    DatastoreEntityManagerFactory.getNumInstancesPerPersistenceUnit().clear();
+  public void testAllocationOfDuplicateNamedEMFAsSingleton() {
+    EntityManagerFactory emf1 = null;
+    EntityManagerFactory emf2 = null;
+    try {
+      emf1 = Persistence.createEntityManagerFactory("nontransactional_ds_non_transactional_ops_allowed_singleton");
+
+      emf2 = Persistence.createEntityManagerFactory("nontransactional_ds_non_transactional_ops_allowed_singleton");
+
+      assertTrue(emf1 == emf2);
+    }
+    catch (Exception e) {
+      fail("Exception thrown during allocation of two EMFs with same name requiring singleton");
+    }
+    finally {
+      if (emf1 != emf2) {
+        if (emf1 != null) {
+          emf1.close();
+        }
+        if (emf2 != null) {
+          emf2.close();
+        }
+      }
+      else {
+        if (emf1 != null) {
+          emf1.close();
+        }
+      }
+    }
   }
 
+  public void testAllocationOfDuplicateNamedEMF() {
+    EntityManagerFactory emf1 = null;
+    EntityManagerFactory emf2 = null;
+    try {
+      emf1 = Persistence.createEntityManagerFactory("nontransactional_ds_non_transactional_ops_allowed");
 
-  public void testExceptionOnDuplicateEMF() {
-    // we're mucking with system properties.  in order to stay thread-safe
-    // we need to prevent other tests that muck with this system property from
-    // running at the same time
-    synchronized (DatastoreEntityManagerFactory.class) {
-      boolean propertyWasSet = System.getProperties().containsKey(
-          DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
-      System.clearProperty(
-          DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY);
-      try {
-        EntityManagerFactory emf = Persistence.createEntityManagerFactory(
-            nontransactional_ds_non_transactional_ops_allowed.name());
-        // Close it so we can verify that closing doesn't affect our exception
-        // throwing.
-        emf.close();
+      emf2 = Persistence.createEntityManagerFactory("nontransactional_ds_non_transactional_ops_allowed");
 
-        // Now allocate another with the same name
-        try {
-          Persistence.createEntityManagerFactory(
-              nontransactional_ds_non_transactional_ops_allowed.name());
-          fail("expected exception");
-        } catch (PersistenceException e) {
-          // good
-          assertTrue(e.getCause() instanceof IllegalStateException);
+      assertTrue(emf1 != emf2);
+    }
+    catch (Exception e) {
+      fail("Exception thrown during allocation of two EMFs with same name requiring singleton");
+    }
+    finally {
+      if (emf1 != emf2) {
+        if (emf1 != null) {
+          emf1.close();
         }
-      } finally {
-        if (propertyWasSet) {
-          System.setProperty(
-              DatastoreEntityManagerFactory.DISABLE_DUPLICATE_EMF_EXCEPTION_PROPERTY,
-              Boolean.TRUE.toString());
+        if (emf2 != null) {
+          emf2.close();
+        }
+      }
+      else {
+        if (emf1 != null) {
+          emf1.close();
         }
       }
     }

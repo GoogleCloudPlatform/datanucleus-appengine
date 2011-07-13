@@ -68,6 +68,21 @@ limitations under the License.
         </properties>
     </persistence-unit>
 
+    <persistence-unit name="nontransactional_ds_non_transactional_ops_allowed_singleton">
+        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <properties>
+            <property name="datanucleus.ConnectionURL" value="appengine"/>
+            <property name="datanucleus.NontransactionalRead" value="true"/>
+            <property name="datanucleus.NontransactionalWrite" value="true"/>
+            <property name="datanucleus.singletonEMFForName" value="true"/>
+            <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
+            <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
+            <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+            <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
+		    <property name="datanucleus.cache.level2.type" value="None"/>
+        </properties>
+    </persistence-unit>
+
     <persistence-unit name="datastoreserviceconfigprops">
         <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
         <properties>
