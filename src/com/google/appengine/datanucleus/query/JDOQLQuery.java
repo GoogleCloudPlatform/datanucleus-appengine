@@ -16,15 +16,21 @@ limitations under the License.
 package com.google.appengine.datanucleus.query;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 
+import org.datanucleus.query.evaluator.JDOQLEvaluator;
+import org.datanucleus.query.evaluator.JavaQueryEvaluator;
 import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.Extent;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
+import org.datanucleus.util.NucleusLogger;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -65,22 +71,75 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   }
 
   /**
+   * Convenience method to return whether the query should be evaluated in-memory.
+   * @return Use in-memory evaluation?
+   */
+  protected boolean evaluateInMemory() {
+    if (candidateCollection != null || candidateExtent != null) {
+      if (compilation != null && compilation.getSubqueryAliases() != null) {
+        // TODO In-memory evaluation of subqueries isn't fully implemented yet, so remove this when it is
+        NucleusLogger.QUERY.warn("In-memory evaluator doesn't currently handle subqueries completely so evaluating in datastore");
+        return false;
+      }
+
+      Object val = getExtension(EXTENSION_EVALUATE_IN_MEMORY);
+      if (val == null) {
+        return false;
+      }
+      return Boolean.valueOf((String)val);
+    }
+    return super.evaluateInMemory();
+  }
+
+  /**
    * {@inheritDoc}
    */
   @Override
   protected Object performExecute(Map parameters) {
-    @SuppressWarnings("unchecked")
-    Map<String, ?> params = parameters;
-    if (range != null && !range.equals("")) {
-      // Range is of the format "from, to"
-      String[] fromTo = range.split(",");
-      if (fromTo.length != 2) {
-        throw new NucleusUserException("Malformed RANGE clause: " + range);
-      }
-      fromInclNo = Long.parseLong(fromTo[0].trim());
-      toExclNo = Long.parseLong(fromTo[1].trim());
+    long startTime = System.currentTimeMillis();
+    if (NucleusLogger.QUERY.isDebugEnabled()) {
+        NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery(), null));
     }
-    return datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, params, true);
+
+    Object results = null;
+    if (evaluateInMemory()) {
+        // Evaluating in-memory so build up list of candidates
+        List candidates = null;
+        if (candidateCollection != null) {
+            candidates = new ArrayList(candidateCollection);
+        }
+        else if (candidateExtent != null) {
+          candidates = new ArrayList();
+          Iterator iter = candidateExtent.iterator();
+          while (iter.hasNext()) {
+            candidates.add(iter.next());
+          }
+        }
+        else {
+          Extent ext = getStoreManager().getExtent(ec, candidateClass, subclasses);
+          candidates = new ArrayList();
+          Iterator iter = ext.iterator();
+          while (iter.hasNext()) {
+            candidates.add(iter.next());
+          }
+        }
+
+        // Evaluate in-memory over the candidate instances
+        JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation,
+            parameters, ec.getClassLoaderResolver());
+        results = resultMapper.execute(true, true, true, true, true);
+    }
+    else {
+      // Evaluate in-datastore
+      results = datastoreQuery.performExecute(LOCALISER, compilation, fromInclNo, toExclNo, parameters, true);
+    }
+
+    if (NucleusLogger.QUERY.isDebugEnabled()) {
+      NucleusLogger.QUERY.debug(LOCALISER.msg("021074", "JDOQL", 
+          "" + (System.currentTimeMillis() - startTime)));
+    }
+
+    return results;
   }
 
   // Exposed for tests.
