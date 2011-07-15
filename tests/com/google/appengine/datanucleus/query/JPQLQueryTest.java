@@ -1461,10 +1461,10 @@ public class JPQLQueryTest extends JPATestCase {
 
     try {
       javax.persistence.Query q = em.createQuery(
-          "select from " + Book.class.getName() + " c");
-      @SuppressWarnings("unchecked")
-      List<Book> books = (List<Book>) q.getResultList();
+          "select from " + Book.class.getName() + " b");
       try {
+        @SuppressWarnings("unchecked")
+        List<Book> books = (List<Book>) q.getResultList();
         books.size();
         fail("expected exception");
       } catch (PersistenceException e) {
@@ -3144,9 +3144,9 @@ public class JPQLQueryTest extends JPATestCase {
     try {
       javax.persistence.Query q = em.createQuery(
           "select from " + Book.class.getName() + " c");
-      @SuppressWarnings("unchecked")
-      List<Book> books = (List<Book>) q.getResultList();
       try {
+        @SuppressWarnings("unchecked")
+        List<Book> books = (List<Book>) q.getResultList();
         books.size();
         fail("expected exception");
       } catch (QueryTimeoutException qte) {
