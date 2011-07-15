@@ -409,6 +409,7 @@ public class MetaDataValidator {
     int pkPos = pkPositions[0];
     AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
 
+    // TODO Allow long, int, Integer types
     Class<?> pkType = pkMemberMetaData.getType();
     if (pkType.equals(Long.class)) {
       noParentAllowed = true;

@@ -26,13 +26,14 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.DiscriminatorMetaData;
+import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.VersionMetaData;
-
-import com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManager;
 
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
@@ -44,10 +45,13 @@ import org.datanucleus.store.mapped.MappedStoreManager;
  * @author Max Ross <maxr@google.com>
  */
 public final class EntityUtils {
-
+  /**
+   * Method to return the property name to use for storing the specified member.
+   * @param idFactory IdentifierFactory
+   * @param ammd Metadata for the field/property
+   * @return The property name to use in the datastore
+   */
   public static String getPropertyName(IdentifierFactory idFactory, AbstractMemberMetaData ammd) {
-    // TODO(maxr): See if there is a better way than field name comparison to
-    // determine if this is a version field
     AbstractClassMetaData acmd = ammd.getAbstractClassMetaData();
     VersionMetaData vermd = acmd.getVersionMetaDataForClass();
     if (acmd.isVersioned() && ammd.getName().equals(vermd.getFieldName())) {
@@ -59,25 +63,25 @@ public final class EntityUtils {
       return ammd.getColumn();
     }
 
-    // If we're dealing with embeddables, the column name override
-    // will show up as part of the column meta data.
+    // If we're dealing with embeddables, the column name override will show up as part of the column meta data.
     if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
       if (ammd.getColumnMetaData().length != 1) {
-        // TODO(maxr) throw something more appropriate
-        throw new UnsupportedOperationException();
+        throw new NucleusUserException("Field " + ammd.getFullFieldName() +
+            " has been specified with more than 1 column! This is unsupported with GAE/J");
       }
       return ammd.getColumnMetaData()[0].getName();
     }
-    // Use the IdentifierFactory to convert from the name of the field into
-    // a property name.
+
+    // Use the IdentifierFactory to convert from the name of the field into a property name.
     return idFactory.newDatastoreFieldIdentifier(ammd.getName()).getIdentifierName();
   }
 
-  public static Object getVersionFromEntity(
-      IdentifierFactory idFactory, VersionMetaData vmd, Entity entity) {
-    return entity.getProperty(getVersionPropertyName(idFactory, vmd));
-  }
-
+  /**
+   * Accessor for the property name to use for the version.
+   * @param idFactory Identifier factory
+   * @param vmd Version metadata
+   * @return The property name
+   */
   public static String getVersionPropertyName(
       IdentifierFactory idFactory, VersionMetaData vmd) {
     ColumnMetaData[] columnMetaData = vmd.getColumnMetaData();
@@ -85,10 +89,40 @@ public final class EntityUtils {
       return idFactory.newVersionFieldIdentifier().getIdentifierName();
     }
     if (columnMetaData.length != 1) {
-      throw new IllegalArgumentException(
-          "Please specify 0 or 1 column name for the version property.");
+      throw new IllegalArgumentException("Please specify 0 or 1 column name for the version property.");
     }
     return columnMetaData[0].getName();
+  }
+
+  /**
+   * Accessor for the property name to use for the discriminator.
+   * @param idFactory Identifier factory
+   * @param dismd Discriminator metadata
+   * @return The property name
+   */
+  public static String getDiscriminatorPropertyName(
+      IdentifierFactory idFactory, DiscriminatorMetaData dismd) {
+    ColumnMetaData columnMetaData = dismd.getColumnMetaData();
+    if (columnMetaData == null) {
+      return idFactory.newDiscriminatorFieldIdentifier().getIdentifierName();
+    }
+    return columnMetaData.getName();
+  }
+
+  /**
+   * Method to set a property in the supplied entity, and uses the provided metadata component to
+   * decide if it is indexed or not.
+   * @param entity The entity
+   * @param md Metadata component
+   * @param propertyName Name of the property to use in the entity
+   * @param value The value to set
+   */
+  public static void setEntityProperty(Entity entity, MetaData md, String propertyName, Object value) {
+    if (md.hasExtension(DatastoreManager.UNINDEXED_PROPERTY)) {
+      entity.setUnindexedProperty(propertyName, value);
+    } else {
+      entity.setProperty(propertyName, value);
+    }
   }
 
   public static String determineKind(AbstractClassMetaData acmd, ExecutionContext ec) {
@@ -107,18 +141,14 @@ public final class EntityUtils {
   }
 
   /**
-   * @see DatastoreJDOPersistenceManager#getObjectById(Class, Object) for
-   * an expalnation of how this is useful.
+   * @see DatastoreIdentityKeyTranslator for an explanation of how this is useful.
    *
    * Supported translations:
-   * When the pk field is a Long you can give us a Long, an encoded key
-   * string, or a Key.
-   *
-   * When the pk field is an unencoded String you can give us an unencoded
-   * String, an encoded String, or a Key.
-   *
-   * When the pk field is an encoded String you can give us an unencoded
-   * String, an encoded String, or a Key.
+   * <ul>
+   * <li>When the pk field is a Long you can give us a Long, an encoded key string, or a Key.</li>
+   * <li>When the pk field is an unencoded String you can give us an unencoded String, an encoded String, or a Key.</li>
+   * <li>When the pk field is an encoded String you can give us an unencoded String, an encoded String, or a Key.</li>
+   * </ul>
    */
   public static Object idToInternalKey(ExecutionContext ec, Class<?> cls, Object val, boolean allowSubclasses) {
     AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(
@@ -390,6 +420,4 @@ public final class EntityUtils {
       return KeyFactory.createKey(kind, (String) primaryKey);
     }
   }
-
-
 }

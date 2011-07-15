@@ -207,11 +207,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
           String propName = EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd);
           // validate null values against ammd
           checkNullValue(ammd, propName, value);
-          if (isUnindexedProperty(ammd)) {
-            datastoreEntity.setUnindexedProperty(propName, value);
-          } else {
-            datastoreEntity.setProperty(propName, value);
-          }
+
+          EntityUtils.setEntityProperty(datastoreEntity, ammd, propName, value);
         }
       }
     }
@@ -536,11 +533,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     private boolean isUpdatable(AbstractMemberMetaData ammd) {
       ColumnMetaData cmd = getColumnMetaData(ammd);
       return cmd == null || cmd.getUpdateable();
-    }
-
-    // TODO Why use this non-standard property rather than standardised index metadata
-    private boolean isUnindexedProperty(AbstractMemberMetaData ammd) {
-      return ammd.hasExtension(DatastoreManager.UNINDEXED_PROPERTY);
     }
 
     Object unwrapSCOField(int fieldNumber, Object value) {

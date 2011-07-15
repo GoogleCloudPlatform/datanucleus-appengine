@@ -310,10 +310,19 @@ class TypeConversionUtils {
       value = datastoreValueToPojoArray(value, ammd);
     } else if (pojoPropertyIsCollection(cmd)) {
       value = datastoreValueToPojoCollection(clr, value, ownerOP, ammd, cmd);
-    } else { // neither array nor collection
+    } else {
       if (value != null) {
-        if (Enum.class.isAssignableFrom(ammd.getType())) {
-          // Enums - can be persisted as String (name) or integer (ordinal)
+        if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
+          // Long -> java.sql.Time
+          value = new java.sql.Time((Long)value);
+        } else if (java.sql.Date.class.isAssignableFrom(ammd.getType())) {
+          // Long -> java.sql.Date
+          value = new java.sql.Date((Long)value);
+        } else if (java.sql.Timestamp.class.isAssignableFrom(ammd.getType())) {
+          // Long -> java.sql.Timestamp
+          value = new java.sql.Timestamp((Long)value);
+        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
+          // String(name) / Long(ordinal) -> Enum
           boolean asOrdinal = false;
           if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
             String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
@@ -322,15 +331,13 @@ class TypeConversionUtils {
               asOrdinal = true;
             }
           }
-
           Class<Enum> enumClass = ammd.getType();
           if (asOrdinal) {
             value = enumClass.getEnumConstants()[(Integer)value];
           } else {
             value = Enum.valueOf(enumClass, (String) value);
           }
-        }
-        else {
+        } else {
           // nothing to convert
           value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
         }
@@ -624,10 +631,19 @@ class TypeConversionUtils {
       value = convertPojoArrayToDatastoreValue(ammd, value);
     } else if (pojoPropertyIsCollection(ammd.getContainer())) {
       value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
-    } else { // neither array nor collection
+    } else {
       if (value != null) {
-        if (Date.class.isAssignableFrom(ammd.getType())) {
-          // Date - can be stored with date, time, or both
+        if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
+          // java.sql.Time -> Long
+          value = ((java.sql.Time)value).getTime(); // Pass a long through since this is not supported
+        } else if (java.sql.Date.class.isAssignableFrom(ammd.getType())) {
+          // java.sql.Date -> Long
+          value = ((java.sql.Date)value).getTime(); // Pass a long through since this is not supported
+        } else if (java.sql.Timestamp.class.isAssignableFrom(ammd.getType())) {
+          // java.sql.Timestamp -> Long
+          value = ((java.sql.Timestamp)value).getTime(); // Pass a long through since this is not supported
+        } else if (Date.class.isAssignableFrom(ammd.getType())) {
+          // java.util.Date -> Date (date, time, datetime)
           ColumnMetaData[] colmds = ammd.getColumnMetaData();
           if (colmds != null && colmds.length > 0 && colmds[0].getJdbcType() != null) {
             String jdbcType = colmds[0].getJdbcType();
@@ -649,9 +665,8 @@ class TypeConversionUtils {
               value = new Date(date.getTime());
             }
           }
-        }
-        else if (Enum.class.isAssignableFrom(ammd.getType())) {
-          // Enums - can be persisted as String (name) or integer (ordinal)
+        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
+          // Enum -> String(name) / Long(ordinal)
           boolean asOrdinal = false;
           if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
             String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
@@ -665,8 +680,7 @@ class TypeConversionUtils {
           } else {
             value = ((Enum) value).name();
           }
-        }
-        else {
+        } else {
           value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
         }
       }

@@ -30,6 +30,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.VersionMetaData;
+import org.datanucleus.metadata.VersionStrategy;
 import org.datanucleus.store.AbstractPersistenceHandler;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
@@ -40,11 +41,11 @@ import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -415,6 +416,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     AbstractClassMetaData cmd = sm.getClassMetaData();
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
+      String versionPropertyName = EntityUtils.getVersionPropertyName(getIdentifierFactory(sm), vmd);
       Object curVersion = sm.getExecutionContext().getApiAdapter().getVersion(sm);
       if (curVersion != null) {
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -431,18 +433,22 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           throw newNucleusOptimisticException(
               cmd, entity, op, "The underlying entity had already been deleted.");
         }
-        if (!EntityUtils.getVersionFromEntity(
-            getIdentifierFactory(sm), vmd, refreshedEntity).equals(curVersion)) {
-          throw newNucleusOptimisticException(
-              cmd, entity, op, "The underlying entity had already been updated.");
+        Object datastoreVersion = refreshedEntity.getProperty(versionPropertyName);
+        if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
+          datastoreVersion = new Timestamp((Long) datastoreVersion);
+        }
+        if (!datastoreVersion.equals(curVersion)) {
+          throw newNucleusOptimisticException(cmd, entity, op, "The underlying entity had already been updated.");
         }
       }
-      Object nextVersion = VersionHelper.getNextVersion(vmd.getVersionStrategy(), curVersion);
 
+      Object nextVersion = VersionHelper.getNextVersion(vmd.getVersionStrategy(), curVersion);
       sm.setTransactionalVersion(nextVersion);
-      String versionPropertyName =
-          EntityUtils.getVersionPropertyName(getIdentifierFactory(sm), vmd);
-      entity.setProperty(versionPropertyName, nextVersion);
+      if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
+        EntityUtils.setEntityProperty(entity, vmd, versionPropertyName, ((Timestamp)nextVersion).getTime());
+      } else {
+        EntityUtils.setEntityProperty(entity, vmd, versionPropertyName, nextVersion);
+      }
 
       // Version field - update the version on the object
       if (versionBehavior == VersionBehavior.INCREMENT && vmd.getFieldName() != null) {
@@ -472,22 +478,24 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
                                                       op.getExecutionContext().getClassLoaderResolver());
     if (table.getDiscriminatorMapping(false) != null) {
       DiscriminatorMetaData dismd = table.getDiscriminatorMetaData();
-      JavaTypeMapping mapping = table.getDiscriminatorMapping(false);
-      String propertyName = mapping.getDatastoreMapping(0)
-          .getDatastoreField().getIdentifier().getIdentifierName();
+      boolean stringBased = true;
+      if (dismd.getColumnMetaData() != null && "integer".equalsIgnoreCase(dismd.getColumnMetaData().getJdbcType())) {
+        stringBased = false;
+      }
+
+      String propertyName = EntityUtils.getDiscriminatorPropertyName(getIdentifierFactory(op), dismd);
       if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
-        entity.setProperty(propertyName, op.getObject().getClass().getName());
+        EntityUtils.setEntityProperty(entity, dismd, propertyName, op.getObject().getClass().getName());
       } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
         dismd = op.getClassMetaData().getInheritanceMetaData().getDiscriminatorMetaData();
-        if (mapping.getDatastoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
-          entity.setProperty(propertyName, Long.parseLong(dismd.getValue()));
+        if (stringBased) {
+          EntityUtils.setEntityProperty(entity, dismd, propertyName, dismd.getValue());
         } else {
-          entity.setProperty(propertyName, dismd.getValue());
+          EntityUtils.setEntityProperty(entity, dismd, propertyName, Long.parseLong(dismd.getValue()));
         }
       }
     }
   }
-  
   
   /**
    * Get the primary key of the object associated with the provided
@@ -561,7 +569,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
-      op.setVersion(EntityUtils.getVersionFromEntity(getIdentifierFactory(op), vmd, entity));
+      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(getIdentifierFactory(op), vmd));
+      if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
+        versionValue = new Timestamp((Long)versionValue);
+      }
+      op.setVersion(versionValue);
     }
     runPostFetchMappingCallbacks(op, fieldNumbers);
 

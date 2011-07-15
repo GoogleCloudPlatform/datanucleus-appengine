@@ -15,6 +15,8 @@
  */
 package com.google.appengine.datanucleus.jpa;
 
+import java.sql.Timestamp;
+
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
@@ -26,11 +28,14 @@ import com.google.appengine.datanucleus.test.HasLongVersionJPA;
 import com.google.appengine.datanucleus.test.HasPrimitiveLongVersionJPA;
 import com.google.appengine.datanucleus.test.HasPrimitiveShortVersionJPA;
 import com.google.appengine.datanucleus.test.HasShortVersionJPA;
+import com.google.appengine.datanucleus.test.HasTimestampVersionJPA;
 import com.google.appengine.datanucleus.test.HasVersionJPA;
 
 import javax.jdo.JDOHelper;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
+
+import junit.framework.Assert;
 
 /**
  * @author Max Ross <max.ross@gmail.com>
@@ -309,5 +314,27 @@ public class JPAVersionTest extends JPATestCase {
     assertEquals(2, base.getVersion());
 
     em.close();
+  }
+
+  /**
+   * Tests the use of a java.sql.Timestamp field for versioning.
+   */
+  public void testTimestampVersion() {
+    beginTxn();
+    HasTimestampVersionJPA tv = new HasTimestampVersionJPA();
+    tv.setValue("First Value");
+    em.persist(tv);
+    commitTxn();
+    Timestamp firstVersion = tv.getVersion();
+    Assert.assertNotNull(firstVersion);
+
+    beginTxn();
+    tv.setValue("Second Value");
+    commitTxn();
+    Timestamp secondVersion = tv.getVersion();
+    Assert.assertNotNull(secondVersion);
+    long firstMillis = firstVersion.getTime();
+    long secondMillis = secondVersion.getTime();
+    Assert.assertTrue(secondMillis > firstMillis);
   }
 }
