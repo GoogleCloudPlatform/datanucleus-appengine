@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.query;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
@@ -27,6 +28,7 @@ import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.query.AbstractJPQLQuery;
+import org.datanucleus.store.query.Query;
 import org.datanucleus.store.query.QueryInvalidParametersException;
 import org.datanucleus.util.NucleusLogger;
 
@@ -110,6 +112,11 @@ public class JPQLQuery extends AbstractJPQLQuery {
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JPQL", getSingleStringQuery(), null));
+    }
+
+    if (type == Query.BULK_UPDATE) {
+      // TODO Support this
+      throw new NucleusException("JPQL Bulk UPDATE is not yet supported");
     }
 
     Object results = null;
