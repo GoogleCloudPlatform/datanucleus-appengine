@@ -21,6 +21,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.ContainerMetaData;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.types.sco.SCOUtils;
@@ -294,16 +295,13 @@ class TypeConversionUtils {
    * the property is a {@link Collection} and the value is {@code null}, this
    * method will return an empty {@link Collection} of the appropriate type.
    *
-   * @param clr class loader resolver to use for string to class
-   * conversions
-   * @param value The datastore value.  Can be null.
-   * @param ownerOP The owning state manager.  Used for creating change-detecting
-   * wrappers.
+   * @param clr class loader resolver to use for string to class conversions
+   * @param value The datastore value. Can be null.
+   * @param ownerOP The owning state manager.  Used for creating change-detecting wrappers.
    * @param ammd The meta data for the pojo property which will eventually
    * receive the result of the conversion.
    *
-   * @return A representation of the datastore property value that can be set
-   * on the pojo.
+   * @return A representation of the datastore property value that can be set on the pojo.
    */
   Object datastoreValueToPojoValue(
       ClassLoaderResolver clr, Object value, ObjectProvider ownerOP, AbstractMemberMetaData ammd) {
@@ -603,6 +601,7 @@ class TypeConversionUtils {
    * @return A representation of the pojo value that can be set
    * on a datastore {@link Entity}.
    */
+  @SuppressWarnings("deprecation")
   Object pojoValueToDatastoreValue(
       ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
     if (pojoPropertyIsArray(ammd)) {
@@ -611,7 +610,33 @@ class TypeConversionUtils {
       value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
     } else { // neither array nor collection
       if (value != null) {
-        value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+        if (Date.class.isAssignableFrom(ammd.getType())) {
+          // Make sure we respect any JDBC type info (JPA @Temporal) and just persist the part required
+          ColumnMetaData[] colmds = ammd.getColumnMetaData();
+          if (colmds != null && colmds.length > 0 && colmds[0].getJdbcType() != null) {
+            String jdbcType = colmds[0].getJdbcType();
+            if (jdbcType.equalsIgnoreCase("time")) { // Dump the date part
+              Calendar cal = Calendar.getInstance();
+              cal.setTime((Date) value);
+              java.sql.Time time = new java.sql.Time(0);
+              time.setHours(cal.get(Calendar.HOUR_OF_DAY));
+              time.setMinutes(cal.get(Calendar.MINUTE));
+              time.setSeconds(cal.get(Calendar.SECOND));
+              value = new Date(time.getTime());
+            } else if (jdbcType.equalsIgnoreCase("date")) { // Dump the time part
+              Calendar cal = Calendar.getInstance();
+              cal.setTime((Date) value);
+              java.sql.Date date = new java.sql.Date(0);
+              date.setDate(cal.get(Calendar.DAY_OF_MONTH));
+              date.setMonth(cal.get(Calendar.MONTH));
+              date.setYear(cal.get(Calendar.YEAR));
+              value = new Date(date.getTime());
+            }
+          }
+        }
+        else {
+          value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+        }
       }
     }
     return value;
