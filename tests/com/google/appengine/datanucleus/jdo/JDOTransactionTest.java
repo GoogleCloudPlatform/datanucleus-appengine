@@ -409,7 +409,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
       txn.begin();
     }
     try {
-      Flight f = pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
+      /*Flight f =*/ pm.getObjectById(Flight.class, KeyFactory.keyToString(flightEntity.getKey()));
       fail("expected exception");
     } catch (TransactionNotReadableException tnre) {
       // good

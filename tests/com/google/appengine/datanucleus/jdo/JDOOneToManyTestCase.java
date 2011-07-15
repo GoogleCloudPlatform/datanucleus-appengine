@@ -26,7 +26,6 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.DatastoreServiceInterceptor.Policy;
 import com.google.appengine.datanucleus.test.BidirectionalChildJDO;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkJDO;
 import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkJDO;
@@ -1587,7 +1586,6 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     commitTxn();
     final String kind = kindForObject(pojo);
     DatastoreServiceInterceptor.Policy policy = new DatastoreServiceInterceptor.Policy() {
-      private boolean alreadyPutPojo = false;
       public void intercept(Object o, Method method, Object[] params) {
         if (method.getName().equals("put") && ((Entity) params[0]).getKind().equals(kind)) {
           throw new ConcurrentModificationException("kaboom");

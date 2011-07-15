@@ -25,8 +25,6 @@ import com.google.appengine.datanucleus.test.KitchenSink;
  */
 public class JPADeleteTest extends JPATestCase {
 
-  private static final String DEFAULT_VERSION_PROPERTY_NAME = "VERSION";
-
   public void testSimpleDelete() {
     Key key = ds.put(KitchenSink.newKitchenSinkEntity(null));
 

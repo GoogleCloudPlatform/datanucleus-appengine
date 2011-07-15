@@ -27,7 +27,6 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.PolymorphicTestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.DatastoreServiceInterceptor.Policy;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildJDO;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO;
