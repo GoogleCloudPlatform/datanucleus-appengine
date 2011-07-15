@@ -661,7 +661,7 @@ class TypeConversionUtils {
               java.sql.Date date = new java.sql.Date(0);
               date.setDate(cal.get(Calendar.DAY_OF_MONTH));
               date.setMonth(cal.get(Calendar.MONTH));
-              date.setYear(cal.get(Calendar.YEAR));
+              date.setYear(cal.get(Calendar.YEAR)-1900);
               value = new Date(date.getTime());
             }
           }

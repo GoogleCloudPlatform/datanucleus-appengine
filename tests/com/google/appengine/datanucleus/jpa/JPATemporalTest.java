@@ -61,7 +61,7 @@ public void testInsert_IdGen() {
     Query q = em.createQuery("SELECT h FROM TemporalHolder h WHERE id = 1");
     TemporalHolder h = (TemporalHolder)q.getSingleResult();
     Date dateField = h.getDateField();
-    Assert.assertEquals("Year of Date incorrect", year, dateField.getYear());
+    Assert.assertEquals("Year of Date incorrect", year, dateField.getYear()+1900);
     Assert.assertEquals("Month of Date incorrect", month, dateField.getMonth());
     Assert.assertEquals("Day of Date incorrect", day_of_month, dateField.getDate());
     Date timeField = h.getTimeField();
