@@ -206,7 +206,7 @@ public class DatastoreQuery implements Serializable {
    *
    * @return The result of executing the query.
    */
-  public Object performExecute(Localiser localiser, QueryCompilation compilation,
+  public Object performExecute(ManagedConnection mconn, Localiser localiser, QueryCompilation compilation,
       long fromInclNo, long toExclNo, Map<String, ?> parameters, boolean isJDO) {
 
     if (query.getCandidateClass() == null) {
@@ -239,10 +239,10 @@ public class DatastoreQuery implements Serializable {
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
-    return executeQuery(qd, fromInclNo, toExclNo);
+    return executeQuery(mconn, qd, fromInclNo, toExclNo);
   }
 
-  private Object executeQuery(QueryData qd, long fromInclNo, long toExclNo) {
+  private Object executeQuery(ManagedConnection mconn, QueryData qd, long fromInclNo, long toExclNo) {
     processInFilters(qd);
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     if (query.getDatastoreReadTimeoutMillis() > 0) {
@@ -257,46 +257,39 @@ public class DatastoreQuery implements Serializable {
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     // Txns don't get started until you allocate a connection, so allocate a
     // connection before we do anything that might require a txn.
-    ManagedConnection mconn = getStoreManager().getConnection(getExecutionContext());
-    try {
-      if (qd.batchGetKeys != null &&
-          qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
-          qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
-        // only execute a batch get if there aren't any other
-        // filters or sorts
-        return fulfillBatchGetQuery(ds, qd, mconn);
-      } else if (qd.joinQuery != null) {
-        FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-        JoinHelper joinHelper = new JoinHelper();
-        return wrapEntityQueryResult(
-            joinHelper.executeJoinQuery(qd, this, ds, opts),
+    if (qd.batchGetKeys != null &&
+        qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
+        qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
+      // only execute a batch get if there aren't any other filters or sorts
+      return fulfillBatchGetQuery(ds, qd, mconn);
+    } else if (qd.joinQuery != null) {
+      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      JoinHelper joinHelper = new JoinHelper();
+      return wrapEntityQueryResult(joinHelper.executeJoinQuery(qd, this, ds, opts),
             qd.resultTransformer, ds, mconn, null);
-      } else {
-        latestDatastoreQuery = qd.primaryDatastoreQuery;
-        Transaction txn = null;
-        // give users a chance to opt-out of having their query execute in a txn
-        if (extensions == null ||
-            !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
-            !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
-          // If this is an ancestor query, execute it in the current transaction
-          txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
-        }
-        PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
-        FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
-        if (qd.resultType == ResultType.COUNT) {
-          if (opts == null) {
-            opts = withDefaults();
-          }
-          return Collections.singletonList(preparedQuery.countEntities(opts));
-        } else {
-          if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-            qd.primaryDatastoreQuery.setKeysOnly();
-          }
-          return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, ds, mconn);
-        }
+    } else {
+      latestDatastoreQuery = qd.primaryDatastoreQuery;
+      Transaction txn = null;
+      // give users a chance to opt-out of having their query execute in a txn
+      if (extensions == null ||
+          !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
+          !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
+        // If this is an ancestor query, execute it in the current transaction
+        txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
       }
-    } finally {
-      mconn.release();
+      PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
+      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      if (qd.resultType == ResultType.COUNT) {
+        if (opts == null) {
+          opts = withDefaults();
+        }
+        return Collections.singletonList(preparedQuery.countEntities(opts));
+      } else {
+        if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
+            qd.primaryDatastoreQuery.setKeysOnly();
+        }
+        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, ds, mconn);
+      }
     }
   }
 
@@ -643,7 +636,6 @@ public class DatastoreQuery implements Serializable {
     int[] fieldsToFetch =
         fetchPlan != null ?
         fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers() : acmd.getAllMemberPositions();
-// TODO Used to be fetchPlan.getFetchPlanForClass(acmd).getFieldsInActualFetchPlan() : acmd.getAllMemberPositions();
 
     // TODO The plugin should NEVER be calling methods on PersistenceHandler. Do it yourself in the query
     storeMgr.getPersistenceHandler().fetchObject(op, fieldsToFetch);

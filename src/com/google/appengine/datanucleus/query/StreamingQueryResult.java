@@ -52,30 +52,22 @@ class StreamingQueryResult extends AbstractQueryResult {
   private boolean hasError;
 
   /**
-   * Constructs a StreamingQueryResult
-   *
+   * Constructs a StreamingQueryResult.
    * @param query The query which yields the results.
    * @param lazyEntities The result of the query.
-   * @param entityToPojoFunc A function that can convert a {@link Entity}
-   * into a pojo.
-   * @param endCursor Provides a cursor that points to the end of the
-   * result set.  Can be null.
+   * @param entityToPojoFunc A function that can convert a {@link Entity} into a pojo.
+   * @param endCursor Provides a cursor that points to the end of the result set. Can be null.
    */
   public StreamingQueryResult(Query query, Iterable<Entity> lazyEntities,
       Function<Entity, Object> entityToPojoFunc, Cursor endCursor) {
     super(query);
     this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc);
     this.endCursor = endCursor;
-    // Process any supported extensions
-    String ext = (String) query.getExtension("datanucleus.query.loadResultsAtCommit");
-    if (ext != null) {
-      loadResultsAtCommit = Boolean.valueOf(ext);
-    }
   }
 
   @Override
   protected void closingConnection() {
-    // mostly copied from ForwardQueryResult in the rdbms plugin
+    // Connection is being closed so last chance to grab any results not yet loaded
     if (loadResultsAtCommit && isOpen()) {
       if (hasError) {
         NucleusLogger.QUERY.info("Skipping resolution of remaining results due to earlier error.");
@@ -110,8 +102,7 @@ class StreamingQueryResult extends AbstractQueryResult {
   }
 
   /**
-   * @throws NoSuchElementException if there are no more elements
-   * to resolve.
+   * @throws NoSuchElementException if there are no more elements to resolve.
    */
   void resolveNext() {
     lazyResult.resolveNext();
