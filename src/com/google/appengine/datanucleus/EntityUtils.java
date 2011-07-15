@@ -118,7 +118,19 @@ public final class EntityUtils {
    * @param value The value to set
    */
   public static void setEntityProperty(Entity entity, MetaData md, String propertyName, Object value) {
-    if (md.hasExtension(DatastoreManager.UNINDEXED_PROPERTY)) {
+    boolean unindexed = false;
+    String val = md.getValueForExtension(DatastoreManager.UNINDEXED_PROPERTY);
+    if (val != null && val.equalsIgnoreCase("true")) {
+      unindexed = true;
+    } else if (md instanceof VersionMetaData && ((VersionMetaData)md).getFieldName() != null) {
+      // Version : Check against the metadata of the field
+      VersionMetaData vmd = (VersionMetaData)md;
+      AbstractMemberMetaData vermmd = ((AbstractClassMetaData)vmd.getParent()).getMetaDataForMember(vmd.getFieldName());
+      val = vermmd.getValueForExtension(DatastoreManager.UNINDEXED_PROPERTY);
+      unindexed = (val != null && val.equalsIgnoreCase("true"));
+    }
+
+    if (unindexed) {
       entity.setUnindexedProperty(propertyName, value);
     } else {
       entity.setProperty(propertyName, value);
