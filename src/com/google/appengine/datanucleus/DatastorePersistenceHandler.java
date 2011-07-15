@@ -301,33 +301,37 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           putState.acmd.getMetaDataForManagedMemberAtAbsolutePosition(
               putState.acmd.getPKMemberPositions()[0]).getType();
 
-      Object newObjectId;
-      if (pkType.equals(Key.class)) {
-        newObjectId = putState.entity.getKey();
-      } else if (pkType.equals(String.class)) {
-        if (DatastoreManager.hasEncodedPKField(putState.acmd)) {
-          newObjectId = KeyFactory.keyToString(putState.entity.getKey());
+      // TODO Only do this when the datastore is allocating the identity (i.e "identity" strategy)
+      {
+        Object newObjectId;
+        if (pkType.equals(Key.class)) {
+          newObjectId = putState.entity.getKey();
+        } else if (pkType.equals(String.class)) {
+          if (DatastoreManager.hasEncodedPKField(putState.acmd)) {
+            newObjectId = KeyFactory.keyToString(putState.entity.getKey());
+          } else {
+            newObjectId = putState.entity.getKey().getName();
+          }
+        } else if (pkType.equals(Long.class)) {
+          newObjectId = putState.entity.getKey().getId();
         } else {
-          newObjectId = putState.entity.getKey().getName();
+          // TODO Why is this checking here? Ought to be checked in MetaDataValidator!
+          throw new IllegalStateException(
+              "Primary key for type " + putState.op.getClassMetaData().getName()
+              + " is of unexpected type " + pkType.getName()
+              + " (must be String, Long, or " + Key.class.getName() + ")");
         }
-      } else if (pkType.equals(Long.class)) {
-        newObjectId = putState.entity.getKey().getId();
-      } else {
-        throw new IllegalStateException(
-            "Primary key for type " + putState.op.getClassMetaData().getName()
-                + " is of unexpected type " + pkType.getName()
-                + " (must be String, Long, or " + Key.class.getName() + ")");
-      }
-      putState.op.setPostStoreNewObjectId(newObjectId);
-      if (putState.assignedParentPk != null) {
-        // we automatically assigned a parent to the entity so make sure
-        // that makes it back on to the pojo
-        setPostStoreNewParent(
-            putState.op, putState.fieldMgr.getParentMemberMetaData(), putState.assignedParentPk);
-      }
-      Integer pkIdPos = putState.fieldMgr.getPkIdPos();
-      if (pkIdPos != null) {
-        setPostStorePkId(putState.op, pkIdPos, putState.entity);
+        putState.op.setPostStoreNewObjectId(newObjectId);
+        if (putState.assignedParentPk != null) {
+          // we automatically assigned a parent to the entity so make sure
+          // that makes it back on to the pojo
+          setPostStoreNewParent(
+              putState.op, putState.fieldMgr.getParentMemberMetaData(), putState.assignedParentPk);
+        }
+        Integer pkIdPos = putState.fieldMgr.getPkIdPos();
+        if (pkIdPos != null) {
+          setPostStorePkId(putState.op, pkIdPos, putState.entity);
+        }
       }
 
       storeRelations(putState.fieldMgr, putState.op, putState.entity);
@@ -409,8 +413,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   private void handleVersioningBeforeWrite(ObjectProvider sm, Entity entity,
       VersionBehavior versionBehavior, String op) {
     AbstractClassMetaData cmd = sm.getClassMetaData();
-    if (cmd.hasVersionStrategy()) {
-      VersionMetaData vmd = cmd.getVersionMetaData();
+    VersionMetaData vmd = cmd.getVersionMetaDataForClass();
+    if (cmd.isVersioned()) {
       Object curVersion = sm.getExecutionContext().getApiAdapter().getVersion(sm);
       if (curVersion != null) {
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -555,8 +559,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     op.replaceFields(fieldNumbers, new FetchFieldManager(op, storeMgr, entity, fieldNumbers));
 
-    if (cmd.hasVersionStrategy()) {
-      op.setVersion(EntityUtils.getVersionFromEntity(getIdentifierFactory(op), cmd.getVersionMetaData(), entity));
+    VersionMetaData vmd = cmd.getVersionMetaDataForClass();
+    if (cmd.isVersioned()) {
+      op.setVersion(EntityUtils.getVersionFromEntity(getIdentifierFactory(op), vmd, entity));
     }
     runPostFetchMappingCallbacks(op, fieldNumbers);
 
@@ -625,6 +630,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op, storeMgr, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
     op.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(op, entity, VersionBehavior.INCREMENT, "updating");
+
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject PUT of " + op);
     put(op, entity);
 

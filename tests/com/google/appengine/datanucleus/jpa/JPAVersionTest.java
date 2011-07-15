@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.test.BaseVersionSubclass;
 import com.google.appengine.datanucleus.test.HasIntVersionJPA;
 import com.google.appengine.datanucleus.test.HasIntegerVersionJPA;
 import com.google.appengine.datanucleus.test.HasLongVersionJPA;
@@ -292,5 +293,21 @@ public class JPAVersionTest extends JPATestCase {
     hv = em.merge(hv);
     em.close();
     assertEquals(3, hv.getVersion().longValue());
+  }
+
+
+  public void testVersionInheritance() {
+    BaseVersionSubclass base = new BaseVersionSubclass(1, "First");
+    beginTxn();
+    em.persist(base);
+    commitTxn();
+    assertEquals(1, base.getVersion());
+
+    beginTxn();
+    base.setName("Second");
+    commitTxn();
+    assertEquals(2, base.getVersion());
+
+    em.close();
   }
 }

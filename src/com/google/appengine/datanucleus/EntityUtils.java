@@ -49,8 +49,8 @@ public final class EntityUtils {
     // TODO(maxr): See if there is a better way than field name comparison to
     // determine if this is a version field
     AbstractClassMetaData acmd = ammd.getAbstractClassMetaData();
-    if (acmd.hasVersionStrategy() &&
-        ammd.getName().equals(acmd.getVersionMetaData().getFieldName())) {
+    VersionMetaData vermd = acmd.getVersionMetaDataForClass();
+    if (acmd.isVersioned() && ammd.getName().equals(vermd.getFieldName())) {
       return getVersionPropertyName(idFactory, acmd.getVersionMetaData());
     }
 
