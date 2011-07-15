@@ -472,4 +472,16 @@ public class JDOFetchTest extends JDOTestCase {
     assertEquals(1, pojo.getStrList().size());
     assertNull(pojo.getStrList().get(0));
   }
+
+  public void testSimpleFetch_NamedKey_NameOnly_NewObjectIdInstance() {
+    Key key = ds.put(Flight.newFlightEntity("named key", "1", "yam", "bam", 1, 2));
+    commitTxn();
+    beginTxn();
+
+    Flight flight = (Flight) pm.getObjectById(pm.newObjectIdInstance(Flight.class, "named key"));
+    assertNotNull(flight);
+    assertEquals(KeyFactory.keyToString(key), flight.getId());
+    assertEquals("named key", KeyFactory.stringToKey(flight.getId()).getName());
+  }
+
 }
