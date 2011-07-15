@@ -30,7 +30,6 @@ import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
-import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -171,9 +170,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
             // the serialization is guaranteed to produce a Blob.
             value = storeManager.getSerializationManager().serialize(clr, ammd, value);
           } else {
-            if (Enum.class.isAssignableFrom(ammd.getType())) {
-              value = ((Enum) value).name();
-            }
+            // Perform any conversions from the field type to the stored-type
             value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
           }
         }

@@ -154,15 +154,9 @@ public class FetchFieldManager extends DatastoreFieldManager
             // that one from this point forward.
             ammd = getClassMetaData().getMetaDataForMember(ammd.getName());
           }
-          // Datanucleus invokes this method for the object versions
-          // of primitive types as well as collections of non-persistent types.
-          // We need to make sure we convert appropriately.
+
+          // Perform any conversions from the stored-type to the field type
           value = getConversionUtils().datastoreValueToPojoValue(clr, value, getObjectProvider(), ammd);
-          if (value != null && Enum.class.isAssignableFrom(ammd.getType())) {
-            @SuppressWarnings("unchecked")
-            Class<Enum> enumClass = ammd.getType();
-            value = Enum.valueOf(enumClass, (String) value);
-          }
         }
         return value;
       }

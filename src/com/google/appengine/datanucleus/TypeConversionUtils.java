@@ -312,8 +312,28 @@ class TypeConversionUtils {
       value = datastoreValueToPojoCollection(clr, value, ownerOP, ammd, cmd);
     } else { // neither array nor collection
       if (value != null) {
-        // nothing to convert
-        value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+        if (Enum.class.isAssignableFrom(ammd.getType())) {
+          // Enums - can be persisted as String (name) or integer (ordinal)
+          boolean asOrdinal = false;
+          if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+            String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
+            if (jdbcType != null && jdbcType.equalsIgnoreCase("integer")) {
+              // Persisted as ordinal
+              asOrdinal = true;
+            }
+          }
+
+          Class<Enum> enumClass = ammd.getType();
+          if (asOrdinal) {
+            value = enumClass.getEnumConstants()[(Integer)value];
+          } else {
+            value = Enum.valueOf(enumClass, (String) value);
+          }
+        }
+        else {
+          // nothing to convert
+          value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+        }
       }
     }
     return value;
@@ -591,15 +611,11 @@ class TypeConversionUtils {
   }
 
   /**
-   * Performs type conversions on a pojo value.
-   *
-   * @param clr class loader resolver to use for string to class
-   * conversions
+   * Performs type conversions on a pojo value to return the value to be stored.
+   * @param clr class loader resolver to use for string to class conversions
    * @param value The pojo value.
    * @param ammd The meta data for the pojo property.
-   *
-   * @return A representation of the pojo value that can be set
-   * on a datastore {@link Entity}.
+   * @return A representation of the pojo value that can be set on a datastore {@link Entity}.
    */
   @SuppressWarnings("deprecation")
   Object pojoValueToDatastoreValue(
@@ -611,7 +627,7 @@ class TypeConversionUtils {
     } else { // neither array nor collection
       if (value != null) {
         if (Date.class.isAssignableFrom(ammd.getType())) {
-          // Make sure we respect any JDBC type info (JPA @Temporal) and just persist the part required
+          // Date - can be stored with date, time, or both
           ColumnMetaData[] colmds = ammd.getColumnMetaData();
           if (colmds != null && colmds.length > 0 && colmds[0].getJdbcType() != null) {
             String jdbcType = colmds[0].getJdbcType();
@@ -632,6 +648,22 @@ class TypeConversionUtils {
               date.setYear(cal.get(Calendar.YEAR));
               value = new Date(date.getTime());
             }
+          }
+        }
+        else if (Enum.class.isAssignableFrom(ammd.getType())) {
+          // Enums - can be persisted as String (name) or integer (ordinal)
+          boolean asOrdinal = false;
+          if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+            String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
+            if (jdbcType != null && jdbcType.equalsIgnoreCase("integer")) {
+              // Persisted as ordinal
+              asOrdinal = true;
+            }
+          }
+          if (asOrdinal) {
+            value = ((Enum)value).ordinal();
+          } else {
+            value = ((Enum) value).name();
           }
         }
         else {
@@ -678,5 +710,4 @@ class TypeConversionUtils {
     }
     return result;
   }
-
 }
