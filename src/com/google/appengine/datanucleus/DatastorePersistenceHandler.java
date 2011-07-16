@@ -44,6 +44,7 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.Collections;
@@ -101,12 +102,15 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
   @Override
   public boolean useReferentialIntegrity() {
-    // This mimics the behaviour used by RDBMS, and as used in DN1.1
+    // This informs DataNucleus that the store requires ordered flushes, so the order of receiving dirty
+    // requests is preserved when flushing them
     return true;
   }
 
   Entity get(DatastoreTransaction txn, Key key) {
-    NucleusLogger.DATASTORE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
+    }
     Entity entity;
     try {
       if (txn == null) {
@@ -224,8 +228,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
   void delete(DatastoreTransaction txn, List<Key> keys) {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + keys);
+      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
     }
+
     if (txn == null) {
       if (keys.size() == 1) {
         datastoreServiceForWrites.delete(keys.get(0));
