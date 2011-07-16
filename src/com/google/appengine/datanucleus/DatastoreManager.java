@@ -18,6 +18,8 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
+import com.google.appengine.datanucleus.scostore.DatastoreFKListStore;
+import com.google.appengine.datanucleus.scostore.DatastoreFKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.plugin.PluginManager;

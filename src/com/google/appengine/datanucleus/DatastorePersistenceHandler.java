@@ -69,7 +69,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * a single write per entity in a txn.  See
    * {@link DatastoreFieldManager#handleIndexFields()} for more info.
    */
-  static final Object ENTITY_WRITE_DELAYED = "___entity_write_delayed___";
+  public static final Object ENTITY_WRITE_DELAYED = "___entity_write_delayed___";
 
   /**
    * Magic property that we use to signal that an associated child object
@@ -77,7 +77,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * the parent entity because there are still children that need to be
    * written first.
    */
-  static final String MISSING_RELATION_KEY = "___missing_relation_key___";
+  public static final String MISSING_RELATION_KEY = "___missing_relation_key___";
 
   private final DatastoreService datastoreServiceForReads;
   private final DatastoreService datastoreServiceForWrites;
@@ -168,7 +168,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     setAssociatedEntity(op, txn, entity);
   }
 
-  DatastoreTransaction put(ExecutionContext ec, AbstractClassMetaData acmd, Entity entity) {
+  public DatastoreTransaction put(ExecutionContext ec, AbstractClassMetaData acmd, Entity entity) {
     return put(ec, acmd, Collections.singletonList(entity));
   }
 
@@ -536,7 +536,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     op.setAssociatedValue(txn, entity);
   }
 
-  Entity getAssociatedEntityForCurrentTransaction(ObjectProvider op) {
+  public Entity getAssociatedEntityForCurrentTransaction(ObjectProvider op) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(op.getExecutionContext());
     return (Entity) op.getAssociatedValue(txn);
   }

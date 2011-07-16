@@ -51,7 +51,7 @@ import java.util.List;
 /**
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreRelationFieldManager {
+public class DatastoreRelationFieldManager {
 
   // Needed for relation management in datanucleus.
   private static final int[] NOT_USED = {0};
@@ -174,7 +174,7 @@ class DatastoreRelationFieldManager {
     storeRelationEvents.add(event);
   }
 
-  static void checkForParentSwitch(Object child, ObjectProvider parentOP) {
+  public static void checkForParentSwitch(Object child, ObjectProvider parentOP) {
     if (child == null) {
       return;
     }

@@ -39,7 +39,7 @@ import java.util.Set;
  *
  * @author Max Ross <maxr@google.com>
  */
-class KeyRegistry {
+public class KeyRegistry {
 
   /**
    * Map is used to pass messages between parent and child
@@ -111,7 +111,7 @@ class KeyRegistry {
     return dependent.getTypeName();
   }
     
-  void registerKey(Object childValue, Key key, ObjectProvider op, String expectedType) {
+  public void registerKey(Object childValue, Key key, ObjectProvider op, String expectedType) {
     addToParentKeyMap(childValue, key, op, expectedType, false);
   }
 
@@ -156,7 +156,7 @@ class KeyRegistry {
    * Note that even if nontransactional writes are enabled, if there
    * is already a connection available then setting the property is a no-op.
    */
-  static KeyRegistry getKeyRegistry(ExecutionContext ec) {
+  public static KeyRegistry getKeyRegistry(ExecutionContext ec) {
     StoreManager storeManager = ec.getStoreManager();
     ManagedConnection mconn = storeManager.getConnection(ec);
     return ((EmulatedXAResource) mconn.getXAResource()).getKeyRegistry();

@@ -37,14 +37,14 @@ import org.datanucleus.store.ObjectProvider;
  *
  * @author Max Ross <max.ross@gmail.com>
  */
-class ForceFlushPreCommitTransactionEventListener implements TransactionEventListener {
+public class ForceFlushPreCommitTransactionEventListener implements TransactionEventListener {
 
   static final String ALREADY_PERSISTED_RELATION_KEYS_KEY =
       ForceFlushPreCommitTransactionEventListener.class.getName() + ".already_persisted_relation_keys";
 
   private final ObjectProvider op;
 
-  ForceFlushPreCommitTransactionEventListener(ObjectProvider op) {
+  public ForceFlushPreCommitTransactionEventListener(ObjectProvider op) {
     this.op = op;
   }
 
