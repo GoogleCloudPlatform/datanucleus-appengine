@@ -19,6 +19,7 @@ import org.datanucleus.NucleusContext;
 import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.InvalidMetaDataException;
 import org.datanucleus.metadata.MetaDataManager;
 
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
@@ -36,14 +37,14 @@ public class MetaDataValidatorTest extends JDOTestCase {
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
       @Override
       void warn(String msg) {
         loggedMsg[0] = msg;
       }
     };
     AbstractMemberMetaData ammd = acmd.getManagedMembers()[0];
-    mdv.handleIgnorableMapping(ammd, "main msg", "warning only msg");
+    mdv.handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.TestMsg1", "warning only msg");
     assertTrue(loggedMsg[0].contains("main msg"));
     assertTrue(loggedMsg[0].contains("warning only msg"));
     assertTrue(loggedMsg[0].contains(MetaDataValidator.ADJUST_WARNING_MSG));
@@ -52,13 +53,13 @@ public class MetaDataValidatorTest extends JDOTestCase {
   public void testIgnorableMapping_NoneConfig() {
     setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.NONE.name());
     MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getNucleusContext().getMetaDataManager();
-    MetaDataValidator mdv = new MetaDataValidator(null, mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
       @Override
       void warn(String msg) {
         fail("shouldn't have been called");
       }
     };
-    mdv.handleIgnorableMapping(null, "main msg", "warning only msg");
+    mdv.handleIgnorableMapping(null, null, "AppEngine.MetaData.TestMsg1", "warning only msg");
   }
 
   public void testIgnorableMapping_WarningConfig() {
@@ -68,14 +69,14 @@ public class MetaDataValidatorTest extends JDOTestCase {
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
       @Override
       void warn(String msg) {
         loggedMsg[0] = msg;
       }
     };
     AbstractMemberMetaData ammd = acmd.getManagedMembers()[0];
-    mdv.handleIgnorableMapping(ammd, "main msg", "warning only msg");
+    mdv.handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.TestMsg1", "warning only msg");
     assertTrue(loggedMsg[0].contains("main msg"));
     assertTrue(loggedMsg[0].contains("warning only msg"));
     assertTrue(loggedMsg[0].contains(MetaDataValidator.ADJUST_WARNING_MSG));
@@ -87,7 +88,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
     MetaDataManager mdm = nucContext.getMetaDataManager();
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(acmd, mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
       @Override
       void warn(String msg) {
         fail("shouldn't have been called");
@@ -95,12 +96,12 @@ public class MetaDataValidatorTest extends JDOTestCase {
     };
     AbstractMemberMetaData ammd = acmd.getManagedMembers()[0];
     try {
-      mdv.handleIgnorableMapping(ammd, "main msg", "warning only msg");
+      mdv.handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.TestMsg1", "warning only msg");
       fail("expected exception");
-    } catch (MetaDataValidator.DatastoreMetaDataException dmde) {
-      assertTrue(dmde.getMessage().contains("main msg"));
-      assertFalse(dmde.getMessage().contains("warning only msg"));
-      assertFalse(dmde.getMessage().contains(MetaDataValidator.ADJUST_WARNING_MSG));
+    } catch (InvalidMetaDataException imde) {
+      assertTrue(imde.getMessage().contains("main msg"));
+      assertFalse(imde.getMessage().contains("warning only msg"));
+      assertFalse(imde.getMessage().contains(MetaDataValidator.ADJUST_WARNING_MSG));
     }
   }
 

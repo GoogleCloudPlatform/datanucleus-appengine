@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.MetaDataValidator;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraints;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
@@ -62,6 +61,8 @@ import com.google.appengine.datanucleus.test.IllegalMappingsJDO.SequenceOnKeyPk;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
+
+import org.datanucleus.metadata.InvalidMetaDataException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -200,7 +201,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      assertTrue(e.getCause() instanceof InvalidMetaDataException);
       rollbackTxn();
     }
   }
@@ -213,7 +214,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
-      assertTrue(e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+      assertTrue(e.getCause() instanceof InvalidMetaDataException);
       rollbackTxn();
     }
   }
@@ -300,7 +301,7 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     } catch (JDOFatalUserException e) {
       // good
       assertTrue(e.getCause().getClass().getName(),
-                 e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+                 e.getCause() instanceof InvalidMetaDataException);
       rollbackTxn();
     }
   }

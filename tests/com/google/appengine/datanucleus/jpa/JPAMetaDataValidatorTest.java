@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import com.google.appengine.datanucleus.MetaDataValidator;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJPA.HasInitialSequenceValue;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJPA.HasUniqueConstraint;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
@@ -57,6 +56,8 @@ import com.google.appengine.datanucleus.test.IllegalMappingsJPA.SequenceOnEncode
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.SequenceOnKeyPk;
 
 import javax.persistence.PersistenceException;
+
+import org.datanucleus.metadata.InvalidMetaDataException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -221,7 +222,7 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     } catch (PersistenceException e) {
       // good
       assertTrue(e.getCause().getClass().getName(),
-                 e.getCause() instanceof MetaDataValidator.DatastoreMetaDataException);
+                 e.getCause() instanceof InvalidMetaDataException);
       rollbackTxn();
     }
   }

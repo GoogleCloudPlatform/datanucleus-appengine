@@ -597,7 +597,7 @@ public class DatastoreManager extends MappedStoreManager {
   public void validateMetaDataForClass(AbstractClassMetaData acmd, ClassLoaderResolver clr) {
     // Only validate each meta data once
     if (validatedClasses.add(acmd.getFullClassName())) {
-      new MetaDataValidator(acmd, getMetaDataManager(), clr).validate();
+      new MetaDataValidator(getMetaDataManager(), clr).validate(acmd);
     }
   }
 
