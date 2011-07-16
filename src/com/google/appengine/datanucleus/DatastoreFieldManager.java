@@ -368,6 +368,8 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     boolean result = DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
     if (result) {
       // ew, side effect
+      // TODO What is this trying to do ? the method is "isParentPK" so it deserves a straight boolean reply
+      // not setting of some random other field
       parentMemberMetaData = getMetaData(fieldNumber);
     }
     return result;

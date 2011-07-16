@@ -86,7 +86,6 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import java.io.Serializable;
-import java.lang.reflect.Field;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -108,9 +107,8 @@ import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartC
 /**
  * A unified JDOQL/JPQL query implementation for Datastore.
  *
- * Datanucleus supports in-memory evaluation of queries, but
- * for now we have it disabled and are only allowing queries
- * that can be natively fulfilled by the app engine datastore.
+ * TODO Detect unsupported features and evaluate as much as possible in-datastore, and then
+ * check flags for unsupported features and evaluate the rest in-memory.
  *
  * TODO(maxr): More logging
  * TODO(maxr): Localized logging
@@ -164,14 +162,8 @@ public class DatastoreQuery implements Serializable {
   /** The invoking query object */
   final AbstractJavaQuery query;
 
-  /**
-   * The current datastore query.
-   */
+  /** The current datastore qu */
   private transient Query latestDatastoreQuery;
-
-  private boolean isBulkDelete() {
-    return query.getType() == org.datanucleus.store.query.Query.BULK_DELETE;
-  }
 
   /**
    * The different types of datastore query results that we support.
@@ -185,7 +177,6 @@ public class DatastoreQuery implements Serializable {
 
   /**
    * Constructs a new Datastore query based on a Datanucleus query.
-   *
    * @param query The Datanucleus query to be translated into a Datastore query.
    */
   public DatastoreQuery(AbstractJavaQuery query) {
@@ -198,15 +189,13 @@ public class DatastoreQuery implements Serializable {
    *
    * @param localiser The localiser to use.
    * @param compilation The compiled query.
-   * @param fromInclNo The index of the first result the user wants returned.
-   * @param toExclNo The index of the last result the user wants returned.
    * @param parameters Parameter values for the query.
    * @param isJDO {@code true} if this is a JDO query.
    *
    * @return The result of executing the query.
    */
   public Object performExecute(ManagedConnection mconn, Localiser localiser, QueryCompilation compilation,
-      long fromInclNo, long toExclNo, Map<String, ?> parameters, boolean isJDO) {
+      Map<String, ?> parameters, boolean isJDO) {
 
     if (query.getCandidateClass() == null) {
       throw new NucleusFatalUserException(
@@ -229,25 +218,18 @@ public class DatastoreQuery implements Serializable {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
 
-    if (toExclNo == 0 ||
-        (rangeValueIsSet(toExclNo) && rangeValueIsSet(fromInclNo) && (toExclNo - fromInclNo) <= 0)) {
-      // short-circuit - no point in executing the query
-      return Collections.emptyList();
-    }
-
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
-    return executeQuery(mconn, qd, fromInclNo, toExclNo);
-  }
 
-  private Object executeQuery(ManagedConnection mconn, QueryData qd, long fromInclNo, long toExclNo) {
     processInFilters(qd);
+
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     if (query.getDatastoreReadTimeoutMillis() > 0) {
       // config wants the timeout in seconds
       config.deadline(query.getDatastoreReadTimeoutMillis() / 1000);
     }
+
     Map extensions = query.getExtensions();
     if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
       config.readPolicy(new ReadPolicy(
@@ -262,7 +244,7 @@ public class DatastoreQuery implements Serializable {
       // only execute a batch get if there aren't any other filters or sorts
       return fulfillBatchGetQuery(ds, qd, mconn);
     } else if (qd.joinQuery != null) {
-      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
       JoinHelper joinHelper = new JoinHelper();
       return wrapEntityQueryResult(joinHelper.executeJoinQuery(qd, this, ds, opts),
             qd.resultTransformer, ds, mconn, null);
@@ -276,8 +258,9 @@ public class DatastoreQuery implements Serializable {
         // If this is an ancestor query, execute it in the current transaction
         txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
       }
+
       PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
-      FetchOptions opts = buildFetchOptions(fromInclNo, toExclNo);
+      FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
       if (qd.resultType == ResultType.COUNT) {
         if (opts == null) {
           opts = withDefaults();
@@ -285,7 +268,7 @@ public class DatastoreQuery implements Serializable {
         return Collections.singletonList(preparedQuery.countEntities(opts));
       } else {
         if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-            qd.primaryDatastoreQuery.setKeysOnly();
+          qd.primaryDatastoreQuery.setKeysOnly();
         }
         return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, ds, mconn);
       }
@@ -526,51 +509,8 @@ public class DatastoreQuery implements Serializable {
     return opts;
   }
 
-  private static final Field FETCH_PLAN_FIELD;
-  static {
-    try {
-      FETCH_PLAN_FIELD = org.datanucleus.store.query.Query.class.getDeclaredField("fetchPlan");
-      FETCH_PLAN_FIELD.setAccessible(true);
-    } catch (NoSuchFieldException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  /**
-   * This is nasty. Query.getFetchPlan() has the side effect of establishing
-   * a FetchPlan if the query does not already have one.  The problem is that,
-   * even though FetchPlan implements Serializable, it has a reference to a
-   * SoftValueMap, which is not Serializable.  As a result, any attempt to
-   * serialize a Query that has a FetchPlan will fail.  This is a DataNucleus
-   * bug, and shouldn't be our problem, except for the fact that we have
-   * already guaranteed to existing users that our Query objects serialize
-   * (we have a test that locks this down), so if we call Query.getFetchPlan(),
-   * all of a sudden our objects will stop serializing.  The workaround is
-   * create a version of getFetchPlan() that does not have a side effect.  In
-   * the case where the client code isn't using the fetch plan to set a fetch
-   * size, everything continues to work normally.  In the case where the client
-   * code is using the fetch plan to set a fetch size, the query is no longer
-   * serializable.  However, we can live with this because we are just now
-   * adding the ability to set a fetch size, so we're not going to break any
-   * existing users.  Clients who start using fetch size may notice this bug
-   * and complain, but hopefully the DN upgrade will take care of this.  It's
-   * certainly not worth fixing in the version of DN we're using now.
-   */
-  FetchPlan getFetchPlanWithoutSideEffect() {
-    FetchPlan fetchPlan;
-    try {
-      fetchPlan = (FetchPlan) FETCH_PLAN_FIELD.get(query);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
-    if (fetchPlan == null) {
-      fetchPlan = getExecutionContext().getFetchPlan();
-    }
-    return fetchPlan;
-  }
-
   Integer getFetchSize() {
-    FetchPlan fetchPlan = getFetchPlanWithoutSideEffect();
+    FetchPlan fetchPlan = query.getFetchPlan();
     Integer fetchSize = fetchPlan.getFetchSize();
     if (fetchSize != FetchPlan.FETCH_SIZE_OPTIMAL) {
       if (fetchSize == FetchPlan.FETCH_SIZE_GREEDY) {
@@ -608,14 +548,12 @@ public class DatastoreQuery implements Serializable {
    * @param acmd The meta data for the pojo class
    * @param clr The classloader resolver
    * @param om The object manager
-   * @param ignoreCache Whether or not the cache should be ignored when the
-   * object manager attempts to find the pojo
+   * @param ignoreCache Whether or not the cache should be ignored when the PM/EM attempts to find the pojo
    * @param fetchPlan the fetch plan to use
    * @return The pojo that corresponds to the provided entity.
    */
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
-      final ClassLoaderResolver clr, ExecutionContext ec,
-      boolean ignoreCache, final FetchPlan fetchPlan) {
+      final ClassLoaderResolver clr, ExecutionContext ec, boolean ignoreCache, final FetchPlan fetchPlan) {
     final DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
     storeMgr.validateMetaDataForClass(acmd, clr);
@@ -1736,6 +1674,10 @@ public class DatastoreQuery implements Serializable {
     public Expression.Operator getOperation() {
       return operator;
     }
+  }
+
+  private boolean isBulkDelete() {
+    return query.getType() == org.datanucleus.store.query.Query.BULK_DELETE;
   }
 
   // Specialization just exists to support tests

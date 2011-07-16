@@ -151,7 +151,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
       // Evaluate in-datastore
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       try {
-        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, fromInclNo, toExclNo, parameters, false);
+        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, false);
 
         /*if (results instanceof QueryResult) {
           // Add listener for the connection so we can trap any close

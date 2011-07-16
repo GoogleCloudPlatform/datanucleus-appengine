@@ -138,7 +138,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       // Evaluate in-datastore
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       try {
-        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, fromInclNo, toExclNo, parameters, true);
+        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
 
         if (results instanceof QueryResult) {
           // Add listener for the connection so we can trap any close

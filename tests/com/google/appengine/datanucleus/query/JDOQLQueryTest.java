@@ -409,30 +409,22 @@ public class JDOQLQueryTest extends JDOTestCase {
             + " where origin == \"yam\" && dest == \"bam\""
             + " order by you asc, me desc");
 
-    q.setRange(Long.MAX_VALUE, 1);
+    q.setRange(0, 1);
     @SuppressWarnings("unchecked")
     List<Flight> result1 = (List<Flight>) q.execute();
     assertEquals(1, result1.size());
     assertEquals("1", result1.get(0).getName());
 
-    q.setRange(Long.MAX_VALUE, Long.MAX_VALUE);
+    q.setRange(0, Long.MAX_VALUE);
     @SuppressWarnings("unchecked")
     List<Flight> result2 = (List<Flight>) q.execute();
     assertEquals(4, result2.size());
     assertEquals("1", result2.get(0).getName());
 
-    q.setRange(Long.MAX_VALUE, 0);
+    q.setRange(0, 0);
     @SuppressWarnings("unchecked")
     List<Flight> result3 = (List<Flight>) q.execute();
     assertEquals(0, result3.size());
-
-    q.setRange(Long.MAX_VALUE, -1);
-    try {
-      q.execute();
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
   }
 
   public void testOffsetQuery() {
@@ -459,19 +451,11 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(3, result2.size());
     assertEquals("2", result2.get(0).getName());
 
-    q.setRange(Long.MAX_VALUE, Long.MAX_VALUE);
+    q.setRange(0, Long.MAX_VALUE);
     @SuppressWarnings("unchecked")
     List<Flight> result3 = (List<Flight>) q.execute();
     assertEquals(4, result3.size());
     assertEquals("1", result3.get(0).getName());
-
-    q.setRange(-1, Long.MAX_VALUE);
-    try {
-      q.execute();
-      fail("expected iae");
-    } catch (IllegalArgumentException iae) {
-      // good
-    }
   }
 
   public void testOffsetLimitQuery() {

@@ -75,6 +75,7 @@ class StreamingQueryResult extends AbstractQueryResult {
         try {
           // If we are still open, force consumption of the rest of the results
           lazyResult.resolveAll();
+          // TODO Get rid of this selective exception swallowing. Makes no sense
         } catch (NucleusUserException jpue) {
           // Log any exception - can get exceptions when maybe the user has specified an invalid result class etc
           NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + jpue.getMessage());
