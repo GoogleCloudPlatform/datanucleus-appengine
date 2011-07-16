@@ -1444,4 +1444,35 @@ public class DatastoreTable implements DatastoreClass {
   AbstractClassMetaData getOwningClassMetaDataForColumn(String col) {
     return owningClassMetaData.get(col);
   }
+
+  class DatastoreKind implements DatastoreIdentifier {
+
+    private final String identifier;
+
+    public DatastoreKind(String identifier) {
+      this.identifier = identifier;
+    }
+
+    public String getIdentifierName() {
+      return identifier;
+    }
+
+    public String getFullyQualifiedName(boolean adapterCase) {
+      return getIdentifierName();
+    }
+
+    public void setCatalogName(String s) {
+    }
+
+    public void setSchemaName(String s) {
+    }
+
+    public String getCatalogName() {
+      return null;
+    }
+
+    public String getSchemaName() {
+      return null;
+    }
+  }
 }
