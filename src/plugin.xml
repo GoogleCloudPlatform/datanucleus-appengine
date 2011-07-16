@@ -87,4 +87,9 @@ limitations under the License.
         <persistence-property name="datanucleus.appengine.ignorablemetadatabehavior"/> <!-- Make this datastore="true"-->
 		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"/>
     </extension>
+
+    <extension point="org.datanucleus.member_annotation_handler">
+        <member-annotation-handler annotation-class="com.google.appengine.datanucleus.annotations.Unindexed" 
+            handler="com.google.appengine.datanucleus.annotations.UnindexedHandler"/>
+    </extension>
 </plugin>
