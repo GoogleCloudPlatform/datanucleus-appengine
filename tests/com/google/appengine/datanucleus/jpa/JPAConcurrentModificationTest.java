@@ -21,12 +21,12 @@ import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
 import com.google.appengine.datanucleus.test.Book;
 
-import java.sql.SQLException;
 import java.util.ConcurrentModificationException;
 
 import javax.persistence.PersistenceException;
 import javax.persistence.RollbackException;
-import javax.transaction.xa.XAException;
+
+import org.datanucleus.exceptions.NucleusDataStoreException;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -87,9 +87,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
       } catch (RollbackException e) {
         // good
         assertTrue(e.getCause() instanceof PersistenceException);
-        assertTrue(e.getCause().getCause() instanceof XAException);
-        assertTrue(e.getCause().getCause().getCause() instanceof SQLException);
-        assertTrue(e.getCause().getCause().getCause().getCause() instanceof ConcurrentModificationException);
+        assertTrue(e.getCause().getCause() instanceof NucleusDataStoreException);
+        assertTrue(e.getCause().getCause().getCause() instanceof ConcurrentModificationException);
       }
       assertFalse(em.getTransaction().isActive());
       assertEquals(book, "harold", "1234", 1888, "the title");

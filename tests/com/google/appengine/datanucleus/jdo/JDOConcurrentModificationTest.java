@@ -21,7 +21,6 @@ import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
 import com.google.appengine.datanucleus.test.Flight;
 
-import java.sql.SQLException;
 import java.util.ConcurrentModificationException;
 
 import javax.jdo.JDODataStoreException;
@@ -87,8 +86,7 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
         fail("expected exception");
       } catch (JDODataStoreException e) {
         // good
-        assertTrue(e.getCause() instanceof SQLException);
-        assertTrue(e.getCause().getCause() instanceof ConcurrentModificationException);
+        assertTrue(e.getCause() instanceof ConcurrentModificationException);
       }
       assertFalse(pm.currentTransaction().isActive());
       assertEquals(flight, "harold", "bos", "mia", 23, 24, 88);

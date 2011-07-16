@@ -20,8 +20,6 @@ import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.util.NucleusLogger;
 
-import java.sql.SQLException;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -86,15 +84,8 @@ class DatastoreXAResource extends EmulatedXAResource {
       NucleusLogger.GENERAL.info(">> DatastoreXAResource.commit");
     super.commit(arg0, arg1);
     if (currentTxn != null) {
-      try {
-        currentTxn.commit();
-      } catch (SQLException e) {
-        XAException xa = new XAException(e.getMessage());
-        xa.initCause(e);
-        throw xa;
-      }
-      NucleusLogger.DATASTORE.debug(
-          "Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
+      currentTxn.commit();
+      NucleusLogger.DATASTORE.debug("Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
       throw new XAException("A transaction has not been started, cannot commit");
@@ -107,8 +98,7 @@ class DatastoreXAResource extends EmulatedXAResource {
     super.rollback(xid);
     if (currentTxn != null) {
       currentTxn.rollback();
-      NucleusLogger.DATASTORE.debug(
-          "Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
+      NucleusLogger.DATASTORE.debug("Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
       throw new XAException("A transaction has not been started, cannot roll back");
