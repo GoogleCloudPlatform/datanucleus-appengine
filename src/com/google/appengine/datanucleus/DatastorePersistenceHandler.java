@@ -107,10 +107,19 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     return true;
   }
 
-  Entity get(DatastoreTransaction txn, Key key) {
+  /**
+   * Method to retrieve the Entity with the specified key from the datastore.
+   * @param op ObjectProvider that we want to associate this Entity with
+   * @param key The key
+   * @return The Entity
+   */
+  private Entity getEntityFromDatastore(ObjectProvider op, Key key) {
+    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(op.getExecutionContext());
+
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
     }
+
     Entity entity;
     try {
       if (txn == null) {
@@ -118,15 +127,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       } else {
         entity = datastoreServiceForReads.get(txn.getInnerTxn(), key);
       }
-      return entity;
     } catch (EntityNotFoundException e) {
       throw DatastoreExceptionTranslator.wrapEntityNotFoundException(e, key);
     }
-  }
 
-  private Entity get(ObjectProvider op, Key key) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(op.getExecutionContext());
-    Entity entity = get(txn, key);
     setAssociatedEntity(op, txn, entity);
     return entity;
   }
@@ -135,6 +139,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (putStateList.isEmpty()) {
       return;
     }
+
     DatastoreTransaction txn = null;
     ExecutionContext ec = null;
     AbstractClassMetaData acmd = null;
@@ -151,6 +156,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       }
       entityList.add(putState.entity);
     }
+
     put(ec, acmd, entityList);
     for (PutState putState : putStateList) {
       setAssociatedEntity(putState.op, txn, putState.entity);
@@ -171,10 +177,13 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     List<Entity> putMe = Utils.newArrayList();
     for (Entity entity : entities) {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-        NucleusLogger.DATASTORE_NATIVE.debug("Putting entity of kind " + entity.getKind() + " with key " + entity.getKey());
+        StringBuffer str = new StringBuffer();
         for (Map.Entry<String, Object> entry : entity.getProperties().entrySet()) {
-          NucleusLogger.DATASTORE_NATIVE.debug("  " + entry.getKey() + " : " + entry.getValue());
+          str.append(entry.getKey() + "[" + entry.getValue() + "]");
+          str.append(", ");
         }
+        NucleusLogger.DATASTORE_NATIVE.debug("Putting entity of kind " + entity.getKind() + 
+            " with key " + entity.getKey() + " as {" + str.toString() + "}");
       }
       if (txn == null) {
         putMe.add(entity);
@@ -546,7 +555,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     Entity entity = getAssociatedEntityForCurrentTransaction(op);
     if (entity == null) {
       Key pk = getPkAsKey(op);
-      entity = get(op, pk); // Throws NucleusObjectNotFoundException if necessary
+      entity = getEntityFromDatastore(op, pk); // Throws NucleusObjectNotFoundException if necessary
     }
 
     if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
@@ -641,7 +650,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
-      entity = get(op, key);
+      entity = getEntityFromDatastore(op, key);
     }
     DatastoreFieldManager fieldMgr = new StoreFieldManager(
         op, storeMgr, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
@@ -712,7 +721,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
-      entity = get(op, key);
+      entity = getEntityFromDatastore(op, key);
     }
 
     ClassLoaderResolver clr = ec.getClassLoaderResolver();
@@ -793,7 +802,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     storeMgr.validateMetaDataForClass(
         op.getClassMetaData(), op.getExecutionContext().getClassLoaderResolver());
     // get throws NucleusObjectNotFoundException if the entity isn't found, which is what we want.
-    get(op, getPkAsKey(op));
+    getEntityFromDatastore(op, getPkAsKey(op));
   }
 
   /**
