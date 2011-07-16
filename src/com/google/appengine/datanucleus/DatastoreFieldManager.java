@@ -92,7 +92,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   protected Entity datastoreEntity;
 
   // We'll assign this if we have a parent member and we store a value into it.
-  private AbstractMemberMetaData parentMemberMetaData;
+  protected AbstractMemberMetaData parentMemberMetaData;
 
   protected boolean parentAlreadySet = false;
   protected boolean keyAlreadySet = false;
@@ -365,14 +365,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   }
 
   protected boolean isParentPK(int fieldNumber) {
-    boolean result = DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
-    if (result) {
-      // ew, side effect
-      // TODO What is this trying to do ? the method is "isParentPK" so it deserves a straight boolean reply
-      // not setting of some random other field
-      parentMemberMetaData = getMetaData(fieldNumber);
-    }
-    return result;
+    return DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
   }
 
   /**

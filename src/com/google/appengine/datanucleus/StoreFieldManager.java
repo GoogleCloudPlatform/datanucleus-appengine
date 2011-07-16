@@ -132,6 +132,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (isPK(fieldNumber)) {
         storeStringPKField(fieldNumber, value);
       } else if (isParentPK(fieldNumber)) {
+        parentMemberMetaData = getMetaData(fieldNumber);
         storeParentStringField(value);
       } else if (isPKNameField(fieldNumber)) {
         storePKNameField(fieldNumber, value);
@@ -153,6 +154,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (isPK(fieldNumber)) {
         storePrimaryKey(fieldNumber, value);
       } else if (isParentPK(fieldNumber)) {
+        parentMemberMetaData = getMetaData(fieldNumber);
         storeParentField(fieldNumber, value);
       } else if (isPKIdField(fieldNumber)) {
         storePKIdField(fieldNumber, value);

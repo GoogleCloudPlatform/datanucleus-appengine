@@ -96,6 +96,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       if (isPK(fieldNumber)) {
         return fetchStringPKField(fieldNumber);
       } else if (isParentPK(fieldNumber)) {
+        parentMemberMetaData = getMetaData(fieldNumber);
         return fetchParentStringPKField(fieldNumber);
       } else if (isPKNameField(fieldNumber)) {
         if (!fieldIsOfTypeString(fieldNumber)) {
@@ -130,6 +131,7 @@ public class FetchFieldManager extends DatastoreFieldManager
         }
         throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
       } else if (isParentPK(fieldNumber)) {
+        parentMemberMetaData = getMetaData(fieldNumber);
         if (fieldIsOfTypeKey(fieldNumber)) {
           return datastoreEntity.getKey().getParent();
         }
