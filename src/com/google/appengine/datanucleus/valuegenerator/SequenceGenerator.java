@@ -57,7 +57,7 @@ import java.util.Properties;
  */
 public class SequenceGenerator extends AbstractDatastoreGenerator {
 
-  public static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
+  private static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
   private static final String KEY_CACHE_SIZE_PROPERTY = "key-cache-size";
 
   // TODO(maxr): Get rid of this when the local datastore id allocation behavior
