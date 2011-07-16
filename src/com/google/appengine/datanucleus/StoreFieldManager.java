@@ -35,6 +35,8 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
 
 /**
  * FieldManager to handle the putting of fields from a managed object into an Entity.

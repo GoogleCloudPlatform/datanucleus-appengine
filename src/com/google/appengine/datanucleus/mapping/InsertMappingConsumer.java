@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -24,6 +24,8 @@ import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.ReferenceMapping;
+
+import com.google.appengine.datanucleus.Utils;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -102,19 +104,19 @@ public class InsertMappingConsumer implements MappingConsumer {
   public void consumeUnmappedDatastoreField(DatastoreField fld) {
   }
 
-  List<MappingCallbacks> getMappingCallbacks() {
+  public List<MappingCallbacks> getMappingCallbacks() {
     return mc;
   }
 
-  Set<JavaTypeMapping> getExternalFKMappings() {
+  public Set<JavaTypeMapping> getExternalFKMappings() {
     return externalFKMappings;
   }
 
-  Set<JavaTypeMapping> getExternalOrderMappings() {
+  public Set<JavaTypeMapping> getExternalOrderMappings() {
     return externalOrderMappings;
   }
 
-  AbstractMemberMetaData getParentMappingField() {
+  public AbstractMemberMetaData getParentMappingField() {
     return parentMapping;
   }
 
@@ -122,11 +124,11 @@ public class InsertMappingConsumer implements MappingConsumer {
     this.parentMapping = parentMapping;
   }
 
-  AbstractMemberMetaData getMemberMetaDataForIndex(int index) {
+  public AbstractMemberMetaData getMemberMetaDataForIndex(int index) {
     return fieldIndexToMemberMetaData.get(index);
   }
 
-  Map<Integer, AbstractMemberMetaData> getFieldIndexToMemberMetaData() {
+  public Map<Integer, AbstractMemberMetaData> getFieldIndexToMemberMetaData() {
     return fieldIndexToMemberMetaData;
   }
 }

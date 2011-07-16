@@ -24,8 +24,8 @@ import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.query.expression.VariableExpression;
 
-import com.google.appengine.datanucleus.DatastoreTable;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
 import java.util.LinkedHashMap;
 import java.util.List;

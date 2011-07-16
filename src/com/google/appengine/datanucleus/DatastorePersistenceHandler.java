@@ -21,6 +21,9 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.mapping.DependentDeleteRequest;
+import com.google.appengine.datanucleus.mapping.FetchMappingConsumer;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusDataStoreException;

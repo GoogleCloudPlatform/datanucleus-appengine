@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
@@ -63,6 +63,9 @@ import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.util.MultiMap;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
+
+import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.Utils;
 
 import java.text.MessageFormat;
 import java.util.Collection;
@@ -165,7 +168,7 @@ public class DatastoreTable implements DatastoreClass {
   /** MetaData for all classes being managed here. */
   private final Collection<AbstractClassMetaData> managedClassMetaData = new HashSet<AbstractClassMetaData>();
   
-  DatastoreTable(String kind, DatastoreManager storeMgr, AbstractClassMetaData cmd,
+  public DatastoreTable(String kind, DatastoreManager storeMgr, AbstractClassMetaData cmd,
       ClassLoaderResolver clr, DatastoreAdapter dba) {
     this.storeMgr = storeMgr;
     this.cmd = cmd;
@@ -342,7 +345,7 @@ public class DatastoreTable implements DatastoreClass {
     return true;
   }
 
-  DatastoreField getDatastoreField(String colName) {
+  public DatastoreField getDatastoreField(String colName) {
     return datastorePropertiesByName.get(colName);
   }
   public DatastoreField getDatastoreField(DatastoreIdentifier identifier) {
@@ -1061,7 +1064,7 @@ public class DatastoreTable implements DatastoreClass {
     provideNonPrimaryKeyMappings(consumer, false);
   }
 
-  void provideNonPrimaryKeyMappings(MappingConsumer consumer, boolean isEmbedded) {
+  public void provideNonPrimaryKeyMappings(MappingConsumer consumer, boolean isEmbedded) {
     consumer.preConsumeMapping(highestFieldNumber + 1);
 
     Set<Map.Entry<AbstractMemberMetaData, JavaTypeMapping>> entries =
@@ -1402,7 +1405,7 @@ public class DatastoreTable implements DatastoreClass {
     return ammd.equals(parentMappingField);
   }
 
-  void provideParentMappingField(InsertMappingConsumer consumer) {
+  public void provideParentMappingField(InsertMappingConsumer consumer) {
     if (parentMappingField != null) {
       consumer.setParentMappingField(parentMappingField);
     }

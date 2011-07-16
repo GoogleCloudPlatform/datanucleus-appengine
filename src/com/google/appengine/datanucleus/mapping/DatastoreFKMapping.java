@@ -13,10 +13,13 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.DatastoreRelationFieldManager;
+import com.google.appengine.datanucleus.EntityUtils;
 
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.mapped.DatastoreField;

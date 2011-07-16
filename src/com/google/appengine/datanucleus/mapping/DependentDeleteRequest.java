@@ -13,9 +13,10 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -44,7 +45,7 @@ import javax.jdo.JDOObjectNotFoundException;
  *
  * @author Max Ross <maxr@google.com>
  */
-class DependentDeleteRequest {
+public class DependentDeleteRequest {
 
   private final List<MappingCallbacks> callbacks;
 

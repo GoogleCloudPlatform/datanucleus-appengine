@@ -31,6 +31,8 @@ import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 import org.datanucleus.store.ExecutionContext;
@@ -55,9 +57,9 @@ public class DatastoreRelationFieldManager {
 
   // Needed for relation management in datanucleus.
   private static final int[] NOT_USED = {0};
-  static final int IS_PARENT_VALUE = -1;
+  public static final int IS_PARENT_VALUE = -1;
   private static final int[] IS_PARENT_VALUE_ARR = {IS_PARENT_VALUE};
-  static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
+  public static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
 
   public static final int IS_FK_VALUE = -2;
   private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};

@@ -21,6 +21,8 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.MappingManager;
 import org.datanucleus.store.schema.StoreSchemaHandler;
 
+import com.google.appengine.datanucleus.mapping.DatastoreMappingManager;
+
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.HashSet;

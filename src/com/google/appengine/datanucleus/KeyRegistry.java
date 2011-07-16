@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.Key;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -68,8 +69,7 @@ public class KeyRegistry {
    * and if it has we use that Key as the parent key for the new Entity we
    * are creating.
    */
-  void registerKey(ObjectProvider op,
-      DatastoreFieldManager fieldMgr) {
+  void registerKey(ObjectProvider op, DatastoreFieldManager fieldMgr) {
     DatastoreTable dt = fieldMgr.getDatastoreTable();
     SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();

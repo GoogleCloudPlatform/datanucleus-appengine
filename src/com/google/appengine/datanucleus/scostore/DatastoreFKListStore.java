@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastoreTable;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.ForceFlushPreCommitTransactionEventListener;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.api.ApiAdapter;

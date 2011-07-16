@@ -18,6 +18,8 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.api.ApiAdapter;

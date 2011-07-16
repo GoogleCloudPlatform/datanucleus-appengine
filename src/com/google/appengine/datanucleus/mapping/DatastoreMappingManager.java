@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import com.google.appengine.api.datastore.Key;
 
@@ -39,16 +39,15 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedMapping;
 
 /**
- * MappingManager for the datastore.  Most of this code is taken from
- * RDBMSMappingManager.
+ * MappingManager for the datastore.  Most of this code is taken from RDBMSMappingManager.
  *
  * TODO(maxr): Refactor RDBMSMappingManager so that we can reuse more.
  *
  * @author Max Ross <maxr@google.com>
  */
-class DatastoreMappingManager extends AbstractMappingManager {
+public class DatastoreMappingManager extends AbstractMappingManager {
 
-  DatastoreMappingManager(MappedStoreManager mappedStoreManager) {
+  public DatastoreMappingManager(MappedStoreManager mappedStoreManager) {
     super(mappedStoreManager);
   }
 

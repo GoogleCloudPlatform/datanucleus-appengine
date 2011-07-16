@@ -21,8 +21,8 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastoreTable;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;

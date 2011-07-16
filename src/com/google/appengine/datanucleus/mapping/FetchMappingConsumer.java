@@ -13,7 +13,7 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.mapping;
 
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -28,18 +28,18 @@ import java.util.List;
 /**
  * @author Max Ross <maxr@google.com>
  */
-class FetchMappingConsumer implements MappingConsumer {
+public class FetchMappingConsumer implements MappingConsumer {
 
   private final List<MappingCallbacks> mappingCallbacks = new ArrayList<MappingCallbacks>();
 
   private final AbstractClassMetaData cmd;
 
-  public List<MappingCallbacks> getMappingCallbacks() {
-    return mappingCallbacks;
+  public FetchMappingConsumer(AbstractClassMetaData cmd) {
+    this.cmd = cmd;
   }
 
-  FetchMappingConsumer(AbstractClassMetaData cmd) {
-    this.cmd = cmd;
+  public List<MappingCallbacks> getMappingCallbacks() {
+    return mappingCallbacks;
   }
 
   public void consumeMapping(JavaTypeMapping m, AbstractMemberMetaData fmd) {
