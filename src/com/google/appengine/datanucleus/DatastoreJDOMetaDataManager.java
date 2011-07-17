@@ -78,7 +78,7 @@ import javax.jdo.spi.PersistenceCapable;
  * is not being applied for JPA (which also has a "dfg"), and it is not being applied
  * to the enhancement process either.
  */
-class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
+public class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
 
   /**
    * A {@link Set} of all classes for which containers (collections and arrays)
