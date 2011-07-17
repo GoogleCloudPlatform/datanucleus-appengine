@@ -373,11 +373,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         // already inserting the pc associated with this state manager
         continue;
       }
-      // set the token so if we recurse down to the same state manager we know
-      // we're already inserting
+      // set the token so if we recurse down to the same state manager we know we're already inserting
       op.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
-      storeMgr.validateMetaDataForClass(
-          op.getClassMetaData(), op.getExecutionContext().getClassLoaderResolver());
+
+      storeMgr.validateMetaDataForClass(op.getClassMetaData());
+
       // Make sure writes are permitted
       storeMgr.assertReadOnlyForUpdateOfObject(op);
 
@@ -550,7 +550,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     AbstractClassMetaData cmd = op.getClassMetaData();
-    storeMgr.validateMetaDataForClass(cmd, op.getExecutionContext().getClassLoaderResolver());
+    storeMgr.validateMetaDataForClass(cmd);
 
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
@@ -634,7 +634,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject FOR " + op);
 
     AbstractClassMetaData cmd = op.getClassMetaData();
-    storeMgr.validateMetaDataForClass(cmd, op.getExecutionContext().getClassLoaderResolver());
+    storeMgr.validateMetaDataForClass(cmd);
 
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
@@ -712,7 +712,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     storeMgr.assertReadOnlyForUpdateOfObject(op);
 
     ExecutionContext ec = op.getExecutionContext();
-    storeMgr.validateMetaDataForClass(op.getClassMetaData(), ec.getClassLoaderResolver());
+    storeMgr.validateMetaDataForClass(op.getClassMetaData());
 
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
@@ -802,8 +802,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   public void locateObject(ObjectProvider op) {
-    storeMgr.validateMetaDataForClass(
-        op.getClassMetaData(), op.getExecutionContext().getClassLoaderResolver());
+    storeMgr.validateMetaDataForClass(op.getClassMetaData());
+
     // get throws NucleusObjectNotFoundException if the entity isn't found, which is what we want.
     getEntityFromDatastore(op, getPkAsKey(op));
   }

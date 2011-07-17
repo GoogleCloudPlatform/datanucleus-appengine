@@ -147,6 +147,8 @@ public class DatastoreManager extends MappedStoreManager {
 
   protected SerializationManager serializationMgr = null;
 
+  MetaDataValidator metadataValidator;
+
   /**
    * Construct a DatastoreManager.
    * @param clr The ClassLoaderResolver
@@ -190,6 +192,9 @@ public class DatastoreManager extends MappedStoreManager {
     addTypeManagerMappings();
 
     storageVersion = StorageVersion.fromStoreManager(this);
+
+    // Add listener so we can check all metadata for unsupported features and required schema
+    metadataValidator = new MetaDataValidator(getMetaDataManager(), clr);
 
     initialiseAutoStart(clr);
 
@@ -333,7 +338,7 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public Extent getExtent(ExecutionContext ec, Class c, boolean subclasses) {
     AbstractClassMetaData cmd = getMetaDataManager().getMetaDataForClass(c, ec.getClassLoaderResolver());
-    validateMetaDataForClass(cmd, ec.getClassLoaderResolver());
+    validateMetaDataForClass(cmd);
     if (!cmd.isRequiresExtent()) {
       throw new NoExtentException(c.getName());
     }
@@ -592,12 +597,11 @@ public class DatastoreManager extends MappedStoreManager {
   /**
    * Perform appengine-specific validation on the provided meta data.
    * @param acmd The meta data to validate.
-   * @param clr The classloader resolver to use.
    */
-  public void validateMetaDataForClass(AbstractClassMetaData acmd, ClassLoaderResolver clr) {
+  public void validateMetaDataForClass(AbstractClassMetaData acmd) {
     // Only validate each meta data once
     if (validatedClasses.add(acmd.getFullClassName())) {
-      new MetaDataValidator(getMetaDataManager(), clr).validate(acmd);
+      metadataValidator.validate(acmd);
     }
   }
 

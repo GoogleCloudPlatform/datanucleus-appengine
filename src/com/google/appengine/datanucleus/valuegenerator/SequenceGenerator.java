@@ -60,8 +60,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
   private static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
   private static final String KEY_CACHE_SIZE_PROPERTY = "key-cache-size";
 
-  // TODO(maxr): Get rid of this when the local datastore id allocation behavior
-  // mirrors prod
+  // TODO(maxr): Get rid of this when the local datastore id allocation behavior mirrors prod
   private static final ThreadLocal<String> SEQUENCE_POSTFIX_APPENDAGE = new ThreadLocal<String>() {
     @Override
     protected String initialValue() {
@@ -85,7 +84,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
     AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) properties.get("class-name"), clr);
     if (acmd != null) {
-      ((DatastoreManager) storeMgr).validateMetaDataForClass(acmd, clr);
+      ((DatastoreManager) storeMgr).validateMetaDataForClass(acmd);
     }
 
     sequenceName = determineSequenceName(acmd);

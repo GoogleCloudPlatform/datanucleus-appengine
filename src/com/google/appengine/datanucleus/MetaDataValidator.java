@@ -22,6 +22,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.InvalidMetaDataException;
+import org.datanucleus.metadata.MetaDataListener;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
@@ -33,11 +34,13 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * App Engine specific rules for Meta Data.
+ * AppEngine-specific rules validator for Meta Data.
+ * Can also be used as a DataNucleus MetaDataListener to listen for when metadata is loaded and validate
+ * it at source.
  *
  * @author Max Ross <maxr@google.com>
  */
-public class MetaDataValidator {
+public class MetaDataValidator implements MetaDataListener {
   protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
         "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
@@ -111,12 +114,23 @@ public class MetaDataValidator {
     this.clr = clr;
   }
 
+  /* (non-Javadoc)
+   * @see org.datanucleus.metadata.MetaDataListener#loaded(org.datanucleus.metadata.AbstractClassMetaData)
+   */
+  public void loaded(AbstractClassMetaData cmd) {
+    validate(cmd);
+  }
+
   /**
    * validate the metadata for the provided class.
    * @param acmd Metadata for the class to validate
    */
   public void validate(AbstractClassMetaData acmd) {
     NucleusLogger.METADATA.info("Performing appengine-specific metadata validation for " + acmd.getFullClassName());
+    if (acmd.isEmbeddedOnly()) {
+      // Nothing to check
+      return;
+    }
 
     // Validate primary-key
     int[] pkPositions = acmd.getPKMemberPositions();

@@ -209,7 +209,7 @@ public class DatastoreQuery implements Serializable {
           + ".  Perhaps you need to run the enhancer on this class?");
     }
 
-    storeMgr.validateMetaDataForClass(acmd, clr);
+    storeMgr.validateMetaDataForClass(acmd);
 
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
     QueryData qd = validate(compilation, parameters, acmd, table, clr, isJDO);
@@ -556,7 +556,8 @@ public class DatastoreQuery implements Serializable {
       final ClassLoaderResolver clr, ExecutionContext ec, boolean ignoreCache, final FetchPlan fetchPlan) {
     final DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
-    storeMgr.validateMetaDataForClass(acmd, clr);
+    storeMgr.validateMetaDataForClass(acmd);
+
     FieldValues fv = new FieldValues() {
       public void fetchFields(ObjectProvider op) {
         op.replaceFields(
@@ -667,7 +668,7 @@ public class DatastoreQuery implements Serializable {
    */
   private static Object entityToPojoPrimaryKey(final Entity entity, final AbstractClassMetaData acmd,
       ClassLoaderResolver clr, final DatastoreManager storeMgr, ExecutionContext ec) {
-    storeMgr.validateMetaDataForClass(acmd, clr);
+
     FieldValues fv = new FieldValues() {
       public void fetchFields(ObjectProvider op) {
         op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
@@ -677,6 +678,7 @@ public class DatastoreQuery implements Serializable {
         return null;
       }
     };
+
     // TODO This method is deprecated, so use IdentityUtils etc
     return ec.findObjectUsingAID(new Type(clr.classForName(acmd.getFullClassName())), fv, false, true);
   }
@@ -700,9 +702,12 @@ public class DatastoreQuery implements Serializable {
           HAVING_OP);
     }
 
+    if (compilation.getSubqueryAliases() != null && compilation.getSubqueryAliases().length > 0) {
+      throw new NucleusUserException("Subqueries not supported by datastore. Try evaluating them in-memory");
+    }
+
     final List<String> projectionFields = Utils.newArrayList();
     ResultType resultType = validateResultExpression(compilation, acmd, projectionFields);
-    // TODO(maxr): Add checks for subqueries and anything else we don't allow
     String kind = table.getIdentifier().getIdentifierName();
     Function<Entity, Object> resultTransformer;
     if (resultType == ResultType.KEYS_ONLY) {
