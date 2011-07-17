@@ -16,6 +16,8 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.ShortBlob;
+import com.google.appengine.api.datastore.Text;
+
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -87,12 +89,23 @@ class TypeConversionUtils {
   };
 
   /**
-  /**
    * A {@link Function} that converts {@link Double} to {@link BigDecimal}.
    */
   private static final Function<Object, Object> DOUBLE_TO_BIG_DECIMAL = new Function<Object, Object>() {
     public BigDecimal apply(Object in) {
       return null==in ? null : new BigDecimal((Double) in);
+    }
+  };
+
+  /**
+   * A {@link Function} that converts {@link String} to {@link Text}.
+   */
+  private static final Function<Object, Object> STRING_TO_TEXT = new Function<Object, Object>() {
+    public Text apply(Object in) {
+      if (in instanceof String) {
+        return null==in ? null : new Text((String) in);
+      }
+      return (Text)in;
     }
   };
 
@@ -171,6 +184,7 @@ class TypeConversionUtils {
     map.put(Float.class, DOUBLE_TO_FLOAT);
     map.put(Float.TYPE, DOUBLE_TO_FLOAT);
     map.put(BigDecimal.class, DOUBLE_TO_BIG_DECIMAL);
+    map.put(Text.class, STRING_TO_TEXT);
     return map;
   }
 
