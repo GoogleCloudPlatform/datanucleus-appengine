@@ -74,16 +74,8 @@ import java.util.Set;
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreManager extends MappedStoreManager {
-
-    protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
-        "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
-
-  /**
-   * Classes whose metadata we've validated.  This set gets hit on every
-   * insert, update, and fetch.  I don't expect it to be a bottleneck but
-   * if we're seeing contention we should look here.
-   */
-  private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
+  protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
+      "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
   private static final String EXTENSION_PREFIX = "gae.";
 
@@ -139,6 +131,13 @@ public class DatastoreManager extends MappedStoreManager {
 
   public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
       "datanucleus.appengine.getExtentCanReturnSubclasses";
+
+  /**
+   * Classes whose metadata we've validated.  This set gets hit on every
+   * insert, update, and fetch.  I don't expect it to be a bottleneck but
+   * if we're seeing contention we should look here.
+   */
+  private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
 
   private final BatchPutManager batchPutManager = new BatchPutManager();
   private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();

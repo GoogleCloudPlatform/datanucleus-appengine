@@ -125,14 +125,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   /* (non-Javadoc)
-   * @see org.datanucleus.store.AbstractPersistenceHandler#batchEnd(org.datanucleus.store.ExecutionContext)
+   * @see org.datanucleus.store.AbstractPersistenceHandler#batchEnd(org.datanucleus.store.ExecutionContext, org.datanucleus.store.PersistenceBatchType)
    */
   @Override
-  public void batchEnd(ExecutionContext ec) {
-    if (storeMgr.getBatchPutManager().batchOperationInProgress()) {
+  public void batchEnd(ExecutionContext ec, PersistenceBatchType batchType) {
+    if (batchType == PersistenceBatchType.PERSIST) {
       storeMgr.getBatchPutManager().finish(this);
     }
-    else if (storeMgr.getBatchDeleteManager().batchOperationInProgress()) {
+    else if (batchType == PersistenceBatchType.DELETE) {
       storeMgr.getBatchDeleteManager().finish(this);
     }
   }
