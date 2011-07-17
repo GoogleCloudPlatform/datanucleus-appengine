@@ -21,11 +21,11 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.jpa.DatastoreEntityManagerFactory;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.api.jpa.JPAEntityManager;
+import org.datanucleus.api.jpa.JPAEntityManagerFactory;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -153,7 +153,7 @@ public class JPATestCase extends DatastoreTestCase {
   }
 
   protected String kindForClass(Class<?> clazz) {
-    NucleusContext nucContext = ((DatastoreEntityManagerFactory)emf).getNucleusContext();
+    NucleusContext nucContext = ((JPAEntityManagerFactory)emf).getNucleusContext();
     MetaDataManager mdm = nucContext.getMetaDataManager();
     MappedStoreManager storeMgr = (MappedStoreManager) nucContext.getStoreManager();
     ClassLoaderResolver clr = nucContext.getClassLoaderResolver(getClass().getClassLoader());

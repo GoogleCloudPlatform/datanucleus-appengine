@@ -15,7 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import org.datanucleus.Transaction;
 import org.datanucleus.api.jdo.JDOPersistenceManager;
 import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 
@@ -93,17 +92,6 @@ public class DatastoreJDOPersistenceManager extends JDOPersistenceManager {
         batchMgr.finish(
             (DatastorePersistenceHandler) getObjectManager().getStoreManager().getPersistenceHandler());
       }
-    }
-  }
-
-  @Override
-  protected void setTransaction(Transaction tx) {
-    DatastoreManager storeMgr = (DatastoreManager) getObjectManager().getStoreManager();
-    if (storeMgr.connectionFactoryIsTransactional()) {
-      // We need to install our own transaction object here.
-      jdotx = new DatastoreJDOTransaction(this, storeMgr, tx);
-    } else {
-      super.setTransaction(tx);
     }
   }
 

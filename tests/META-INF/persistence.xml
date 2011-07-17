@@ -19,7 +19,7 @@ limitations under the License.
         http://java.sun.com/xml/ns/persistence/persistence_1_0.xsd" version="1.0">
 
     <persistence-unit name="transactional_ds_non_transactional_ops_not_allowed">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.metadata.allowLoadAtRuntime" value="true"/>
@@ -30,7 +30,7 @@ limitations under the License.
     </persistence-unit>
 
     <persistence-unit name="transactional_ds_non_transactional_ops_allowed">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.NontransactionalRead" value="true"/>
@@ -43,7 +43,7 @@ limitations under the License.
     </persistence-unit>
 
     <persistence-unit name="nontransactional_ds_non_transactional_ops_not_allowed">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
@@ -55,7 +55,7 @@ limitations under the License.
     </persistence-unit>
 
     <persistence-unit name="nontransactional_ds_non_transactional_ops_allowed">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.NontransactionalRead" value="true"/>
@@ -69,7 +69,7 @@ limitations under the License.
     </persistence-unit>
 
     <persistence-unit name="nontransactional_ds_non_transactional_ops_allowed_singleton">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.NontransactionalRead" value="true"/>
@@ -84,7 +84,7 @@ limitations under the License.
     </persistence-unit>
 
     <persistence-unit name="datastoreserviceconfigprops">
-        <provider>com.google.appengine.datanucleus.jpa.DatastorePersistenceProvider</provider>
+        <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
             <property name="datanucleus.NontransactionalRead" value="true"/>

@@ -20,8 +20,8 @@ import junit.framework.TestCase;
 import org.datanucleus.api.jpa.JPAEntityManager;
 
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.jpa.DatastoreEntityManagerFactory;
 
+import javax.persistence.EntityManagerFactory;
 import javax.persistence.Persistence;
 
 /**
@@ -30,8 +30,7 @@ import javax.persistence.Persistence;
 public class JPADataSourceConfigTest extends TestCase {
 
   public void testTransactionalEMF() {
-    DatastoreEntityManagerFactory emf =
-        (DatastoreEntityManagerFactory) Persistence.createEntityManagerFactory(
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory(
             JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed.name());
     JPAEntityManager em = (JPAEntityManager) emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) em.getExecutionContext().getStoreManager();
@@ -41,8 +40,7 @@ public class JPADataSourceConfigTest extends TestCase {
   }
 
   public void testNonTransactionalEMF() {
-    DatastoreEntityManagerFactory emf =
-        (DatastoreEntityManagerFactory) Persistence.createEntityManagerFactory(
+    EntityManagerFactory emf = Persistence.createEntityManagerFactory(
             JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed.name());
     JPAEntityManager em = (JPAEntityManager) emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) em.getExecutionContext().getStoreManager();

@@ -17,6 +17,7 @@ package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.ReadPolicy;
+import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.scostore.DatastoreFKListStore;
@@ -185,10 +186,12 @@ public class DatastoreManager extends MappedStoreManager {
     persistenceHandler = new DatastorePersistenceHandler(this);
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(nucContext);
+
     if (nucContext.getApiAdapter().getName().equalsIgnoreCase("JDO")) {
       // TODO Drop this when remove DatastoreJDOMetaDataManager
       setCustomPluginManager();
     }
+
     addTypeManagerMappings();
 
     storageVersion = StorageVersion.fromStoreManager(this);
@@ -230,23 +233,49 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public void transactionStarted(ExecutionContext ec) {
-    NucleusLogger.GENERAL.info(">> DatastoreMgr.txnStarted");
-    // Obtain a connection. This will create it now that the user has selected tx.begin()
-//    getConnection(ec);
+    if (connectionFactoryIsTransactional()) {
+      // Obtain a connection. This will create it now that the user has selected tx.begin()
+  //    getConnection(ec);
+      Transaction txn = 
+        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).beginTransaction();
+      NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
+    }
     super.transactionStarted(ec);
   }
 
   @Override
   public void transactionCommitted(ExecutionContext ec) {
-      NucleusLogger.GENERAL.info(">> DatastoreMgr.txnCommitted");
-    // TODO Make use of this to notify the ConnectionFactoryImpl that it should start a DatastoreTransaction
+    if (connectionFactoryIsTransactional()) {
+      Transaction txn = 
+        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
+      if (txn == null) {
+        // this is ok, it means the txn was committed via the connection
+      } else {
+        // ordinarily the txn gets committed in DatastoreXAResource.commit(), but
+        // if the begin/commit block doesn't perform any reads or writes then
+        // DatastoreXAResource.commit() won't be called.  In order to avoid
+        // leaving transactions open we do the commit here.
+        txn.commit();
+      }
+    }
     super.transactionCommitted(ec);
   }
 
   @Override
   public void transactionRolledBack(ExecutionContext ec) {
-      NucleusLogger.GENERAL.info(">> DatastoreMgr.txnRolledBack");
-    // TODO Make use of this to notify the ConnectionFactoryImpl that it should start a DatastoreTransaction
+    if (connectionFactoryIsTransactional()) {
+      Transaction txn =
+        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
+      if (txn == null) {
+        // this is ok, it means the txn was rolled back via the connection
+      } else {
+        // ordinarily the txn gets aborted in DatastoreXAResource.commit(), but
+        // if the begin/abort block doesn't perform any reads or writes then
+        // DatastoreXAResource.rollback() won't be called.  In order to avoid
+        // leaving transactions open we do the rollback here.
+        txn.rollback();
+      }
+    }
     super.transactionRolledBack(ec);
   }
 
