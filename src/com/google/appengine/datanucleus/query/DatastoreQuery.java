@@ -560,31 +560,51 @@ public class DatastoreQuery implements Serializable {
     DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
     storeMgr.validateMetaDataForClass(acmd);
 
-    FieldValues fv = new FieldValues() {
-      public void fetchFields(ObjectProvider op) {
-        op.replaceFields(
-            acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
-      }
-      public void fetchNonLoadedFields(ObjectProvider op) {
-        op.replaceNonLoadedFields(
-            acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
-      }
-      public FetchPlan getFetchPlanForLoading() {
-        return fetchPlan;
-      }
-    };
+    FieldValues fv = null;
+    if (fetchPlan != null) {
+      // candidate select : load all fetch plan fields from the Entity
+
+      // Make sure this class is managed in the FetchPlan
+      fetchPlan.manageFetchPlanForClass(acmd);
+
+      final int[] fieldsToFetch = fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers();
+      fv = new FieldValues() {
+        public void fetchFields(ObjectProvider op) {
+          op.replaceFields(fieldsToFetch, new FetchFieldManager(op, storeMgr, entity));
+        }
+        public void fetchNonLoadedFields(ObjectProvider op) {
+          op.replaceNonLoadedFields(fieldsToFetch, new FetchFieldManager(op, storeMgr, entity));
+        }
+        public FetchPlan getFetchPlanForLoading() {
+          return fetchPlan;
+        }
+      };
+    } else {
+      // projection select : load PK fields only here, and all later
+      fv = new FieldValues() {
+        public void fetchFields(ObjectProvider op) {
+          op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
+        }
+        public void fetchNonLoadedFields(ObjectProvider op) {
+          op.replaceNonLoadedFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
+        }
+        public FetchPlan getFetchPlanForLoading() {
+          return null;
+        }
+      };
+    }
 
     Object id = null;
+    Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
     if (acmd.getIdentityType() == IdentityType.APPLICATION) {
       FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
-      Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
       id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
     }
     else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
       // TODO Implement support for datastore id
     }
-NucleusLogger.GENERAL.info(">> DatastoreQuery.entityToPojo entity=" + entity);
-    Object pojo = ec.findObject(id, fv, getClassFromDiscriminator(entity, acmd, table, clr, ec), ignoreCache);
+
+    Object pojo = ec.findObject(id, fv, cls, ignoreCache);
     ObjectProvider op = ec.findObjectProvider(pojo);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
 
@@ -592,16 +612,11 @@ NucleusLogger.GENERAL.info(">> DatastoreQuery.entityToPojo entity=" + entity);
     // so that we can do a fetch without having to hide the entity in the state manager.
     handler.setAssociatedEntity(op, EntityUtils.getCurrentTransaction(ec), entity);
 
-    if (fetchPlan != null) {
-      // Make sure this class is managed in the FetchPlan
-      fetchPlan.manageFetchPlanForClass(acmd);
+    if (fetchPlan == null) {
+      // Projection, so load everything
+      // TODO Remove this. It prevents postLoad calls being made, but do we care since its a projection?
+      storeMgr.getPersistenceHandler().fetchObject(op, acmd.getAllMemberPositions());
     }
-    int[] fieldsToFetch =
-        fetchPlan != null ?
-        fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers() : acmd.getAllMemberPositions();
-
-    // TODO Remove this. It prevents postLoad calls being made!!
-    storeMgr.getPersistenceHandler().fetchObject(op, fieldsToFetch);
 
     return pojo;
   }

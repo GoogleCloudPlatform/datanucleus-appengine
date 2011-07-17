@@ -98,6 +98,8 @@ import javax.jdo.JDOException;
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOUserException;
 import javax.jdo.Query;
+import javax.jdo.listener.InstanceLifecycleEvent;
+import javax.jdo.listener.LoadLifecycleListener;
 
 import junit.framework.Assert;
 
@@ -3109,6 +3111,33 @@ public class JDOQLQueryTest extends JDOTestCase {
       EasyMock.verify(delegate);
     } finally {
       setDelegateForThread(original);
+    }
+  }
+
+  public void testPostLoadOnQuery() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ds.put(null, e1);
+
+    MyLoadListener listener = new MyLoadListener();
+    pm.addInstanceLifecycleListener(listener, (Class[])null);
+    Query q = pm.newQuery(Flight.class);
+    List<Flight> flights = (List<Flight>)q.execute();
+    Iterator<Flight> iter = flights.iterator();
+    while (iter.hasNext()) {
+      iter.next();
+    }
+    assertEquals("Number of postLoad calls is wrong", 1, listener.getNumPostLoads());
+    pm.removeInstanceLifecycleListener(listener);
+  }
+
+  public class MyLoadListener implements LoadLifecycleListener {
+    int num = 0;
+    public void postLoad(InstanceLifecycleEvent event)
+    {
+      num++;
+    }
+    public int getNumPostLoads() {
+      return num;
     }
   }
 
