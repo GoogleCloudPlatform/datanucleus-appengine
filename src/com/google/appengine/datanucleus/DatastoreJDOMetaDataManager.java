@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package com.google.appengine.datanucleus.jdo;
+package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.blobstore.BlobKey;
 import com.google.appengine.api.datastore.Blob;
@@ -41,7 +41,6 @@ import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.Utils;
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -49,7 +48,6 @@ import java.util.Date;
 import java.util.Set;
 
 import javax.jdo.spi.PersistenceCapable;
-
 
 /**
  * We want all the types that are natively supported by the datastore to be in
@@ -80,7 +78,7 @@ import javax.jdo.spi.PersistenceCapable;
  * is not being applied for JPA (which also has a "dfg"), and it is not being applied
  * to the enhancement process either.
  */
-public class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
+class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
 
   /**
    * A {@link Set} of all classes for which containers (collections and arrays)

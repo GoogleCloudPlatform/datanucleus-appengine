@@ -37,6 +37,7 @@ import org.datanucleus.metadata.VersionStrategy;
 import org.datanucleus.store.AbstractPersistenceHandler;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.PersistenceBatchType;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.VersionHelper;
 import org.datanucleus.store.fieldmanager.FieldManager;
@@ -108,6 +109,32 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // This informs DataNucleus that the store requires ordered flushes, so the order of receiving dirty
     // requests is preserved when flushing them
     return true;
+  }
+
+  /* (non-Javadoc)
+   * @see org.datanucleus.store.AbstractPersistenceHandler#batchStart(org.datanucleus.store.ExecutionContext, org.datanucleus.store.PersistenceBatchType)
+   */
+  @Override
+  public void batchStart(ExecutionContext ec, PersistenceBatchType batchType) {
+    if (batchType == PersistenceBatchType.PERSIST) {
+      storeMgr.getBatchPutManager().start();
+    }
+    else if (batchType == PersistenceBatchType.DELETE) {
+      storeMgr.getBatchDeleteManager().start();
+    }
+  }
+
+  /* (non-Javadoc)
+   * @see org.datanucleus.store.AbstractPersistenceHandler#batchEnd(org.datanucleus.store.ExecutionContext)
+   */
+  @Override
+  public void batchEnd(ExecutionContext ec) {
+    if (storeMgr.getBatchPutManager().batchOperationInProgress()) {
+      storeMgr.getBatchPutManager().finish(this);
+    }
+    else if (storeMgr.getBatchDeleteManager().batchOperationInProgress()) {
+      storeMgr.getBatchDeleteManager().finish(this);
+    }
   }
 
   /**

@@ -27,12 +27,11 @@ import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToManyListJDO;
 import com.google.appengine.datanucleus.test.HasOneToOneJDO;
 
-import org.datanucleus.exceptions.NucleusUserException;
-
 import java.lang.reflect.Method;
 import java.util.List;
 
 import javax.jdo.JDOHelper;
+import javax.jdo.JDOUserException;
 import javax.jdo.ObjectState;
 
 /**
@@ -96,7 +95,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     try {
       pm.makePersistentAll(f1, f2);
       fail("expected iae");
-    } catch (NucleusUserException nue) {
+    } catch (JDOUserException nue) {
       // good
     }
     rollbackTxn();
@@ -109,7 +108,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     try {
       pm.makePersistentAll(Utils.newArrayList(f3, f4));
       fail("expected iae");
-    } catch (NucleusUserException nue) {
+    } catch (JDOUserException nue) {
       // good
     }
     assertEquals(0, countForClass(Flight.class));
@@ -198,7 +197,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     try {
       pm.makePersistentAll(parent1, parent2);
       fail("expected exception");
-    } catch (NucleusUserException nue) {
+    } catch (JDOUserException nue) {
       // good
     }
   }
@@ -328,7 +327,7 @@ public class JDOBatchInsertTest extends JDOBatchTestCase {
     try {
       pm.makePersistentAll(parent1, parent2);
       fail("expected exception");
-    } catch (NucleusUserException nue) {
+    } catch (JDOUserException nue) {
       // good
     }
   }

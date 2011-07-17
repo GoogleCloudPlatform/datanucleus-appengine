@@ -21,7 +21,6 @@ import org.datanucleus.plugin.Extension;
 import org.datanucleus.plugin.ExtensionPoint;
 import org.datanucleus.plugin.PluginRegistry;
 
-import com.google.appengine.datanucleus.jdo.DatastoreJDOMetaDataManager;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
