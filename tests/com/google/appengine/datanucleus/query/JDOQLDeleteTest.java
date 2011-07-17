@@ -25,8 +25,7 @@ import com.google.appengine.datanucleus.test.Flight;
 import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToManyListJDO;
 
-
-import javax.jdo.JDOUserException;
+import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
 
 /**
@@ -44,7 +43,7 @@ public class JDOQLDeleteTest extends JDOTestCase {
     try {
       q.deletePersistentAll();
       fail("expected exception");
-    } catch (JDOUserException e) {  // datanuc bug, should be throwing a fatal exception
+    } catch (JDOFatalUserException e) {
       // good - can't delete books from multiple entity groups in a txn
     }
     rollbackTxn();
