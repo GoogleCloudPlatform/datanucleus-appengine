@@ -35,31 +35,29 @@ import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
  */
 public class FetchFieldManager extends DatastoreFieldManager
 {
-    private static final String ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT =
-        "Datastore entity with kind %s and key %s has a null property named %s.  This property is "
-            + "mapped to %s, which cannot accept null values.";
+  private static final String ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT =
+      "Datastore entity with kind %s and key %s has a null property named %s.  This property is " +
+      "mapped to %s, which cannot accept null values.";
 
-    /**
-     * @param op ObjectProvider of the object being fetched
-     * @param storeManager StoreManager for this object
-     * @param datastoreEntity The Entity to extract the results from
-     * @param fieldNumbers The field numbers being extracted
-     */
-    public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, 
-            int[] fieldNumbers)
-    {
-        super(op, storeManager, datastoreEntity, fieldNumbers);
-    }
+  /**
+   * @param op ObjectProvider of the object being fetched
+   * @param storeManager StoreManager for this object
+   * @param datastoreEntity The Entity to extract the results from
+   * @param fieldNumbers The field numbers being extracted
+   */
+  public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, 
+          int[] fieldNumbers) {
+    super(op, storeManager, datastoreEntity, fieldNumbers);
+  }
 
-    /**
-     * @param op ObjectProvider for the object being fetched
-     * @param storeManager StoreManager for this object
-     * @param datastoreEntity The Entity to extract results from
-     */
-    public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity)
-    {
-        super(op, storeManager, datastoreEntity);
-    }
+  /**
+   * @param op ObjectProvider for the object being fetched
+   * @param storeManager StoreManager for this object
+   * @param datastoreEntity The Entity to extract results from
+   */
+  public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity) {
+    super(op, storeManager, datastoreEntity);
+  }
 
     public boolean fetchBooleanField(int fieldNumber) {
       return (Boolean) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);

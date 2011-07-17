@@ -35,10 +35,12 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
+import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
@@ -62,7 +64,6 @@ import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
-import org.datanucleus.store.Type;
 
 import com.google.appengine.datanucleus.DatastoreExceptionTranslator;
 import com.google.appengine.datanucleus.FetchFieldManager;
@@ -72,6 +73,7 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreTransaction;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.PrimitiveArrays;
+import com.google.appengine.datanucleus.QueryEntityPKFetchFieldManager;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
@@ -574,33 +576,50 @@ public class DatastoreQuery implements Serializable {
 
     Object id = null;
     if (acmd.getIdentityType() == IdentityType.APPLICATION) {
-      // TODO Need FieldManager that uses the entity and returns the field values (last arg)
-//      id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, null, false, fm);
+      FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
+      Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
+      id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
     }
     else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
-      // TODO Implement this
+      // TODO Implement support for datastore id
     }
-
-    // TODO This method is deprecated, so use IdentityUtils etc
-    Object pojo = ec.findObjectUsingAID(new Type(getClass(entity, acmd, table, clr, ec)), fv, ignoreCache, true);
+NucleusLogger.GENERAL.info(">> DatastoreQuery.entityToPojo entity=" + entity);
+    Object pojo = ec.findObject(id, fv, getClassFromDiscriminator(entity, acmd, table, clr, ec), ignoreCache);
     ObjectProvider op = ec.findObjectProvider(pojo);
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
+
     // TODO(maxr): Seems like we should be able to refactor the handler
-    // so that we can do a fetch without having to hide the entity in the
-    // state manager.
+    // so that we can do a fetch without having to hide the entity in the state manager.
     handler.setAssociatedEntity(op, EntityUtils.getCurrentTransaction(ec), entity);
+
+    if (fetchPlan != null) {
+      // Make sure this class is managed in the FetchPlan
+      fetchPlan.manageFetchPlanForClass(acmd);
+    }
     int[] fieldsToFetch =
         fetchPlan != null ?
         fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers() : acmd.getAllMemberPositions();
 
-    // TODO The plugin should NEVER be calling methods on PersistenceHandler. Do it yourself in the query
+    // TODO Remove this. It prevents postLoad calls being made!!
     storeMgr.getPersistenceHandler().fetchObject(op, fieldsToFetch);
+
     return pojo;
   }
 
-  private static Class<?> getClass(Entity entity, AbstractClassMetaData acmd,
+  /**
+   * Method to extract the class of the row, using the discriminator if present.
+   * If not present then returns the candidate type
+   * @param entity
+   * @param acmd
+   * @param table
+   * @param clr
+   * @param ec
+   * @return
+   */
+  private static Class<?> getClassFromDiscriminator(Entity entity, AbstractClassMetaData acmd,
                                    DatastoreTable table, ClassLoaderResolver clr,
                                    ExecutionContext ec) {
+    // TODO Get rid of this mapping crap and use the metadata
     JavaTypeMapping discrimMapping = table.getDiscriminatorMapping(true);
     if (discrimMapping == null) {
       return clr.classForName(acmd.getFullClassName());
@@ -679,8 +698,20 @@ public class DatastoreQuery implements Serializable {
       }
     };
 
+    Object id = null;
+    Class cls = clr.classForName(acmd.getFullClassName());
+    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+      FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
+      id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
+    }
+    else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      // TODO Implement this
+    }
+
+    return ec.findObject(id, fv, cls, false);
+//    NucleusLogger.GENERAL.info(">> DatastoreQuery.entityToPojoPK calling findObjectUsingAID");
     // TODO This method is deprecated, so use IdentityUtils etc
-    return ec.findObjectUsingAID(new Type(clr.classForName(acmd.getFullClassName())), fv, false, true);
+//    return ec.findObjectUsingAID(new Type(clr.classForName(acmd.getFullClassName())), fv, false, true);
   }
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
