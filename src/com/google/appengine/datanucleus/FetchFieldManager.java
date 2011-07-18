@@ -94,10 +94,10 @@ public class FetchFieldManager extends DatastoreFieldManager
     public String fetchStringField(int fieldNumber) {
       if (isPK(fieldNumber)) {
         return fetchStringPKField(fieldNumber);
-      } else if (isParentPK(fieldNumber)) {
+      } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
         parentMemberMetaData = getMetaData(fieldNumber);
         return fetchParentStringPKField(fieldNumber);
-      } else if (isPKNameField(fieldNumber)) {
+      } else if (MetaDataUtils.isPKNameField(getClassMetaData(), fieldNumber)) {
         if (!fieldIsOfTypeString(fieldNumber)) {
           throw new NucleusFatalUserException(
               "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
@@ -129,13 +129,13 @@ public class FetchFieldManager extends DatastoreFieldManager
           return datastoreEntity.getKey().getId();
         }
         throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
-      } else if (isParentPK(fieldNumber)) {
+      } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
         parentMemberMetaData = getMetaData(fieldNumber);
         if (fieldIsOfTypeKey(fieldNumber)) {
           return datastoreEntity.getKey().getParent();
         }
         throw exceptionForUnexpectedKeyType("Parent key", fieldNumber);
-      } else if (isPKIdField(fieldNumber)) {
+      } else if (MetaDataUtils.isPKIdField(getClassMetaData(), fieldNumber)) {
         return fetchPKIdField();
       } else {
         Object value = datastoreEntity.getProperty(getPropertyName(fieldNumber));
@@ -241,7 +241,7 @@ public class FetchFieldManager extends DatastoreFieldManager
     }
 
     private String fetchStringPKField(int fieldNumber) {
-      if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
+      if (MetaDataUtils.isEncodedPKField(getClassMetaData(), fieldNumber)) {
         // If this is an encoded pk field, transform the Key into its String
         // representation.
         return KeyFactory.keyToString(datastoreEntity.getKey());

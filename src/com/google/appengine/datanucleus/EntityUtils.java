@@ -200,7 +200,7 @@ public final class EntityUtils {
     } else if (pk instanceof Key) {
       return (Key) pk;
     } else if (pk instanceof String) {
-      if (DatastoreManager.hasEncodedPKField(acmd)) {
+      if (MetaDataUtils.hasEncodedPKField(acmd)) {
         return KeyFactory.stringToKey((String) pk);
       } else {
         String kind = EntityUtils.determineKind(acmd, ec);

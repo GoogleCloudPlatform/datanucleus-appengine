@@ -98,7 +98,7 @@ public class QueryEntityPKFetchFieldManager extends AbstractFieldManager {
     }
 
     private String fetchStringPKField(int fieldNumber) {
-      if (DatastoreManager.isEncodedPKField(cmd, fieldNumber)) {
+      if (MetaDataUtils.isEncodedPKField(cmd, fieldNumber)) {
         // If this is an encoded pk field, transform the Key into its String representation.
         return KeyFactory.keyToString(datastoreEntity.getKey());
       } else {

@@ -358,18 +358,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     }
   }
 
-  protected boolean isPKNameField(int fieldNumber) {
-    return DatastoreManager.isPKNameField(getClassMetaData(), fieldNumber);
-  }
-
-  protected boolean isPKIdField(int fieldNumber) {
-    return DatastoreManager.isPKIdField(getClassMetaData(), fieldNumber);
-  }
-
-  protected boolean isParentPK(int fieldNumber) {
-    return DatastoreManager.isParentPKField(getClassMetaData(), fieldNumber);
-  }
-
   /**
    * @see DatastoreRelationFieldManager#storeRelations
    */

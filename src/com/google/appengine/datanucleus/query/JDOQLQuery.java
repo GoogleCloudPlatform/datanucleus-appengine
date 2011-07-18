@@ -20,6 +20,7 @@ import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.MetaDataUtils;
 
 import org.datanucleus.query.evaluator.JDOQLEvaluator;
 import org.datanucleus.query.evaluator.JavaQueryEvaluator;
@@ -202,7 +203,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
       ClassLoaderResolver clr = ec.getClassLoaderResolver();
       AbstractClassMetaData acmd = storeMgr.getMetaDataManager().getMetaDataForClass(getCandidateClass(), clr);
-      if (!DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
+      if (!MetaDataUtils.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
         throw new NucleusFatalUserException(
             "The App Engine datastore only supports queries that return subclass entities with the " +
             "superclass-table interitance mapping strategy.");

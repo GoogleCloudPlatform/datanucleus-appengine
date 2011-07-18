@@ -39,8 +39,6 @@ import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.FieldPersistenceModifier;
 import org.datanucleus.metadata.MetaDataManager;
-import org.datanucleus.util.NucleusLogger;
-
 
 import java.io.Serializable;
 import java.lang.reflect.Field;
@@ -138,7 +136,6 @@ public class DatastoreJDOMetaDataManager extends JDOMetaDataManager {
 
   public DatastoreJDOMetaDataManager(NucleusContext ctxt) {
     super(ctxt);
-    NucleusLogger.GENERAL.info(">> DatastoreJDOMetaDataManager CTR");
   }
 
   @Override

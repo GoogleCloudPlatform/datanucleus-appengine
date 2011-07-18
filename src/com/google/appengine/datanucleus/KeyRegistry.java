@@ -130,7 +130,7 @@ public class KeyRegistry {
         .equals(expectedType)) {
       AbstractClassMetaData acmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
           childValue.getClass(), op.getExecutionContext().getClassLoaderResolver());
-      if (!DatastoreManager.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
+      if (!MetaDataUtils.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
         // TODO cache the result of this evaluation to improve performance
         throw new UnsupportedOperationException(
             "Received a child of type " + childValue.getClass().getName() + " for a field of type " +

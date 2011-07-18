@@ -132,6 +132,9 @@ public class MetaDataValidator implements MetaDataListener {
       return;
     }
 
+    // validate inheritance
+    // TODO Put checks on supported inheritance here
+
     // Validate primary-key
     int[] pkPositions = acmd.getPKMemberPositions();
     if (pkPositions.length != 1) {
@@ -146,7 +149,7 @@ public class MetaDataValidator implements MetaDataListener {
     if (pkType.equals(Long.class)) {
       noParentAllowed = true;
     } else if (pkType.equals(String.class)) {
-      if (!DatastoreManager.isEncodedPKField(acmd, pkPos)) {
+      if (!MetaDataUtils.isEncodedPKField(acmd, pkPos)) {
         noParentAllowed = true;
       } else {
         // encoded string pk

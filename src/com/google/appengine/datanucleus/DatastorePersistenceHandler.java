@@ -352,7 +352,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         if (pkType.equals(Key.class)) {
           newObjectId = putState.entity.getKey();
         } else if (pkType.equals(String.class)) {
-          if (DatastoreManager.hasEncodedPKField(putState.acmd)) {
+          if (MetaDataUtils.hasEncodedPKField(putState.acmd)) {
             newObjectId = KeyFactory.keyToString(putState.entity.getKey());
           } else {
             newObjectId = putState.entity.getKey().getName();

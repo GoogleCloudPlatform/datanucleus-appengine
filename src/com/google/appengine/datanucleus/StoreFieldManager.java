@@ -25,7 +25,6 @@ import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -134,10 +133,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
   public void storeStringField(int fieldNumber, String value) {
     if (isPK(fieldNumber)) {
       storeStringPKField(fieldNumber, value);
-    } else if (isParentPK(fieldNumber)) {
+    } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
       parentMemberMetaData = getMetaData(fieldNumber);
       storeParentStringField(value);
-    } else if (isPKNameField(fieldNumber)) {
+    } else if (MetaDataUtils.isPKNameField(getClassMetaData(), fieldNumber)) {
       storePKNameField(fieldNumber, value);
     } else {
       // could be a JPA "lob" field, in which case we want to store it as Text.
@@ -157,10 +156,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
   public void storeObjectField(int fieldNumber, Object value) {
     if (isPK(fieldNumber)) {
       storePrimaryKey(fieldNumber, value);
-    } else if (isParentPK(fieldNumber)) {
+    } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
       parentMemberMetaData = getMetaData(fieldNumber);
       storeParentField(fieldNumber, value);
-    } else if (isPKIdField(fieldNumber)) {
+    } else if (MetaDataUtils.isPKIdField(getClassMetaData(), fieldNumber)) {
       storePKIdField(fieldNumber, value);
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
@@ -218,8 +217,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
       esm.provideFields(acmd.getAllMemberPositions(), this);
       fieldManagerStateStack.removeFirst();
     }
-    else if ((operation == Operation.INSERT && isInsertable(ammd)) ||
-        (operation == Operation.UPDATE && isUpdatable(ammd))) {
+    else if ((operation == Operation.INSERT && MetaDataUtils.isMemberInsertable(ammd)) ||
+        (operation == Operation.UPDATE && MetaDataUtils.isMemberUpdatable(ammd))) {
       if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
 
         if (!repersistingForChildKeys) {
@@ -364,7 +363,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   private void storeStringPKField(int fieldNumber, String value) {
     Key key = null;
-    if (DatastoreManager.isEncodedPKField(getClassMetaData(), fieldNumber)) {
+    if (MetaDataUtils.isEncodedPKField(getClassMetaData(), fieldNumber)) {
       if (value != null) {
         try {
           key = KeyFactory.stringToKey(value);
@@ -529,29 +528,5 @@ public class StoreFieldManager extends DatastoreFieldManager {
         " is null, but is mandatory as it's described in the jdo metadata");
       }
     }
-  }
-
-  private ColumnMetaData getColumnMetaData(AbstractMemberMetaData ammd) {
-    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
-      return ammd.getColumnMetaData()[0];
-    }
-    // A OneToMany has its column metadata stored inside
-    // ElementMetaData so look there as well
-    if (ammd.getElementMetaData() != null &&
-        ammd.getElementMetaData().getColumnMetaData() != null &&
-        ammd.getElementMetaData().getColumnMetaData().length > 0) {
-      return ammd.getElementMetaData().getColumnMetaData()[0];
-    }
-    return null;
-  }
-
-  private boolean isInsertable(AbstractMemberMetaData ammd) {
-    ColumnMetaData cmd = getColumnMetaData(ammd);
-    return cmd == null || cmd.getInsertable();
-  }
-
-  private boolean isUpdatable(AbstractMemberMetaData ammd) {
-    ColumnMetaData cmd = getColumnMetaData(ammd);
-    return cmd == null || cmd.getUpdateable();
   }
 }

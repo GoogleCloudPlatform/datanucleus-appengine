@@ -77,22 +77,22 @@ public class DatastoreManager extends MappedStoreManager {
 
   private static final String EXTENSION_PREFIX = "gae.";
 
-  /** The name of the annotation extension that marks a field as an parent. */
+  /** The name of the metadata extension that marks a field as a parent. */
   public static final String PARENT_PK = EXTENSION_PREFIX + "parent-pk";
 
-  /** The name of the annotation extension that marks a field as an encoded pk. */
+  /** The name of the metadata extension that marks a field as an encoded pk. */
   public static final String ENCODED_PK = EXTENSION_PREFIX + "encoded-pk";
 
-  /** The name of the annotation extension that marks a field as a primary key name. */
+  /** The name of the metadata extension that marks a field as a primary key name. */
   public static final String PK_NAME = EXTENSION_PREFIX + "pk-name";
 
-  /** The name of the annotation extension that marks a field as a primary key id. */
+  /** The name of the metadata extension that marks a field as a primary key id. */
   public static final String PK_ID = EXTENSION_PREFIX + "pk-id";
 
-  /** The name of the annotation extension that marks a field as unindexed. */
+  /** The name of the metadata extension that marks a field as unindexed. */
   public static final String UNINDEXED_PROPERTY = EXTENSION_PREFIX + "unindexed";
 
-  /** The name of the extension that indicates the query should be excluded from the current transaction. */
+  /** The name of the metadata extension that indicates the query should be excluded from the current transaction. */
   public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
 
   /**
@@ -181,6 +181,7 @@ public class DatastoreManager extends MappedStoreManager {
 
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
+
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(nucContext);
 
@@ -276,8 +277,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
       PersistenceConfiguration persistenceConfig) {
-    return createDatastoreServiceConfigPrototype(
-        persistenceConfig, READ_TIMEOUT_PROPERTY);
+    return createDatastoreServiceConfigPrototype(persistenceConfig, READ_TIMEOUT_PROPERTY);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
@@ -406,12 +406,11 @@ public class DatastoreManager extends MappedStoreManager {
     } else if (strat == InheritanceStrategy.NEW_TABLE &&
                (cmd.getSuperAbstractClassMetaData() == null ||
                 cmd.getSuperAbstractClassMetaData().getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE)) {
-      // New Table means you store your fields and your fields only (no fields
-      // from superclasses).  Thiis only ok if you don't have a persistent
-      // superclass or your persistent superclass has delegated responsibility
-      // for storing its fields to you.
+      // New Table means you store your fields and your fields only (no fields from superclasses).  
+      // This only ok if you don't have a persistent superclass or your persistent superclass has 
+      // delegated responsibility for storing its fields to you.
       return buildStoreData(cmd, clr);
-    } else if (isNewOrSuperclassTableInheritanceStrategy(cmd)) {
+    } else if (MetaDataUtils.isNewOrSuperclassTableInheritanceStrategy(cmd)) {
       // Table mapped into table of superclass
       // Find the superclass - should have been created first
       AbstractClassMetaData[] managingCmds = getClassesManagingTableForClass(cmd, clr);
@@ -479,7 +478,7 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   public FieldManager getFieldManagerForResultProcessing(ObjectProvider op, Object resultSet,
-                                                         StatementClassMapping resultMappings) {
+      StatementClassMapping resultMappings) {
     ExecutionContext ec = op.getExecutionContext();
     Class<?> cls = ec.getClassLoaderResolver().classForName(op.getClassMetaData().getFullClassName());
     Object internalKey = EntityUtils.idToInternalKey(ec, cls, resultSet, true);
@@ -490,7 +489,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public FieldManager getFieldManagerForResultProcessing(ExecutionContext ec, Object resultSet, 
-          StatementClassMapping resultMappings, AbstractClassMetaData cmd) {
+      StatementClassMapping resultMappings, AbstractClassMetaData cmd) {
     Class<?> cls = ec.getClassLoaderResolver().classForName(cmd.getFullClassName());
     Object internalKey = EntityUtils.idToInternalKey(ec, cls, resultSet, true);
     // Need to provide this to the field manager in the form of the pk
@@ -499,15 +498,12 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   public FieldManager getFieldManagerForStatementGeneration(ObjectProvider op, Object stmt,
-                                                            StatementClassMapping stmtMappings,
-                                                            boolean checkNonNullable) {
+      StatementClassMapping stmtMappings, boolean checkNonNullable) {
     return null;
   }
 
   public ResultObjectFactory newResultObjectFactory(AbstractClassMetaData acmd,
-                                                    StatementClassMapping mappingDefinition,
-                                                    boolean ignoreCache, FetchPlan fetchPlan, 
-                                                    Class persistentClass) {
+      StatementClassMapping mappingDefinition, boolean ignoreCache, FetchPlan fetchPlan, Class persistentClass) {
     return null;
   }
 
@@ -562,46 +558,6 @@ public class DatastoreManager extends MappedStoreManager {
       }
       throw e;
     }
-  }
-
-  private static boolean memberHasExtension(AbstractClassMetaData acmd, int fieldNumber, String extensionName) {
-    AbstractMemberMetaData ammd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
-    return ammd.hasExtension(extensionName);
-  }
-
-  static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
-    int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs
-    return isEncodedPKField(acmd, pkFieldNumber);
-  }
-
-  static boolean isEncodedPKField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, ENCODED_PK);
-  }
-
-  static boolean isParentPKField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, PARENT_PK);
-  }
-
-  static boolean isPKNameField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, PK_NAME);
-  }
-
-  static boolean isPKIdField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, PK_ID);
-  }
-  
-  public static boolean isNewOrSuperclassTableInheritanceStrategy(AbstractClassMetaData cmd) {
-    while (cmd != null) {
-      AbstractClassMetaData pcmd = cmd.getSuperAbstractClassMetaData();
-      if (pcmd == null) {
-	return cmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.NEW_TABLE;
-      } else if (cmd.getInheritanceMetaData().getStrategy() != InheritanceStrategy.SUPERCLASS_TABLE) {
-	return false;
-      }
-      cmd = pcmd;
-    }
-    
-    return false;
   }
 
   /**
