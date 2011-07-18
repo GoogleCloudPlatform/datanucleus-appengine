@@ -142,7 +142,6 @@ public class JPAOneToOneTest extends JPATestCase {
       throws Exception {
     // this can only work on a nontransactional datasource
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed);
-
     Book b = newBook();
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     HasOneToOneParentJPA hasParent = new HasOneToOneParentJPA();
@@ -163,23 +162,27 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasKeyPK(hasKeyPk);
     pojo.setHasParent(hasParent);
     pojo.setHasParentKeyPK(hasParentKeyPk);
-
     startEnd.start();
+    boolean rolledBack = false;
     try {
       em.persist(pojo);
       startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
       if (em.getTransaction().isActive()) {
+        rolledBack = true;
         rollbackTxn();
       }
     }
 
-    // TODO This is crap. AFter a PersistenceException above everything is rolledback. No "id" is set
-    assertNotNull(pojo.getId());
-
-    Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
-    assertNotNull(pojoEntity);
+    int expectedParents = 0;
+    if (!rolledBack) {
+      // With non-tx case we have no roll-back hence the "pojo" will have been put before the exception came
+      assertNotNull(pojo.getId());
+      Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
+      assertNotNull(pojoEntity);
+      expectedParents = 1;
+    }
 
     Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -197,7 +200,7 @@ public class JPAOneToOneTest extends JPATestCase {
     assertNotNull(hasParentKeyPkEntity);
     assertKeyParentNull(hasParentKeyPkEntity, hasParentKeyPk.getId());
 
-    assertCountsInDatastore(1, 1);
+    assertCountsInDatastore(expectedParents, 1);
   }
 
   public void testInsert_ExistingParentNewChild() throws Exception {
