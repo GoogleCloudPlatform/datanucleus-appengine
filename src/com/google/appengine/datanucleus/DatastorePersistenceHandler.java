@@ -609,8 +609,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId()));
     }
 
+    // TODO Update fieldNumbers to include non-DFG that we think are required.
+
     op.replaceFields(fieldNumbers, new FetchFieldManager(op, storeMgr, entity, fieldNumbers));
 
+    // Refresh version - is this needed? should have been set on retrieval anyway
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
       Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(getIdentifierFactory(op), vmd));
@@ -619,24 +622,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       }
       op.setVersion(versionValue);
     }
-    runPostFetchMappingCallbacks(op, fieldNumbers);
 
-    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
-            (System.currentTimeMillis() - startTime)));
-    }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementFetchCount();
-    }
-  }
-
-  private void runPostFetchMappingCallbacks(ObjectProvider op, int[] fieldNumbers) {
+    // Run post-fetch mapping callbacks. What is this actually achieving?
     AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
     for (int i = 0; i < fmds.length; i++) {
-      fmds[i] =
-          op.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
+      fmds[i] = op.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
     }
-
     ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
     DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
     FetchMappingConsumer consumer = new FetchMappingConsumer(op.getClassMetaData());
@@ -645,6 +636,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     dc.providePrimaryKeyMappings(consumer);
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
       callback.postFetch(op);
+    }
+
+    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
+            (System.currentTimeMillis() - startTime)));
+    }
+    if (storeMgr.getRuntimeManager() != null) {
+      storeMgr.getRuntimeManager().incrementFetchCount();
     }
   }
 
@@ -774,17 +773,18 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
     op.setAssociatedValue("deleted", true);
 
+    // Check the version is valid to delete; any updates since read?
+    handleVersioningBeforeWrite(op, entity, VersionBehavior.NO_INCREMENT, "deleting");
+
     // first handle any dependent deletes that need deleting before we delete this object
     DependentDeleteRequest req = new DependentDeleteRequest(dc, op.getClassMetaData(), clr);
     Set relatedObjectsToDelete = req.execute(op, entity);
 
-    // now delete ourselves
+    // Null out all non-PK fields in the datastore. Why not just delete it?
     DatastoreFieldManager fieldMgr = new DatastoreDeleteFieldManager(op, storeMgr, entity);
     AbstractClassMetaData acmd = op.getClassMetaData();
-    // stay away from the pk fields - this method sets fields to null and that's not allowed for pks
     op.provideFields(acmd.getNonPKMemberPositions(), fieldMgr);
 
-    handleVersioningBeforeWrite(op, entity, VersionBehavior.NO_INCREMENT, "deleting");
     Key keyToDelete = getPkAsKey(op);
 
     // If we're in the middle of a batch operation just register the statemanager that needs the delete
@@ -808,6 +808,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       return;
     }
 
+    // Delete this object
     delete(txn, Collections.singletonList(keyToDelete));
 
     if (relatedObjectsToDelete != null && !relatedObjectsToDelete.isEmpty()) {

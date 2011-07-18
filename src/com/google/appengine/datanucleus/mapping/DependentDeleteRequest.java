@@ -123,6 +123,7 @@ public class DependentDeleteRequest {
       // Null out the relationship to the object being deleted.
       refMapping.setObject(ec, owningEntity, new int[1], op.getObject());
 
+      // TODO If the object being deleted is this objects parent, do we delete this?
       // TODO(maxr): Do I need to manually request an update now?
     }
   }
@@ -132,12 +133,7 @@ public class DependentDeleteRequest {
    * DeleteRequest.DeleteMappingConsumer
    */
   private static class DependentDeleteMappingConsumer implements MappingConsumer {
-
-    private int pkField;
-
-    /**
-     * Fields in a 1-1 relation with FK in the table of the other object.
-     */
+    /** Fields in a 1-1 relation with FK in the table of the other object. */
     private final List<AbstractMemberMetaData> oneToOneNonOwnerFields = Utils.newArrayList();
 
     private final List<MappingCallbacks> callbacks = Utils.newArrayList();
@@ -162,7 +158,6 @@ public class DependentDeleteRequest {
 
       if (m.includeInUpdateStatement()) {
         if (fmd.isPrimaryKey()) {
-          pkField = fmd.getAbsoluteFieldNumber();
         } else if (m instanceof PersistableMapping || m instanceof ReferenceMapping) {
           if (m.getNumberOfDatastoreMappings() == 0) {
             // Field storing a PC object with FK at other side
@@ -188,10 +183,6 @@ public class DependentDeleteRequest {
       if (m instanceof MappingCallbacks) {
         callbacks.add((MappingCallbacks) m);
       }
-    }
-
-    public int getPrimaryKeyFieldNumber() {
-      return pkField;
     }
 
     /**
