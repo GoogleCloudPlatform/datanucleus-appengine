@@ -56,13 +56,11 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.scostore.FKListStore;
 import org.datanucleus.store.mapped.scostore.FKSetStore;
 import org.datanucleus.store.query.ResultObjectFactory;
-import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.lang.reflect.Field;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -190,8 +188,6 @@ public class DatastoreManager extends MappedStoreManager {
       // TODO Drop this when remove DatastoreJDOMetaDataManager
       setCustomPluginManager();
     }
-
-    addTypeManagerMappings();
 
     storageVersion = StorageVersion.fromStoreManager(this);
 
@@ -323,21 +319,7 @@ public class DatastoreManager extends MappedStoreManager {
         pluginMgr, new DatastorePluginRegistry((PluginRegistry) registryField.get(pluginMgr)));
   }
 
-  private void addTypeManagerMappings() throws NoSuchFieldException, IllegalAccessException {
-    Field javaTypes = TypeManager.class.getDeclaredField("javaTypes");
-    javaTypes.setAccessible(true);
-    @SuppressWarnings("unchecked")
-    Map<String, Object> map = (Map<String, Object>) javaTypes.get(nucleusContext.getTypeManager());
-    Object arrayListValue = map.get(ArrayList.class.getName());
-    // Arrays$ArrayList is an inner class that is used for the results of
-    // Arrays.asList().  We want the same sco behavior for instances of
-    // this class so they end up with the same sco implementation
-    // that gets used for ArrayList.
-    map.put("java.util.Arrays$ArrayList", arrayListValue);
-  }
-
   // TODO This is wrong. It returns NucleusConnectionImpl where mc.getConnection is null hence does NOT give access
-  // to the 
   @Override
   public NucleusConnection getNucleusConnection(ExecutionContext ec) {
     ConnectionFactory cf = connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
