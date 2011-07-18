@@ -17,7 +17,7 @@ package com.google.appengine.datanucleus;
 
 import junit.framework.TestSuite;
 
-import com.google.appengine.datanucleus.jdo.DatastoreJDOPersistenceManagerFactoryTest;
+import com.google.appengine.datanucleus.jdo.JDOPersistenceManagerFactoryTest;
 import com.google.appengine.datanucleus.jdo.JDOAbstractBaseClassTest;
 import com.google.appengine.datanucleus.jdo.JDOAncestorTest;
 import com.google.appengine.datanucleus.jdo.JDOAttachDetachTest;
@@ -56,7 +56,7 @@ import com.google.appengine.datanucleus.jdo.JDOUnidirectionalOneToManySubclassTe
 import com.google.appengine.datanucleus.jdo.JDOUnidirectionalOneToOneSubclassTest;
 import com.google.appengine.datanucleus.jdo.JDOUnindexedPropertiesTest;
 import com.google.appengine.datanucleus.jdo.JDOUpdateTest;
-import com.google.appengine.datanucleus.jpa.DatastoreEntityManagerFactoryTest;
+import com.google.appengine.datanucleus.jpa.JPAEntityManagerFactoryTest;
 import com.google.appengine.datanucleus.jpa.JPAAbstractBaseClassTest;
 import com.google.appengine.datanucleus.jpa.JPAAncestorTest;
 import com.google.appengine.datanucleus.jpa.JPAAttachDetachTest;
@@ -118,8 +118,8 @@ public class AllTests {
   public static TestSuite suite() {
     TestSuite suite = new TestSuite();
     suite.addTestSuite(DatastoreFieldManagerTest.class);
-    suite.addTestSuite(DatastoreJDOPersistenceManagerFactoryTest.class);
-    suite.addTestSuite(DatastoreEntityManagerFactoryTest.class);
+    suite.addTestSuite(JDOPersistenceManagerFactoryTest.class);
+    suite.addTestSuite(JPAEntityManagerFactoryTest.class);
     suite.addTestSuite(JDOQLQueryTest.class);
     suite.addTestSuite(JPQLQueryTest.class);
     suite.addTestSuite(LazyResultTest.class);
