@@ -163,10 +163,10 @@ public final class EntityUtils {
    * </ul>
    */
   public static Object idToInternalKey(ExecutionContext ec, Class<?> cls, Object val, boolean allowSubclasses) {
-    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(
-        cls, ec.getClassLoaderResolver());
+    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(cls, ec.getClassLoaderResolver());
     String kind = determineKind(cmd, ec);
-    AbstractMemberMetaData pkMemberMetaData = getPKMemberMetaData(ec, cls);
+    AbstractMemberMetaData pkMemberMetaData =
+      cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]);
     return idToInternalKey(kind, pkMemberMetaData, cls, val, ec, allowSubclasses);
   }
 
@@ -399,12 +399,6 @@ public final class EntityUtils {
     return result;
   }
 
-  private static AbstractMemberMetaData getPKMemberMetaData(ExecutionContext ec, Class<?> cls) {
-    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(
-            cls, ec.getClassLoaderResolver());
-    return cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]);
-  }
-
   /**
    * Get the active transaction.  Depending on the connection factory
    * associated with the store manager, this may establish a transaction if one
@@ -418,9 +412,7 @@ public final class EntityUtils {
 
   public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
     Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
-
-    String kind =
-        EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
+    String kind = EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
     if (primaryKey instanceof Key) {
       return (Key) primaryKey;
     } else if (primaryKey instanceof Long) {

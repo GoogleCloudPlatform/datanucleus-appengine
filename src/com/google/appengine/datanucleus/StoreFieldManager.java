@@ -249,9 +249,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
 
       // Set the property on the entity, allowing for null rules
-      String propName = EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd);
-      checkNullValue(ammd, propName, value);
-      EntityUtils.setEntityProperty(datastoreEntity, ammd, propName, value);
+      checkNullValue(ammd, value);
+      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
+          EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd), value);
       return true;
     }
     return false;
@@ -516,7 +516,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     return key;
   }
 
-  private void checkNullValue(AbstractMemberMetaData ammd, String propName, Object value) {
+  private void checkNullValue(AbstractMemberMetaData ammd, Object value) {
     if (value == null) {
       // This test goes against the member meta data, since the member meta data
       // says how to behave in case of unwanted null values (but JDO only).
