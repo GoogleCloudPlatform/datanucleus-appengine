@@ -29,11 +29,11 @@ import com.google.appengine.datanucleus.test.HasStringAncestorKeyPkJDO;
 import com.google.appengine.datanucleus.test.KitchenSink;
 import com.google.appengine.datanucleus.test.Person;
 
-
 import java.util.ArrayList;
 import java.util.List;
 
 import javax.jdo.JDOObjectNotFoundException;
+import javax.jdo.identity.StringIdentity;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -484,4 +484,23 @@ public class JDOFetchTest extends JDOTestCase {
     assertEquals("named key", KeyFactory.stringToKey(flight.getId()).getName());
   }
 
+  public void testSimplePersistGetObjectById() {
+    Flight fl = new Flight("LHR", "CHI", "BA201", 1, 2);
+    pm.makePersistent(fl);
+    commitTxn();
+    Object id = pm.getObjectId(fl);
+    String idKey = ((StringIdentity)id).getKey();
+    pm.evictAll();
+    pmf.getDataStoreCache().evictAll();
+
+    beginTxn();
+    Flight flight = (Flight)pm.getObjectById(id);
+    assertNotNull(flight);
+    assertEquals(idKey, flight.getId());
+    assertEquals("LHR", flight.getOrigin());
+    assertEquals("CHI", flight.getDest());
+    assertEquals("BA201", flight.getName());
+    assertEquals(1, flight.getYou());
+    assertEquals(2, flight.getMe());
+  }
 }
