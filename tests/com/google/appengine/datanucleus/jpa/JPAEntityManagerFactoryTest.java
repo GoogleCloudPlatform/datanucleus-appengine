@@ -23,7 +23,7 @@ import javax.persistence.Persistence;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreEntityManagerFactoryTest extends TestCase {
+public class JPAEntityManagerFactoryTest extends TestCase {
 
   public void testAllocationOfDuplicateNamedEMFAsSingleton() {
     EntityManagerFactory emf1 = null;

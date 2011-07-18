@@ -23,7 +23,7 @@ import javax.jdo.PersistenceManagerFactory;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class DatastoreJDOPersistenceManagerFactoryTest extends TestCase {
+public class JDOPersistenceManagerFactoryTest extends TestCase {
 
   public void testAllocationOfDuplicateNamedPMFAsSingleton() {
     PersistenceManagerFactory pmf1 = null;
