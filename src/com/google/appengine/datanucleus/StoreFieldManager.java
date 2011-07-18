@@ -30,6 +30,7 @@ import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.types.sco.SCO;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -99,35 +100,35 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     public void storeBooleanField(int fieldNumber, boolean value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeByteField(int fieldNumber, byte value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeCharField(int fieldNumber, char value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeDoubleField(int fieldNumber, double value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeFloatField(int fieldNumber, float value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeIntField(int fieldNumber, int value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeLongField(int fieldNumber, long value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeShortField(int fieldNumber, short value) {
-      storeObjectField(fieldNumber, value);
+      storeFieldInEntity(fieldNumber, value);
     }
 
     public void storeStringField(int fieldNumber, String value) {
@@ -148,7 +149,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
             "CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
           valueToStore = new Text(value);
         }
-        storeObjectField(fieldNumber, valueToStore);
+
+        storeFieldInEntity(fieldNumber, valueToStore);
       }
     }
 
@@ -167,54 +169,76 @@ public class StoreFieldManager extends DatastoreFieldManager {
           // nothing for us to store
           return;
         }
-        if (value != null ) {
-          if (ammd.isSerialized()) {
-            // If the field is serialized we don't need to apply
-            // any conversions before setting it on the entity since
-            // the serialization is guaranteed to produce a Blob.
-            value = storeManager.getSerializationManager().serialize(clr, ammd, value);
-          } else {
-            // Perform any conversions from the field type to the stored-type
-            value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
-          }
-        }
 
-        if (ammd.getEmbeddedMetaData() != null) {
-          storeEmbeddedField(ammd, fieldNumber, value);
-        } else if ((operation == Operation.INSERT && isInsertable(ammd)) ||
-                   (operation == Operation.UPDATE && isUpdatable(ammd))) {
-          if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
-            if (!repersistingForChildKeys) {
-              // register a callback for later
-              relationFieldManager.storeRelationField(
-                  getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
-            }
-            DatastoreTable table = getDatastoreTable();
-            if (table != null && table.isParentKeyProvider(ammd)) {
-              // a parent key provider is either a many-to-one or the child side of a
-              // one-to-one.  Either way we don't want the entity to have a property
-              // corresponding to this field because this information is available in
-              // the key itself
-              return;
-            }
+        storeFieldInEntity(fieldNumber, value);
 
-            if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
-              // don't write child keys to the parent if the storage version isn't high enough
-              return;
-            }
-
-            // We still want to write the entity property with the keys
-            value = extractRelationKeys(value);
-          }
-          // unwrap SCO values so that the datastore api doesn't honk on unknown types
-          value = unwrapSCOField(fieldNumber, value);
-          String propName = EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd);
-          // validate null values against ammd
-          checkNullValue(ammd, propName, value);
-
-          EntityUtils.setEntityProperty(datastoreEntity, ammd, propName, value);
+        if (!(value instanceof SCO)) {
+        // TODO Wrap SCO fields. Currently this causes some tests to fail due to the fragility of the design of this plugin
+//        getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
         }
       }
+    }
+
+    /**
+     * Method to store the provided value in the Entity for the specified field.
+     * @param fieldNumber The absolute field number
+     * @param value Value to store (or rather to manipulate into a suitable form for the datastore).
+     * @return Whether it stored the value (doesn't mean an error, just that wasn't needed to be stored)
+     */
+    private boolean storeFieldInEntity(int fieldNumber, Object value) {
+      ClassLoaderResolver clr = getClassLoaderResolver();
+      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+      if (value != null ) {
+        if (ammd.isSerialized()) {
+          // If the field is serialized we don't need to apply any conversions before setting it on the 
+          // entity since the serialization is guaranteed to produce a Blob.
+          value = storeManager.getSerializationManager().serialize(clr, ammd, value);
+        } else {
+          // Perform any conversions from the field type to the stored-type
+          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
+        }
+      }
+
+      if (ammd.getEmbeddedMetaData() != null) {
+        storeEmbeddedField(ammd, fieldNumber, value);
+      }
+      else if ((operation == Operation.INSERT && isInsertable(ammd)) ||
+               (operation == Operation.UPDATE && isUpdatable(ammd))) {
+        if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
+          if (!repersistingForChildKeys) {
+            // register a callback for later
+            relationFieldManager.storeRelationField(
+                getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+          }
+          DatastoreTable table = getDatastoreTable();
+          if (table != null && table.isParentKeyProvider(ammd)) {
+            // a parent key provider is either a many-to-one or the child side of a one-to-one.  
+            // Either way we don't want the entity to have a property corresponding to this field 
+            // because this information is available in the key itself
+            return false;
+          }
+
+          if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+            // don't write child keys to the parent if the storage version isn't high enough
+            return false;
+          }
+
+          // We still want to write the entity property with the keys
+          value = extractRelationKeys(value);
+        }
+
+        // unwrap SCO values so that the datastore api doesn't honk on unknown types
+        if (value instanceof SCO) {
+          value = unwrapSCOField(fieldNumber, value);
+        }
+
+        // Set the property on the entity, allowing for null rules
+        String propName = EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd);
+        checkNullValue(ammd, propName, value);
+        EntityUtils.setEntityProperty(datastoreEntity, ammd, propName, value);
+        return true;
+      }
+      return false;
     }
 
     void storeParentField(int fieldNumber, Object value) {
