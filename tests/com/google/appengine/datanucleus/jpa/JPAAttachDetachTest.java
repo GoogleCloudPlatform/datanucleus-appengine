@@ -67,7 +67,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     em.persist(pojo);
     commitTxn();
     assertEquals(ObjectState.HOLLOW_PERSISTENT_NONTRANSACTIONAL, JDOHelper.getObjectState(pojo));
-    assertEquals(Date.class, pojo.getDate().getClass());
+    assertTrue(Date.class.isAssignableFrom(pojo.getDate().getClass()));
     em.close(); // Detaches objects in L1 cache
     assertEquals(ObjectState.DETACHED_CLEAN, JDOHelper.getObjectState(pojo));
     em = emf.createEntityManager();
