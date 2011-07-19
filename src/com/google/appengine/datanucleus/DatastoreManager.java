@@ -24,8 +24,6 @@ import com.google.appengine.datanucleus.scostore.DatastoreFKListStore;
 import com.google.appengine.datanucleus.scostore.DatastoreFKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.plugin.PluginManager;
-import org.datanucleus.plugin.PluginRegistry;
 import org.datanucleus.store.connection.ConnectionFactory;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.store.connection.ManagedConnection;
@@ -59,8 +57,8 @@ import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
-import java.lang.reflect.Field;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
@@ -185,11 +183,6 @@ public class DatastoreManager extends MappedStoreManager {
     dba = new DatastoreAdapter();
     initialiseIdentifierFactory(nucContext);
 
-    if (nucContext.getApiAdapter().getName().equalsIgnoreCase("JDO")) {
-      // TODO Drop this when remove DatastoreJDOMetaDataManager
-      setCustomPluginManager();
-    }
-
     storageVersion = StorageVersion.fromStoreManager(this);
 
     // Add listener so we can check all metadata for unsupported features and required schema
@@ -307,16 +300,6 @@ public class DatastoreManager extends MappedStoreManager {
       }
     }
     return datastoreServiceConfig;
-  }
-
-  private void setCustomPluginManager() throws NoSuchFieldException, IllegalAccessException {
-    // Replaces the configured plugin registry with our own implementation.
-    // Reflection is required because there's no public mutator for this field.
-    PluginManager pluginMgr = getNucleusContext().getPluginManager();
-    Field registryField = PluginManager.class.getDeclaredField("registry");
-    registryField.setAccessible(true);
-    registryField.set(
-        pluginMgr, new DatastorePluginRegistry((PluginRegistry) registryField.get(pluginMgr)));
   }
 
   // TODO This is wrong. It returns NucleusConnectionImpl where mc.getConnection is null hence does NOT give access
@@ -565,6 +548,9 @@ public class DatastoreManager extends MappedStoreManager {
    * @param acmd The meta data to validate.
    */
   public void validateMetaDataForClass(AbstractClassMetaData acmd) {
+    NucleusLogger.GENERAL.info(">> validateClass " + acmd.getFullClassName() + 
+        " dfgFields=" + StringUtils.intArrayToString(acmd.getDFGMemberPositions()) +
+        " dfgFlags=" + StringUtils.booleanArrayToString(acmd.getDFGMemberFlags()));
     // Only validate each meta data once
     if (validatedClasses.add(acmd.getFullClassName())) {
       metadataValidator.validate(acmd);
