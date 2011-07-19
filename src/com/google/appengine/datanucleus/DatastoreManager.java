@@ -57,7 +57,6 @@ import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import java.util.Arrays;
 import java.util.Collection;
@@ -67,6 +66,9 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * StoreManager for GAE/J with DataNucleus.
+ * When the user specifies "datanucleus.ConnectionURL" as "appengine", an instance of this class is created.
+ * 
  * @author Max Ross <maxr@google.com>
  */
 public class DatastoreManager extends MappedStoreManager {
@@ -548,9 +550,6 @@ public class DatastoreManager extends MappedStoreManager {
    * @param acmd The meta data to validate.
    */
   public void validateMetaDataForClass(AbstractClassMetaData acmd) {
-    NucleusLogger.GENERAL.info(">> validateClass " + acmd.getFullClassName() + 
-        " dfgFields=" + StringUtils.intArrayToString(acmd.getDFGMemberPositions()) +
-        " dfgFlags=" + StringUtils.booleanArrayToString(acmd.getDFGMemberFlags()));
     // Only validate each meta data once
     if (validatedClasses.add(acmd.getFullClassName())) {
       metadataValidator.validate(acmd);
