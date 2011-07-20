@@ -84,14 +84,11 @@ public final class EntityUtils {
    */
   public static String getVersionPropertyName(
       IdentifierFactory idFactory, VersionMetaData vmd) {
-    ColumnMetaData[] columnMetaData = vmd.getColumnMetaData();
-    if (columnMetaData == null || columnMetaData.length == 0) {
+    ColumnMetaData columnMetaData = vmd.getColumnMetaData();
+    if (columnMetaData == null) {
       return idFactory.newVersionFieldIdentifier().getIdentifierName();
     }
-    if (columnMetaData.length != 1) {
-      throw new IllegalArgumentException("Please specify 0 or 1 column name for the version property.");
-    }
-    return columnMetaData[0].getName();
+    return columnMetaData.getName();
   }
 
   /**
