@@ -25,29 +25,41 @@ import org.datanucleus.metadata.InheritanceStrategy;
  */
 public class MetaDataUtils {
 
-  private static boolean memberHasExtension(AbstractClassMetaData acmd, int fieldNumber, String extensionName) {
-    return acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber).hasExtension(extensionName);
-  }
-
   public static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
     int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs
     return isEncodedPKField(acmd, pkFieldNumber);
   }
 
   public static boolean isEncodedPKField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, DatastoreManager.ENCODED_PK);
+    return isEncodedPKField(acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+  }
+
+  public static boolean isEncodedPKField(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.ENCODED_PK);
   }
 
   public static boolean isParentPKField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, DatastoreManager.PARENT_PK);
+    return isParentPKField(acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+  }
+
+  public static boolean isParentPKField(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.PARENT_PK);
   }
 
   public static boolean isPKNameField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, DatastoreManager.PK_NAME);
+    return isPKNameField(acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+  }
+
+  public static boolean isPKNameField(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.PK_NAME);
   }
 
   public static boolean isPKIdField(AbstractClassMetaData acmd, int fieldNumber) {
-    return memberHasExtension(acmd, fieldNumber, DatastoreManager.PK_ID);
+    return isPKIdField(acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber));
+  }
+
+  public static boolean isPKIdField(AbstractMemberMetaData ammd) {
+    return ammd.hasExtension(DatastoreManager.PK_ID);
   }
 
   public static boolean isNewOrSuperclassTableInheritanceStrategy(AbstractClassMetaData cmd) {

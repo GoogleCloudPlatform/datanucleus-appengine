@@ -30,6 +30,8 @@ import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
@@ -72,6 +74,7 @@ import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreTransaction;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.QueryEntityPKFetchFieldManager;
 import com.google.appengine.datanucleus.Utils;
@@ -164,12 +167,10 @@ public class DatastoreQuery implements Serializable {
   /** The invoking query object */
   final AbstractJavaQuery query;
 
-  /** The current datastore qu */
+  /** The current datastore query. */
   private transient Query latestDatastoreQuery;
 
-  /**
-   * The different types of datastore query results that we support.
-   */
+  /** The different types of datastore query results that we support. */
   enum ResultType {
     ENTITY, // return entities
     ENTITY_PROJECTION, // return specific fields of an entity
@@ -183,6 +184,34 @@ public class DatastoreQuery implements Serializable {
    */
   public DatastoreQuery(AbstractJavaQuery query) {
     this.query = query;
+  }
+
+  private ExecutionContext getExecutionContext() {
+    return query.getExecutionContext();
+  }
+
+  private DatastoreManager getDatastoreManager() {
+    return (DatastoreManager) getExecutionContext().getStoreManager();
+  }
+
+  private MetaDataManager getMetaDataManager() {
+    return getExecutionContext().getMetaDataManager();
+  }
+
+  private ClassLoaderResolver getClassLoaderResolver() {
+    return getExecutionContext().getClassLoaderResolver();
+  }
+
+  IdentifierFactory getIdentifierFactory() {
+    return getStoreManager().getIdentifierFactory();
+  }
+
+  private DatastoreManager getStoreManager() {
+    return (DatastoreManager) getExecutionContext().getStoreManager();
+  }
+
+  private SymbolTable getSymbolTable() {
+    return query.getCompilation().getSymbolTable();
   }
 
   /**
@@ -232,14 +261,50 @@ public class DatastoreQuery implements Serializable {
       config.deadline(query.getDatastoreReadTimeoutMillis() / 1000);
     }
 
+    // TODO Move this to some more convenient place
+    if (NucleusLogger.QUERY.isDebugEnabled()) {
+      // Log the query
+      StringBuilder str = new StringBuilder();
+      str.append("Kind=" + StringUtils.collectionToString(qd.tableMap.values()));
+      List<FilterPredicate> filterPreds = qd.primaryDatastoreQuery.getFilterPredicates();
+      if (filterPreds.size() > 0) {
+        str.append(" Filter : ");
+        Iterator<FilterPredicate> filterIter = filterPreds.iterator();
+        while (filterIter.hasNext()) {
+          FilterPredicate pred = filterIter.next();
+          str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
+          if (filterIter.hasNext()) {
+            if (qd.isOrExpression) {
+              str.append(" OR ");
+            } else {
+              str.append(" AND ");
+            }
+          }
+        }
+      }
+
+      List<SortPredicate> sortPreds = qd.primaryDatastoreQuery.getSortPredicates();
+      if (sortPreds.size() > 0) {
+        str.append(" Order : ");
+        Iterator<SortPredicate> sortIter = sortPreds.iterator();
+        while (sortIter.hasNext()) {
+          SortPredicate pred = sortIter.next();
+          str.append(pred.getPropertyName() + " " + pred.getDirection());
+          if (sortIter.hasNext()) {
+            str.append(",");
+          }
+        }
+      }
+      NucleusLogger.QUERY.debug("Query compiled as : " + str.toString());
+    }
+
     Map extensions = query.getExtensions();
     if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
       config.readPolicy(new ReadPolicy(
           ReadPolicy.Consistency.valueOf((String) extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY))));
     }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    // Txns don't get started until you allocate a connection, so allocate a
-    // connection before we do anything that might require a txn.
+
     if (qd.batchGetKeys != null &&
         qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
         qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
@@ -469,6 +534,7 @@ public class DatastoreQuery implements Serializable {
       offset = (int) Math.min(Integer.MAX_VALUE, fromInclNo);
       opts = withOffset(offset);
     }
+
     if (rangeValueIsSet(toExclNo)) {
       // datastore api expects an int because we cap you at 1000 anyway.
       int intExclNo = (int) Math.min(Integer.MAX_VALUE, toExclNo);
@@ -489,8 +555,19 @@ public class DatastoreQuery implements Serializable {
         opts.limit(intExclNo - offset);
       }
     }
-    Cursor cursor = getCursor();
+
+    // users can provide the cursor as a Cursor or its String representation.
     // If we have a cursor, add it to the fetch options
+    Cursor cursor = null;
+    Object obj = query.getExtension(CursorHelper.QUERY_CURSOR_PROPERTY_NAME);
+    if (obj != null) {
+      if (obj instanceof Cursor) {
+        cursor = (Cursor) obj;
+      }
+      else {
+        cursor = Cursor.fromWebSafeString((String) obj);
+      }
+    }
     if (cursor != null) {
       if (opts == null) {
         opts = withStartCursor(cursor);
@@ -498,9 +575,17 @@ public class DatastoreQuery implements Serializable {
         opts.startCursor(cursor);
       }
     }
-    // Use the fetch size of the fetch plan to determine
-    // chunk size.
-    Integer fetchSize = getFetchSize();
+
+    // Use the fetch size of the fetch plan to determine chunk size.
+    FetchPlan fetchPlan = query.getFetchPlan();
+    Integer fetchSize = fetchPlan.getFetchSize();
+    if (fetchSize != FetchPlan.FETCH_SIZE_OPTIMAL) {
+      if (fetchSize == FetchPlan.FETCH_SIZE_GREEDY) {
+        fetchSize = Integer.MAX_VALUE;
+      }
+    } else {
+      fetchSize = null;
+    }
     if (fetchSize != null) {
       if (opts == null) {
         opts = withChunkSize(fetchSize);
@@ -508,39 +593,8 @@ public class DatastoreQuery implements Serializable {
         opts.chunkSize(fetchSize);
       }
     }
+
     return opts;
-  }
-
-  Integer getFetchSize() {
-    FetchPlan fetchPlan = query.getFetchPlan();
-    Integer fetchSize = fetchPlan.getFetchSize();
-    if (fetchSize != FetchPlan.FETCH_SIZE_OPTIMAL) {
-      if (fetchSize == FetchPlan.FETCH_SIZE_GREEDY) {
-        return Integer.MAX_VALUE;
-      }
-    } else {
-      fetchSize = null;
-    }
-    return fetchSize;
-  }
-
-  /**
-   * @return The cursor the user added to the query, or {@code null} if no cursor.
-   */
-  private Cursor getCursor() {
-    // users can provide the cursor as a Cursor or its String representation.
-    Object obj = query.getExtension(CursorHelper.QUERY_CURSOR_PROPERTY_NAME);
-    if (obj != null) {
-      if (obj instanceof Cursor) {
-        return (Cursor) obj;
-      }
-      return Cursor.fromWebSafeString((String) obj);
-    }
-    return null;
-  }
-
-  private Object entityToPojo(Entity entity, AbstractClassMetaData acmd, ClassLoaderResolver clr, FetchPlan fp) {
-    return entityToPojo(entity, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
   }
 
   /**
@@ -724,9 +778,6 @@ public class DatastoreQuery implements Serializable {
     }
 
     return ec.findObject(id, fv, cls, false);
-//    NucleusLogger.GENERAL.info(">> DatastoreQuery.entityToPojoPK calling findObjectUsingAID");
-    // TODO This method is deprecated, so use IdentityUtils etc
-//    return ec.findObjectUsingAID(new Type(clr.classForName(acmd.getFullClassName())), fv, false, true);
   }
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
@@ -772,7 +823,7 @@ public class DatastoreQuery implements Serializable {
             // entity.
             fp = null;
           }
-          return entityToPojo(from, acmd, clr, fp);
+          return entityToPojo(from, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
         }
       };
     }
@@ -982,7 +1033,7 @@ public class DatastoreQuery implements Serializable {
     if (ammd == null) {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
-    if (isParentPK(ammd)) {
+    if (MetaDataUtils.isParentPKField(ammd)) {
       throw new UnsupportedDatastoreFeatureException("Cannot sort by parent.");
     } else {
       String sortProp;
@@ -995,20 +1046,11 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  IdentifierFactory getIdentifierFactory() {
-    return getStoreManager().getIdentifierFactory();
-  }
-
-  private DatastoreManager getStoreManager() {
-    return (DatastoreManager) getExecutionContext().getStoreManager();
-  }
-
   /**
    * Adds filters to the given {@link Query} by examining the compiled filter expression.
    */
   private void addFilters(QueryData qd) {
-    Expression filter = qd.compilation.getExprFilter();
-    addExpression(filter, qd);
+    addExpression(qd.compilation.getExprFilter(), qd);
   }
 
   /**
@@ -1022,10 +1064,17 @@ public class DatastoreQuery implements Serializable {
     if (expr == null) {
       return;
     }
-    checkForUnsupportedOperator(expr.getOperator());
-    if (qd.isOrExpression) {
-      checkForUnsupportedOrOperator(expr.getOperator());
+    if (UNSUPPORTED_OPERATORS.contains(expr.getOperator())) {
+      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
+          expr.getOperator());
     }
+    if (qd.isOrExpression) {
+      if (expr.getOperator() != null && !expr.getOperator().equals(Expression.OP_EQ) && 
+          !expr.getOperator().equals(Expression.OP_OR)) {
+        throw new UnsupportedDatastoreFeatureException("'or' filters can only check equality");
+      }
+    }
+
     if (expr instanceof DyadicExpression) {
       if (expr.getOperator().equals(Expression.OP_AND)) {
         addExpression(expr.getLeft(), qd);
@@ -1076,12 +1125,6 @@ public class DatastoreQuery implements Serializable {
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Unexpected expression type while parsing query: "+ expr.getClass().getName());
-    }
-  }
-
-  private void checkForUnsupportedOrOperator(Expression.Operator operator) {
-    if (operator != null && !operator.equals(Expression.OP_EQ) && !operator.equals(Expression.OP_OR)) {
-      throw new UnsupportedDatastoreFeatureException("'or' filters can only check equality");
     }
   }
 
@@ -1283,7 +1326,7 @@ public class DatastoreQuery implements Serializable {
     JavaTypeMapping mapping = getMappingForFieldWithName(tuples, qd, acmd);
     if (mapping instanceof PersistableMapping) {
       processPersistenceCapableMapping(qd, op, ammd, value);
-    } else if (isParentPK(ammd)) {
+    } else if (MetaDataUtils.isParentPKField(ammd)) {
       addParentFilter(op, internalPkToKey(acmd, value), qd.primaryDatastoreQuery);
     } else {
       String datastorePropName;
@@ -1377,10 +1420,6 @@ public class DatastoreQuery implements Serializable {
     return new OrderExpression(primaryOrderExpr);
   }
 
-  private SymbolTable getSymbolTable() {
-    return query.getCompilation().getSymbolTable();
-  }
-
   private void processPotentialBatchGet(QueryData qd, Collection value,
                                  AbstractClassMetaData acmd, Query.FilterOperator op) {
     if (!op.equals(Query.FilterOperator.EQUAL)) {
@@ -1435,6 +1474,7 @@ public class DatastoreQuery implements Serializable {
   // TODO(maxr): Use TypeConversionUtils
   private Object pojoParamToDatastoreParam(Object param) {
     if (param instanceof Enum) {
+      // TODO Cater for persisting Enum as ordinal. Need the mmd of the other side
       param = ((Enum) param).name();
     } else if (param instanceof byte[]) {
       param = new ShortBlob((byte[]) param);
@@ -1493,6 +1533,7 @@ public class DatastoreQuery implements Serializable {
     if (ammd == null || tuples.size() == 1) {
       return ammd;
     }
+
     // more than one tuple, so it must be embedded data
     String parentFullClassName = acmd.getFullClassName();
     for (String tuple : tuples.subList(1, tuples.size())) {
@@ -1664,38 +1705,6 @@ public class DatastoreQuery implements Serializable {
     datastoreQuery.setAncestor(key);
   }
 
-  private void checkForUnsupportedOperator(Expression.Operator operator) {
-    if (UNSUPPORTED_OPERATORS.contains(operator)) {
-      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-          operator);
-    }
-  }
-
-  private boolean isParentPK(AbstractMemberMetaData ammd) {
-    return ammd.hasExtension(DatastoreManager.PARENT_PK);
-  }
-
-  // Exposed for tests
-  Query getLatestDatastoreQuery() {
-    return latestDatastoreQuery;
-  }
-
-  private ExecutionContext getExecutionContext() {
-    return query.getExecutionContext();
-  }
-
-  private DatastoreManager getDatastoreManager() {
-    return (DatastoreManager) getExecutionContext().getStoreManager();
-  }
-
-  private MetaDataManager getMetaDataManager() {
-    return getExecutionContext().getMetaDataManager();
-  }
-
-  private ClassLoaderResolver getClassLoaderResolver() {
-    return getExecutionContext().getClassLoaderResolver();
-  }
-
   // Specialization just exists to support tests
   static class UnsupportedDatastoreOperatorException extends NucleusUserException {
     private final String queryString;
@@ -1747,4 +1756,9 @@ public class DatastoreQuery implements Serializable {
       return new Date();
     }
   };
+
+  // Exposed for tests
+  Query getLatestDatastoreQuery() {
+    return latestDatastoreQuery;
+  }
 }
