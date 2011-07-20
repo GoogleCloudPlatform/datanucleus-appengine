@@ -681,19 +681,17 @@ public class DatastoreTable implements DatastoreClass {
     return null;
   }
 
-  void addDatastoreId(ColumnMetaDataContainer columnContainer, DatastoreClass refTable,
+  void addDatastoreId(ColumnMetaData columnMetaData, DatastoreClass refTable,
       AbstractClassMetaData cmd) {
     datastoreIDMapping = new OIDMapping();
     datastoreIDMapping.initialize(storeMgr, cmd.getFullClassName());
 
     // Create a ColumnMetaData in the container if none is defined
     ColumnMetaData colmd;
-    if (columnContainer == null) {
-      colmd = new ColumnMetaData();
-    } else if (columnContainer.getColumnMetaData().length < 1) {
+    if (columnMetaData == null) {
       colmd = new ColumnMetaData();
     } else {
-      colmd = columnContainer.getColumnMetaData()[0];
+      colmd = columnMetaData;
     }
     if (colmd.getName() == null) {
       // Provide default column naming if none is defined
@@ -851,18 +849,20 @@ public class DatastoreTable implements DatastoreClass {
         }
       } else if (cmd.getIdentityType() == IdentityType.DATASTORE) {
         // datastore-identity
-        ColumnMetaDataContainer colContainer = null;
+        ColumnMetaData colmd = null;
         if (cmd.getIdentityMetaData() != null
-            && cmd.getIdentityMetaData().getColumnMetaData() != null &&
-            cmd.getIdentityMetaData().getColumnMetaData().length > 0) {
+            && cmd.getIdentityMetaData().getColumnMetaData() != null) {
           // Try via <datastore-identity>...</datastore-identity>
-          colContainer = cmd.getIdentityMetaData();
+          colmd = cmd.getIdentityMetaData().getColumnMetaData();
         }
-        if (colContainer == null) {
+        if (colmd == null) {
           // Try via <primary-key>...</primary-key>
-          colContainer = cmd.getPrimaryKeyMetaData();
+          if (cmd.getPrimaryKeyMetaData() != null && cmd.getPrimaryKeyMetaData().getColumnMetaData() != null &&
+              cmd.getPrimaryKeyMetaData().getColumnMetaData().length > 0) {
+            colmd = cmd.getPrimaryKeyMetaData().getColumnMetaData()[0];
+          }
         }
-        addDatastoreId(colContainer, null, cmd);
+        addDatastoreId(colmd, null, cmd);
       } else if (cmd.getIdentityType() == IdentityType.NONDURABLE) {
         // Do nothing since no identity!
       }
