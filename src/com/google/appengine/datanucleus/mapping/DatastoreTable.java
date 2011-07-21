@@ -129,20 +129,13 @@ public class DatastoreTable implements DatastoreClass {
    */
   protected Map<String, DatastoreProperty> datastorePropertiesByName = Utils.newHashMap();
 
-  /**
-   * Mapping for datastore identity (optional).
-   *
-   */
+  /** Mapping for datastore identity (optional). */
   private JavaTypeMapping datastoreIDMapping;
 
-  /**
-   * Mappings for application identity (optional).
-   */
+  /** Mappings for application identity (optional). */
   private JavaTypeMapping[] pkMappings;
 
-  /**
-   * Mapping for the id of the table.
-   */
+  /** Mapping for the id of the table. */
   private JavaTypeMapping idMapping;
 
   /** MetaData for discriminator for objects stored in this kind. */
@@ -151,9 +144,7 @@ public class DatastoreTable implements DatastoreClass {
   /** Mapping for any discriminator column. */
   private JavaTypeMapping discriminatorMapping;
   
-  /**
-   * Highest absolute field number managed by this table
-   */
+  /** Highest absolute field number managed by this table */
   private int highestFieldNumber = 0;
 
   /**

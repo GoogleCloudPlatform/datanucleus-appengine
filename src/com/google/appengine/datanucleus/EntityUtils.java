@@ -63,8 +63,8 @@ public final class EntityUtils {
       return ammd.getColumn();
     }
 
-    // If we're dealing with embeddables, the column name override will show up as part of the column meta data.
-    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+    if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0 && 
+        ammd.getColumnMetaData()[0].getName() != null) {
       if (ammd.getColumnMetaData().length != 1) {
         throw new NucleusUserException("Field " + ammd.getFullFieldName() +
             " has been specified with more than 1 column! This is unsupported with GAE/J");

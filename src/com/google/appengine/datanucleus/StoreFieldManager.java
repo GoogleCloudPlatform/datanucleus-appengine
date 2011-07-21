@@ -203,14 +203,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
     if (ammd.getEmbeddedMetaData() != null) {
       // Embedded field handling
       ObjectProvider esm = getEmbeddedObjectProvider(ammd, fieldNumber, value);
-      // We need to build a mapping consumer for tObhe embedded class so that we
-      // get correct fieldIndex --> metadata mappings for the class in the proper
-      // embedded context
+      // We need to build a mapping consumer for the embedded class so that we get correct
+      // fieldIndex --> metadata mappings for the class in the proper embedded context
       // TODO(maxr) Consider caching this
       InsertMappingConsumer mc = buildMappingConsumer(
           esm.getClassMetaData(), getClassLoaderResolver(),
           esm.getClassMetaData().getAllMemberPositions(),
           ammd.getEmbeddedMetaData());
+      // TODO Create own FieldManager instead of reusing this one
       AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mc);
       fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mc, true));
       AbstractClassMetaData acmd = esm.getClassMetaData();
@@ -226,6 +226,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           relationFieldManager.storeRelationField(
               getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
         }
+
         DatastoreTable table = getDatastoreTable();
         if (table != null && table.isParentKeyProvider(ammd)) {
           // a parent key provider is either a many-to-one or the child side of a one-to-one.  

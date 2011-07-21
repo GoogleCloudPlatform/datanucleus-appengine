@@ -137,8 +137,11 @@ public class MetaDataValidator implements MetaDataListener {
 
     // Validate primary-key
     int[] pkPositions = acmd.getPKMemberPositions();
+    if (pkPositions == null) {
+      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.NoPkFields", acmd.getFullClassName());
+    }
     if (pkPositions.length != 1) {
-      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getName());
+      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getFullClassName());
     }
     int pkPos = pkPositions[0];
     AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
@@ -257,6 +260,16 @@ public class MetaDataValidator implements MetaDataListener {
         }
       }
     }
+
+    if (ammd.hasCollection() && ammd.getCollection().isSerializedElement()) {
+      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CollectionWithSerializedElementInvalid", 
+          ammd.getFullFieldName());
+    }
+    else if (ammd.hasArray() && ammd.getArray().isSerializedElement()) {
+      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ArrayWithSerializedElementInvalid", 
+          ammd.getFullFieldName());
+    }
+
 
     checkForIllegalChildField(ammd, noParentAllowed);
 
