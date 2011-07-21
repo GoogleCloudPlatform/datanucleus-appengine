@@ -1,4 +1,4 @@
-package com.google.appengine.datanucleus.bugs.tests;
+package com.google.appengine.datanucleus.bugs.test;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;

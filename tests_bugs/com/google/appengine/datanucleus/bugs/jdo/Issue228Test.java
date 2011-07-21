@@ -3,8 +3,8 @@ package com.google.appengine.datanucleus.bugs.jdo;
 import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.datanucleus.bugs.jdo.JDOBugTestCase;
-import com.google.appengine.datanucleus.bugs.tests.AChild;
-import com.google.appengine.datanucleus.bugs.tests.AParent;
+import com.google.appengine.datanucleus.bugs.test.AChild;
+import com.google.appengine.datanucleus.bugs.test.AParent;
 
 public class Issue228Test extends JDOBugTestCase {
 
