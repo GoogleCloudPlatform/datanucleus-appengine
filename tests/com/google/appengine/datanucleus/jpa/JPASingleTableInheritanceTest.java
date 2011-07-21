@@ -788,6 +788,7 @@ public class JPASingleTableInheritanceTest extends JPATestCase {
     Assert.assertEquals(expectedDiscriminator, entity.getProperty("DTYPE"));
   }
 
+  @SuppressWarnings("deprecation")
   private int countForKind(String kind) {
     return ds.prepare(
         new com.google.appengine.api.datastore.Query(kind)).countEntities();

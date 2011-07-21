@@ -147,6 +147,7 @@ public class JPATestCase extends DatastoreTestCase {
     em = emf.createEntityManager();
   }
 
+  @SuppressWarnings("deprecation")
   public int countForClass(Class<?> clazz) {
     String kind = kindForClass(clazz);
     return ds.prepare(new Query(kind)).countEntities();

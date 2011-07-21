@@ -40,7 +40,7 @@ import javax.persistence.Persistence;
 /**
  * @author Max Ross <maxr@google.com>
  */
-public class JPATestCase extends DatastoreTestCase {
+public class JPABugTestCase extends DatastoreTestCase {
 
   private static
   ThreadLocal<Map<EntityManagerFactoryName, EntityManagerFactory>> emfCache =
@@ -147,6 +147,7 @@ public class JPATestCase extends DatastoreTestCase {
     em = emf.createEntityManager();
   }
 
+  @SuppressWarnings("deprecation")
   public int countForClass(Class<?> clazz) {
     String kind = kindForClass(clazz);
     return ds.prepare(new Query(kind)).countEntities();

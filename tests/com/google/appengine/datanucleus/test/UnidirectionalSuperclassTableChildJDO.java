@@ -146,7 +146,8 @@ public class UnidirectionalSuperclassTableChildJDO {
     private String str;
     
     private String name;
-    
+
+    @SuppressWarnings("unused")
     private int index;
 
     public String getId() {
@@ -173,6 +174,7 @@ public class UnidirectionalSuperclassTableChildJDO {
   
   @PersistenceCapable
   public static class UnidirTopWithOverriddenIdColumn {
+    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY, column = "something_else")
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")

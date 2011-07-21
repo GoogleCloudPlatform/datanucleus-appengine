@@ -114,6 +114,7 @@ public class JPQLCursorTest extends JPATestCase {
 
     for (int i = 0; i < lowLevelCursors.size(); i++) {
       Cursor lowLevelCursor = lowLevelCursors.get(i);
+      @SuppressWarnings("deprecation")
       List<Entity> list = ds.prepare(query).asList(FetchOptions.Builder.withCursor(lowLevelCursor));
       assertEquals(3 - i, list.size());
     }
@@ -157,7 +158,7 @@ public class JPQLCursorTest extends JPATestCase {
     // no limit specified so what we get back doesn't have an end cursor
     List<Book> bookList = q.getResultList();
     assertNull(JPACursorHelper.getCursor(bookList));
-    for (Book b : bookList) {
+    for (@SuppressWarnings("unused") Book b : bookList) {
       // no cursor
       assertNull(JPACursorHelper.getCursor(bookList));
     }

@@ -121,6 +121,7 @@ public class JDOQLCursorTest extends JDOTestCase {
 
     for (int i = 0; i < lowLevelCursors.size(); i++) {
       Cursor lowLevelCursor = lowLevelCursors.get(i);
+      @SuppressWarnings("deprecation")
       List<Entity> list = ds.prepare(query).asList(FetchOptions.Builder.withCursor(lowLevelCursor));
       assertEquals(3 - i, list.size());
     }
@@ -168,7 +169,7 @@ public class JDOQLCursorTest extends JDOTestCase {
     // no limit specified so what we get back doesn't have an end cursor
     List<Book> bookList = (List<Book>) q.execute();
     assertNull(JDOCursorHelper.getCursor(bookList));
-    for (Book b : bookList) {
+    for (@SuppressWarnings("unused") Book b : bookList) {
       // no cursor
       assertNull(JDOCursorHelper.getCursor(bookList));
     }

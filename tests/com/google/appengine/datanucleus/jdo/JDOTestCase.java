@@ -156,6 +156,7 @@ public class JDOTestCase extends DatastoreTestCase {
     pm = pmf.getPersistenceManager();
   }
 
+  @SuppressWarnings("deprecation")
   protected int countForClass(Class<?> clazz) {
     String kind = kindForClass(clazz);
     return ds.prepare(

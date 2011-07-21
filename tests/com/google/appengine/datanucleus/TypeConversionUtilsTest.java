@@ -27,12 +27,15 @@ import java.util.Arrays;
 public class TypeConversionUtilsTest extends TestCase {
   public void testNullToArray() {
     TypeConversionUtils tcu = new TypeConversionUtils();
+    @SuppressWarnings("unused")
     String[] stringArray =
         (String[]) tcu.convertDatastoreListToPojoArray(null, String.class);
 
+    @SuppressWarnings("unused")
     HasEnumJDO.MyEnum[] enumArray = (HasEnumJDO.MyEnum[])
         tcu.convertDatastoreListToPojoArray(null, HasEnumJDO.MyEnum.class);
 
+    @SuppressWarnings("unused")
     int[] intArray =
         (int[]) tcu.convertDatastoreListToPojoArray(null, Integer.TYPE);
 

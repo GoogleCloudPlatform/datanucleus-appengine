@@ -114,6 +114,7 @@ public class BidirectionalOneToManySubclassesJDO {
       @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
       private Key id;
 
+      @SuppressWarnings("unused")
       @Persistent
       private A parent;
 

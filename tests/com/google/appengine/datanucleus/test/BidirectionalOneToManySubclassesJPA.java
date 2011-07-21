@@ -116,6 +116,7 @@ public class BidirectionalOneToManySubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
+      @SuppressWarnings("unused")
       @ManyToOne(fetch = FetchType.LAZY)
       private A parent;
 

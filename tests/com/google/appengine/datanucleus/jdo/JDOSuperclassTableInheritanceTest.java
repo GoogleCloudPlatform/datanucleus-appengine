@@ -752,6 +752,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
     Assert.assertEquals(expectedDiscriminator, entity.getProperty("DISCRIMINATOR"));
   }
 
+  @SuppressWarnings("deprecation")
   private int countForKind(String kind) {
     return ds.prepare(
         new com.google.appengine.api.datastore.Query(kind)).countEntities();
