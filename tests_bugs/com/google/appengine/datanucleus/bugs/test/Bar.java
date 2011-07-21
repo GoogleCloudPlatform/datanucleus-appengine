@@ -9,6 +9,7 @@ import com.google.appengine.api.datastore.Key;
 
 @Entity
 public class Bar {
+  @SuppressWarnings("unused")
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Key key;
