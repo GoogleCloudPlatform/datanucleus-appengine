@@ -2,7 +2,7 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="src" path="tests"/>
-	<classpathentry kind="src" path="tests_bugs"/>
+	<classpathentry excluding="META-INF/*" kind="src" path="tests_bugs"/>
 	<classpathentry kind="lib" path="lib/appengine-agent.jar"/>
 	<classpathentry kind="lib" path="lib/appengine-agentimpl.jar"/>
 	<classpathentry kind="lib" path="lib/appengine-agentruntime.jar"/>
