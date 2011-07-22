@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--**********************************************************************
+Copyright (c) 2009 Google Inc.
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**********************************************************************-->
+<jdoconfig xmlns="http://java.sun.com/xml/ns/jdo/jdoconfig"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:noNamespaceSchemaLocation="http://java.sun.com/xml/ns/jdo/jdoconfig">
+
+    <persistence-manager-factory name="transactional">
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
+        <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
+    </persistence-manager-factory>
+
+    <persistence-manager-factory name="nontransactional">
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
+        <property name="javax.jdo.option.NontransactionalRead" value="true"/>
+        <property name="javax.jdo.option.NontransactionalWrite" value="true"/>
+        <property name="javax.jdo.option.RetainValues" value="true"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
+        <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
+        <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
+    </persistence-manager-factory>
+
+    <persistence-manager-factory name="datastoreserviceconfigprops">
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
+        <property name="javax.jdo.option.NontransactionalRead" value="true"/>
+        <property name="javax.jdo.option.NontransactionalWrite" value="true"/>
+        <property name="javax.jdo.option.RetainValues" value="true"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
+        <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="true"/>
+
+        <property name="javax.jdo.option.DatastoreReadTimeoutMillis" value="5000"/>
+        <property name="javax.jdo.option.DatastoreWriteTimeoutMillis" value="10000"/>
+        <property name="datanucleus.appengine.datastoreReadConsistency" value="EVENTUAL"/>
+    </persistence-manager-factory>
+
+    <!-- PMF for testing singleton flag -->
+    <persistence-manager-factory name="nontransactional-singleton">
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
+        <property name="javax.jdo.option.NontransactionalRead" value="true"/>
+        <property name="javax.jdo.option.NontransactionalWrite" value="true"/>
+        <property name="javax.jdo.option.RetainValues" value="true"/>
+        <property name="datanucleus.singletonPMFForName" value="true"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
+        <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
+        <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
+    </persistence-manager-factory>
+
+</jdoconfig>
