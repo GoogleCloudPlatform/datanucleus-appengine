@@ -106,7 +106,7 @@ public abstract class AbstractFKStore {
         if (elementCmd != null)
         {
           // Pretend we have a relationship with this one implementation
-          //elementType = emd.getFullClassName();
+          elementType = elementCmd.getFullClassName();
         }
       }
     }
@@ -149,6 +149,14 @@ public abstract class AbstractFKStore {
   }
 
   /* (non-Javadoc)
+   * @see org.datanucleus.store.scostore.CollectionStore#updateEmbeddedElement(org.datanucleus.store.ObjectProvider, java.lang.Object, int, java.lang.Object)
+   */
+  public boolean updateEmbeddedElement(ObjectProvider ownerOP, Object elem, int fieldNum, Object value) {
+    // This is only used by join table stores where the element is embedded in the join table
+    return false;
+  }
+
+  /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#size(org.datanucleus.store.ObjectProvider)
    */
   public int size(ObjectProvider ownerOP) {
@@ -174,6 +182,43 @@ public abstract class AbstractFKStore {
     return count;
   }
 
+  /**
+   * Method to run a query with the supplied filter and sort predicates, to get the child objects for the 
+   * specified parent.
+   * @param parentKey Key of the parent
+   * @param filterPredicates Filtering required
+   * @param sortPredicates Ordering required
+   * @param ec ExecutionContext
+   * @return The child objects list
+   */
+  List<?> getChildren(Key parentKey, Iterable<FilterPredicate> filterPredicates,
+      Iterable<SortPredicate> sortPredicates, ExecutionContext ec) {
+    List<Object> result = new ArrayList<Object>();
+    int numChildren = 0;
+    String kindName = elementTable.getIdentifier().getIdentifierName();
+    for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, false, kindName).asIterable()) {
+      // We only want direct children
+      if (parentKey.equals(e.getKey().getParent())) {
+        numChildren++;
+        result.add(DatastoreQuery.entityToPojo(e, elementCmd, clr, ec, false, ec.getFetchPlan()));
+        if (NucleusLogger.PERSISTENCE.isDebugEnabled()) {
+          NucleusLogger.PERSISTENCE.debug("Retrieved entity with key " + e.getKey());
+        }
+      }
+    }
+    NucleusLogger.PERSISTENCE.debug(String.format("Query had %d result%s.", numChildren, numChildren == 1 ? "" : "s"));
+    return result;
+  }
+
+  /**
+   * Method to create a PreparedQuery, for the specified filter and ordering, to get the child objects of a parent.
+   * @param parentKey Key of the parent
+   * @param filterPredicates Filtering required
+   * @param sortPredicates Ordering required
+   * @param keysOnly Whether to just returns the keys of the children
+   * @param kindName Name of the kind that we are querying
+   * @return The PreparedQuery
+   */
   PreparedQuery prepareChildrenQuery(Key parentKey, Iterable<FilterPredicate> filterPredicates,
       Iterable<SortPredicate> sortPredicates, boolean keysOnly, String kindName) {
     Query q = new Query(kindName, parentKey);
@@ -194,33 +239,6 @@ public abstract class AbstractFKStore {
     DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     return ds.prepare(q);
-  }
-
-  /* (non-Javadoc)
-   * @see org.datanucleus.store.scostore.CollectionStore#updateEmbeddedElement(org.datanucleus.store.ObjectProvider, java.lang.Object, int, java.lang.Object)
-   */
-  public boolean updateEmbeddedElement(ObjectProvider ownerOP, Object elem, int fieldNum, Object value) {
-    // This is only used by join table stores where the element is embedded in the join table
-    return false;
-  }
-
-  List<?> getChildren(Key parentKey, Iterable<FilterPredicate> filterPredicates,
-      Iterable<SortPredicate> sortPredicates, ExecutionContext ec) {
-    List<Object> result = new ArrayList<Object>();
-    int numChildren = 0;
-    String kindName = elementTable.getIdentifier().getIdentifierName();
-    for (Entity e : prepareChildrenQuery(parentKey, filterPredicates, sortPredicates, false, kindName).asIterable()) {
-      // We only want direct children
-      if (parentKey.equals(e.getKey().getParent())) {
-        numChildren++;
-        result.add(DatastoreQuery.entityToPojo(e, elementCmd, clr, ec, false, ec.getFetchPlan()));
-        if (NucleusLogger.PERSISTENCE.isDebugEnabled()) {
-          NucleusLogger.PERSISTENCE.debug("Retrieved entity with key " + e.getKey());
-        }
-      }
-    }
-    NucleusLogger.PERSISTENCE.debug(String.format("Query had %d result%s.", numChildren, numChildren == 1 ? "" : "s"));
-    return result;
   }
 
   /**

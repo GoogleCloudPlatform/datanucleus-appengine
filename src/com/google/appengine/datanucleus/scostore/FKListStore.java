@@ -221,8 +221,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     return false;
   }
 
-  protected int[] internalShift(ObjectProvider ownerOP, boolean batched,
-      int oldIndex, int amount) throws MappedDatastoreException {
+  protected int[] internalShift(ObjectProvider ownerOP, boolean batched, int oldIndex, int amount) 
+  throws MappedDatastoreException {
     if (orderMapping == null) {
       return null;
     }
@@ -234,8 +234,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     Query q = new Query(kind);
     ExecutionContext ec = ownerOP.getExecutionContext();
-    Object id = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(
-        ownerOP.getInternalObjectId());
+    Object id = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ownerOP.getInternalObjectId());
     Key key = id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
     q.setAncestor(key);
 
@@ -261,8 +260,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @param index The index position (or -1 if not known)
    * @return Whether it was performed successfully
    */
-  protected boolean updateElementFk(ObjectProvider sm, Object element, Object owner, int index)
-  {
+  protected boolean updateElementFk(ObjectProvider sm, Object element, Object owner, int index) {
     if (element == null) {
       return false;
     }
@@ -315,8 +313,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       NucleusLogger.DATASTORE.debug(LOCALISER.msg("056034"));
       deleteElements = true;
     }
-    else
-    {
+    else {
       if (ownerMapping.isNullable() && orderMapping == null) {
         // Field is not dependent, and nullable so we null the FK
         NucleusLogger.DATASTORE.debug(LOCALISER.msg("056036"));
@@ -434,34 +431,34 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    */
   public boolean removeAll(ObjectProvider ownerOP, Collection elements, int currentSize) {
     if (elements == null || elements.size() == 0) {
-        return false;
+      return false;
     }
 
     boolean modified = false;
     if (indexedList) {
-        // Get the indices of the elements to remove in reverse order (highest first)
-        int[] indices = getIndicesOf(ownerOP, elements);
+      // Get the indices of the elements to remove in reverse order (highest first)
+      int[] indices = getIndicesOf(ownerOP, elements);
 
-        // Remove each element in turn, doing the shifting of indexes each time
-        // TODO : Change this to remove all in one go and then shift once
-        for (int i=0;i<indices.length;i++) {
-            removeAt(ownerOP, indices[i], -1);
-            modified = true;
-        }
+      // Remove each element in turn, doing the shifting of indexes each time
+      // TODO : Change this to remove all in one go and then shift once
+      for (int i=0;i<indices.length;i++) {
+        removeAt(ownerOP, indices[i], -1);
+        modified = true;
+      }
     }
     else {
-        // Ordered List
-        // TODO Remove the list item
-        throw new NucleusException("Not yet implemented AbstractListStore.remove for ordered lists");
+      // Ordered List
+      // TODO Remove the list item
+      throw new NucleusException("Not yet implemented FKListStore.remove for ordered lists");
     }
 
     boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
     if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
-        dependent = true;
+      dependent = true;
     }
     if (dependent) {
-        // "delete-dependent" : delete elements if the collection is marked as dependent
-        // TODO What if the collection contains elements that are not in the List ? should not delete them
+      // "delete-dependent" : delete elements if the collection is marked as dependent
+      // TODO What if the collection contains elements that are not in the List ? should not delete them
       ownerOP.getExecutionContext().deleteObjects(elements.toArray());
     }
 
@@ -616,26 +613,26 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    */
   public void update(ObjectProvider ownerOP, Collection coll) {
     if (coll == null || coll.isEmpty()) {
-        clear(ownerOP);
-        return;
+      clear(ownerOP);
+      return;
     }
 
     // Find existing elements, and remove any that are no longer present
     Collection existing = new ArrayList();
     Iterator elemIter = iterator(ownerOP);
     while (elemIter.hasNext()) {
-        Object elem = elemIter.next();
-        if (!coll.contains(elem)) {
-            remove(ownerOP, elem, -1, true);
-        }
-        else {
-            existing.add(elem);
-        }
+      Object elem = elemIter.next();
+      if (!coll.contains(elem)) {
+        remove(ownerOP, elem, -1, true);
+      }
+      else {
+        existing.add(elem);
+      }
     }
 
     if (existing.equals(coll)) {
-        // Existing (after any removals) is same as the specified so job done
-        return;
+      // Existing (after any removals) is same as the specified so job done
+      return;
     }
 
     // TODO Improve this - need to allow for list element position changes etc
@@ -866,8 +863,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   private String getIndexPropertyName() {
     String propertyName;
     if (orderMapping.getMemberMetaData() == null) {
-      // I'm not sure what we should do if this mapping doesn't exist so for now
-      // we'll just blow up.
+      // I'm not sure what we should do if this mapping doesn't exist so for now we'll just blow up.
       propertyName =
           orderMapping.getDatastoreMappings()[0].getDatastoreField().getIdentifier().getIdentifierName();
     } else {
@@ -940,99 +936,83 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Check if element is ok for use in the datastore, specifying any external mappings that may be required
     boolean inserted = super.validateElementForWriting(ownerOP.getExecutionContext(), element, new FieldValues()
     {
-        public void fetchFields(ObjectProvider elementOP)
-        {
-            // Find the (element) table storing the FK back to the owner
-            boolean isPersistentInterface = storeMgr.getNucleusContext().getMetaDataManager().isPersistentInterface(elementType);
-            DatastoreClass elementTable = null;
-            if (isPersistentInterface)
-            {
-                elementTable = storeMgr.getDatastoreClass(
-                    storeMgr.getNucleusContext().getMetaDataManager().getImplementationNameForPersistentInterface(elementType), clr);
-            }
-            else
-            {
-                elementTable = storeMgr.getDatastoreClass(elementType, clr);
-            }
-            if (elementTable == null)
-            {
-                // "subclass-table", persisted into table of other class
-                AbstractClassMetaData[] managingCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
-                if (managingCmds != null && managingCmds.length > 0)
-                {
-                    // Find which of these subclasses is appropriate for this element
-                    for (int i=0;i<managingCmds.length;i++)
-                    {
-                        Class tblCls = clr.classForName(managingCmds[i].getFullClassName());
-                        if (tblCls.isAssignableFrom(elementOP.getObject().getClass()))
-                        {
-                            elementTable = storeMgr.getDatastoreClass(managingCmds[i].getFullClassName(), clr);
-                            break;
-                        }
-                    }
-                }
-            }
-
-            if (elementTable != null)
-            {
-                JavaTypeMapping externalFKMapping = elementTable.getExternalMapping(ownerMemberMetaData, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-                if (externalFKMapping != null)
-                {
-                    // The element has an external FK mapping so set the value it needs to use in the INSERT
-                    elementOP.setAssociatedValue(externalFKMapping, ownerOP.getObject());
-                }
-
-                if (orderMapping != null && index >= 0)
-                {
-                    if (ownerMemberMetaData.getOrderMetaData() != null && ownerMemberMetaData.getOrderMetaData().getMappedBy() != null)
-                    {
-                        // Order is stored in a field in the element so update it
-                        // We support mapped-by fields of types int/long/Integer/Long currently
-                        Object indexValue = null;
-                        if (orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.JAVA_LANG_LONG) ||
-                                orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.LONG))
-                        {
-                            indexValue = Long.valueOf(index);
-                        }
-                        else
-                        {
-                            indexValue = Integer.valueOf(index);
-                        }
-                        elementOP.replaceFieldMakeDirty(orderMapping.getMemberMetaData().getAbsoluteFieldNumber(), indexValue);
-                    }
-                    else
-                    {
-                        // Order is stored in a surrogate column so save its vaue for the element to use later
-                        elementOP.setAssociatedValue(orderMapping, Integer.valueOf(index));
-                    }
-                }
-            }
-            if (Relation.isBidirectional(relationType))
-            {
-                // TODO This is ManagedRelations - move into RelationshipManager
-                // Managed Relations : 1-N bidir, so make sure owner is correct at persist
-                Object currentOwner = elementOP.provideField(elementMemberMetaData.getAbsoluteFieldNumber());
-                if (currentOwner == null)
-                {
-                    // No owner, so correct it
-                    NucleusLogger.PERSISTENCE.info(LOCALISER.msg("056037",
-                        ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
-                        StringUtils.toJVMIDString(elementOP.getObject())));
-                    elementOP.replaceFieldMakeDirty(elementMemberMetaData.getAbsoluteFieldNumber(), newOwner);
-                }
-                else if (currentOwner != newOwner && ownerOP.getReferencedPC() == null)
-                {
-                    // Owner of the element is neither this container nor is it being attached
-                    // Inconsistent owner, so throw exception
-                    throw new NucleusUserException(LOCALISER.msg("056038",
-                        ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
-                        StringUtils.toJVMIDString(elementOP.getObject()),
-                        StringUtils.toJVMIDString(currentOwner)));
-                }
-            }
+      public void fetchFields(ObjectProvider elementOP)
+      {
+        // Find the (element) table storing the FK back to the owner
+        boolean isPersistentInterface = storeMgr.getNucleusContext().getMetaDataManager().isPersistentInterface(elementType);
+        DatastoreClass elementTable = null;
+        if (isPersistentInterface) {
+          elementTable = storeMgr.getDatastoreClass(
+              storeMgr.getNucleusContext().getMetaDataManager().getImplementationNameForPersistentInterface(elementType), clr);
         }
-        public void fetchNonLoadedFields(ObjectProvider elementOP) {}
-        public FetchPlan getFetchPlanForLoading() { return null; }
+        else {
+          elementTable = storeMgr.getDatastoreClass(elementType, clr);
+        }
+        if (elementTable == null) {
+          // "subclass-table", persisted into table of other class
+          AbstractClassMetaData[] managingCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
+          if (managingCmds != null && managingCmds.length > 0) {
+            // Find which of these subclasses is appropriate for this element
+            for (int i=0;i<managingCmds.length;i++) {
+              Class tblCls = clr.classForName(managingCmds[i].getFullClassName());
+              if (tblCls.isAssignableFrom(elementOP.getObject().getClass())) {
+                elementTable = storeMgr.getDatastoreClass(managingCmds[i].getFullClassName(), clr);
+                break;
+              }
+            }
+          }
+        }
+
+        if (elementTable != null) {
+          JavaTypeMapping externalFKMapping = elementTable.getExternalMapping(ownerMemberMetaData, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+          if (externalFKMapping != null) {
+            // The element has an external FK mapping so set the value it needs to use in the INSERT
+            elementOP.setAssociatedValue(externalFKMapping, ownerOP.getObject());
+          }
+
+          if (orderMapping != null && index >= 0) {
+            if (ownerMemberMetaData.getOrderMetaData() != null && ownerMemberMetaData.getOrderMetaData().getMappedBy() != null) {
+              // Order is stored in a field in the element so update it
+              // We support mapped-by fields of types int/long/Integer/Long currently
+              Object indexValue = null;
+              if (orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.JAVA_LANG_LONG) ||
+                  orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.LONG)) {
+                indexValue = Long.valueOf(index);
+              }
+              else {
+                indexValue = Integer.valueOf(index);
+              }
+              elementOP.replaceFieldMakeDirty(orderMapping.getMemberMetaData().getAbsoluteFieldNumber(), indexValue);
+            }
+            else {
+              // Order is stored in a surrogate column so save its vaue for the element to use later
+              elementOP.setAssociatedValue(orderMapping, Integer.valueOf(index));
+            }
+          }
+        }
+        if (Relation.isBidirectional(relationType)) {
+          // TODO This is ManagedRelations - move into RelationshipManager
+          // Managed Relations : 1-N bidir, so make sure owner is correct at persist
+          Object currentOwner = elementOP.provideField(elementMemberMetaData.getAbsoluteFieldNumber());
+          if (currentOwner == null) {
+            // No owner, so correct it
+            NucleusLogger.PERSISTENCE.info(LOCALISER.msg("056037",
+                ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(elementOP.getObject())));
+            elementOP.replaceFieldMakeDirty(elementMemberMetaData.getAbsoluteFieldNumber(), newOwner);
+          }
+          else if (currentOwner != newOwner && ownerOP.getReferencedPC() == null) {
+            // Owner of the element is neither this container nor is it being attached
+            // Inconsistent owner, so throw exception
+            throw new NucleusUserException(LOCALISER.msg("056038",
+                ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(elementOP.getObject()),
+                StringUtils.toJVMIDString(currentOwner)));
+          }
+        }
+      }
+      public void fetchNonLoadedFields(ObjectProvider elementOP) {}
+      public FetchPlan getFetchPlanForLoading() { return null; }
     });
 
     return inserted;
@@ -1047,5 +1027,4 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // This is a child object so we know the pk is Key or encoded String
     return id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
   }
-
 }
