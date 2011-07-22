@@ -20,8 +20,8 @@ import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
-import com.google.appengine.datanucleus.scostore.DatastoreFKListStore;
-import com.google.appengine.datanucleus.scostore.DatastoreFKSetStore;
+import com.google.appengine.datanucleus.scostore.FKListStore;
+import com.google.appengine.datanucleus.scostore.FKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.store.connection.ConnectionFactory;
@@ -51,9 +51,9 @@ import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementClassMapping;
 import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.scostore.FKListStore;
-import org.datanucleus.store.mapped.scostore.FKSetStore;
 import org.datanucleus.store.query.ResultObjectFactory;
+import org.datanucleus.store.scostore.ListStore;
+import org.datanucleus.store.scostore.SetStore;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -492,13 +492,13 @@ public class DatastoreManager extends MappedStoreManager {
     return null;
   }
 
-  protected FKListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
-    return new DatastoreFKListStore(ammd, this, clr);
+  protected ListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    return new FKListStore(ammd, this, clr);
   }
 
   @Override
-  protected FKSetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
-    return new DatastoreFKSetStore(ammd, this, clr);
+  protected SetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    return new FKSetStore(ammd, this, clr);
   }
 
   public BatchPutManager getBatchPutManager() {
