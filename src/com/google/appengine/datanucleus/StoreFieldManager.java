@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -29,6 +30,8 @@ import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.mapped.mapping.IndexMapping;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.types.sco.SCO;
 
 import com.google.appengine.api.datastore.Entity;
@@ -59,9 +62,19 @@ public class StoreFieldManager extends DatastoreFieldManager {
         Relation.ONE_TO_ONE_BI,
         Relation.ONE_TO_ONE_UNI));
 
+  private static final int[] NOT_USED = {0};
+
   public enum Operation { INSERT, UPDATE, DELETE };
 
   protected final Operation operation;
+
+  protected boolean repersistingForChildKeys = false;
+
+  protected boolean parentAlreadySet = false;
+
+  protected boolean keyAlreadySet = false;
+
+  protected Integer pkIdPos = null;
 
   /**
    * @param op ObjectProvider of the object being stored
@@ -432,6 +445,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
+  /**
+   * @see DatastoreRelationFieldManager#storeRelations
+   */
+  boolean storeRelations() {
+    return relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getExecutionContext()));
+  }
+
   private Object extractRelationKeys(Object value) {
     if (value == null) {
       return null;
@@ -530,4 +550,157 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
     }
   }
+
+  void setRepersistingForChildKeys(boolean repersistingForChildKeys) {
+    this.repersistingForChildKeys = repersistingForChildKeys;
+  }
+
+  /**
+   * Currently all relationships are parent-child.  If a datastore entity
+   * doesn't have a parent there are 4 places we can look for one.
+   * 1)  It's possible that a pojo in the cascade chain registered itself as
+   * the parent.
+   * 2)  It's possible that the pojo has an external foreign key mapping
+   * to the object that owns it, in which case we can use the key of that field
+   * as the parent.
+   * 3)  It's possible that the pojo has a field containing the parent that is
+   * not an external foreign key mapping but is labeled as a "parent
+   * provider" (this is an app engine orm term).  In this case, as with
+   * #2, we can use the key of that field as the parent.
+   * 4) If part of the attachment process we can consult the ExecutionContext
+   * for the owner of this object (that caused the attach of this object).
+   *
+   * It _should_ be possible to get rid of at least one of these
+   * mechanisms, most likely the first.
+   *
+   * @return The parent key if the pojo class has a parent property.
+   * Note that a return value of {@code null} does not mean that an entity
+   * group was not established, it just means the pojo doesn't have a distinct
+   * field for the parent.
+   */
+  Object establishEntityGroup() {
+    Key parentKey = getEntity().getParent();
+    if (parentKey == null) {
+      ObjectProvider op = getObjectProvider();
+      // Mechanism 1
+      parentKey = KeyRegistry.getKeyRegistry(getExecutionContext()).getRegisteredKey(op.getObject());
+      if (parentKey == null) {
+        // Mechanism 2
+        parentKey = getParentKeyFromExternalFKMappings(op);
+      }
+      if (parentKey == null) {
+        // Mechanism 3
+        parentKey = getParentKeyFromParentField(op);
+      }
+      if (parentKey == null) {
+        // Mechanism 4, use attach parent info from ExecutionContext
+        ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
+        if (ownerOP != null) {
+          Object parentPojo = ownerOP.getObject();
+          parentKey = getKeyFromParentPojo(parentPojo);
+        }
+      }
+//      if (parentKey == null) {
+//        // Mechanism 4
+//        Object parentPojo = DatastoreJPACallbackHandler.getAttachingParent(op.getObject());
+//        if (parentPojo != null) {
+//          parentKey = getKeyFromParentPojo(parentPojo);
+//        }
+//      }
+      if (parentKey != null) {
+        recreateEntityWithParent(parentKey);
+      }
+    }
+    if (parentKey != null && getParentMemberMetaData() != null) {
+      return getParentMemberMetaData().getType().equals(Key.class)
+          ? parentKey : KeyFactory.keyToString(parentKey);
+    }
+    return null;
+  }
+
+  private Key getKeyFromParentPojo(Object mergeEntity) {
+    ObjectProvider mergeOP = getExecutionContext().findObjectProvider(mergeEntity);
+    if (mergeOP == null) {
+      return null;
+    }
+    return EntityUtils.getPrimaryKeyAsKey(getExecutionContext().getApiAdapter(), mergeOP);
+  }
+
+  private Key getParentKeyFromParentField(ObjectProvider op) {
+    AbstractMemberMetaData parentField = getInsertMappingConsumer().getParentMappingField();
+    if (parentField == null) {
+      return null;
+    }
+    Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
+    return parent == null ? null : getKeyForObject(parent);
+  }
+
+  private Key getParentKeyFromExternalFKMappings(ObjectProvider op) {
+    // We don't have a registered key for the object associated with the
+    // state manager but there might be one tied to the foreign key
+    // mappings for this object.  If this is the Many side of a bidirectional
+    // One To Many it might also be available on the parent object.
+    // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
+    Set<JavaTypeMapping> externalFKMappings = getInsertMappingConsumer().getExternalFKMappings();
+    for (JavaTypeMapping fkMapping : externalFKMappings) {
+      Object fkValue = op.getAssociatedValue(fkMapping);
+      if (fkValue != null) {
+        return getKeyForObject(fkValue);
+      }
+    }
+    return null;
+  }
+
+  private Key getKeyForObject(Object pc) {
+    ApiAdapter adapter = getStoreManager().getApiAdapter();
+    Object internalPk = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
+    AbstractClassMetaData acmd =
+        getExecutionContext().getMetaDataManager().getMetaDataForClass(pc.getClass(), getClassLoaderResolver());
+    return EntityUtils.getPkAsKey(internalPk, acmd, getExecutionContext());
+  }
+
+  Integer getPkIdPos() {
+    return pkIdPos;
+  }
+
+  /**
+   * In JDO, 1-to-many relationsihps that are expressed using a
+   * {@link List} are ordered by a column in the child
+   * table that stores the position of the child in the parent's list.
+   * This function is responsible for making sure the appropriate values
+   * for these columns find their way into the Entity.  In certain scenarios,
+   * DataNucleus does not make the index of the container element being
+   * written available until later on in the workflow.  The expectation
+   * is that we will insert the record without the index and then perform
+   * an update later on when the value becomes available.  This is problematic
+   * for the App Engine datastore because we can only write an entity once
+   * per transaction.  So, to get around this, we detect the case where the
+   * index is not available and instruct the caller to hold off writing.
+   * Later on in the workflow, when DataNucleus calls down into our plugin
+   * to request the update with the index, we perform the insert.  This will
+   * break someday.  Fortunately we have tests so we should find out.
+   *
+   * @return {@code true} if the caller (expected to be
+   * {@link DatastorePersistenceHandler#insertObject}) should delay its write
+   * of this object.
+   */
+  boolean handleIndexFields() {
+    Set<JavaTypeMapping> orderMappings = getInsertMappingConsumer().getExternalOrderMappings();
+    boolean delayWrite = false;
+    for (JavaTypeMapping orderMapping : orderMappings) {
+      if (orderMapping instanceof IndexMapping) {
+        delayWrite = true;
+        // DataNucleus hides the value in the state manager, keyed by the
+        // mapping for the order field.
+        Object orderValue = getObjectProvider().getAssociatedValue(orderMapping);
+        if (orderValue != null) {
+          // We got a value!  Set it on the entity.
+          delayWrite = false;
+          orderMapping.setObject(getExecutionContext(), getEntity(), NOT_USED, orderValue);
+        }
+      }
+    }
+    return delayWrite;
+  }
+
 }

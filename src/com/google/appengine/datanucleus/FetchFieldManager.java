@@ -195,6 +195,7 @@ public class FetchFieldManager extends DatastoreFieldManager
           eop.getClassMetaData(), getClassLoaderResolver(),
           eop.getClassMetaData().getAllMemberPositions(),
           ammd.getEmbeddedMetaData());
+      // TODO Create own FieldManager instead of reusing this one
       AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
       fieldManagerStateStack.addFirst(new FieldManagerState(eop, ammdProvider, mappingConsumer, true));
       AbstractClassMetaData acmd = eop.getClassMetaData();

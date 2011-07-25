@@ -413,7 +413,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       // For inserts we let the field manager create the Entity and then
       // retrieve it afterwards.  We do this because the entity isn't
       // 'fixed' until after provideFields has been called.
-      DatastoreFieldManager fieldMgr = new StoreFieldManager(
+      StoreFieldManager fieldMgr = new StoreFieldManager(
           op, kind, storeMgr, StoreFieldManager.Operation.INSERT);
       AbstractClassMetaData acmd = op.getClassMetaData();
       op.provideFields(acmd.getAllMemberPositions(), fieldMgr);
@@ -681,7 +681,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Key key = getPkAsKey(op);
       entity = getEntityFromDatastore(op, key);
     }
-    DatastoreFieldManager fieldMgr = new StoreFieldManager(
+    StoreFieldManager fieldMgr = new StoreFieldManager(
         op, storeMgr, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
     op.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(op, entity, VersionBehavior.INCREMENT, "updating");
@@ -701,7 +701,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
   }
 
-  private void storeRelations(DatastoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
+  private void storeRelations(StoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
     if (fieldMgr.storeRelations() &&
         storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
       // Return value of true means that storing the relations resulted in
@@ -868,13 +868,13 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   private static final class PutState {
     private final ObjectProvider op;
-    private final DatastoreFieldManager fieldMgr;
+    private final StoreFieldManager fieldMgr;
     private final AbstractClassMetaData acmd;
     private final Object assignedParentPk;
     private final Entity entity;
 
     private PutState(ObjectProvider op,
-          DatastoreFieldManager fieldMgr, AbstractClassMetaData acmd, Object assignedParentPk,
+          StoreFieldManager fieldMgr, AbstractClassMetaData acmd, Object assignedParentPk,
           Entity entity) {
       this.op = op;
       this.fieldMgr = fieldMgr;
