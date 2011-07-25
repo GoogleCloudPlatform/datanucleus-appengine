@@ -15,6 +15,9 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
+import java.lang.reflect.Field;
+import java.util.Map;
+
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -419,6 +422,109 @@ public final class EntityUtils {
       return KeyFactory.stringToKey((String) primaryKey);
     } catch (IllegalArgumentException iae) {
       return KeyFactory.createKey(kind, (String) primaryKey);
+    }
+  }
+
+  private static final Field PROPERTY_MAP_FIELD;
+  static {
+    try {
+      PROPERTY_MAP_FIELD = Entity.class.getDeclaredField("propertyMap");
+    } catch (NoSuchFieldException e) {
+      throw new RuntimeException(e);
+    }
+    PROPERTY_MAP_FIELD.setAccessible(true);
+  }
+
+  // TODO(maxr) Get rid of this once we have a formal way of figuring out which properties are indexed and which are unindexed.
+  private static Map<String, Object> getPropertyMap(Entity entity) {
+    try {
+      return (Map<String, Object>) PROPERTY_MAP_FIELD.get(entity);
+    } catch (IllegalAccessException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  // TODO(maxr) Rewrite once Entity.setPropertiesFrom() is available.
+  static public void copyProperties(Entity src, Entity dest) {
+    for (Map.Entry<String, Object> entry : getPropertyMap(src).entrySet()) {
+      // barf
+      if (entry.getValue() != null &&
+          entry.getValue().getClass().getName().equals("com.google.appengine.api.datastore.Entity$UnindexedValue")) {
+        dest.setUnindexedProperty(entry.getKey(), src.getProperty(entry.getKey()));
+      } else {
+        dest.setProperty(entry.getKey(), entry.getValue());
+      }
+    }
+  }
+
+  /**
+   * Method to check whether the child is having its parent switched from the specified parent.
+   * @param child The child object
+   * @param parentOP ObjectProvider for the parent
+   * @throws ChildWithoutParentException if no parent defined
+   * @throws ChildWithWrongParentException if parent is wrong
+   */
+  public static void checkParentage(Object child, ObjectProvider parentOP) {
+    if (child == null) {
+      return;
+    }
+
+    ExecutionContext ec = parentOP.getExecutionContext();
+    ApiAdapter apiAdapter = ec.getApiAdapter();
+
+    ObjectProvider childOP = ec.findObjectProvider(child);
+    if (apiAdapter.isNew(child) &&
+        (childOP == null || childOP.getAssociatedValue(EntityUtils.getCurrentTransaction(ec)) == null)) {
+      // This condition is difficult to get right.  An object that has been persisted
+      // (and therefore had its primary key already established) may still be considered
+      // NEW by the apiAdapter if there is a txn and the txn has not yet committed.
+      // In order to determine if an object has been persisted we see if there is
+      // a state manager for it.  If there isn't, there's no way it was persisted.
+      // If there is, it's still possible that it hasn't been persisted so we check
+      // to see if there is an associated Entity. 
+      // TODO Just call sm.isFlushedNew(). It's not that hard
+      return;
+    }
+    // Since we only support owned relationships right now, we can assume
+    // that this is parent/child and verify that the parent of the childSM
+    // is the parent object in this cascade.
+    // We know that the child primary key is a Key or an encoded String
+    // because we don't support child objects with primary keys of type
+    // Long or unencoded String and our metadata validation would have
+    // caught it.
+    Object childKeyOrString =
+      apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(child));
+    if (childKeyOrString == null) {
+      // must be a new object or transient
+      return;
+    }
+    Key childKey = childKeyOrString instanceof Key
+    ? (Key) childKeyOrString : KeyFactory.stringToKey((String) childKeyOrString);
+
+    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, parentOP);
+
+    if (childKey.getParent() == null) {
+      throw new ChildWithoutParentException(parentKey, childKey);
+    } else if (!parentKey.equals(childKey.getParent())) {
+      throw new ChildWithWrongParentException(parentKey, childKey);
+    }
+  }
+
+  static class ChildWithoutParentException extends NucleusFatalUserException {
+    public ChildWithoutParentException(Key parentKey, Key childKey) {
+      super("Detected attempt to establish " + parentKey + " as the "
+          + "parent of " + childKey + " but the entity identified by "
+          + childKey + " has already been persisted without a parent.  A parent cannot "
+          + "be established or changed once an object has been persisted.");
+    }
+  }
+
+  static class ChildWithWrongParentException extends NucleusFatalUserException {
+    public ChildWithWrongParentException(Key parentKey, Key childKey) {
+      super("Detected attempt to establish " + parentKey + " as the "
+          + "parent of " + childKey + " but the entity identified by "
+          + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
+          + "be established or changed once an object has been persisted.");
     }
   }
 }

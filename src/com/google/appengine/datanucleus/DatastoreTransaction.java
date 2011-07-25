@@ -96,7 +96,7 @@ public class DatastoreTransaction {
     // We don't check key when we look for changes so it's
     // ok that the copy doesn't have its key set.
     Entity copy = new Entity(entity.getKind());
-    DatastoreFieldManager.copyProperties(entity, copy);
+    EntityUtils.copyProperties(entity, copy);
     return copy;
   }
 

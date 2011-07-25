@@ -55,7 +55,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastorePersistenceHandler;
-import com.google.appengine.datanucleus.DatastoreRelationFieldManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.ForceFlushPreCommitTransactionEventListener;
@@ -270,7 +269,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    DatastoreRelationFieldManager.checkForParentSwitch(element, sm);
+    EntityUtils.checkParentage(element, sm);
 
     if (orderMapping == null) {
       return false;

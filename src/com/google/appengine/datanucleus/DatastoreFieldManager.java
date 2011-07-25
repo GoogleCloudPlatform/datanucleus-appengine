@@ -35,7 +35,6 @@ import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.Map;
@@ -45,22 +44,18 @@ import javax.jdo.spi.JDOImplHelper;
 /**
  * FieldManager for converting app engine datastore entities into POJOs and vice-versa.
  *
- * Most of the complexity in this class is due to the fact that the datastore
- * automatically promotes certain types:
- * It promotes short/Short, int/Integer, and byte/Byte to long.
- * It also promotes float/Float to double.
+ * Most of the complexity in this class is due to the fact that the datastore automatically promotes certain types:
+ * <ul>
+ * <li>Promotes short/Short, int/Integer, and byte/Byte to long.</li>
+ * <li>Promotes float/Float to double.</li>
+ * <li>the datastore does not support char/Character.  We've made the decision to promote this to long as well.</li>
+ * </ul>
  *
- * Also, the datastore does not support char/Character.  We've made the decision
- * to promote this to long as well.
- *
- * We handle the conversion in both directions.  At one point we let the
- * datastore api do the conversion from pojos to {@link Entity Entities} but we
- * this proved problematic in the case where we return entities that were
- * cached during insertion to avoid
- * issuing a get().  In this case we then end up trying to construct a pojo from
- * an {@link Entity} whose contents violate the datastore api invariants, and we
- * end up with cast exceptions.  So, we do the conversion ourselves, even though
- * this duplicates logic in the ORM and the datastore api.
+ * We handle the conversion in both directions. At one point we let the datastore api do the conversion from 
+ * pojos to {@link Entity Entities} but we this proved problematic in the case where we return entities that were
+ * cached during insertion to avoid issuing a get().  In this case we then end up trying to construct a pojo from
+ * an {@link Entity} whose contents violate the datastore api invariants, and we end up with cast exceptions.
+ * So, we do the conversion ourselves, even though this duplicates logic in the ORM and the datastore api.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -78,8 +73,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
   protected final DatastoreManager storeManager;
 
-  protected final DatastoreRelationFieldManager relationFieldManager;
-
   protected ObjectProvider op;
 
   // Not final because we will reallocate if we hit a parent pk field and the
@@ -89,7 +82,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   // We'll assign this if we have a parent member and we store a value into it.
   protected AbstractMemberMetaData parentMemberMetaData;
 
-  private DatastoreFieldManager(ObjectProvider op, boolean createdWithoutEntity,
+  protected DatastoreFieldManager(ObjectProvider op, boolean createdWithoutEntity,
       DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
@@ -102,55 +95,22 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
     InsertMappingConsumer mappingConsumer = buildMappingConsumer(op.getClassMetaData(), 
-        op.getExecutionContext().getClassLoaderResolver(), fieldNumbers);
+        op.getExecutionContext().getClassLoaderResolver(), fieldNumbers, null);
     this.fieldManagerStateStack.addFirst(new FieldManagerState(op, ammdProvider, mappingConsumer, false));
-    this.relationFieldManager = new DatastoreRelationFieldManager(this);
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(getClassMetaData(), op.getExecutionContext());
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
-          "StateManager is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
+          "ObjectProvider is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
               + ">.  One way this can happen is if you attempt to fetch an object of one type using"
               + " a Key of a different type.").setFatal();
     }
   }
 
-  /**
-   * Creates a DatastoreFieldManager using the given StateManager and Entity.
-   * Only use this overload when you have been provided with an Entity object
-   * that already has a well-formed Key.  This will be the case when the entity
-   * has been returned by the datastore (get or query), or after the entity has
-   * been put into the datastore.
-   */
-  DatastoreFieldManager(ObjectProvider op, DatastoreManager storeManager,
-      Entity datastoreEntity, int[] fieldNumbers) {
-    this(op, false, storeManager, datastoreEntity, fieldNumbers);
-  }
-
-  public DatastoreFieldManager(ObjectProvider op, DatastoreManager storeManager,
-      Entity datastoreEntity) {
-    this(op, false, storeManager, datastoreEntity, new int[0]);
-  }
-
-  DatastoreFieldManager(ObjectProvider op, String kind,
-      DatastoreManager storeManager) {
-    this(op, true, storeManager, new Entity(kind), new int[0]);
-  }
-
-  protected boolean fieldIsOfTypeKey(int fieldNumber) {
-    // Key is final so we don't need to worry about checking for subclasses.
-    return getMetaData(fieldNumber).getType().equals(Key.class);
-  }
-
   protected boolean fieldIsOfTypeString(int fieldNumber) {
     // String is final so we don't need to worry about checking for subclasses.
     return getMetaData(fieldNumber).getType().equals(String.class);
-  }
-
-  protected boolean fieldIsOfTypeLong(int fieldNumber) {
-    // Long is final so we don't need to worry about checking for subclasses.
-    return getMetaData(fieldNumber).getType().equals(Long.class);
   }
 
   protected RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
@@ -198,50 +158,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     return embeddedOP;
   }
 
-  void recreateEntityWithParent(Key parentKey) {
-    Entity old = datastoreEntity;
-    if (old.getKey().getName() != null) {
-      datastoreEntity =
-          new Entity(old.getKind(), old.getKey().getName(), parentKey);
-    } else {
-      datastoreEntity = new Entity(old.getKind(), parentKey);
-    }
-    copyProperties(old, datastoreEntity);
-  }
-
-  private static final Field PROPERTY_MAP_FIELD;
-  static {
-    try {
-      PROPERTY_MAP_FIELD = Entity.class.getDeclaredField("propertyMap");
-    } catch (NoSuchFieldException e) {
-      throw new RuntimeException(e);
-    }
-    PROPERTY_MAP_FIELD.setAccessible(true);
-  }
-
-  // TODO(maxr) Get rid of this once we have a formal way of figuring out
-  // which properties are indexed and which are unindexed.
-  private static Map<String, Object> getPropertyMap(Entity entity) {
-    try {
-      return (Map<String, Object>) PROPERTY_MAP_FIELD.get(entity);
-    } catch (IllegalAccessException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  // TODO(maxr) Rewrite once Entity.setPropertiesFrom() is available.
-  static void copyProperties(Entity src, Entity dest) {
-    for (Map.Entry<String, Object> entry : getPropertyMap(src).entrySet()) {
-      // barf
-      if (entry.getValue() != null &&
-          entry.getValue().getClass().getName().equals("com.google.appengine.api.datastore.Entity$UnindexedValue")) {
-        dest.setUnindexedProperty(entry.getKey(), src.getProperty(entry.getKey()));
-      } else {
-        dest.setProperty(entry.getKey(), entry.getValue());
-      }
-    }
-  }
-
   ClassLoaderResolver getClassLoaderResolver() {
     return getExecutionContext().getClassLoaderResolver();
   }
@@ -252,10 +168,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
   ExecutionContext getExecutionContext() {
     return getObjectProvider().getExecutionContext();
-  }
-
-  InsertMappingConsumer getInsertMappingConsumer() {
-    return fieldManagerStateStack.getFirst().mappingConsumer;
   }
 
   protected boolean isPK(int fieldNumber) {
@@ -288,14 +200,10 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     return storeManager;
   }
 
-  private InsertMappingConsumer buildMappingConsumer(AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers) {
-    return buildMappingConsumer(acmd, clr, fieldNumbers, null);
-  }
-
   /**
-   * Constructs a {@link MappingConsumer}.  If an {@link EmbeddedMetaData} is
-   * provided that means we need to construct the consumer in an embedded
-   * context.
+   * Constructs a {@link MappingConsumer}.  If an {@link EmbeddedMetaData} is provided that means we need 
+   * to construct the consumer in an embedded context.
+   * TODO Drop this and use metadata
    */
   protected InsertMappingConsumer buildMappingConsumer(
       AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers, EmbeddedMetaData emd) {
@@ -383,16 +291,17 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
   /**
    * Translates field numbers into {@link AbstractMemberMetaData}.
+   * TODO Drop this nonsense, that's what we have AbstractClassMetaData for
    */
   protected interface AbstractMemberMetaDataProvider {
     AbstractMemberMetaData get(int fieldNumber);
   }
 
   protected static final class FieldManagerState {
-    private final ObjectProvider op;
-    private final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
-    private final InsertMappingConsumer mappingConsumer;
-    private final boolean isEmbedded;
+    protected final ObjectProvider op;
+    protected final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
+    protected final InsertMappingConsumer mappingConsumer;
+    protected final boolean isEmbedded;
 
     protected FieldManagerState(ObjectProvider op,
         AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,

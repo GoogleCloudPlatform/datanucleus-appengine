@@ -18,8 +18,8 @@ package com.google.appengine.datanucleus.mapping;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastoreRelationFieldManager;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.StoreFieldManager;
 
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.store.mapped.DatastoreField;
@@ -34,6 +34,7 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
  * everything else.
  *
  * I'd prefer not to export this class but Datanucleus requires it be public.
+ * TODO(andy) I'd simply prefer not to have this class :-P
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -134,12 +135,12 @@ public class DatastoreFKMapping implements org.datanucleus.store.mapped.mapping.
     // so we instead set a magic property on the entity whose value is the parent
     // key with the expectation that someone upstream will see it, remove it,
     // and then recreate the entity on our behalf.  Like I said, this is awful.
-    if (paramIndex == DatastoreRelationFieldManager.IS_PARENT_VALUE) {
+    if (paramIndex == StoreFieldManager.IS_PARENT_VALUE) {
       if (value != null) {
         ((Entity) datastoreEntity).setProperty(
-            DatastoreRelationFieldManager.PARENT_KEY_PROPERTY, value);
+            StoreFieldManager.PARENT_KEY_PROPERTY, value);
       }
-    } else if (paramIndex != DatastoreRelationFieldManager.IS_FK_VALUE) {
+    } else if (paramIndex != StoreFieldManager.IS_FK_VALUE) {
       // Similar madness here.  Most of the time we want to just set the
       // given value on the entity, but if this is a foreign key value we
       // want to just swallow the update.  The reason is that we only

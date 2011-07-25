@@ -30,9 +30,18 @@ import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.exceptions.NotYetFlushedException;
+import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
+import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.MappingCallbacks;
+import org.datanucleus.store.mapped.mapping.PersistableMapping;
+import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
+import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.sco.SCO;
+import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -63,6 +72,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
         Relation.ONE_TO_ONE_UNI));
 
   private static final int[] NOT_USED = {0};
+  public static final int IS_PARENT_VALUE = -1;
+  private static final int[] IS_PARENT_VALUE_ARR = {IS_PARENT_VALUE};
+  public static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
+
+  public static final int IS_FK_VALUE = -2;
+  private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
 
   public enum Operation { INSERT, UPDATE, DELETE };
 
@@ -76,6 +91,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   protected Integer pkIdPos = null;
 
+  // Events that know how to store relations.
+  private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
+
   /**
    * @param op ObjectProvider of the object being stored
    * @param storeManager StoreManager for this object
@@ -85,7 +103,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    */
   public StoreFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers,
       Operation operation) {
-    super(op, storeManager, datastoreEntity, fieldNumbers);
+    super(op, false, storeManager, datastoreEntity, fieldNumbers);
     this.operation = operation;
   }
 
@@ -96,7 +114,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * @param operation Operation being performed
    */
   public StoreFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, Operation operation) {
-    super(op, storeManager, datastoreEntity);
+    super(op, false, storeManager, datastoreEntity, new int[0]);
     this.operation = operation;
   }
 
@@ -107,7 +125,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * @param operation Operation being performed
    */
   public StoreFieldManager(ObjectProvider op, String kind, DatastoreManager storeManager, Operation operation) {
-    super(op, kind, storeManager);
+    super(op, true, storeManager, new Entity(kind), new int[0]);
     this.operation = operation;
   }
 
@@ -236,8 +254,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
         if (!repersistingForChildKeys) {
           // register a callback for later
-          relationFieldManager.storeRelationField(
-              getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+          storeRelationField(getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
         }
 
         DatastoreTable table = getDatastoreTable();
@@ -440,16 +457,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
         parentAlreadySet = true;
       }
       datastoreEntity = new Entity(key);
-      copyProperties(old, datastoreEntity);
+      EntityUtils.copyProperties(old, datastoreEntity);
       keyAlreadySet = true;
     }
   }
 
-  /**
-   * @see DatastoreRelationFieldManager#storeRelations
-   */
   boolean storeRelations() {
-    return relationFieldManager.storeRelations(KeyRegistry.getKeyRegistry(getExecutionContext()));
+    return storeRelations(KeyRegistry.getKeyRegistry(getExecutionContext()));
   }
 
   private Object extractRelationKeys(Object value) {
@@ -460,7 +474,15 @@ public class StoreFieldManager extends DatastoreFieldManager {
       Collection coll = (Collection) value;
       // TODO What if any persistable objects here have not yet been flushed?
       int size = coll.size();
-      List<Key> keys = extractRelationKeys((Collection) value);
+
+      List<Key> keys = Utils.newArrayList();
+      for (Object obj : (Collection) value) {
+        Key key = extractChildKey(obj);
+        if (key != null) {
+          keys.add(key);
+        }
+      }
+
       // if we have fewer keys than objects then there is at least one child
       // object that still needs to be inserted.  communicate this upstream.
       getObjectProvider().setAssociatedValue(
@@ -475,17 +497,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
         DatastorePersistenceHandler.MISSING_RELATION_KEY,
         repersistingForChildKeys && key == null ? true : null);
     return key;
-  }
-
-  private List<Key> extractRelationKeys(Collection<?> values) {
-    List<Key> keys = Utils.newArrayList();
-    for (Object obj : values) {
-      Key key = extractChildKey(obj);
-      if (key != null) {
-        keys.add(key);
-      }
-    }
-    return keys;
   }
 
   /**
@@ -527,12 +538,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
       throw new NullPointerException("Could not extract a key from " + value);
     }
 
-    // We only support owned relationships so this key should be a child
-    // of the entity we are persisting.
+    // We only support owned relationships so this key should be a child of the entity we are persisting.
     if (key.getParent() == null) {
-      throw new DatastoreRelationFieldManager.ChildWithoutParentException(datastoreEntity.getKey(), key);
+      throw new EntityUtils.ChildWithoutParentException(datastoreEntity.getKey(), key);
     } else if (!key.getParent().equals(datastoreEntity.getKey())) {
-      throw new DatastoreRelationFieldManager.ChildWithWrongParentException(datastoreEntity.getKey(), key);
+      throw new EntityUtils.ChildWithWrongParentException(datastoreEntity.getKey(), key);
     }
     return key;
   }
@@ -618,6 +628,21 @@ public class StoreFieldManager extends DatastoreFieldManager {
     return null;
   }
 
+  void recreateEntityWithParent(Key parentKey) {
+    Entity old = datastoreEntity;
+    if (old.getKey().getName() != null) {
+      datastoreEntity =
+          new Entity(old.getKind(), old.getKey().getName(), parentKey);
+    } else {
+      datastoreEntity = new Entity(old.getKind(), parentKey);
+    }
+    EntityUtils.copyProperties(old, datastoreEntity);
+  }
+
+  InsertMappingConsumer getInsertMappingConsumer() {
+    return fieldManagerStateStack.getFirst().mappingConsumer;
+  }
+
   private Key getKeyFromParentPojo(Object mergeEntity) {
     ObjectProvider mergeOP = getExecutionContext().findObjectProvider(mergeEntity);
     if (mergeOP == null) {
@@ -701,6 +726,122 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
     }
     return delayWrite;
+  }
+
+  protected boolean fieldIsOfTypeLong(int fieldNumber) {
+    // Long is final so we don't need to worry about checking for subclasses.
+    return getMetaData(fieldNumber).getType().equals(Long.class);
+  }
+
+  protected boolean fieldIsOfTypeKey(int fieldNumber) {
+    // Key is final so we don't need to worry about checking for subclasses.
+    return getMetaData(fieldNumber).getType().equals(Key.class);
+  }
+
+  /**
+   * Applies all the relation events that have been built up.
+   * @return {@code true} if the relations changed in a way that
+   * requires an update to the relation owner, {@code false} otherwise.
+   */
+  boolean storeRelations(KeyRegistry keyRegistry) {
+    NucleusLogger.GENERAL.info(">> StoreFM.storeRelations ");
+    if (storeRelationEvents.isEmpty()) {
+      return false;
+    }
+
+    if (datastoreEntity.getKey() != null) {
+      keyRegistry.registerKey(getObjectProvider(), this);
+    }
+    for (StoreRelationEvent event : storeRelationEvents) {
+      event.apply();
+    }
+    storeRelationEvents.clear();
+
+    try {
+      return keyRegistry.parentNeedsUpdate(datastoreEntity.getKey());
+    } finally {
+      keyRegistry.clearModifiedParent(datastoreEntity.getKey());
+    }
+  }
+
+  void storeRelationField(final AbstractClassMetaData acmd,
+      final AbstractMemberMetaData ammd, final Object value,
+      final boolean isInsert, final InsertMappingConsumer consumer) {
+    NucleusLogger.GENERAL.info(">> StoreFM.storeRelationField " + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(value));
+    StoreRelationEvent event = new StoreRelationEvent() {
+      public void apply() {
+        DatastoreTable table = getDatastoreTable();
+
+        ObjectProvider op = getObjectProvider();
+        int fieldNumber = ammd.getAbsoluteFieldNumber();
+        // Based on ParameterSetter
+        try {
+          JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(ammd);
+          if (mapping instanceof EmbeddedPCMapping ||
+              mapping instanceof SerialisedPCMapping ||
+              mapping instanceof SerialisedReferenceMapping ||
+              mapping instanceof PersistableMapping ||
+              mapping instanceof InterfaceMapping) {
+            setObjectViaMapping(mapping, table, value, op, fieldNumber);
+            op.wrapSCOField(fieldNumber, value, false, true, true);
+          } else {
+            if (isInsert) {
+              for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
+                callback.postInsert(op);
+              }
+            } else {
+              for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
+                callback.postUpdate(op);
+              }
+            }
+          }
+        } catch (NotYetFlushedException e) {
+          if (acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber).getNullValue() == NullValue.EXCEPTION) {
+            throw e;
+          }
+          op.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
+        }
+      }
+
+      private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
+          ObjectProvider op, int fieldNumber) {
+        boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
+        if (!fieldIsParentKeyProvider) {
+          EntityUtils.checkParentage(value, op);
+        }
+        Entity entity = datastoreEntity;
+        mapping.setObject(getExecutionContext(), entity,
+            fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
+                value, op, fieldNumber);
+
+        // If the field we're setting is the one side of an owned many-to-one,
+        // its pk needs to be the parent of the key of the entity we're
+        // currently populating.  We look for a magic property that tells
+        // us if this change needs to be made.  See
+        // DatastoreFKMapping.setObject for all the gory details.
+        Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
+        if (parentKeyObj != null) {
+          AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
+              ammd.getType(), getClassLoaderResolver());
+          Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
+          entity.removeProperty(PARENT_KEY_PROPERTY);
+          recreateEntityWithParent(parentKey);
+        }
+      }
+    };
+
+    // If the related object can't exist without the parent it should be part
+    // of the parent's entity group.  In order to be part of the parent's
+    // entity group we need the parent's key.  In order to get the parent's key
+    // we must save the parent before we save the child.  In order to avoid
+    // saving the child until after we've saved the parent we register an event
+    // that we will apply later.
+    storeRelationEvents.add(event);
+  }
+
+  /** Supports a mechanism for delaying the storage of a relation. */
+  private interface StoreRelationEvent {
+    void apply();
   }
 
 }
