@@ -17,7 +17,6 @@ package com.google.appengine.datanucleus;
 
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
 
 /**
@@ -74,57 +73,5 @@ public class MetaDataUtils {
       cmd = pcmd;
     }
     return false;
-  }
-
-  /**
-   * Returns whether the specified member (or element of collection/array member) is insertable.
-   * @param ammd Metadata for the member
-   * @return Whether it is considered insertable
-   */
-  public static boolean isMemberInsertable(AbstractMemberMetaData ammd) {
-    ColumnMetaData[] colmds = null;
-    if (ammd.hasCollection() || ammd.hasArray()) {
-      if (ammd.getElementMetaData() != null && ammd.getElementMetaData().getColumnMetaData() != null &&
-          ammd.getElementMetaData().getColumnMetaData().length > 0) {
-        colmds = ammd.getElementMetaData().getColumnMetaData();
-      }
-    }
-    else if (ammd.hasMap()) {
-      // TODO Support maps
-    }
-    else {
-      colmds = ammd.getColumnMetaData();
-    }
-
-    if (colmds != null && colmds.length > 0) {
-      return colmds[0].getInsertable();
-    }
-    return true;
-  }
-
-  /**
-   * Returns whether the specified member (or element of collection/array member) is updateable.
-   * @param ammd Metadata for the member
-   * @return Whether it is considered updateable
-   */
-  public static boolean isMemberUpdatable(AbstractMemberMetaData ammd) {
-    ColumnMetaData[] colmds = null;
-    if (ammd.hasCollection() || ammd.hasArray()) {
-      if (ammd.getElementMetaData() != null && ammd.getElementMetaData().getColumnMetaData() != null &&
-          ammd.getElementMetaData().getColumnMetaData().length > 0) {
-        colmds = ammd.getElementMetaData().getColumnMetaData();
-      }
-    }
-    else if (ammd.hasMap()) {
-      // TODO Support maps
-    }
-    else {
-      colmds = ammd.getColumnMetaData();
-    }
-
-    if (colmds != null && colmds.length > 0) {
-      return colmds[0].getUpdateable();
-    }
-    return true;
   }
 }

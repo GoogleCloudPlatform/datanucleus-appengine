@@ -31,7 +31,6 @@ import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
-import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.metadata.VersionStrategy;
 import org.datanucleus.store.AbstractPersistenceHandler;
@@ -518,26 +517,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   private void handleDiscriminatorBeforeInsert(ObjectProvider op, Entity entity) {
-    DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
-                                                      op.getExecutionContext().getClassLoaderResolver());
-    if (table.getDiscriminatorMapping(false) != null) {
-      DiscriminatorMetaData dismd = table.getDiscriminatorMetaData();
-      boolean stringBased = true;
-      if (dismd.getColumnMetaData() != null && "integer".equalsIgnoreCase(dismd.getColumnMetaData().getJdbcType())) {
-        stringBased = false;
-      }
-
-      String propertyName = EntityUtils.getDiscriminatorPropertyName(getIdentifierFactory(op), dismd);
-      if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
-        EntityUtils.setEntityProperty(entity, dismd, propertyName, op.getObject().getClass().getName());
-      } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
-        dismd = op.getClassMetaData().getInheritanceMetaData().getDiscriminatorMetaData();
-        if (stringBased) {
-          EntityUtils.setEntityProperty(entity, dismd, propertyName, dismd.getValue());
-        } else {
-          EntityUtils.setEntityProperty(entity, dismd, propertyName, Long.parseLong(dismd.getValue()));
-        }
-      }
+    if (op.getClassMetaData().hasDiscriminatorStrategy()) {
+      DiscriminatorMetaData dismd = op.getClassMetaData().getDiscriminatorMetaDataRoot();
+      EntityUtils.setEntityProperty(entity, dismd, 
+          EntityUtils.getDiscriminatorPropertyName(getIdentifierFactory(op), dismd), 
+          op.getClassMetaData().getDiscriminatorValue());
     }
   }
   

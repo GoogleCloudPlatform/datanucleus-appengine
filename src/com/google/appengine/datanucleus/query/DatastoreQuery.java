@@ -45,11 +45,9 @@ import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityType;
-import org.datanucleus.metadata.InheritanceMetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
@@ -688,45 +686,32 @@ public class DatastoreQuery implements Serializable {
   private static Class<?> getClassFromDiscriminator(Entity entity, AbstractClassMetaData acmd,
                                    DatastoreTable table, ClassLoaderResolver clr,
                                    ExecutionContext ec) {
-    // TODO Get rid of this mapping crap and use the metadata
-    JavaTypeMapping discrimMapping = table.getDiscriminatorMapping(true);
-    if (discrimMapping == null) {
+    if (!acmd.hasDiscriminatorStrategy()) {
       return clr.classForName(acmd.getFullClassName());
     }
 
-    DiscriminatorMetaData dismd = discrimMapping.getDatastoreContainer().getDiscriminatorMetaData();
-
-    Class<?> discrimType = discrimMapping.getDatastoreMapping(0).getJavaTypeMapping().getJavaType();
-    String discriminatorColName = discrimMapping.getDatastoreMapping(0)
-        .getDatastoreField().getIdentifier().getIdentifierName();
-    Object discrimValue = entity.getProperty(discriminatorColName);
+    String discrimPropertyName = EntityUtils.getDiscriminatorPropertyName(
+        table.getStoreManager().getIdentifierFactory(), acmd.getDiscriminatorMetaDataRoot());
+    Object discrimValue = entity.getProperty(discrimPropertyName);
 
     if (discrimValue == null) {
       throw new NucleusUserException("Discriminator of this entity is null: " + entity);
     }
     String rowClassName = null;
 
-    if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
+    if (acmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME) {
       rowClassName = (String) discrimValue;
-    } else if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
-      AbstractClassMetaData baseCmd = (AbstractClassMetaData)
-          ((InheritanceMetaData) dismd.getParent()).getParent();
+    } else if (acmd.getDiscriminatorStrategy() == DiscriminatorStrategy.VALUE_MAP) {
       // Check the main class type for the table
-      Object discrimMDValue = dismd.getValue();
-      if (discrimType == Long.class) {
-        discrimMDValue = Long.parseLong((String) discrimMDValue);
-      }
+      Object discrimMDValue = acmd.getDiscriminatorValue();
       if (discrimMDValue.equals(discrimValue)) {
-        rowClassName = baseCmd.getFullClassName();
+        rowClassName = acmd.getFullClassName();
       } else {
         // Go through all possible subclasses to find one with this value
-        for (Object o : ec.getStoreManager().getSubClassesForClass(baseCmd.getFullClassName(), true, clr)) {
+        for (Object o : ec.getStoreManager().getSubClassesForClass(acmd.getFullClassName(), true, clr)) {
           String className = (String) o;
           AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(className, clr);
-          discrimMDValue = cmd.getInheritanceMetaData().getDiscriminatorMetaData().getValue();
-          if (discrimType == Long.class) {
-            discrimMDValue = Long.parseLong((String) discrimMDValue);
-          }
+          discrimMDValue = cmd.getDiscriminatorValue();
           if (discrimValue.equals(discrimMDValue)) {
             rowClassName = className;
             break;
@@ -951,58 +936,27 @@ public class DatastoreQuery implements Serializable {
   }
   
   private void addDiscriminator(QueryData qd) {
-    DatastoreTable candidateTable = qd.tableMap.get(qd.acmd.getFullClassName());
-    JavaTypeMapping discriminatorMapping = candidateTable.getDiscriminatorMapping(true);
-    
-    if (discriminatorMapping != null) {
+    if (qd.acmd.hasDiscriminatorStrategy()) {
       String className = qd.acmd.getFullClassName();
       boolean includeSubclasses = query.isSubclasses();
-      boolean restrictDiscriminator = true;
+      DatastoreManager storeMgr = getStoreManager();
+      String discriminatorPropertyName = EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), 
+          qd.acmd.getDiscriminatorMetaDataRoot());
 
-      // Use discriminator metadata from the place where the discriminator mapping is defined
-      DiscriminatorMetaData dismd = discriminatorMapping.getDatastoreContainer().getDiscriminatorMetaData();
-      boolean hasDiscriminator = dismd.getStrategy() != DiscriminatorStrategy.NONE;
-
-      if (hasDiscriminator) {
-        DatastoreManager storeMgr = getStoreManager();
-        if (includeSubclasses && candidateTable.getDiscriminatorMapping(false) != null && 
-          !storeMgr.getNucleusContext().getMetaDataManager().isPersistentDefinitionImplementation(className)) {
-          // no use in restricting if there is only one managed class
-	      restrictDiscriminator = candidateTable.getManagedClasses().length > 1;
-	    }
-
-        if (restrictDiscriminator) {
-          List<Object> discriminatorValues = new ArrayList<Object>();
-          ClassLoaderResolver clr = getClassLoaderResolver();
-          Object discriminatorValue = getDiscriminatorValue(qd.acmd, dismd, candidateTable);
-          discriminatorValues.add(discriminatorValue);
-          if (includeSubclasses) {
-            for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
-              discriminatorValue = getDiscriminatorValue(
-                storeMgr.getMetaDataManager().getMetaDataForClass(subClassName, clr), dismd, candidateTable);
-              discriminatorValues.add(discriminatorValue);
-            }
-          }
-	  
-	      String discriminatorPropertyName = discriminatorMapping.getDatastoreMapping(0).getDatastoreField().getIdentifier().getIdentifierName();
-	      qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
-	    }
+      // Note : we always restrict the discriminator since the user may at some later point add other classes
+      // to be persisted here, or have others that have data but aren't currently active in the persistence process
+      List<Object> discriminatorValues = new ArrayList<Object>();
+      ClassLoaderResolver clr = getClassLoaderResolver();
+      discriminatorValues.add(qd.acmd.getDiscriminatorValue());
+      if (includeSubclasses) {
+        for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
+          AbstractClassMetaData subCmd = storeMgr.getMetaDataManager().getMetaDataForClass(subClassName, clr);
+          discriminatorValues.add(subCmd.getDiscriminatorValue());
+        }
       }
+
+      qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
     }
-  }
-  
-  private static Object getDiscriminatorValue(AbstractClassMetaData targetCmd,
-      DiscriminatorMetaData dismd, DatastoreTable candidateTable) {
-    // Default to the "class-name" discriminator strategy
-    Object discriminatorValue = targetCmd.getFullClassName();
-    if (dismd.getStrategy() == DiscriminatorStrategy.VALUE_MAP) {
-      discriminatorValue = targetCmd.getInheritanceMetaData().getDiscriminatorMetaData().getValue();
-      JavaTypeMapping mapping = candidateTable.getDiscriminatorMapping(true);
-      if (mapping.getDatastoreMapping(0).getJavaTypeMapping().getJavaType() == Long.class) {
-        discriminatorValue = Long.parseLong((String)discriminatorValue);
-      }
-    }
-    return discriminatorValue;
   }
 
   static Query.SortDirection getSortDirection(OrderExpression oe) {

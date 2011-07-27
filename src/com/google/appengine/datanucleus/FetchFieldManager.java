@@ -78,35 +78,35 @@ public class FetchFieldManager extends DatastoreFieldManager
   }
 
   public boolean fetchBooleanField(int fieldNumber) {
-    return (Boolean) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Boolean) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public byte fetchByteField(int fieldNumber) {
-    return (Byte) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Byte) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public char fetchCharField(int fieldNumber) {
-    return (Character) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Character) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public double fetchDoubleField(int fieldNumber) {
-    return (Double) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Double) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public float fetchFloatField(int fieldNumber) {
-    return (Float) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Float) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public int fetchIntField(int fieldNumber) {
-    return (Integer) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Integer) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public long fetchLongField(int fieldNumber) {
-    return (Long) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Long) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public short fetchShortField(int fieldNumber) {
-    return (Short) checkAssignmentToNotNullField(fetchObjectField(fieldNumber), fieldNumber);
+    return (Short) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
   }
 
   public String fetchStringField(int fieldNumber) {
@@ -122,7 +122,8 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
       return fetchPKNameField();
     }
-    Object fieldVal = fetchObjectField(fieldNumber);
+
+    Object fieldVal = fetchFieldFromEntity(fieldNumber);
     if (fieldVal instanceof Text) {
       // must be a lob field
       fieldVal = ((Text) fieldVal).getValue();
@@ -136,12 +137,16 @@ public class FetchFieldManager extends DatastoreFieldManager
       return fetchEmbeddedField(ammd, fieldNumber);
     } else if (ammd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !ammd.isSerialized()) {
       return fetchRelationField(getClassLoaderResolver(), ammd);
+    } else {
+      return fetchFieldFromEntity(fieldNumber);
     }
+  }
 
+  Object fetchFieldFromEntity(int fieldNumber) {
+    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
     if (isPK(fieldNumber)) {
       if (ammd.getType().equals(Key.class)) {
-        // If this is a pk field, transform the Key into its String
-        // representation.
+        // If this is a pk field, transform the Key into its String representation.
         return datastoreEntity.getKey();
       } else if(ammd.getType().equals(Long.class)) {
         return datastoreEntity.getKey().getId();
@@ -160,8 +165,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       ClassLoaderResolver clr = getClassLoaderResolver();
       if (ammd.isSerialized()) {
         if (value != null) {
-          // If the field is serialized we know it's a Blob that we
-          // can deserialize without any conversion necessary.
+          // If the field is serialized we know it's a Blob that we can deserialize without any conversion necessary.
           value = deserializeFieldValue(value, clr, ammd);
         }
       } else {

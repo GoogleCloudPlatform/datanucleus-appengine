@@ -33,6 +33,7 @@ import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.metadata.MetaData;
+import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.PropertyMetaData;
 import org.datanucleus.metadata.Relation;
@@ -370,7 +371,7 @@ public class DatastoreTable implements DatastoreClass {
   public void buildMapping() {
     initializePK();
     initializeNonPK();
-    initializeDescriminatorMapping();
+    initializeDiscriminatorMapping(cmd.getDiscriminatorMetaDataForTable());
     runCallBacks();
     this.managedClassMetaData.add(cmd);
   }
@@ -397,12 +398,10 @@ public class DatastoreTable implements DatastoreClass {
 
   /**
    * returns the names of all classes managed by this table.
-   *
    * @return Names of the classes managed (stored) here
    */
   public String[] getManagedClasses() {
-    List<String> list = Utils
-        .transform(managedClassMetaData, new Utils.Function<AbstractClassMetaData, String>() {
+    List<String> list = Utils.transform(managedClassMetaData, new Utils.Function<AbstractClassMetaData, String>() {
           public String apply(AbstractClassMetaData cmd) {
             return cmd.getFullClassName();
           }
@@ -464,8 +463,7 @@ public class DatastoreTable implements DatastoreClass {
     }
   }
 
-  private void addFieldMapping(AbstractClassMetaData curCmd,
-                               AbstractMemberMetaData fmd) {
+  private void addFieldMapping(AbstractClassMetaData curCmd, AbstractMemberMetaData fmd) {
     // Primary key fields are added by the initialisePK method
     if (fmd.isPrimaryKey()) {
       // We need to know about this mapping when accessing the class as an embedded field.
@@ -476,6 +474,8 @@ public class DatastoreTable implements DatastoreClass {
           throw new UnsupportedOperationException("Overrides not currently supported.");
         }
       } else {
+        MetaDataManager mmgr = storeMgr.getMetaDataManager();
+
         // Manage the field if not already managed (may already exist if overriding a superclass field)
         if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
           boolean isPrimary = true;
@@ -486,9 +486,7 @@ public class DatastoreTable implements DatastoreClass {
           }
           if (isPrimary) {
             // Add the field to this table
-            JavaTypeMapping mapping = dba.getMappingManager(storeMgr).getMapping(
-                this, fmd, clr, FieldRole.ROLE_FIELD);
-            addFieldMapping(mapping);
+            addFieldMapping(dba.getMappingManager(storeMgr).getMapping(this, fmd, clr, FieldRole.ROLE_FIELD));
             embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
           } else {
             throw new UnsupportedOperationException("No support for secondary tables.");
@@ -513,33 +511,28 @@ public class DatastoreTable implements DatastoreClass {
           if (fmd.getMappedBy() != null) {
             // This element type has a many-to-one pointing back.
             // We assume that our pk is part of the pk of the element type.
-            DatastoreTable dt = storeMgr
-                    .getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+            DatastoreTable dt = storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
             dt.runCallBacks();
             dt.markFieldAsParentKeyProvider(fmd.getName());
           }
         } else if (relationType == Relation.MANY_TO_ONE_BI) {
-          DatastoreTable dt = storeMgr
-                  .getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-          AbstractClassMetaData acmd =
-              storeMgr.getMetaDataManager().getMetaDataForClass(fmd.getType(), clr);
+          DatastoreTable dt = storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
+          AbstractClassMetaData acmd = mmgr.getMetaDataForClass(fmd.getType(), clr);
           dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
         }
 
         if (needsFKToContainerOwner) {
           // 1-N uni/bidirectional using FK, so update the element side with a FK
           if ((fmd.getCollection() != null && !SCOUtils.collectionHasSerialisedElements(fmd)) ||
-              (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd, storeMgr.getMetaDataManager()))) {
+              (fmd.getArray() != null && !SCOUtils.arrayIsStoredInSingleColumn(fmd, mmgr))) {
             // 1-N ForeignKey collection/array, so add FK to element table
             AbstractClassMetaData elementCmd;
             if (fmd.hasCollection()) {
               // Collection
-              elementCmd = storeMgr.getMetaDataManager()
-                  .getMetaDataForClass(fmd.getCollection().getElementType(), clr);
+              elementCmd = mmgr.getMetaDataForClass(fmd.getCollection().getElementType(), clr);
             } else {
               // Array
-              elementCmd = storeMgr.getMetaDataManager()
-                  .getMetaDataForClass(fmd.getType().getComponentType(), clr);
+              elementCmd = mmgr.getMetaDataForClass(fmd.getType().getComponentType(), clr);
             }
             if (elementCmd == null) {
               // Elements that are reference types or non-PC will come through here
@@ -556,11 +549,9 @@ public class DatastoreTable implements DatastoreClass {
 
               // Run callbacks for each of the element classes.
               for (AbstractClassMetaData elementCmd1 : elementCmds) {
-                callbacks.put(elementCmd1.getFullClassName(),
-                              new CallBack(fmd, cmd.getFullClassName()));
+                callbacks.put(elementCmd1.getFullClassName(), new CallBack(fmd, cmd.getFullClassName()));
                 DatastoreTable dt =
-                    (DatastoreTable) storeMgr
-                        .getDatastoreClass(elementCmd1.getFullClassName(), clr);
+                    (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
                 dt.runCallBacks();
                 if (fmd.getMappedBy() != null) {
                   // This element type has a many-to-one pointing back.
@@ -573,16 +564,14 @@ public class DatastoreTable implements DatastoreClass {
             // 1-N ForeignKey map, so add FK to value table
             if (fmd.getKeyMetaData() != null && fmd.getKeyMetaData().getMappedBy() != null) {
               // Key is stored in the value table so add the FK to the value table
-              AbstractClassMetaData valueCmd = storeMgr.getMetaDataManager()
-                  .getMetaDataForClass(fmd.getMap().getValueType(), clr);
+              AbstractClassMetaData valueCmd = mmgr.getMetaDataForClass(fmd.getMap().getValueType(), clr);
               if (valueCmd == null) {
                 // Interface elements will come through here and java.lang.String and others as well
               }
             } else if (fmd.getValueMetaData() != null
                        && fmd.getValueMetaData().getMappedBy() != null) {
               // Value is stored in the key table so add the FK to the key table
-              AbstractClassMetaData keyCmd = storeMgr.getMetaDataManager()
-                  .getMetaDataForClass(fmd.getMap().getKeyType(), clr);
+              AbstractClassMetaData keyCmd = mmgr.getMetaDataForClass(fmd.getMap().getKeyType(), clr);
               if (keyCmd == null) {
                 // Interface elements will come through here and java.lang.String and others as well
               } else {
@@ -883,11 +872,7 @@ public class DatastoreTable implements DatastoreClass {
     initializeIDMapping();
   }
 
-  private void initializeDescriminatorMapping() {
-    initializeDescriminatorMapping(cmd.getDiscriminatorMetaDataForTable());
-  }
-
-  private void initializeDescriminatorMapping(DiscriminatorMetaData dismd) {
+  private void initializeDiscriminatorMapping(DiscriminatorMetaData dismd) {
     if (dismd != null) {
       discriminatorMetaData = dismd;
       if (dismd.getStrategy() == DiscriminatorStrategy.CLASS_NAME) {
@@ -1334,8 +1319,7 @@ public class DatastoreTable implements DatastoreClass {
     OrderMetaData omd = fmd.getOrderMetaData();
     if (omd != null) {
       colmd =
-          (omd.getColumnMetaData() != null && omd.getColumnMetaData().length > 0 ? omd
-              .getColumnMetaData()[0] : null);
+          (omd.getColumnMetaData() != null && omd.getColumnMetaData().length > 0 ? omd.getColumnMetaData()[0] : null);
       if (omd.getMappedBy() != null) {
         // User has defined ordering using the column(s) of an existing field.
         JavaTypeMapping orderMapping = getMemberMapping(omd.getMappedBy());

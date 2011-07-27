@@ -248,8 +248,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
       esm.provideFields(acmd.getAllMemberPositions(), this);
       fieldManagerStateStack.removeFirst();
     }
-    else if ((operation == Operation.INSERT && MetaDataUtils.isMemberInsertable(ammd)) ||
-        (operation == Operation.UPDATE && MetaDataUtils.isMemberUpdatable(ammd))) {
+    else if ((operation == Operation.INSERT && ammd.isInsertable()) ||
+        (operation == Operation.UPDATE && ammd.isUpdateable())) {
       if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
 
         if (!repersistingForChildKeys) {
