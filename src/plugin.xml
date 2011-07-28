@@ -27,11 +27,8 @@ limitations under the License.
 
     <!-- CONNECTION FACTORY -->
     <extension point="org.datanucleus.store_connectionfactory">
-		<!-- TODO Why using the same name ? See JPASingleTableInheritanceTest -->
         <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl"
 			transactional="true" datastore="appengine"/>
-        <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl" 
-			transactional="false" datastore="appengine"/>
     </extension>
 
 	<!-- VALUE GENERATOR -->

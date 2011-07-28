@@ -34,7 +34,7 @@ public class JDODataSourceConfigTest extends TestCase {
         (JDOPersistenceManagerFactory) JDOHelper.getPersistenceManagerFactory("transactional");
     DatastoreManager storeMgr = (DatastoreManager) pmf.getNucleusContext().getStoreManager();
     JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
-    assertTrue(storeMgr.connectionFactoryIsTransactional());
+    assertTrue(storeMgr.connectionFactoryIsAutoCreateTransaction());
     pm.close();
     pmf.close();
   }
@@ -44,7 +44,7 @@ public class JDODataSourceConfigTest extends TestCase {
         (JDOPersistenceManagerFactory) JDOHelper.getPersistenceManagerFactory("nontransactional");
     DatastoreManager storeMgr = (DatastoreManager) pmf.getNucleusContext().getStoreManager();
     JDOPersistenceManager pm = (JDOPersistenceManager) pmf.getPersistenceManager();
-    assertFalse(storeMgr.connectionFactoryIsTransactional());
+    assertFalse(storeMgr.connectionFactoryIsAutoCreateTransaction());
     pm.close();
     pmf.close();
   }

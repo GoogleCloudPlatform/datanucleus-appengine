@@ -24,9 +24,9 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 /**
- * Extension to {@link EmulatedXAResource} that manages a transaction against the datastore.
+ * Extension to {@link EmulatedXAResource} that manages a (autoCreate) transaction against the datastore.
  * Currently only supports a single, non-distributed transaction.  Instances of this class are
- * instantiated and used when the datasource has been configured as transactional or the user is
+ * instantiated and used when the datasource has been configured as "autoCreateTransaction" or the user is
  * explicitly doing transaction management.
  *
  * @author Erick Armbrust <earmbrust@google.com>

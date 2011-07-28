@@ -96,7 +96,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         this.storeMgr.getDefaultDatastoreServiceConfigForReads());
     datastoreServiceForWrites = DatastoreServiceFactoryInternal.getDatastoreService(
         this.storeMgr.getDefaultDatastoreServiceConfigForWrites());
-
   }
 
   public void close() {}

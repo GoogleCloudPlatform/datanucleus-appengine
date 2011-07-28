@@ -224,19 +224,18 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public void transactionStarted(ExecutionContext ec) {
-    if (connectionFactoryIsTransactional()) {
+    if (connectionFactoryIsAutoCreateTransaction()) {
       // Obtain a connection. This will create it now that the user has selected tx.begin()
   //    getConnection(ec);
       Transaction txn = 
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).beginTransaction();
       NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
     }
-    super.transactionStarted(ec);
   }
 
   @Override
   public void transactionCommitted(ExecutionContext ec) {
-    if (connectionFactoryIsTransactional()) {
+    if (connectionFactoryIsAutoCreateTransaction()) {
       Transaction txn = 
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
       if (txn == null) {
@@ -249,12 +248,11 @@ public class DatastoreManager extends MappedStoreManager {
         txn.commit();
       }
     }
-    super.transactionCommitted(ec);
   }
 
   @Override
   public void transactionRolledBack(ExecutionContext ec) {
-    if (connectionFactoryIsTransactional()) {
+    if (connectionFactoryIsAutoCreateTransaction()) {
       Transaction txn =
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
       if (txn == null) {
@@ -267,7 +265,6 @@ public class DatastoreManager extends MappedStoreManager {
         txn.rollback();
       }
     }
-    super.transactionRolledBack(ec);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
@@ -304,7 +301,6 @@ public class DatastoreManager extends MappedStoreManager {
     return datastoreServiceConfig;
   }
 
-  // TODO This is wrong. It returns NucleusConnectionImpl where mc.getConnection is null hence does NOT give access
   @Override
   public NucleusConnection getNucleusConnection(ExecutionContext ec) {
     ConnectionFactory cf = connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
@@ -568,12 +564,12 @@ public class DatastoreManager extends MappedStoreManager {
 
   /**
    * Helper method to determine if the connection factory associated with this
-   * manager is transactional.
+   * manager is AutoCreateTransaction.
    */
-  public boolean connectionFactoryIsTransactional() {
+  public boolean connectionFactoryIsAutoCreateTransaction() {
     DatastoreConnectionFactoryImpl connFactory = 
         (DatastoreConnectionFactoryImpl) connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
-    return connFactory.isTransactional();
+    return connFactory.isAutoCreateTransaction();
   }
 
   /**

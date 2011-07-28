@@ -34,7 +34,7 @@ public class JPADataSourceConfigTest extends TestCase {
             JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed.name());
     JPAEntityManager em = (JPAEntityManager) emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) em.getExecutionContext().getStoreManager();
-    assertTrue(storeMgr.connectionFactoryIsTransactional());
+    assertTrue(storeMgr.connectionFactoryIsAutoCreateTransaction());
     em.close();
     emf.close();
   }
@@ -44,7 +44,7 @@ public class JPADataSourceConfigTest extends TestCase {
             JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed.name());
     JPAEntityManager em = (JPAEntityManager) emf.createEntityManager();
     DatastoreManager storeMgr = (DatastoreManager) em.getExecutionContext().getStoreManager();
-    assertFalse(storeMgr.connectionFactoryIsTransactional());
+    assertFalse(storeMgr.connectionFactoryIsAutoCreateTransaction());
     em.close();
     emf.close();
   }

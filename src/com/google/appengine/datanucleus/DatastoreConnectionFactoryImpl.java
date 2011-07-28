@@ -33,7 +33,6 @@ import javax.transaction.xa.XAResource;
 
 /**
  * Factory for connections to the datastore.
- * TODO Merge DatastoreEntityTransactionImpl into here
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -42,14 +41,14 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
   public static final String AUTO_CREATE_TXNS_PROPERTY =
       "datanucleus.appengine.autoCreateDatastoreTxns";
 
-  private final boolean isTransactional;
+  private final boolean isAutoCreateTransaction;
 
   /**
    * Constructs a connection factory for the datastore.
    * This connection factory either creates connections that are all
-   * transactional or connections that are all nontransactional.
-   * Transactional connections manage an underlying datastore transaction.
-   * Nontransactional connections do not manage an underlying datastore
+   * AutoCreateTransaction or connections that are all non-AutoCreateTransaction.
+   * AutoCreateTransaction connections manage an underlying datastore transaction.
+   * Non-AutoCreateTransaction connections do not manage an underlying datastore
    * transaction.   The type of connection that this factory provides
    * is controlled via the {@link #AUTO_CREATE_TXNS_PROPERTY} property, which
    * can be specified in jdoconfig.xml (for JDO) or persistence.xml (for JPA).
@@ -104,7 +103,7 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
         // User hasn't configured the "auto-create" property, so set it
         conf.setProperty(DatastoreConnectionFactoryImpl.AUTO_CREATE_TXNS_PROPERTY, Boolean.TRUE.toString());
     }
-    this.isTransactional = conf.getBooleanProperty(AUTO_CREATE_TXNS_PROPERTY);
+    this.isAutoCreateTransaction = conf.getBooleanProperty(AUTO_CREATE_TXNS_PROPERTY);
   }
 
   public void close() {}
@@ -120,21 +119,11 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
    * {@inheritDoc}
    */
   public ManagedConnection createManagedConnection(Object poolKey, Map transactionOptions) {
-    return new DatastoreManagedConnection(newXAResource());
+    return new DatastoreManagedConnection(storeMgr, isAutoCreateTransaction());
   }
 
-  boolean isTransactional() {
-    return isTransactional;
-  }
-
-  private XAResource newXAResource() {
-    if (isTransactional()) {
-      DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
-      DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
-      return new DatastoreXAResource(datastoreService);
-    } else {
-      return new EmulatedXAResource();
-    }
+  boolean isAutoCreateTransaction() {
+    return isAutoCreateTransaction;
   }
 
   static class DatastoreManagedConnection implements ManagedConnection {
@@ -144,11 +133,21 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
         new ArrayList<ManagedConnectionResourceListener>();
     private final XAResource datastoreXAResource;
 
-    DatastoreManagedConnection(XAResource datastoreXAResource) {
-      this.datastoreXAResource = datastoreXAResource;
+    DatastoreManagedConnection(StoreManager storeMgr, boolean autoCreateTransaction) {
+      if (autoCreateTransaction) {
+        DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
+        DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+        datastoreXAResource = new DatastoreXAResource(datastoreService);
+      } else {
+        datastoreXAResource = new EmulatedXAResource();
+      }
     }
 
     public Object getConnection() {
+      if (datastoreXAResource instanceof DatastoreXAResource) {
+        // Return the DatastoreTransaction
+        return ((DatastoreXAResource)datastoreXAResource).getCurrentTransaction();
+      }
       return null;
     }
 
