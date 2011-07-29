@@ -297,11 +297,13 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     AbstractMemberMetaData get(int fieldNumber);
   }
 
+  // TODO When we split embedded usage into own FieldManager this will move into the owning class
   protected static final class FieldManagerState {
     protected final ObjectProvider op;
     protected final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
     protected final InsertMappingConsumer mappingConsumer;
     protected final boolean isEmbedded;
+    protected Integer pkIdPos;
 
     protected FieldManagerState(ObjectProvider op,
         AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,

@@ -89,8 +89,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   protected boolean keyAlreadySet = false;
 
-  protected Integer pkIdPos = null;
-
   // Events that know how to store relations.
   private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
 
@@ -324,7 +322,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
     }
     storeKeyPK(key);
-    pkIdPos = fieldNumber;
+    fieldManagerStateStack.getFirst().pkIdPos = fieldNumber;
   }
 
   private void storePKNameField(int fieldNumber, String value) {
@@ -685,7 +683,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   }
 
   Integer getPkIdPos() {
-    return pkIdPos;
+    return fieldManagerStateStack.getFirst().pkIdPos;
   }
 
   /**

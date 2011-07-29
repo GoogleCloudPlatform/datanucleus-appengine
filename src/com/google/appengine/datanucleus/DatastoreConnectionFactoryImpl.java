@@ -91,9 +91,7 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
    * </pre>
    *
    * @param nucContext The OMFContext
-   * @param resourceType The resource type of the connection, either tx or
-   * notx.  We ignore this parameter because it isn't a valid indication of
-   * whether or not this connection factory creates transactional connections.
+   * @param resourceType Ignored since we only use a single connection factory
    */
   public DatastoreConnectionFactoryImpl(StoreManager storeMgr, String resourceType) {
     super(storeMgr, resourceType);

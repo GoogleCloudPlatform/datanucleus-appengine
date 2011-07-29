@@ -20,6 +20,8 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.test.EmbeddedChildPC;
+import com.google.appengine.datanucleus.test.EmbeddedParentPC;
 import com.google.appengine.datanucleus.test.Flight;
 import com.google.appengine.datanucleus.test.HasEmbeddedJDO;
 import com.google.appengine.datanucleus.test.HasEmbeddedPc;
@@ -159,5 +161,15 @@ public class JDOEmbeddedTest extends JDOTestCase {
     commitTxn();
     Entity e = ds.get(parent.getKey());
     assertTrue(e.hasProperty("key"));
+  }
+
+  public void testEmbeddingPCWithIdField() {
+    EmbeddedParentPC pi = new EmbeddedParentPC();
+    pi.setChild(new EmbeddedChildPC(1, "Hi"));
+
+    // Failed on GAE v1.x
+    pm.currentTransaction().begin();
+    pm.makePersistent(pi);
+    pm.currentTransaction().commit();
   }
 }
