@@ -10,7 +10,9 @@ import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class ParentPC {
-  @PrimaryKey() @Persistent(valueStrategy=IdGeneratorStrategy.IDENTITY)
+  @SuppressWarnings("unused")
+  @PrimaryKey 
+  @Persistent(valueStrategy=IdGeneratorStrategy.IDENTITY)
   private Key primaryKey;
   
   @Persistent(embedded="true")
