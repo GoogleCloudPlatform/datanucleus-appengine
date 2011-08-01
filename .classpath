@@ -28,9 +28,9 @@
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/geronimo-jpa_2.0_spec-1.0.jar"/>
 	<classpathentry kind="lib" path="lib/jdo-api-3.1-SNAPSHOT-20110319.jar"/>
-	<classpathentry kind="lib" path="lib/datanucleus-enhancer-3.0.0-m6.jar"/>
-	<classpathentry kind="lib" path="lib/datanucleus-api-jdo-3.0.0-release-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="lib/datanucleus-api-jpa-3.0.0-release-SNAPSHOT.jar"/>
-	<classpathentry kind="lib" path="lib/datanucleus-core-3.0.0-release-SNAPSHOT.jar"/>
+	<classpathentry kind="lib" path="lib/datanucleus-api-jdo-3.0.0-release.jar"/>
+	<classpathentry kind="lib" path="lib/datanucleus-api-jpa-3.0.0-release.jar"/>
+	<classpathentry kind="lib" path="lib/datanucleus-core-3.0.0-release.jar"/>
+	<classpathentry kind="lib" path="lib/datanucleus-enhancer-3.0.0-release.jar"/>
 	<classpathentry kind="output" path="bin"/>
 </classpath>
