@@ -303,7 +303,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     protected final AbstractMemberMetaDataProvider abstractMemberMetaDataProvider;
     protected final InsertMappingConsumer mappingConsumer;
     protected final boolean isEmbedded;
-    protected Integer pkIdPos;
 
     protected FieldManagerState(ObjectProvider op,
         AbstractMemberMetaDataProvider abstractMemberMetaDataProvider,

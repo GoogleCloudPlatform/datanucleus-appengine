@@ -322,7 +322,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
       key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
     }
     storeKeyPK(key);
-    fieldManagerStateStack.getFirst().pkIdPos = fieldNumber;
   }
 
   private void storePKNameField(int fieldNumber, String value) {
@@ -682,14 +681,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
     return EntityUtils.getPkAsKey(internalPk, acmd, getExecutionContext());
   }
 
-  Integer getPkIdPos() {
-    return fieldManagerStateStack.getFirst().pkIdPos;
-  }
-
   /**
-   * In JDO, 1-to-many relationsihps that are expressed using a
-   * {@link List} are ordered by a column in the child
-   * table that stores the position of the child in the parent's list.
+   * Indexed 1-to-many relationsihps are expressed using a {@link List} and are ordered by a 
+   * column in the child table that stores the position of the child in the parent's list.
    * This function is responsible for making sure the appropriate values
    * for these columns find their way into the Entity.  In certain scenarios,
    * DataNucleus does not make the index of the container element being
