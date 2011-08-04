@@ -26,6 +26,7 @@ import com.google.appengine.datanucleus.test.HasEncodedStringPkSeparateIdFieldJD
 import com.google.appengine.datanucleus.test.HasEncodedStringPkSeparateNameFieldJDO;
 import com.google.appengine.datanucleus.test.HasKeyPkJDO;
 import com.google.appengine.datanucleus.test.HasLongPkJDO;
+import com.google.appengine.datanucleus.test.HasLongPrimitivePkJDO;
 import com.google.appengine.datanucleus.test.HasUnencodedStringPkJDO;
 
 
@@ -39,6 +40,22 @@ import javax.jdo.Query;
  * @author Max Ross <maxr@google.com>
  */
 public class JDOPrimaryKeyTest extends JDOTestCase {
+
+  public void testLongPrimitivePk() throws EntityNotFoundException {
+    HasLongPrimitivePkJDO pojo = new HasLongPrimitivePkJDO();
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    Entity e = ds.get(KeyFactory.createKey(HasLongPrimitivePkJDO.class.getSimpleName(), pojo.getId()));
+
+    beginTxn();
+    pm.getObjectById(HasLongPrimitivePkJDO.class, e.getKey().getId());
+    pm.getObjectById(HasLongPrimitivePkJDO.class, e.getKey());
+    pm.getObjectById(HasLongPrimitivePkJDO.class, KeyFactory.keyToString(e.getKey()));
+    commitTxn();
+  }
 
   public void testLongPk() throws EntityNotFoundException {
     HasLongPkJDO pojo = new HasLongPkJDO();

@@ -178,11 +178,12 @@ public final class EntityUtils {
     Class<?> pkType = pkMemberMetaData.getType();
     if (val instanceof String) {
       result = stringToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
-    } else if (val instanceof Long || val instanceof Integer) {
+    } else if (val instanceof Long || val instanceof Integer || long.class.isInstance(val)) {
       result = intOrLongToInternalKey(kind, pkType, pkMemberMetaData, cls, val);
     } else if (val instanceof Key) {
       result = keyToInternalKey(kind, pkType, pkMemberMetaData, cls, (Key) val, ec, allowSubclasses);
     }
+
     if (result == null && val != null) {
       // missed a case somewhere
       throw new NucleusFatalUserException(
@@ -206,14 +207,14 @@ public final class EntityUtils {
         String kind = EntityUtils.determineKind(acmd, ec);
         return KeyFactory.createKey(kind, (String) pk);
       }
-    } else if (pk instanceof Long) {
+    } else if (pk instanceof Long || long.class.isInstance(pk)) {
       String kind = EntityUtils.determineKind(acmd, ec);
       return KeyFactory.createKey(kind, (Long) pk);
     } else {
       throw new IllegalStateException(
           "Primary key for object of type " + acmd.getName()
               + " is of unexpected type " + pk.getClass().getName()
-              + " (must be String, Long, or " + Key.class.getName() + ")");
+              + " (must be String, Long, long, or " + Key.class.getName() + ")");
     }
   }
 
@@ -275,7 +276,7 @@ public final class EntityUtils {
         }
         result = key.getName();
       }
-    } else if (pkType.equals(Long.class)) {
+    } else if (pkType.equals(Long.class) || pkType.equals(long.class)) {
       if (key.getParent() != null) {
         // By definition, classes with unencoded string pks
         // do not have parents.  Since this key has a parent
@@ -313,7 +314,7 @@ public final class EntityUtils {
             + "key for this type is an unencoded String.  However, the provided value is of type "
             + val.getClass().getName() + ".");
       }
-    } else if (pkType.equals(Long.class)) {
+    } else if (pkType.equals(Long.class) || pkType.equals(long.class)) {
       result = keyWithId.getId();
     } else if (pkType.equals(Key.class)) {
       result = keyWithId;
@@ -334,7 +335,7 @@ public final class EntityUtils {
             + decodedKey.getKind());
       }
     } catch (IllegalArgumentException iae) {
-      if (pkType.equals(Long.class)) {
+      if (pkType.equals(Long.class) || pkType.equals(long.class)) {
         // We were given an unencoded String and the pk type is Long.
         // There's no way that can be valid
         throw new NucleusFatalUserException(
@@ -374,7 +375,7 @@ public final class EntityUtils {
         }
         result = decodedKey.getName();
       }
-    } else if (pkType.equals(Long.class)) {
+    } else if (pkType.equals(Long.class) || pkType.equals(long.class)) {
       if (decodedKey.getParent() != null) {
         throw new NucleusFatalUserException(
             "Received a request to find an object of type " + cls.getName() + ".  The primary "
@@ -415,7 +416,7 @@ public final class EntityUtils {
     String kind = EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
     if (primaryKey instanceof Key) {
       return (Key) primaryKey;
-    } else if (primaryKey instanceof Long) {
+    } else if (long.class.isInstance(primaryKey) || primaryKey instanceof Long) {
       return KeyFactory.createKey(kind, (Long) primaryKey);
     }
     try {

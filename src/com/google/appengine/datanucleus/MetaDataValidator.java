@@ -149,7 +149,7 @@ public class MetaDataValidator implements MetaDataListener {
     // TODO Allow long, int, Integer types
     Class<?> pkType = pkMemberMetaData.getType();
     boolean noParentAllowed = false;
-    if (pkType.equals(Long.class)) {
+    if (pkType.equals(Long.class) || pkType.equals(long.class)) {
       noParentAllowed = true;
     } else if (pkType.equals(String.class)) {
       if (!MetaDataUtils.isEncodedPKField(acmd, pkPos)) {
@@ -225,7 +225,7 @@ public class MetaDataValidator implements MetaDataListener {
     }
 
     if (ammd.hasExtension(DatastoreManager.PK_ID)) {
-      if (!ammd.getType().equals(Long.class)) {
+      if (!ammd.getType().equals(Long.class) && !ammd.getType().equals(long.class)) {
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ExtensionForLongField",
             ammd.getFullFieldName(), DatastoreManager.PK_ID);
       }
@@ -356,7 +356,7 @@ public class MetaDataValidator implements MetaDataListener {
     int pkPos = pkPositions[0];
     AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
     Class<?> pkType = pkMemberMetaData.getType();
-    if (noParentAllowed && (pkType.equals(Long.class) ||
+    if (noParentAllowed && (pkType.equals(Long.class) || pkType.equals(long.class) ||
         (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)))) {
       throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ChildWithPKTypeInvalid",
           pkMemberMetaData.getFullFieldName(), pkType.getName(), ammd.getFullFieldName());
