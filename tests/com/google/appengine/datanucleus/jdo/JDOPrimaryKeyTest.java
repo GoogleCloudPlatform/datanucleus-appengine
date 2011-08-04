@@ -27,8 +27,8 @@ import com.google.appengine.datanucleus.test.HasEncodedStringPkSeparateNameField
 import com.google.appengine.datanucleus.test.HasKeyPkJDO;
 import com.google.appengine.datanucleus.test.HasLongPkJDO;
 import com.google.appengine.datanucleus.test.HasLongPrimitivePkJDO;
+import com.google.appengine.datanucleus.test.HasStringUUIDPkJDO;
 import com.google.appengine.datanucleus.test.HasUnencodedStringPkJDO;
-
 
 import java.util.List;
 import java.util.Set;
@@ -54,6 +54,22 @@ public class JDOPrimaryKeyTest extends JDOTestCase {
     pm.getObjectById(HasLongPrimitivePkJDO.class, e.getKey().getId());
     pm.getObjectById(HasLongPrimitivePkJDO.class, e.getKey());
     pm.getObjectById(HasLongPrimitivePkJDO.class, KeyFactory.keyToString(e.getKey()));
+    commitTxn();
+  }
+
+  public void testStringUUIDPk() throws EntityNotFoundException {
+    HasStringUUIDPkJDO pojo = new HasStringUUIDPkJDO("First");
+    beginTxn();
+    pm.makePersistent(pojo);
+    commitTxn();
+
+    assertNotNull(pojo.getId());
+    Entity e = ds.get(KeyFactory.createKey(HasStringUUIDPkJDO.class.getSimpleName(), pojo.getId()));
+
+    beginTxn();
+    pm.getObjectById(HasStringUUIDPkJDO.class, e.getKey());
+    pm.getObjectById(HasStringUUIDPkJDO.class, e.getKey().getName());
+    pm.getObjectById(HasStringUUIDPkJDO.class, KeyFactory.keyToString(e.getKey()));
     commitTxn();
   }
 
