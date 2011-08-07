@@ -117,7 +117,6 @@ import com.google.appengine.datanucleus.query.SlicingIterableTest;
 public class AllTests {
   public static TestSuite suite() {
     TestSuite suite = new TestSuite();
-    suite.addTestSuite(DatastoreFieldManagerTest.class);
     suite.addTestSuite(JDOPersistenceManagerFactoryTest.class);
     suite.addTestSuite(JPAEntityManagerFactoryTest.class);
     suite.addTestSuite(JDOQLQueryTest.class);

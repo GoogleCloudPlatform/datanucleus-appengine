@@ -63,15 +63,15 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
   private static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
 
-  // Stack used to maintain the current field manager state to use.  We push on
-  // to this stack as we encounter embedded classes and then pop when we're done.
+  /**
+   * List of FieldManagerState, with the last one being the root object, and earlier ones being those
+   * for (nested) embedded objects.
+   */
   protected final LinkedList<FieldManagerState> fieldManagerStateStack =
       new LinkedList<FieldManagerState>();
 
   // true if we instantiated the entity ourselves.
   protected final boolean createdWithoutEntity;
-
-  protected final DatastoreManager storeManager;
 
   protected ObjectProvider op;
 
@@ -83,7 +83,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   protected AbstractMemberMetaData parentMemberMetaData;
 
   protected DatastoreFieldManager(ObjectProvider op, boolean createdWithoutEntity,
-      DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers) {
+      Entity datastoreEntity, int[] fieldNumbers) {
     // We start with an ammdProvider that just gets member meta data from the class meta data.
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
@@ -92,7 +92,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     };
     this.op = op;
     this.createdWithoutEntity = createdWithoutEntity;
-    this.storeManager = storeManager;
     this.datastoreEntity = datastoreEntity;
     InsertMappingConsumer mappingConsumer = buildMappingConsumer(op.getClassMetaData(), 
         op.getExecutionContext().getClassLoaderResolver(), fieldNumbers, null);
@@ -197,7 +196,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   }
 
   DatastoreManager getStoreManager() {
-    return storeManager;
+    return (DatastoreManager) op.getExecutionContext().getStoreManager();
   }
 
   /**
@@ -286,7 +285,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   }
 
   DatastoreTable getDatastoreTable() {
-    return storeManager.getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
+    return getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
 
   /**

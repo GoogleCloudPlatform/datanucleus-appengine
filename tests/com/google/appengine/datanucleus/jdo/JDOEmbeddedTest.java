@@ -113,10 +113,13 @@ public class JDOEmbeddedTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
+    pm.evictAll();
+    pmf.getDataStoreCache().evictAll();
 
+    // Failed on GAE v1.x
     beginTxn();
     pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());
-    assertNotNull(pojo.getEmbedded());
+    assertNull(pojo.getEmbedded());
     commitTxn();
   }
 
@@ -128,6 +131,8 @@ public class JDOEmbeddedTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
+    pm.evictAll();
+    pmf.getDataStoreCache().evictAll();
 
     beginTxn();
     pojo = pm.getObjectById(HasEmbeddedWithKeyPkJDO.class, pojo.getId());

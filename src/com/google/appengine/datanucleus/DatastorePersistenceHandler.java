@@ -354,8 +354,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       // For inserts we let the field manager create the Entity and then
       // retrieve it afterwards.  We do this because the entity isn't
       // 'fixed' until after provideFields has been called.
-      StoreFieldManager fieldMgr = new StoreFieldManager(
-          op, kind, storeMgr, StoreFieldManager.Operation.INSERT);
+      StoreFieldManager fieldMgr = new StoreFieldManager(op, kind, StoreFieldManager.Operation.INSERT);
       op.provideFields(op.getClassMetaData().getAllMemberPositions(), fieldMgr);
 
       Object assignedParentPk = fieldMgr.establishEntityGroup();
@@ -578,7 +577,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId()));
     }
 
-    op.replaceFields(fieldNumbers, new FetchFieldManager(op, storeMgr, entity, fieldNumbers));
+    op.replaceFields(fieldNumbers, new FetchFieldManager(op, entity, fieldNumbers));
 
     // Refresh version - is this needed? should have been set on retrieval anyway
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
@@ -647,8 +646,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Key key = getPkAsKey(op);
       entity = getEntityFromDatastore(op, key);
     }
-    StoreFieldManager fieldMgr = new StoreFieldManager(
-        op, storeMgr, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
+    StoreFieldManager fieldMgr = new StoreFieldManager(op, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
     op.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(op, entity, VersionBehavior.INCREMENT, "updating");
 

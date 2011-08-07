@@ -188,10 +188,6 @@ public class DatastoreQuery implements Serializable {
     return query.getExecutionContext();
   }
 
-  private DatastoreManager getDatastoreManager() {
-    return (DatastoreManager) getExecutionContext().getStoreManager();
-  }
-
   private MetaDataManager getMetaDataManager() {
     return getExecutionContext().getMetaDataManager();
   }
@@ -247,10 +243,10 @@ public class DatastoreQuery implements Serializable {
       NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
     }
 
+    // Compile the query, populating the QueryData
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
-
     processInFilters(qd);
 
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
@@ -259,43 +255,12 @@ public class DatastoreQuery implements Serializable {
       config.deadline(query.getDatastoreReadTimeoutMillis() / 1000);
     }
 
-    // TODO Move this to some more convenient place
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       // Log the query
-      StringBuilder str = new StringBuilder();
-      str.append("Kind=" + StringUtils.collectionToString(qd.tableMap.values()));
-      List<FilterPredicate> filterPreds = qd.primaryDatastoreQuery.getFilterPredicates();
-      if (filterPreds.size() > 0) {
-        str.append(" Filter : ");
-        Iterator<FilterPredicate> filterIter = filterPreds.iterator();
-        while (filterIter.hasNext()) {
-          FilterPredicate pred = filterIter.next();
-          str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
-          if (filterIter.hasNext()) {
-            if (qd.isOrExpression) {
-              str.append(" OR ");
-            } else {
-              str.append(" AND ");
-            }
-          }
-        }
-      }
-
-      List<SortPredicate> sortPreds = qd.primaryDatastoreQuery.getSortPredicates();
-      if (sortPreds.size() > 0) {
-        str.append(" Order : ");
-        Iterator<SortPredicate> sortIter = sortPreds.iterator();
-        while (sortIter.hasNext()) {
-          SortPredicate pred = sortIter.next();
-          str.append(pred.getPropertyName() + " " + pred.getDirection());
-          if (sortIter.hasNext()) {
-            str.append(",");
-          }
-        }
-      }
-      NucleusLogger.QUERY.debug("Query compiled as : " + str.toString());
+      NucleusLogger.QUERY.debug("Query compiled as : " + getDatastoreQueryAsString(qd));
     }
 
+    // Obtain DatastoreService to execute the query, and execute the relevant type of query
     Map extensions = query.getExtensions();
     if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
       config.readPolicy(new ReadPolicy(
@@ -306,38 +271,57 @@ public class DatastoreQuery implements Serializable {
     if (qd.batchGetKeys != null &&
         qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
         qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
-      // only execute a batch get if there aren't any other filters or sorts
-      return fulfillBatchGetQuery(ds, qd, mconn);
+      // Batch Get Query - only execute a batch get if there aren't any other filters or sorts
+      return executeBatchGetQuery(ds, qd, mconn);
     } else if (qd.joinQuery != null) {
+      // Join Query
       FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-      JoinHelper joinHelper = new JoinHelper();
-      return wrapEntityQueryResult(joinHelper.executeJoinQuery(qd, this, ds, opts),
+      return wrapEntityQueryResult(new JoinHelper().executeJoinQuery(qd, this, ds, opts),
             qd.resultTransformer, ds, mconn, null);
     } else {
-      latestDatastoreQuery = qd.primaryDatastoreQuery;
-      Transaction txn = null;
-      // give users a chance to opt-out of having their query execute in a txn
-      if (extensions == null ||
-          !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
-          !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
-        // If this is an ancestor query, execute it in the current transaction
-        txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
-      }
+      // Normal Query
+      return executeNormalQuery(ds, qd, mconn);
+    }
+  }
 
-      PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
-      FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-      if (qd.resultType == ResultType.COUNT) {
-        if (opts == null) {
-          opts = withDefaults();
+  /**
+   * Convenience method to return the datastore query to be invoked in String form (for logging).
+   * @param qd QueryData
+   * @return The string form
+   */
+  private String getDatastoreQueryAsString(QueryData qd) {
+    StringBuilder str = new StringBuilder();
+    str.append("Kind=" + StringUtils.collectionToString(qd.tableMap.values()));
+    List<FilterPredicate> filterPreds = qd.primaryDatastoreQuery.getFilterPredicates();
+    if (filterPreds.size() > 0) {
+      str.append(" Filter : ");
+      Iterator<FilterPredicate> filterIter = filterPreds.iterator();
+      while (filterIter.hasNext()) {
+        FilterPredicate pred = filterIter.next();
+        str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
+        if (filterIter.hasNext()) {
+          if (qd.isOrExpression) {
+            str.append(" OR ");
+          } else {
+            str.append(" AND ");
+          }
         }
-        return Collections.singletonList(preparedQuery.countEntities(opts));
-      } else {
-        if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-          qd.primaryDatastoreQuery.setKeysOnly();
-        }
-        return fulfillEntityQuery(preparedQuery, opts, qd.resultTransformer, ds, mconn);
       }
     }
+
+    List<SortPredicate> sortPreds = qd.primaryDatastoreQuery.getSortPredicates();
+    if (sortPreds.size() > 0) {
+      str.append(" Order : ");
+      Iterator<SortPredicate> sortIter = sortPreds.iterator();
+      while (sortIter.hasNext()) {
+        SortPredicate pred = sortIter.next();
+        str.append(pred.getPropertyName() + " " + pred.getDirection());
+        if (sortIter.hasNext()) {
+          str.append(",");
+        }
+      }
+    }
+    return str.toString();
   }
 
   private void processInFilters(QueryData qd) {
@@ -370,11 +354,78 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private Object fulfillBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
+  private Object executeNormalQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
+    latestDatastoreQuery = qd.primaryDatastoreQuery;
+    Transaction txn = null;
+    // give users a chance to opt-out of having their query execute in a txn
+    Map extensions = query.getExtensions();
+    if (extensions == null ||
+        !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
+        !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
+      // If this is an ancestor query, execute it in the current transaction
+      txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
+    }
+
+    PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
+    FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
+    if (qd.resultType == ResultType.COUNT) {
+      if (opts == null) {
+        opts = withDefaults();
+      }
+      return Collections.singletonList(preparedQuery.countEntities(opts));
+    } else {
+      if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
+        qd.primaryDatastoreQuery.setKeysOnly();
+      }
+
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
+      }
+
+      Iterable<Entity> entityIterable;
+      Cursor endCursor = null;
+      if (opts != null) {
+        if (opts.getLimit() != null) {
+          QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
+          endCursor = entities.getCursor();
+          entityIterable = entities;
+        } else {
+          entityIterable = preparedQuery.asQueryResultIterable(opts);
+        }
+      } else {
+        entityIterable = preparedQuery.asQueryResultIterable();
+      }
+
+      return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, mconn, endCursor);
+    }
+  }
+
+  private Object executeBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
     DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getExecutionContext());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     if (isBulkDelete()) {
-      return fulfillBatchDeleteQuery(innerTxn, ds, qd);
+      Set<Key> keysToDelete = qd.batchGetKeys;
+      Map extensions = query.getExtensions();
+      if (extensions != null &&
+          extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY) &&
+          (Boolean) extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
+        Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
+        keysToDelete = getResult.keySet();
+      }
+
+      // The datastore doesn't give any indication of how many entities were
+      // actually deleted, so by default we just return the number of keys
+      // that we were asked to delete.  If the "slow-but-more-accurate" extension
+      // is set for the query we'll first fetch the entities identified by the
+      // keys and then delete whatever is returned.  This is more accurate but
+      // not guaranteed accurate, since if we're executing without a txn,
+      // something could get deleted in between the fetch and the delete.
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
+      }
+      ds.delete(innerTxn, keysToDelete);
+
+      return (long) keysToDelete.size();
     } else {
       Map<Key, Entity> entityMap = ds.get(innerTxn, qd.batchGetKeys);
       // return the entities in the order in which the keys were provided
@@ -390,55 +441,6 @@ public class DatastoreQuery implements Serializable {
       }
       return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
     }
-  }
-
-  private long fulfillBatchDeleteQuery(Transaction innerTxn, DatastoreService ds, QueryData qd) {
-    Set<Key> keysToDelete = qd.batchGetKeys;
-    Map extensions = query.getExtensions();
-    if (extensions != null &&
-        extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY) &&
-        (Boolean) extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
-      Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
-      keysToDelete = getResult.keySet();
-    }
-
-    // The datastore doesn't give any indication of how many entities were
-    // actually deleted, so by default we just return the number of keys
-    // that we were asked to delete.  If the "slow-but-more-accurate" extension
-    // is set for the query we'll first fetch the entities identified by the
-    // keys and then delete whatever is returned.  This is more accurate but
-    // not guaranteed accurate, since if we're executing without a txn,
-    // something could get deleted in between the fetch and the delete.
-    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
-    }
-    ds.delete(innerTxn, keysToDelete);
-
-    return (long) keysToDelete.size();
-  }
-
-  private Object fulfillEntityQuery(
-      PreparedQuery preparedQuery, FetchOptions opts, Function<Entity, Object> resultTransformer,
-      DatastoreService ds, ManagedConnection mconn) {
-    Cursor endCursor = null;
-    Iterable<Entity> entityIterable;
-    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
-    }
-
-    if (opts != null) {
-      if (opts.getLimit() != null) {
-        QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
-        endCursor = entities.getCursor();
-        entityIterable = entities;
-      } else {
-        entityIterable = preparedQuery.asQueryResultIterable(opts);
-      }
-    } else {
-      entityIterable = preparedQuery.asQueryResultIterable();
-    }
-
-    return wrapEntityQueryResult(entityIterable, resultTransformer, ds, mconn, endCursor);
   }
 
   private Object wrapEntityQueryResult(Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
@@ -489,10 +491,16 @@ public class DatastoreQuery implements Serializable {
     }
     final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
 
-    // TODO Remove this since now done by the calling JDOQLQuery/JPQLQuery
+    // TODO Remove this when we've updated JPQLQuery to have this code and catered for DatastoreBridge too
     // Add a listener to the connection so we can get a callback when the connection is flushed.
     ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
-      public void managedConnectionPreClose() {}
+      public void managedConnectionPreClose() {
+        NucleusLogger.GENERAL.info(">> DatastoreQuery.mcPreClose on listener=" + StringUtils.toJVMIDString(this), new Exception());
+        qr.setHasError(iterable.hasError());
+        // Disconnect the query from this ManagedConnection (read in unread rows etc)
+        qr.disconnect();
+      }
+
       public void managedConnectionPostClose() {}
 
       public void resourcePostClose() {
@@ -513,27 +521,19 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * Datanucleus provides {@link Long#MAX_VALUE} if the range value was not set by the user.
-   */
-  private boolean rangeValueIsSet(long rangeVal) {
-    return rangeVal != Long.MAX_VALUE;
-  }
-
-  /**
    * Build a FetchOptions instance using the provided params.
-   * @return A FetchOptions instance built using the provided params,
-   * or {@code null} if neither param is set.
+   * @return A FetchOptions instance built using the provided params, or {@code null} if neither param is set.
    */
   FetchOptions buildFetchOptions(long fromInclNo, long toExclNo) {
     FetchOptions opts = null;
     Integer offset = null;
-    if (fromInclNo != 0 && rangeValueIsSet(fromInclNo)) {
+    if (fromInclNo != 0 && fromInclNo != Long.MAX_VALUE) {
       // datastore api expects an int because we cap you at 1000 anyway.
       offset = (int) Math.min(Integer.MAX_VALUE, fromInclNo);
       opts = withOffset(offset);
     }
 
-    if (rangeValueIsSet(toExclNo)) {
+    if (toExclNo != Long.MAX_VALUE) {
       // datastore api expects an int because we cap you at 1000 anyway.
       int intExclNo = (int) Math.min(Integer.MAX_VALUE, toExclNo);
       if (opts == null) {
@@ -622,10 +622,10 @@ public class DatastoreQuery implements Serializable {
       final int[] fieldsToFetch = fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers();
       fv = new FieldValues() {
         public void fetchFields(ObjectProvider op) {
-          op.replaceFields(fieldsToFetch, new FetchFieldManager(op, storeMgr, entity));
+          op.replaceFields(fieldsToFetch, new FetchFieldManager(op, entity));
         }
         public void fetchNonLoadedFields(ObjectProvider op) {
-          op.replaceNonLoadedFields(fieldsToFetch, new FetchFieldManager(op, storeMgr, entity));
+          op.replaceNonLoadedFields(fieldsToFetch, new FetchFieldManager(op, entity));
         }
         public FetchPlan getFetchPlanForLoading() {
           return fetchPlan;
@@ -635,10 +635,10 @@ public class DatastoreQuery implements Serializable {
       // projection select : load PK fields only here, and all later
       fv = new FieldValues() {
         public void fetchFields(ObjectProvider op) {
-          op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
+          op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, entity));
         }
         public void fetchNonLoadedFields(ObjectProvider op) {
-          op.replaceNonLoadedFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
+          op.replaceNonLoadedFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, entity));
         }
         public FetchPlan getFetchPlanForLoading() {
           return null;
@@ -676,12 +676,12 @@ public class DatastoreQuery implements Serializable {
   /**
    * Method to extract the class of the row, using the discriminator if present.
    * If not present then returns the candidate type
-   * @param entity
-   * @param acmd
-   * @param table
-   * @param clr
-   * @param ec
-   * @return
+   * @param entity The Entity to get values from
+   * @param acmd Metadata for the candidate
+   * @param table Table we're retrieving information from
+   * @param clr ClassLoader resolver
+   * @param ec ExecutionContext
+   * @return The class of this Entity
    */
   private static Class<?> getClassFromDiscriminator(Entity entity, AbstractClassMetaData acmd,
                                    DatastoreTable table, ClassLoaderResolver clr,
@@ -735,16 +735,15 @@ public class DatastoreQuery implements Serializable {
    * @param entity The entity to convert
    * @param acmd The meta data for the pojo class
    * @param clr The classloader resolver
-   * @param storeMgr The store manager
    * @param ec The executionContext
    * @return The pojo that corresponds to the id of the provided entity.
    */
   private static Object entityToPojoPrimaryKey(final Entity entity, final AbstractClassMetaData acmd,
-      ClassLoaderResolver clr, final DatastoreManager storeMgr, ExecutionContext ec) {
+      ClassLoaderResolver clr, ExecutionContext ec) {
 
     FieldValues fv = new FieldValues() {
       public void fetchFields(ObjectProvider op) {
-        op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, storeMgr, entity));
+        op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, entity));
       }
       public void fetchNonLoadedFields(ObjectProvider op) {}
       public FetchPlan getFetchPlanForLoading() {
@@ -795,7 +794,7 @@ public class DatastoreQuery implements Serializable {
     if (resultType == ResultType.KEYS_ONLY) {
       resultTransformer = new Function<Entity, Object>() {
         public Object apply(Entity from) {
-          return entityToPojoPrimaryKey(from, acmd, clr, getDatastoreManager(), getExecutionContext());
+          return entityToPojoPrimaryKey(from, acmd, clr, getExecutionContext());
         }
       };
     } else {

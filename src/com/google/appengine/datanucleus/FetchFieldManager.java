@@ -20,6 +20,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -56,13 +57,11 @@ public class FetchFieldManager extends DatastoreFieldManager
    * Typically this is called from a "find" call where we are passed the ObjectProvider of a managed object
    * and we want to retrieve the values of some fields from the datastore putting them into the object
    * @param op ObjectProvider of the object being fetched
-   * @param storeManager StoreManager for this object
    * @param datastoreEntity The Entity to extract the results from
    * @param fieldNumbers The field numbers being extracted
    */
-  public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, 
-          int[] fieldNumbers) {
-    super(op, false, storeManager, datastoreEntity, fieldNumbers);
+  public FetchFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers) {
+    super(op, false, datastoreEntity, fieldNumbers);
   }
 
   /**
@@ -70,11 +69,10 @@ public class FetchFieldManager extends DatastoreFieldManager
    * Typically this is called from a Query where we have created an ObjectProvider to hold the object
    * and we are copying the field values in.
    * @param op ObjectProvider for the object being fetched
-   * @param storeManager StoreManager for this object
    * @param datastoreEntity The Entity to extract results from
    */
-  public FetchFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity) {
-    super(op, false, storeManager, datastoreEntity, new int[0]);
+  public FetchFieldManager(ObjectProvider op, Entity datastoreEntity) {
+    super(op, false, datastoreEntity, new int[0]);
   }
 
   public boolean fetchBooleanField(int fieldNumber) {
@@ -318,9 +316,8 @@ public class FetchFieldManager extends DatastoreFieldManager
    */
   private Object fetchEmbeddedField(AbstractMemberMetaData ammd, int fieldNumber) {
     ObjectProvider eop = getEmbeddedObjectProvider(ammd, fieldNumber, null);
-    // We need to build a mapping consumer for the embedded class so that we
-    // get correct fieldIndex --> metadata mappings for the class in the proper
-    // embedded context
+    // We need to build a mapping consumer for the embedded class so that we get correct 
+    // fieldIndex --> metadata mappings for the class in the proper embedded context
     // TODO(maxr) Consider caching this
     InsertMappingConsumer mappingConsumer = buildMappingConsumer(
         eop.getClassMetaData(), getClassLoaderResolver(),
@@ -329,10 +326,39 @@ public class FetchFieldManager extends DatastoreFieldManager
     // TODO Create own FieldManager instead of reusing this one
     AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
     fieldManagerStateStack.addFirst(new FieldManagerState(eop, ammdProvider, mappingConsumer, true));
-    AbstractClassMetaData acmd = eop.getClassMetaData();
-    eop.replaceFields(acmd.getAllMemberPositions(), this);
-    fieldManagerStateStack.removeFirst();
-    return eop.getObject();
+    try {
+      AbstractClassMetaData acmd = eop.getClassMetaData();
+      eop.replaceFields(acmd.getAllMemberPositions(), this);
+
+      if (ammd.getEmbeddedMetaData() != null && ammd.getEmbeddedMetaData().getNullIndicatorColumn() != null) {
+        String nullColumn = ammd.getEmbeddedMetaData().getNullIndicatorColumn();
+        String nullValue = ammd.getEmbeddedMetaData().getNullIndicatorValue();
+        AbstractMemberMetaData[] embMmds = ammd.getEmbeddedMetaData().getMemberMetaData();
+        AbstractMemberMetaData nullMmd = null;
+        for (int i=0;i<embMmds.length;i++) {
+          ColumnMetaData[] colmds = embMmds[i].getColumnMetaData();
+          if (colmds != null && colmds[0].getName() != null && colmds[0].getName().equals(nullColumn)) {
+            nullMmd = embMmds[i];
+            break;
+          }
+        }
+        if (nullMmd != null) {
+          int nullFieldPos = eop.getClassMetaData().getAbsolutePositionOfMember(nullMmd.getName());
+          Object val = eop.provideField(nullFieldPos);
+          if (val == null && nullValue == null) {
+            return null;
+          } else if (val != null && nullValue != null && val.equals(nullValue)) {
+            return null;
+          }
+        }
+        return eop.getObject();
+      }
+      else {
+        return eop.getObject();
+      }
+    } finally {
+      fieldManagerStateStack.removeFirst();
+    }
   }
 
   private Object deserializeFieldValue(
@@ -341,7 +367,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       throw new NucleusException(
           "Datastore value is of type " + value.getClass().getName() + " (must be Blob).").setFatal();
     }
-    return storeManager.getSerializationManager().deserialize(clr, ammd, (Blob) value);
+    return getStoreManager().getSerializationManager().deserialize(clr, ammd, (Blob) value);
   }
 
   private String fetchPKNameField() {
@@ -394,6 +420,6 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   protected String getPropertyName(int fieldNumber) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    return EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd);
+    return EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd);
   }
 }

@@ -94,36 +94,32 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   /**
    * @param op ObjectProvider of the object being stored
-   * @param storeManager StoreManager for this object
    * @param datastoreEntity The Entity to update with the field values
    * @param fieldNumbers The field numbers being updated in the Entity
    * @param operation Operation being performed
    */
-  public StoreFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, int[] fieldNumbers,
-      Operation operation) {
-    super(op, false, storeManager, datastoreEntity, fieldNumbers);
+  public StoreFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
+    super(op, false, datastoreEntity, fieldNumbers);
     this.operation = operation;
   }
 
   /**
    * @param op ObjectProvider of the object being stored
-   * @param storeManager StoreManager for this object
    * @param datastoreEntity The Entity to update with the field values
    * @param operation Operation being performed
    */
-  public StoreFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity, Operation operation) {
-    super(op, false, storeManager, datastoreEntity, new int[0]);
+  public StoreFieldManager(ObjectProvider op, Entity datastoreEntity, Operation operation) {
+    super(op, false, datastoreEntity, new int[0]);
     this.operation = operation;
   }
 
   /**
    * @param op ObjectProvider of the object being stored
    * @param kind Kind of entity
-   * @param storeManager StoreManager for this object
    * @param operation Operation being performed
    */
-  public StoreFieldManager(ObjectProvider op, String kind, DatastoreManager storeManager, Operation operation) {
-    super(op, true, storeManager, new Entity(kind), new int[0]);
+  public StoreFieldManager(ObjectProvider op, String kind, Operation operation) {
+    super(op, true, new Entity(kind), new int[0]);
     this.operation = operation;
   }
 
@@ -222,7 +218,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (ammd.isSerialized()) {
         // If the field is serialized we don't need to apply any conversions before setting it on the 
         // entity since the serialization is guaranteed to produce a Blob.
-        value = storeManager.getSerializationManager().serialize(clr, ammd, value);
+        value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
       } else {
         // Perform any conversions from the field type to the stored-type
         value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
@@ -231,19 +227,21 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     if (ammd.getEmbeddedMetaData() != null) {
       // Embedded field handling
-      ObjectProvider esm = getEmbeddedObjectProvider(ammd, fieldNumber, value);
+      ObjectProvider embeddedOP = getEmbeddedObjectProvider(ammd, fieldNumber, value);
+      // TODO Create own FieldManager instead of reusing this one
+/*      StoreEmbeddedFieldManager embFM = 
+        new StoreEmbeddedFieldManager(embeddedOP, datastoreEntity, ammd, operation);
+      embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), embFM);*/
       // We need to build a mapping consumer for the embedded class so that we get correct
       // fieldIndex --> metadata mappings for the class in the proper embedded context
       // TODO(maxr) Consider caching this
       InsertMappingConsumer mc = buildMappingConsumer(
-          esm.getClassMetaData(), getClassLoaderResolver(),
-          esm.getClassMetaData().getAllMemberPositions(),
+          embeddedOP.getClassMetaData(), getClassLoaderResolver(),
+          embeddedOP.getClassMetaData().getAllMemberPositions(),
           ammd.getEmbeddedMetaData());
-      // TODO Create own FieldManager instead of reusing this one
-      AbstractMemberMetaDataProvider ammdProvider = getEmbeddedAbstractMemberMetaDataProvider(mc);
-      fieldManagerStateStack.addFirst(new FieldManagerState(esm, ammdProvider, mc, true));
-      AbstractClassMetaData acmd = esm.getClassMetaData();
-      esm.provideFields(acmd.getAllMemberPositions(), this);
+      fieldManagerStateStack.addFirst(
+          new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
+      embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
       fieldManagerStateStack.removeFirst();
     }
     else if ((operation == Operation.INSERT && ammd.isInsertable()) ||
@@ -280,7 +278,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // Set the property on the entity, allowing for null rules
       checkNullValue(ammd, value);
       EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-          EntityUtils.getPropertyName(storeManager.getIdentifierFactory(), ammd), value);
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
       return true;
     }
     return false;
@@ -517,7 +515,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return null;
     }
 
-    Object primaryKey = storeManager.getApiAdapter().getTargetKeyForSingleFieldIdentity(
+    Object primaryKey = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(
         valueOP.getInternalObjectId());
     /*      if (primaryKey == null && operation == Operation.UPDATE && op.getInternalObjectId() != null) {
         // *** This was added to attempt to get child objects persistent so we note their ids for persist of parent ***
@@ -530,7 +528,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // this is ok, it just means the object has not yet been persisted
       return null;
     }
-    Key key = EntityUtils.getPrimaryKeyAsKey(storeManager.getApiAdapter(), valueOP);
+    Key key = EntityUtils.getPrimaryKeyAsKey(op.getExecutionContext().getApiAdapter(), valueOP);
     if (key == null) {
       throw new NullPointerException("Could not extract a key from " + value);
     }

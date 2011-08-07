@@ -28,7 +28,7 @@ import org.datanucleus.store.ObjectProvider;
 class DatastoreDeleteFieldManager extends StoreFieldManager {
 
   DatastoreDeleteFieldManager(ObjectProvider op, DatastoreManager storeManager, Entity datastoreEntity) {
-    super(op, storeManager, datastoreEntity, Operation.DELETE);
+    super(op, datastoreEntity, Operation.DELETE);
   }
 
   @Override

@@ -27,10 +27,7 @@ import org.datanucleus.query.evaluator.JavaQueryEvaluator;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.connection.ManagedConnection;
-import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
-import org.datanucleus.store.query.AbstractQueryResult;
-import org.datanucleus.store.query.QueryResult;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
@@ -140,30 +137,6 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       try {
         results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
-
-        if (results instanceof QueryResult) {
-          // Add listener for the connection so we can trap any close
-          final QueryResult qr1 = (QueryResult) results;
-          final ManagedConnection mconn1 = mconn;
-          ManagedConnectionResourceListener listener =
-            new ManagedConnectionResourceListener() {
-            public void transactionFlushed(){}
-            public void transactionPreClose() {
-              // Disconnect the query from this ManagedConnection since txn committing (read in unread rows etc)
-              qr1.disconnect();
-            }
-            public void managedConnectionPreClose() {
-              // Disconnect the query from this ManagedConnection since connection closing (read in unread rows etc)
-              qr1.disconnect();
-            }
-            public void managedConnectionPostClose(){}
-            public void resourcePostClose() {
-              mconn1.removeListener(this);
-            }
-          };
-          mconn.addListener(listener);
-          ((AbstractQueryResult)qr1).addConnectionListener(listener);
-        }
       } finally {
         mconn.release();
       }

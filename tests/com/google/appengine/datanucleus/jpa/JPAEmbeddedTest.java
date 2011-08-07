@@ -62,6 +62,7 @@ public class JPAEmbeddedTest extends JPATestCase {
     beginTxn();
     em.persist(pojo);
     commitTxn();
+    em.clear();
 
     beginTxn();
     pojo = em.find(HasEmbeddedJPA.class, pojo.getId());

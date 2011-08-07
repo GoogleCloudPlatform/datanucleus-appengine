@@ -26,6 +26,8 @@ import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
 
+import org.datanucleus.api.jpa.annotations.Extension;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -37,9 +39,11 @@ public class HasEmbeddedJPA {
   private Long id;
 
   @Embedded
+  @Extension(key="null-indicator-column", value="embeddedString")
   private EmbeddableJPA embeddable;
 
   @Embedded
+  @Extension(key="null-indicator-column", value="EMBEDDEDSTRING")
   @AttributeOverrides({@AttributeOverride(name="embeddedString", column=@Column(name="EMBEDDEDSTRING")),
                        @AttributeOverride(name="multiVal", column=@Column(name="MULTIVAL"))})
   private EmbeddableJPA embeddable2;

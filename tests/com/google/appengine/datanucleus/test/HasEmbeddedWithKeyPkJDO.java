@@ -14,7 +14,6 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  * **********************************************************************/
-
 package com.google.appengine.datanucleus.test;
 
 import javax.jdo.annotations.Embedded;
@@ -35,7 +34,7 @@ public class HasEmbeddedWithKeyPkJDO {
   private Long id;
 
   @Persistent
-  @Embedded
+  @Embedded(nullIndicatorColumn="str")
   private HasKeyPkJDO embedded;
 
   public Long getId() {
