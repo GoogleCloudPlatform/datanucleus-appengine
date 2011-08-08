@@ -94,18 +94,22 @@ public class JPATransactionTest extends DatastoreTestCase {
 
   private void testWritePermutationWithExpectedDatastoreTxn(
       EntityManagerFactory emf, boolean explicitDemarcation) {
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
     if (explicitDemarcation) {
+      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
+      EasyMock.expect(mockDatastoreService.put(
+          EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
+          EasyMock.isA(Entity.class))).andReturn(null);
+    } else {
+      EasyMock.expect(mockDatastoreService.put(EasyMock.isA(Entity.class))).andReturn(null);
     }
-    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
-    EasyMock.expect(mockDatastoreService.put(
-        EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
-        EasyMock.isA(Entity.class))).andReturn(null);
     EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer).anyTimes();
     EasyMock.expect(mockTxn.isActive()).andReturn(true).anyTimes();
     EasyMock.expect(mockTxn.getApp()).andReturn("test").anyTimes();
-    mockTxn.commit();
+    if (explicitDemarcation) {
+      mockTxn.commit();
+    }
     EasyMock.replay(mockDatastoreService, mockTxn);
 
     Book b1 = new Book();
