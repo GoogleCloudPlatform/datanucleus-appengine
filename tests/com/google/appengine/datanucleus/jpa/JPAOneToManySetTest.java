@@ -210,10 +210,10 @@ public class JPAOneToManySetTest extends JPAOneToManyTestCase {
     testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
                                       TXN_START_END, expectedUpdatePuts);
   }
+
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
-    // 1 put to remove the keys, plus 1 more put
-    // that I don't understand that only happens without txns
-    int expectedUpdatePuts = 2;
+    // updates aren't necessarily atomic when non-tx, so get 1 after each collection clear.
+    int expectedUpdatePuts = 3;
     testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirectionalChildSetJPA(),
                                      NEW_EM_START_END, expectedUpdatePuts);
   }
