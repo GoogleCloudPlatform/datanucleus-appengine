@@ -35,9 +35,8 @@ import javax.transaction.xa.XAResource;
  * Factory for connections to the datastore.
  * When running within a transaction a connection is obtained at the start of the transaction and closed
  * when the transaction commits/rollsback.
- * When running outside a transaction, any operation through the PersistenceHandler will open the connection
- * and close it when complete. The exception to that is for a Query, where the connection is obtained
- * when starting the query, and then retained until no longer needed or the PM/EM is closed.
+ * When running outside a transaction, a connection is obtained when the operation starts and is only closed
+ * when the PM/EM is closed.
  *
  * @author Max Ross <maxr@google.com>
  */
