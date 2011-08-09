@@ -491,11 +491,9 @@ public class DatastoreQuery implements Serializable {
     }
     final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
 
-    // TODO Remove this when we've updated JPQLQuery to have this code and catered for DatastoreBridge too
     // Add a listener to the connection so we can get a callback when the connection is flushed.
     ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
       public void managedConnectionPreClose() {
-        NucleusLogger.GENERAL.info(">> DatastoreQuery.mcPreClose on listener=" + StringUtils.toJVMIDString(this), new Exception());
         qr.setHasError(iterable.hasError());
         // Disconnect the query from this ManagedConnection (read in unread rows etc)
         qr.disconnect();

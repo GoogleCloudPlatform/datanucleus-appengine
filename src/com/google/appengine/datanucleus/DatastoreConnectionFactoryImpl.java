@@ -33,10 +33,13 @@ import javax.transaction.xa.XAResource;
 
 /**
  * Factory for connections to the datastore.
- * When running within a transaction a connection is obtained at the start of the transaction and closed
- * when the transaction commits/rollsback.
- * When running outside a transaction, a connection is obtained when the operation starts and is only closed
- * when the PM/EM is closed.
+ * <ul>
+ * <li>Within a transaction : a connection (DatastoreTransaction) is obtained at the start of the transaction and we
+ * call "beginTransaction" on it. It is closed at the end of the transaction after we call "commit"/"rollback".</li>
+ * <li>Outside a Transaction : a connection (DatastoreTransaction) is obtained on the first operation, and is retained
+ * until PM/EM.close(). All operations are atomic, since we don't call "beginTransaction", hence no need to call
+ * "commit"/"rollback"</li>
+ * </ul>
  *
  * @author Max Ross <maxr@google.com>
  */
