@@ -138,7 +138,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       try {
         results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
       } finally {
-        mconn.release();
+//        mconn.release();
       }
     }
 

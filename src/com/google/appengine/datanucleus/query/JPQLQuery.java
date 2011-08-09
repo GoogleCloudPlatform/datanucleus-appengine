@@ -154,7 +154,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
       try {
         results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, false);
       } finally {
-        mconn.release();
+//        mconn.release();
       }
     }
 
