@@ -1,4 +1,8 @@
 The major change with version 2 is to use DataNucleus v3.x. This brings with it some significant changes.
+* JDO PersistenceManagerFactoryClass is now "org.datanucleus.api.jdo.JDOPersistenceManagerFactory"
+
+* JPA "persistence provider" is now "org.datanucleus.api.jpa.PersistenceProviderImpl"
+
 * Level2 Caching is enabled by default. 
   Set persistence property "datanucleus.cache.level2.type" to "none" to get the previous behaviour.
   Alternatively include the datanucleus-cache plugin in the classpath, and set persistence property
