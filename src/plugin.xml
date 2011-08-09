@@ -29,6 +29,8 @@ limitations under the License.
     <extension point="org.datanucleus.store_connectionfactory">
         <connectionfactory name="appengine" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl"
 			transactional="true" datastore="appengine"/>
+        <connectionfactory name="appengine-nontx" class-name="com.google.appengine.datanucleus.DatastoreConnectionFactoryImpl"
+			transactional="false" datastore="appengine"/>
     </extension>
 
 	<!-- VALUE GENERATOR -->

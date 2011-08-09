@@ -40,6 +40,7 @@ import javax.transaction.xa.XAResource;
  * until PM/EM.close(). All operations are atomic, since we don't call "beginTransaction", hence no need to call
  * "commit"/"rollback"</li>
  * </ul>
+ * There are two connection factories
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -98,7 +99,7 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
    * </pre>
    *
    * @param nucContext The OMFContext
-   * @param resourceType Ignored since we only use a single connection factory
+   * @param resourceType Name of the resource ("appengine", "appengine-nontx")
    */
   public DatastoreConnectionFactoryImpl(StoreManager storeMgr, String resourceType) {
     super(storeMgr, resourceType);
