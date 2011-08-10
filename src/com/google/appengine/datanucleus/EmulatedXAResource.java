@@ -19,6 +19,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import com.google.appengine.api.datastore.DatastoreService;
+
 /**
  * This emulated XAResource only supports a small subset of XA functionality.
  * There's no underlying transaction, just some simple state management.
@@ -44,7 +46,7 @@ class EmulatedXAResource implements XAResource {
     state = State.ACTIVE;
   }
 
-  public void commit(Xid arg0, boolean arg1) throws XAException {
+  public void commit(Xid xid, boolean onePhase) throws XAException {
     if (state != State.ACTIVE) {
       throw new XAException("A transaction has not been started, cannot commit");
     }
@@ -60,6 +62,14 @@ class EmulatedXAResource implements XAResource {
     state = State.INACTIVE;
   }
 
+  public int prepare(Xid xid) throws XAException {
+    return XA_OK;
+  }
+
+  public Xid[] recover(int flag) throws XAException {
+    throw new XAException("Unsupported operation");
+  }
+
   public void end(Xid xid, int flags) throws XAException {
     // TODO (earmbrust): Should we throw an unsupported error?
   }
@@ -72,25 +82,21 @@ class EmulatedXAResource implements XAResource {
     return 0;
   }
 
+  public boolean setTransactionTimeout(int seconds) throws XAException {
+    return false;
+  }
+  
   public boolean isSameRM(XAResource xares) throws XAException {
     // We only support a single datastore, so this should always be true.
     return true;
   }
 
-  public int prepare(Xid xid) throws XAException {
-    return XA_OK;
-  }
-
-  public Xid[] recover(int flag) throws XAException {
-    throw new XAException("Unsupported operation");
-  }
-
-  public boolean setTransactionTimeout(int seconds) throws XAException {
-    return false;
-  }
-  
   KeyRegistry getKeyRegistry() {
     return keyRegistry;
+  }
+
+  DatastoreService getDatastoreService() {
+    return null;
   }
 
   /**

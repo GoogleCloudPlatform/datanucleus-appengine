@@ -68,7 +68,6 @@ import org.datanucleus.store.ObjectProvider;
 import com.google.appengine.datanucleus.DatastoreExceptionTranslator;
 import com.google.appengine.datanucleus.FetchFieldManager;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreTransaction;
 import com.google.appengine.datanucleus.EntityUtils;
@@ -656,11 +655,10 @@ public class DatastoreQuery implements Serializable {
 
     Object pojo = ec.findObject(id, fv, cls, ignoreCache);
     ObjectProvider op = ec.findObjectProvider(pojo);
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
 
     // TODO(maxr): Seems like we should be able to refactor the handler
     // so that we can do a fetch without having to hide the entity in the state manager.
-    handler.setAssociatedEntity(op, EntityUtils.getCurrentTransaction(ec), entity);
+    op.setAssociatedValue(EntityUtils.getCurrentTransaction(ec), entity);
 
     if (fetchPlan == null) {
       // Projection, so load everything

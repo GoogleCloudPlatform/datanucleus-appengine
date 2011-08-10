@@ -225,10 +225,13 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public void transactionStarted(ExecutionContext ec) {
     if (connectionFactoryIsAutoCreateTransaction()) {
-      // Obtain a connection. This will create it now that the user has selected tx.begin()
-  //    getConnection(ec);
+      // Obtain a connection. This will create the DatastoreService right now
       Transaction txn = 
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).beginTransaction();
+      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
+/*      ManagedConnection mconn = getConnection(ec);
+      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
+      Transaction txn = ds.beginTransaction();*/
       NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
     }
   }
@@ -238,6 +241,10 @@ public class DatastoreManager extends MappedStoreManager {
     if (connectionFactoryIsAutoCreateTransaction()) {
       Transaction txn = 
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
+      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
+/*      ManagedConnection mconn = getConnection(ec);
+      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
+      Transaction txn = ds.getCurrentTransaction(null);*/
       if (txn == null) {
         // this is ok, it means the txn was committed via the connection
       } else {
@@ -253,8 +260,12 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public void transactionRolledBack(ExecutionContext ec) {
     if (connectionFactoryIsAutoCreateTransaction()) {
-      Transaction txn =
+      Transaction txn = 
         DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
+      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
+/*      ManagedConnection mconn = getConnection(ec);
+      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
+      Transaction txn = ds.getCurrentTransaction(null);*/
       if (txn == null) {
         // this is ok, it means the txn was rolled back via the connection
       } else {

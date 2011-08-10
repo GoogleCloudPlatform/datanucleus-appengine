@@ -150,11 +150,8 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     }
 
     public Object getConnection() {
-      if (datastoreXAResource instanceof DatastoreXAResource) {
-        // Return the DatastoreTransaction
-        return ((DatastoreXAResource)datastoreXAResource).getCurrentTransaction();
-      }
-      return null;
+      // Return the DatastoreService
+      return ((EmulatedXAResource)datastoreXAResource).getDatastoreService();
     }
 
     public XAResource getXAResource() {

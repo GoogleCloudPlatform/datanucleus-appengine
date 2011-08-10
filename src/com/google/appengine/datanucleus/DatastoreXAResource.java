@@ -41,7 +41,7 @@ class DatastoreXAResource extends EmulatedXAResource {
   private DatastoreTransaction currentTxn;
 
   public DatastoreXAResource(DatastoreService datastoreService) {
-      NucleusLogger.GENERAL.info(">> DatastoreXAResource.ctr");
+    NucleusLogger.GENERAL.info(">> DatastoreXAResource.ctr datastoreService=" + datastoreService);
     this.datastoreService = datastoreService;
   }
 
@@ -51,57 +51,46 @@ class DatastoreXAResource extends EmulatedXAResource {
   }
 
   @Override
+  DatastoreService getDatastoreService() {
+    return datastoreService;
+  }
+
+  @Override
   public void start(Xid xid, int flags) throws XAException {
-    NucleusLogger.GENERAL.info(">> DatastoreXAResource.start");
     super.start(xid, flags);
-
-    // A transaction will only be started if non-transactional reads/writes are turned off.
+    NucleusLogger.GENERAL.info(">> DatastoreXAResource.start");
     if (currentTxn == null) {
-//      Transaction datastoreTxn = datastoreService.beginTransaction();
-//      NucleusLogger.DATASTORE.debug("Started new datastore transaction (DatastoreXAResource): " + datastoreTxn.getId());
-
-      // Typically the transaction will have been established when the user
-      // calls pm.currentTransaction().begin() or em.getTransaction().begin(),
-      // but if the datasource is non-transactional and the user is not
-      // demarcating transactions, the transaction can be started without
-      // going through the pm or em, which sidesteps our logic to aggressively
-      // start the transaction.  In this case we'll just start the transaction
-      // ourselves.  This isn't a problem for transactional tasks because
-      // the user isn't actually managing transactions, it's just DataNucleus
-      // doing it under the hood in order to force things to flush.
+      // DatastoreService transaction will have been started by DatastoreManager.transactionStarted()
       Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
-      if (datastoreTxn == null) {
-        datastoreTxn = datastoreService.beginTransaction();
-      }
       currentTxn = new DatastoreTransaction(datastoreTxn);
     } else {
-      throw new XAException("Nested transactions are not supported");
+      throw new XAException("Transaction has already been started and nested transactions are not supported");
     }
   }
 
   @Override
-  public void commit(Xid arg0, boolean arg1) throws XAException {
-      NucleusLogger.GENERAL.info(">> DatastoreXAResource.commit");
-    super.commit(arg0, arg1);
+  public void commit(Xid xid, boolean onePhase) throws XAException {
+    super.commit(xid, onePhase);
+    NucleusLogger.GENERAL.info(">> DatastoreXAResource.commit");
     if (currentTxn != null) {
       currentTxn.commit();
       NucleusLogger.DATASTORE.debug("Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
-      throw new XAException("A transaction has not been started, cannot commit");
+      throw new XAException("Transaction has not been started, cannot commit");
     }
   }
 
   @Override
   public void rollback(Xid xid) throws XAException {
-      NucleusLogger.GENERAL.info(">> DatastoreXAResource.rollback");
     super.rollback(xid);
+    NucleusLogger.GENERAL.info(">> DatastoreXAResource.rollback");
     if (currentTxn != null) {
       currentTxn.rollback();
       NucleusLogger.DATASTORE.debug("Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
       currentTxn = null;
     } else {
-      throw new XAException("A transaction has not been started, cannot roll back");
+      throw new XAException("Transaction has not been started, cannot roll back");
     }
   }
 }

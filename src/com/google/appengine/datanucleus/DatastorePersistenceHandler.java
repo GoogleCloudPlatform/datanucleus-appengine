@@ -27,6 +27,7 @@ import com.google.appengine.datanucleus.mapping.FetchMappingConsumer;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -166,13 +167,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       throw DatastoreExceptionTranslator.wrapEntityNotFoundException(e, key);
     }
 
-    setAssociatedEntity(op, txn, entity);
+    op.setAssociatedValue(txn, entity);
+
     return entity;
   }
 
   private void put(ObjectProvider op, Entity entity) {
     DatastoreTransaction txn = put(op.getExecutionContext(), op.getClassMetaData(), entity);
-    setAssociatedEntity(op, txn, entity);
+    op.setAssociatedValue(txn, entity);
   }
 
   public DatastoreTransaction put(ExecutionContext ec, AbstractClassMetaData acmd, Entity entity) {
@@ -281,6 +283,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   private static final Object INSERTION_TOKEN = new Object();
 
+  /**
+   * Method to insert the specified managed object into the datastore.
+   * @param op ObjectProvider for the managed object
+   */
   public void insertObject(ObjectProvider op) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
@@ -327,14 +333,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
         put(ec, acmd, entityList);
         for (PutState putState : putStateList) {
-          setAssociatedEntity(putState.op, txn, putState.entity);
+          putState.op.setAssociatedValue(txn, putState.entity);
         }
       }
 
       insertPostProcess(putStateList);
     } finally {
-      for (ObjectProvider sm : opsToInsert) {
-        sm.setAssociatedValue(INSERTION_TOKEN, null);
+      for (ObjectProvider op : opsToInsert) {
+        op.setAssociatedValue(INSERTION_TOKEN, null);
       }
     }
   }
@@ -527,18 +533,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     return EntityUtils.getPkAsKey(pk, op.getClassMetaData(), op.getExecutionContext());
   }
 
-  public void setAssociatedEntity(ObjectProvider op, DatastoreTransaction txn, Entity entity) {
-    // A StateManager can be used across multiple transactions, so we
-    // want to associate the entity not just with a StateManager but a
-    // StateManager and a transaction.
-    op.setAssociatedValue(txn, entity);
-  }
-
-  public Entity getAssociatedEntityForCurrentTransaction(ObjectProvider op) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(op.getExecutionContext());
-    return (Entity) op.getAssociatedValue(txn);
-  }
-
+  /**
+   * Method to fetch the specified fields of the managed object from the datastore.
+   * @param op ObjectProvider of the object whose fields need fetching
+   * @param fieldNumbers Fields to fetch
+   */
   public void fetchObject(ObjectProvider op, int fieldNumbers[]) {
     if (fieldNumbers == null || fieldNumbers.length == 0) {
       return;
@@ -550,7 +549,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
-    Entity entity = getAssociatedEntityForCurrentTransaction(op);
+    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
     if (entity == null) {
       Key pk = getPkAsKey(op);
       entity = getEntityFromDatastore(op, pk); // Throws NucleusObjectNotFoundException if necessary
@@ -613,6 +612,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
   }
 
+  /**
+   * Method to update the specified fields of the managed object in the datastore.
+   * @param op ObjectProvider of the managed object
+   * @param fieldNumbers Fields to be updated in the datastore
+   */
   public void updateObject(ObjectProvider op, int fieldNumbers[]) {
     if (op.getLifecycleState().isDeleted()) {
       // don't perform updates on objects that are already deleted - this will cause them to be recreated
@@ -640,7 +644,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId(), fieldStr.toString()));
     }
 
-    Entity entity = getAssociatedEntityForCurrentTransaction(op);
+    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
@@ -697,6 +701,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
   }
 
+  /**
+   * Method to delete the specified managed object from the datastore.
+   * @param op ObjectProvider of the managed object
+   */
   public void deleteObject(ObjectProvider op) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
@@ -710,7 +718,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId()));
     }
 
-    Entity entity = getAssociatedEntityForCurrentTransaction(op);
+    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
@@ -793,6 +801,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
   }
 
+  /**
+   * Method to locate the specified managed object in the datastore.
+   * @param op ObjectProvider for the managed object
+   * @throws NucleusObjectNotFoundException if the object isn't found in the datastore
+   */
   public void locateObject(ObjectProvider op) {
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
 
