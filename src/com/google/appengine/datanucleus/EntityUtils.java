@@ -25,7 +25,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
-import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
@@ -400,17 +399,6 @@ public final class EntityUtils {
     return result;
   }
 
-  /**
-   * Get the active transaction.  Depending on the connection factory
-   * associated with the store manager, this may establish a transaction if one
-   * is not currently active.  This method will return null if the connection
-   * factory associated with the store manager is nontransactional
-   */
-  public static DatastoreTransaction getCurrentTransaction(ExecutionContext ec) {
-    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
-    return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
-  }
-
   public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
     Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
     String kind = EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
@@ -475,7 +463,7 @@ public final class EntityUtils {
 
     ObjectProvider childOP = ec.findObjectProvider(child);
     if (apiAdapter.isNew(child) &&
-        (childOP == null || childOP.getAssociatedValue(EntityUtils.getCurrentTransaction(ec)) == null)) {
+        (childOP == null || childOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ec)) == null)) {
       // This condition is difficult to get right.  An object that has been persisted
       // (and therefore had its primary key already established) may still be considered
       // NEW by the apiAdapter if there is a txn and the txn has not yet committed.

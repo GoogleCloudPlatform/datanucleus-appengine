@@ -39,6 +39,13 @@ class EmulatedXAResource implements XAResource {
 
   private final KeyRegistry keyRegistry = new KeyRegistry();
 
+  /** The datastore service we'll use to perform datastore operations. */
+  protected final DatastoreService datastoreService;
+
+  public EmulatedXAResource(DatastoreService ds) {
+    this.datastoreService = ds;
+  }
+
   public void start(Xid xid, int flags) throws XAException {
     if (state != State.NEW) {
       throw new XAException("Nested transactions are not supported");
@@ -95,13 +102,16 @@ class EmulatedXAResource implements XAResource {
     return keyRegistry;
   }
 
+  /**
+   * Accessor for the DatastoreService of this connection.
+   * @return DatastoreService being used
+   */
   DatastoreService getDatastoreService() {
-    return null;
+    return datastoreService;
   }
 
   /**
-   * @return The current transaction, or {@code null} if the datasource does
-   * not support transactions.
+   * @return The current transaction, or {@code null} if the datasource does not support transactions.
    */
   DatastoreTransaction getCurrentTransaction() {
     return null;

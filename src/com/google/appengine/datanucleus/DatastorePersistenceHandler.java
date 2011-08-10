@@ -150,7 +150,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * @return The Entity
    */
   private Entity getEntityFromDatastore(ObjectProvider op, Key key) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(op.getExecutionContext());
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(op.getExecutionContext());
 
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
@@ -182,7 +182,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   private DatastoreTransaction put(ExecutionContext ec, AbstractClassMetaData acmd, List<Entity> entities) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(ec);
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
     List<Entity> putMe = Utils.newArrayList();
     for (Entity entity : entities) {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -320,7 +320,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         List<Entity> entityList = Utils.newArrayList();
         for (PutState putState : putStateList) {
           if (txn == null) {
-            txn = EntityUtils.getCurrentTransaction(putState.op.getExecutionContext());
+            txn = DatastoreManager.getDatastoreTransaction(putState.op.getExecutionContext());
           }
           if (ec == null) {
             ec = putState.op.getExecutionContext();
@@ -549,7 +549,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
-    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
+    Entity entity = (Entity) op.getAssociatedValue(DatastoreManager.getDatastoreTransaction(op.getExecutionContext()));
     if (entity == null) {
       Key pk = getPkAsKey(op);
       entity = getEntityFromDatastore(op, pk); // Throws NucleusObjectNotFoundException if necessary
@@ -644,7 +644,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId(), fieldStr.toString()));
     }
 
-    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
+    Entity entity = (Entity) op.getAssociatedValue(DatastoreManager.getDatastoreTransaction(op.getExecutionContext()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
@@ -718,7 +718,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId()));
     }
 
-    Entity entity = (Entity) op.getAssociatedValue(EntityUtils.getCurrentTransaction(op.getExecutionContext()));
+    Entity entity = (Entity) op.getAssociatedValue(DatastoreManager.getDatastoreTransaction(op.getExecutionContext()));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
@@ -728,7 +728,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     ClassLoaderResolver clr = ec.getClassLoaderResolver();
     DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
 
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(ec);
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
     if (txn != null) {
       if (txn.getDeletedKeys().contains(entity.getKey())) {
         // need to check this _before_ we execute the dependent delete request

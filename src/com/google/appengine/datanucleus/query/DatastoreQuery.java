@@ -400,7 +400,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object executeBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
-    DatastoreTransaction txn = EntityUtils.getCurrentTransaction(getExecutionContext());
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(getExecutionContext());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     if (isBulkDelete()) {
       Set<Key> keysToDelete = qd.batchGetKeys;
@@ -658,7 +658,7 @@ public class DatastoreQuery implements Serializable {
 
     // TODO(maxr): Seems like we should be able to refactor the handler
     // so that we can do a fetch without having to hide the entity in the state manager.
-    op.setAssociatedValue(EntityUtils.getCurrentTransaction(ec), entity);
+    op.setAssociatedValue(DatastoreManager.getDatastoreTransaction(ec), entity);
 
     if (fetchPlan == null) {
       // Projection, so load everything

@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
+import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.Transaction;
@@ -232,7 +233,9 @@ public class DatastoreManager extends MappedStoreManager {
 /*      ManagedConnection mconn = getConnection(ec);
       DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
       Transaction txn = ds.beginTransaction();*/
-      NucleusLogger.DATASTORE.debug("Started new datastore transaction: " + txn.getId());
+      if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
+        NucleusLogger.TRANSACTION.debug("Started new datastore transaction: " + txn.getId());
+      }
     }
   }
 
@@ -245,9 +248,7 @@ public class DatastoreManager extends MappedStoreManager {
 /*      ManagedConnection mconn = getConnection(ec);
       DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
       Transaction txn = ds.getCurrentTransaction(null);*/
-      if (txn == null) {
-        // this is ok, it means the txn was committed via the connection
-      } else {
+      if (txn != null) {
         // ordinarily the txn gets committed in DatastoreXAResource.commit(), but
         // if the begin/commit block doesn't perform any reads or writes then
         // DatastoreXAResource.commit() won't be called.  In order to avoid
@@ -266,9 +267,7 @@ public class DatastoreManager extends MappedStoreManager {
 /*      ManagedConnection mconn = getConnection(ec);
       DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
       Transaction txn = ds.getCurrentTransaction(null);*/
-      if (txn == null) {
-        // this is ok, it means the txn was rolled back via the connection
-      } else {
+      if (txn != null) {
         // ordinarily the txn gets aborted in DatastoreXAResource.commit(), but
         // if the begin/abort block doesn't perform any reads or writes then
         // DatastoreXAResource.rollback() won't be called.  In order to avoid
@@ -276,40 +275,6 @@ public class DatastoreManager extends MappedStoreManager {
         txn.rollback();
       }
     }
-  }
-
-  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
-      PersistenceConfiguration persistenceConfig) {
-    return createDatastoreServiceConfigPrototype(persistenceConfig, READ_TIMEOUT_PROPERTY);
-  }
-
-  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
-      PersistenceConfiguration persistenceConfig) {
-    return createDatastoreServiceConfigPrototype(persistenceConfig, WRITE_TIMEOUT_PROPERTY);
-  }
-
-  private DatastoreServiceConfig createDatastoreServiceConfigPrototype(
-      PersistenceConfiguration persistenceConfiguration, String... timeoutProps) {
-    DatastoreServiceConfig datastoreServiceConfig = DatastoreServiceConfig.Builder.withDefaults();
-
-    for (String timeoutProp : timeoutProps) {
-      int defaultDeadline = persistenceConfiguration.getIntProperty(timeoutProp);
-      if (defaultDeadline > 0) {
-        datastoreServiceConfig.deadline(defaultDeadline / 1000d);
-      }
-    }
-    String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(
-        DATASTORE_READ_CONSISTENCY_PROPERTY);
-    if (defaultReadConsistencyStr != null) {
-      try {
-        datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
-      } catch (IllegalArgumentException iae) {
-        throw new NucleusFatalUserException(
-            "Illegal value for " + DATASTORE_READ_CONSISTENCY_PROPERTY +
-            ".  Valid values are " + Arrays.toString(Consistency.values()));
-      }
-    }
-    return datastoreServiceConfig;
   }
 
   @Override
@@ -574,6 +539,28 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   /**
+   * Accessor for the current DatastoreTransaction for this ExecutionContext.
+   * Each PM/EM has its own DatastoreService, and consequently can have a current DatastoreTransaction.
+   * @param ec ExecutionContext
+   * @return The DatastoreTransaction if active, or null
+   */
+  public static DatastoreTransaction getDatastoreTransaction(ExecutionContext ec) {
+    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
+    return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
+  }
+
+  /**
+   * Accessor for the current DatastoreService for this ExecutionContext.
+   * Each PM/EM has its own DatastoreService.
+   * @param ec ExecutionContext
+   * @return The DatastoreService
+   */
+  public static DatastoreService getDatastoreService(ExecutionContext ec) {
+    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
+    return ((EmulatedXAResource) mconn.getXAResource()).getDatastoreService();
+  }
+
+  /**
    * Helper method to determine if the connection factory associated with this
    * manager is AutoCreateTransaction.
    */
@@ -597,6 +584,40 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public DatastoreServiceConfig getDefaultDatastoreServiceConfigForWrites() {
     return copyDatastoreServiceConfig(defaultDatastoreServiceConfigPrototypeForWrites);
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
+      PersistenceConfiguration persistenceConfig) {
+    return createDatastoreServiceConfigPrototype(persistenceConfig, READ_TIMEOUT_PROPERTY);
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
+      PersistenceConfiguration persistenceConfig) {
+    return createDatastoreServiceConfigPrototype(persistenceConfig, WRITE_TIMEOUT_PROPERTY);
+  }
+
+  private DatastoreServiceConfig createDatastoreServiceConfigPrototype(
+      PersistenceConfiguration persistenceConfiguration, String... timeoutProps) {
+    DatastoreServiceConfig datastoreServiceConfig = DatastoreServiceConfig.Builder.withDefaults();
+
+    for (String timeoutProp : timeoutProps) {
+      int defaultDeadline = persistenceConfiguration.getIntProperty(timeoutProp);
+      if (defaultDeadline > 0) {
+        datastoreServiceConfig.deadline(defaultDeadline / 1000d);
+      }
+    }
+    String defaultReadConsistencyStr = persistenceConfiguration.getStringProperty(
+        DATASTORE_READ_CONSISTENCY_PROPERTY);
+    if (defaultReadConsistencyStr != null) {
+      try {
+        datastoreServiceConfig.readPolicy(new ReadPolicy(Consistency.valueOf(defaultReadConsistencyStr)));
+      } catch (IllegalArgumentException iae) {
+        throw new NucleusFatalUserException(
+            "Illegal value for " + DATASTORE_READ_CONSISTENCY_PROPERTY +
+            ".  Valid values are " + Arrays.toString(Consistency.values()));
+      }
+    }
+    return datastoreServiceConfig;
   }
 
   // For testing

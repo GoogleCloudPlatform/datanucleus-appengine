@@ -47,7 +47,6 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
-import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 /**
@@ -162,10 +161,10 @@ public abstract class AbstractFKStore {
    */
   public int size(ObjectProvider ownerOP) {
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    Entity parentEntity = (Entity) ownerOP.getAssociatedValue(EntityUtils.getCurrentTransaction(ownerOP.getExecutionContext()));
+    Entity parentEntity = (Entity) ownerOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ownerOP.getExecutionContext()));
     if (parentEntity == null) {
       handler.locateObject(ownerOP);
-      parentEntity = (Entity) ownerOP.getAssociatedValue(EntityUtils.getCurrentTransaction(ownerOP.getExecutionContext()));
+      parentEntity = (Entity) ownerOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ownerOP.getExecutionContext()));
     }
 
     String kindName = elementTable.getIdentifier().getIdentifierName();

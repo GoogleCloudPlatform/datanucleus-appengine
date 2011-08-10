@@ -49,6 +49,10 @@ public class RuntimeExceptionWrappingDatastoreService implements DatastoreServic
     this.inner = inner;
   }
 
+  public DatastoreService getDelegate() {
+    return inner;
+  }
+
   public Entity get(Key key) throws EntityNotFoundException {
     try {
       return inner.get(key);

@@ -22,6 +22,7 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.AbstractConnectionFactory;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
+import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.Transaction;
 
@@ -32,15 +33,21 @@ import java.util.Map;
 import javax.transaction.xa.XAResource;
 
 /**
- * Factory for connections to the datastore.
+ * Factory for connections to the datastore. There are two connection factories for a DatastoreManager.
  * <ul>
- * <li>Within a transaction : a connection (DatastoreTransaction) is obtained at the start of the transaction and we
+ * <li>Transactional : a connection (DatastoreService) is obtained at the start of the transaction and we
  * call "beginTransaction" on it. It is closed at the end of the transaction after we call "commit"/"rollback".</li>
- * <li>Outside a Transaction : a connection (DatastoreTransaction) is obtained on the first operation, and is retained
+ * <li>Nontransactional : a connection (DatastoreService) is obtained on the first operation, and is retained
  * until PM/EM.close(). All operations are atomic, since we don't call "beginTransaction", hence no need to call
  * "commit"/"rollback"</li>
  * </ul>
- * There are two connection factories
+ *
+ * <p>
+ * By default, when the user invokes transaction.begin() in user-space this will start a DatastoreTransaction.
+ * If they have the persistence property <i>datanucleus.appengine.autoCreateDatastoreTxns</i> set to false
+ * then this means it will NOT start a transaction. Why anyone would want to do this is unknown to me
+ * but anyway it's there.
+ * </p>
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -53,52 +60,9 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
 
   /**
    * Constructs a connection factory for the datastore.
-   * This connection factory either creates connections that are all
-   * AutoCreateTransaction or connections that are all non-AutoCreateTransaction.
-   * AutoCreateTransaction connections manage an underlying datastore transaction.
-   * Non-AutoCreateTransaction connections do not manage an underlying datastore
-   * transaction.   The type of connection that this factory provides
-   * is controlled via the {@link #AUTO_CREATE_TXNS_PROPERTY} property, which
-   * can be specified in jdoconfig.xml (for JDO) or persistence.xml (for JPA).
-   * Note that the default value for this property is {@code true}.
+   * Provides ManagedConnections to communicate with the datastore.
    *
-   * JDO Example:
-   * <pre>
-   * <jdoconfig xmlns="http://java.sun.com/xml/ns/jdo/jdoconfig"
-   * xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-   * xsi:noNamespaceSchemaLocation="http://java.sun.com/xml/ns/jdo/jdoconfig">
-   *
-   *  <persistence-manager-factory name="transactional">
-   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
-   *     <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
-   *  </persistence-manager-factory>
-   *
-   *  <persistence-manager-factory name="nontransactional">
-   *     <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
-   *     <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
-   *     <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
-   *  </persistence-manager-factory>
-   *
-   * </jdoconfig>
-   * </pre>
-   *
-   * JPA Example:
-   * <pre>
-   * <persistence-unit name="transactional">
-   *     <properties>
-   *         <property name="datanucleus.ConnectionURL" value="appengine"/>
-   *     </properties>
-   * </persistence-unit>
-   *
-   * <persistence-unit name="nontransactional">
-   *     <properties>
-   *         <property name="datanucleus.ConnectionURL" value="appengine"/>
-   *         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
-   *     </properties>
-   * </persistence-unit>
-   * </pre>
-   *
-   * @param nucContext The OMFContext
+   * @param nucContext The NucleusContext
    * @param resourceType Name of the resource ("appengine", "appengine-nontx")
    */
   public DatastoreConnectionFactoryImpl(StoreManager storeMgr, String resourceType) {
@@ -140,12 +104,20 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     private final XAResource datastoreXAResource;
 
     DatastoreManagedConnection(StoreManager storeMgr, boolean autoCreateTransaction) {
+      DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
+      DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      if (NucleusLogger.CONNECTION.isDebugEnabled()) {
+        if (datastoreService instanceof RuntimeExceptionWrappingDatastoreService) {
+          NucleusLogger.CONNECTION.debug("Created ManagedConnection using DatastoreService = " + 
+              ((RuntimeExceptionWrappingDatastoreService)datastoreService).getDelegate());
+        } else {
+          NucleusLogger.CONNECTION.debug("Created ManagedConnection using DatastoreService = " + datastoreService);
+        }
+      }
       if (autoCreateTransaction) {
-        DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
-        DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
         datastoreXAResource = new DatastoreXAResource(datastoreService);
       } else {
-        datastoreXAResource = new EmulatedXAResource();
+        datastoreXAResource = new EmulatedXAResource(datastoreService);
       }
     }
 
@@ -191,15 +163,15 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     }
 
     public void transactionFlushed() {
-        for (ManagedConnectionResourceListener listener : listeners) {
-            listener.transactionFlushed();
-        }
+      for (ManagedConnectionResourceListener listener : listeners) {
+        listener.transactionFlushed();
+      }
     }
 
     public void transactionPreClose() {
-        for (ManagedConnectionResourceListener listener : listeners) {
-            listener.transactionPreClose();
-        }
+      for (ManagedConnectionResourceListener listener : listeners) {
+        listener.transactionPreClose();
+      }
     }
 
     public void addListener(ManagedConnectionResourceListener listener) {

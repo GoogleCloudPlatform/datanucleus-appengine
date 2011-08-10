@@ -24,7 +24,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 /**
- * Extension to {@link EmulatedXAResource} that manages a (autoCreate) transaction against the datastore.
+ * Extension to {@link EmulatedXAResource} that manages a transaction against the datastore.
  * Currently only supports a single, non-distributed transaction.  Instances of this class are
  * instantiated and used when the datasource has been configured as "autoCreateTransaction" or the user is
  * explicitly doing transaction management.
@@ -34,15 +34,11 @@ import javax.transaction.xa.Xid;
  */
 class DatastoreXAResource extends EmulatedXAResource {
 
-  /** The datastore service we'll use to perform datastore operations. */
-  private final DatastoreService datastoreService;
-
   /** The current datastore transaction. */
   private DatastoreTransaction currentTxn;
 
   public DatastoreXAResource(DatastoreService datastoreService) {
-    NucleusLogger.GENERAL.info(">> DatastoreXAResource.ctr datastoreService=" + datastoreService);
-    this.datastoreService = datastoreService;
+    super(datastoreService);
   }
 
   @Override
@@ -51,14 +47,8 @@ class DatastoreXAResource extends EmulatedXAResource {
   }
 
   @Override
-  DatastoreService getDatastoreService() {
-    return datastoreService;
-  }
-
-  @Override
   public void start(Xid xid, int flags) throws XAException {
     super.start(xid, flags);
-    NucleusLogger.GENERAL.info(">> DatastoreXAResource.start");
     if (currentTxn == null) {
       // DatastoreService transaction will have been started by DatastoreManager.transactionStarted()
       Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
@@ -71,10 +61,11 @@ class DatastoreXAResource extends EmulatedXAResource {
   @Override
   public void commit(Xid xid, boolean onePhase) throws XAException {
     super.commit(xid, onePhase);
-    NucleusLogger.GENERAL.info(">> DatastoreXAResource.commit");
     if (currentTxn != null) {
       currentTxn.commit();
-      NucleusLogger.DATASTORE.debug("Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
+      if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
+        NucleusLogger.TRANSACTION.debug("Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
+      }
       currentTxn = null;
     } else {
       throw new XAException("Transaction has not been started, cannot commit");
@@ -84,10 +75,11 @@ class DatastoreXAResource extends EmulatedXAResource {
   @Override
   public void rollback(Xid xid) throws XAException {
     super.rollback(xid);
-    NucleusLogger.GENERAL.info(">> DatastoreXAResource.rollback");
     if (currentTxn != null) {
       currentTxn.rollback();
-      NucleusLogger.DATASTORE.debug("Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
+      if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
+        NucleusLogger.TRANSACTION.debug("Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
+      }
       currentTxn = null;
     } else {
       throw new XAException("Transaction has not been started, cannot roll back");
