@@ -2413,7 +2413,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
 
     // Remove this blocker since the test needs to update!
+    commitTxn();
     DatastoreServiceInterceptor.uninstall();
+    beginTxn();
 
     Query q = pm.newQuery("select id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
@@ -2438,7 +2440,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
 
     // Remove this blocker since the test needs to update!
+    commitTxn();
     DatastoreServiceInterceptor.uninstall();
+    beginTxn();
 
     Query q = pm.newQuery("select id, id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")

@@ -50,9 +50,12 @@ class DatastoreXAResource extends EmulatedXAResource {
   public void start(Xid xid, int flags) throws XAException {
     super.start(xid, flags);
     if (currentTxn == null) {
-      // DatastoreService transaction will have been started by DatastoreManager.transactionStarted()
-      Transaction datastoreTxn = datastoreService.getCurrentTransaction(null);
+      // No currentTxn, and DatastoreService will have been created by DatastoreConnectionFactoryImpl, so call beginTxn
+      Transaction datastoreTxn = datastoreService.beginTransaction();
       currentTxn = new DatastoreTransaction(datastoreTxn);
+      if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
+        NucleusLogger.TRANSACTION.debug("Started datastore transaction: " + currentTxn.getInnerTxn().getId());
+      }
     } else {
       throw new XAException("Transaction has already been started and nested transactions are not supported");
     }
@@ -82,7 +85,7 @@ class DatastoreXAResource extends EmulatedXAResource {
       }
       currentTxn = null;
     } else {
-      throw new XAException("Transaction has not been started, cannot roll back");
+      throw new XAException("Transaction has not been started, cannot rollback");
     }
   }
 }

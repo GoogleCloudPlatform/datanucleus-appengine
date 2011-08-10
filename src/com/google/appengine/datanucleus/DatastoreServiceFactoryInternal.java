@@ -31,9 +31,7 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
  * {@link #getDatastoreService} will return the result of
  * {@link DatastoreServiceFactory#getDatastoreService()}.
  *
- * If you find yourself calling {@link #setDatastoreService} from production
- * code you're probably doing something wrong.  It should really only be used
- * for tests.
+ * You should NEVER call {@link #setDatastoreService} from production code. It's for testing only!
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -47,31 +45,26 @@ public final class DatastoreServiceFactoryInternal {
   /**
    * @param config The config to use.
    * @return If a {@link DatastoreService} to return has been explicitly provided by a
-   * call to
-   * {@link #setDatastoreService(DatastoreService)},
-   * the explicitly provided instance.  Otherwise a {@link DatastoreService}
-   * constructed by calling.
-   * {@link DatastoreServiceFactory#getDatastoreService()}
-   * .
+   *   call to {@link #setDatastoreService(DatastoreService)}, the explicitly provided instance. 
+   *   Otherwise a {@link DatastoreService} constructed by calling {@link DatastoreServiceFactory#getDatastoreService()}
    */
   public static DatastoreService getDatastoreService(DatastoreServiceConfig config) {
     if (datastoreServiceToReturn.get() != null) {
       return datastoreServiceToReturn.get();
     }
-    // Wrap the service in an impl that properly translates the runtime
-    // exceptions thrown by the datastore api
+
+    // Wrap the service in an impl that properly translates the runtime exceptions thrown by the datastore api
     return new RuntimeExceptionWrappingDatastoreService(
         DatastoreServiceFactory.getDatastoreService(config));
   }
 
   /**
-   * Provides a specific {@link DatastoreService} instance that will be the
-   * return value of all calls to {@link #getDatastoreService(DatastoreServiceConfig)}.  If
-   * {@code null} is provided, subsequent calls to
+   * Provides a specific {@link DatastoreService} instance that will be the return value of all calls 
+   * to {@link #getDatastoreService(DatastoreServiceConfig)}. If {@code null} is provided, subsequent calls to
    * {@link #getDatastoreService(DatastoreServiceConfig)} will return to its default behavior.
    *
    * @param ds The {@link DatastoreService} to be returned by all calls to
-   * {@link #getDatastoreService(DatastoreServiceConfig)}.  Can be null.
+   *   {@link #getDatastoreService(DatastoreServiceConfig)}. Can be null.
    */
   public static void setDatastoreService(DatastoreService ds) {
     datastoreServiceToReturn.set(ds);

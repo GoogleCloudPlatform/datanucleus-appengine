@@ -748,8 +748,6 @@ public class JDOOneToOneTest extends JDOTestCase {
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
       EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
-      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(txn);
-      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(null);
       EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(mockDatastore);
 

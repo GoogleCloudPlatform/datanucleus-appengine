@@ -96,8 +96,6 @@ public class JPATransactionTest extends DatastoreTestCase {
       EntityManagerFactory emf, boolean explicitDemarcation) {
     if (explicitDemarcation) {
       EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
-      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
-      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
       EasyMock.expect(mockDatastoreService.put(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
           EasyMock.isA(Entity.class))).andReturn(null);
@@ -138,10 +136,6 @@ public class JPATransactionTest extends DatastoreTestCase {
       EntityManagerFactory emf, boolean explicitDemarcation) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
-    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
-    if (explicitDemarcation) {
-      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
-    }
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
@@ -321,11 +315,9 @@ public class JPATransactionTest extends DatastoreTestCase {
       QueryRunner queryRunner) throws EntityNotFoundException {
 
     EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
-    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     }
-    EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(null);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.prepare(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
@@ -432,7 +424,7 @@ public class JPATransactionTest extends DatastoreTestCase {
     EntityManager em = emf.createEntityManager();
     try {
       EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
-      EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
+      EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       mockTxn.commit();
       EasyMock.expectLastCall();

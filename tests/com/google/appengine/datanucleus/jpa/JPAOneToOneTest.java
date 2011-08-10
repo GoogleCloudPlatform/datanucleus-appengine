@@ -674,8 +674,6 @@ public class JPAOneToOneTest extends JPATestCase {
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
       EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
-      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(txn);
-      EasyMock.expect(mockDatastore.getCurrentTransaction(null)).andReturn(null);
       // the only get we're going to perform is for the pojo
       EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(mockDatastore);

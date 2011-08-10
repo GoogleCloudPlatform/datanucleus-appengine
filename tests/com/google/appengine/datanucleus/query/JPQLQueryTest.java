@@ -2106,7 +2106,7 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("another author", "123456", "the other title");
     ds.put(e2);
 
-    // Uninstall this since the test needs to update!
+    // Remove this blocker since the test needs to update!
     DatastoreServiceInterceptor.uninstall();
 
     beginTxn();

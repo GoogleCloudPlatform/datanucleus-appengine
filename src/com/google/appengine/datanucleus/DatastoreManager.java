@@ -18,7 +18,6 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.ReadPolicy;
-import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.scostore.FKListStore;
@@ -224,54 +223,8 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   public void transactionStarted(ExecutionContext ec) {
     if (connectionFactoryIsAutoCreateTransaction()) {
-      // Obtain a connection. This will create the DatastoreService right now
-      Transaction txn = 
-        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).beginTransaction();
-      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
-/*      ManagedConnection mconn = getConnection(ec);
-      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
-      Transaction txn = ds.beginTransaction();*/
-      if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
-        NucleusLogger.TRANSACTION.debug("Started new datastore transaction: " + txn.getId());
-      }
-    }
-  }
-
-  @Override
-  public void transactionCommitted(ExecutionContext ec) {
-    if (connectionFactoryIsAutoCreateTransaction()) {
-      Transaction txn = 
-        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
-      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
-/*      ManagedConnection mconn = getConnection(ec);
-      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
-      Transaction txn = ds.getCurrentTransaction(null);*/
-      if (txn != null) {
-        // ordinarily the txn gets committed in DatastoreXAResource.commit(), but
-        // if the begin/commit block doesn't perform any reads or writes then
-        // DatastoreXAResource.commit() won't be called.  In order to avoid
-        // leaving transactions open we do the commit here.
-        txn.commit();
-      }
-    }
-  }
-
-  @Override
-  public void transactionRolledBack(ExecutionContext ec) {
-    if (connectionFactoryIsAutoCreateTransaction()) {
-      Transaction txn = 
-        DatastoreServiceFactoryInternal.getDatastoreService(getDefaultDatastoreServiceConfigForWrites()).getCurrentTransaction(null);
-      // TODO Replace the above line with these 3 lines to use the DatastoreService present in ManagedConnection
-/*      ManagedConnection mconn = getConnection(ec);
-      DatastoreService ds = ((DatastoreXAResource)mconn.getXAResource()).getDatastoreService();
-      Transaction txn = ds.getCurrentTransaction(null);*/
-      if (txn != null) {
-        // ordinarily the txn gets aborted in DatastoreXAResource.commit(), but
-        // if the begin/abort block doesn't perform any reads or writes then
-        // DatastoreXAResource.rollback() won't be called.  In order to avoid
-        // leaving transactions open we do the rollback here.
-        txn.rollback();
-      }
+      // Obtain the ManagedConnection, triggering XAResource.start, so calling DatastoreService.beginTransaction()
+      getConnection(ec);
     }
   }
 

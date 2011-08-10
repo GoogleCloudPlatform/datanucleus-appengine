@@ -87,8 +87,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   public static final String MISSING_RELATION_KEY = "___missing_relation_key___";
 
-  private final DatastoreService datastoreServiceForReads;
   private final DatastoreManager storeMgr;
+
+  // TODO Remove this and make more use of the DatastoreService from the ManagedConnection
+  private final DatastoreService datastoreServiceForReads;
 
   private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new HashMap();
   private final Map<ExecutionContext, BatchDeleteManager> batchDeleteManagerByExecutionContext = new HashMap();
