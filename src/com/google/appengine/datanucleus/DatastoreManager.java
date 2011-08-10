@@ -138,8 +138,6 @@ public class DatastoreManager extends MappedStoreManager {
    */
   private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
 
-  private final BatchPutManager batchPutManager = new BatchPutManager();
-  private final BatchDeleteManager batchDeleteManager = new BatchDeleteManager();
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
@@ -471,14 +469,6 @@ public class DatastoreManager extends MappedStoreManager {
   @Override
   protected SetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
     return new FKSetStore(ammd, this, clr);
-  }
-
-  public BatchPutManager getBatchPutManager() {
-    return batchPutManager;
-  }
-
-  public BatchDeleteManager getBatchDeleteManager() {
-    return batchDeleteManager;
   }
 
   public boolean storageVersionAtLeast(StorageVersion storageVersion) {

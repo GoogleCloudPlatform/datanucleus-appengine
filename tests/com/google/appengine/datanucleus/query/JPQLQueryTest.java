@@ -2106,6 +2106,9 @@ public class JPQLQueryTest extends JPATestCase {
     Entity e2 = Book.newBookEntity("another author", "123456", "the other title");
     ds.put(e2);
 
+    // Uninstall this since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
+
     beginTxn();
     Query q = em.createQuery("select id from " + Book.class.getName() + " c");
     @SuppressWarnings("unchecked")
@@ -2598,6 +2601,9 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testQueryWithEntityShortName() {
+    // Uninstall this since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
+
     Query q = em.createQuery("select b from bookalias b where title = 'yam'");
     assertTrue(q.getResultList().isEmpty());
 
@@ -3031,6 +3037,9 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testQueryWithEntityShortName2() {
+    // Uninstall this since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
+
     Query q = em.createQuery("select b from bookalias b where title = 'yam'");
     assertTrue(q.getResultList().isEmpty());
 
@@ -3051,9 +3060,11 @@ public class JPQLQueryTest extends JPATestCase {
 
 
   public void testQueryForClassWithNameStartingWithIn() {
+    // Uninstall this since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
+
     // force the class metadata to load - we've seen occasional problems
-    // where the class can't be resolved for a query if we don't reference
-    // it first.
+    // where the class can't be resolved for a query if we don't reference it first.
     InTheHouseJPA pojo = new InTheHouseJPA();
     beginTxn();
     em.persist(pojo);

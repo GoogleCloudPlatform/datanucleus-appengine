@@ -19,13 +19,16 @@ import com.google.appengine.api.datastore.Key;
 
 import java.util.List;
 
+import org.datanucleus.store.ExecutionContext;
+
 /**
- * Manages batch deletes that are initiated via standard JDO and JPA
- * calls.
+ * Manages batch deletes that are initiated via standard JDO calls.
  *
  * @author Max Ross <maxr@google.com>
  */
 public class BatchDeleteManager extends BatchManager<BatchDeleteManager.BatchDeleteState> {
+
+  ExecutionContext ec;
 
   static final class BatchDeleteState {
     private final DatastoreTransaction txn;
@@ -35,6 +38,10 @@ public class BatchDeleteManager extends BatchManager<BatchDeleteManager.BatchDel
       this.txn = txn;
       this.key = key;
     }
+  }
+
+  public BatchDeleteManager(ExecutionContext ec) {
+    this.ec = ec;
   }
 
   String getOperation() {
@@ -50,7 +57,7 @@ public class BatchDeleteManager extends BatchManager<BatchDeleteManager.BatchDel
       }
       keyList.add(bds.key);
     }
-    handler.delete(txn, keyList);
+    handler.delete(ec, txn, keyList);
   }
 
 }

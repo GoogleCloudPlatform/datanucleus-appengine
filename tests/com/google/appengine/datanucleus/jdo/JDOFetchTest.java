@@ -485,6 +485,8 @@ public class JDOFetchTest extends JDOTestCase {
   }
 
   public void testSimplePersistGetObjectById() {
+    DatastoreServiceInterceptor.uninstall();
+
     Flight fl = new Flight("LHR", "CHI", "BA201", 1, 2);
     pm.makePersistent(fl);
     commitTxn();

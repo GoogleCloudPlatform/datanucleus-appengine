@@ -2412,6 +2412,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
     ds.put(null, e2);
 
+    // Remove this blocker since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
+
     Query q = pm.newQuery("select id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")
     List<String> ids = (List<String>) q.execute();
@@ -2433,6 +2436,9 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e1);
     Entity e2 = Flight.newFlightEntity("jimmy", "lax", "mia", 23, 24);
     ds.put(null, e2);
+
+    // Remove this blocker since the test needs to update!
+    DatastoreServiceInterceptor.uninstall();
 
     Query q = pm.newQuery("select id, id from " + Flight.class.getName());
     @SuppressWarnings("unchecked")

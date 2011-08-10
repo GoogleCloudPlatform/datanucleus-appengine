@@ -20,7 +20,7 @@ import org.datanucleus.store.ObjectProvider;
 import java.util.List;
 
 /**
- * Manages batch inserts that are initiated via standard JDO and JPA calls.
+ * Manages batch inserts that are initiated via standard JDO calls.
  *
  * @author Max Ross <maxr@google.com>
  */

@@ -55,6 +55,7 @@ import org.datanucleus.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -87,8 +88,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   public static final String MISSING_RELATION_KEY = "___missing_relation_key___";
 
   private final DatastoreService datastoreServiceForReads;
-  private final DatastoreService datastoreServiceForWrites;
   private final DatastoreManager storeMgr;
+
+  private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new HashMap();
+  private final Map<ExecutionContext, BatchDeleteManager> batchDeleteManagerByExecutionContext = new HashMap();
 
   /**
    * Constructor.
@@ -98,8 +101,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     this.storeMgr = (DatastoreManager) storeMgr;
     datastoreServiceForReads = DatastoreServiceFactoryInternal.getDatastoreService(
         this.storeMgr.getDefaultDatastoreServiceConfigForReads());
-    datastoreServiceForWrites = DatastoreServiceFactoryInternal.getDatastoreService(
-        this.storeMgr.getDefaultDatastoreServiceConfigForWrites());
   }
 
   public void close() {}
@@ -117,16 +118,34 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     return true;
   }
 
+  protected BatchPutManager getBatchPutManager(ExecutionContext ec) {
+    BatchPutManager putMgr = batchPutManagerByExecutionContext.get(ec);
+    if (putMgr == null) {
+      putMgr = new BatchPutManager();
+      batchPutManagerByExecutionContext.put(ec, putMgr);
+    }
+    return putMgr;
+  }
+
+  protected BatchDeleteManager getBatchDeleteManager(ExecutionContext ec) {
+    BatchDeleteManager deleteMgr = batchDeleteManagerByExecutionContext.get(ec);
+    if (deleteMgr == null) {
+      deleteMgr = new BatchDeleteManager(ec);
+      batchDeleteManagerByExecutionContext.put(ec, deleteMgr);
+    }
+    return deleteMgr;
+  }
+
   /* (non-Javadoc)
    * @see org.datanucleus.store.AbstractPersistenceHandler#batchStart(org.datanucleus.store.ExecutionContext, org.datanucleus.store.PersistenceBatchType)
    */
   @Override
   public void batchStart(ExecutionContext ec, PersistenceBatchType batchType) {
     if (batchType == PersistenceBatchType.PERSIST) {
-      storeMgr.getBatchPutManager().start();
+      getBatchPutManager(ec).start();
     }
     else if (batchType == PersistenceBatchType.DELETE) {
-      storeMgr.getBatchDeleteManager().start();
+      getBatchDeleteManager(ec).start();
     }
   }
 
@@ -136,10 +155,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   @Override
   public void batchEnd(ExecutionContext ec, PersistenceBatchType batchType) {
     if (batchType == PersistenceBatchType.PERSIST) {
-      storeMgr.getBatchPutManager().finish(this);
+      getBatchPutManager(ec).finish(this);
+      batchPutManagerByExecutionContext.remove(ec);
     }
     else if (batchType == PersistenceBatchType.DELETE) {
-      storeMgr.getBatchDeleteManager().finish(this);
+      getBatchDeleteManager(ec).finish(this);
+      batchDeleteManagerByExecutionContext.remove(ec);
     }
   }
 
@@ -183,6 +204,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
   private DatastoreTransaction put(ExecutionContext ec, AbstractClassMetaData acmd, List<Entity> entities) {
     DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
+    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
     List<Entity> putMe = Utils.newArrayList();
     for (Entity entity : entities) {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -227,16 +249,16 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       
       if (txn == null) {
         if (putMe.size() == 1) {
-          datastoreServiceForWrites.put(putMe.get(0));
+          ds.put(putMe.get(0));
         } else {
-          datastoreServiceForWrites.put(putMe);
+          ds.put(putMe);
         }
       } else {
         Transaction innerTxn = txn.getInnerTxn();
         if (putMe.size() == 1) {
-          datastoreServiceForWrites.put(innerTxn, putMe.get(0));
+          ds.put(innerTxn, putMe.get(0));
         } else {
-          datastoreServiceForWrites.put(innerTxn, putMe);
+          ds.put(innerTxn, putMe);
         }
         txn.addPutEntities(putMe);
       }
@@ -244,23 +266,25 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     return txn;
   }
 
-  void delete(DatastoreTransaction txn, List<Key> keys) {
+  void delete(ExecutionContext ec, DatastoreTransaction txn, List<Key> keys) {
+    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
     }
 
     if (txn == null) {
       if (keys.size() == 1) {
-        datastoreServiceForWrites.delete(keys.get(0));
+        ds.delete(keys.get(0));
       } else {
-        datastoreServiceForWrites.delete(keys);
+        ds.delete(keys);
       }
     } else {
       Transaction innerTxn = txn.getInnerTxn();
       if (keys.size() == 1) {
-        datastoreServiceForWrites.delete(innerTxn, keys.get(0));
+        ds.delete(innerTxn, keys.get(0));
       } else {
-        datastoreServiceForWrites.delete(innerTxn, keys);
+        ds.delete(innerTxn, keys);
       }
     }
   }
@@ -295,8 +319,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     NucleusLogger.GENERAL.info(">> PersistenceHandler.insertObject FOR " + op);
     // If we're in the middle of a batch operation just register the ObjectProvider that needs the insertion
-    if (storeMgr.getBatchPutManager().batchOperationInProgress()) {
-      storeMgr.getBatchPutManager().add(op);
+    BatchPutManager batchPutMgr = getBatchPutManager(op.getExecutionContext());
+    if (batchPutMgr.batchOperationInProgress()) {
+      batchPutMgr.add(op);
       return;
     }
     insertObjectsInternal(Collections.singletonList(op));
@@ -760,7 +785,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     Key keyToDelete = getPkAsKey(op);
 
     // If we're in the middle of a batch operation just register the statemanager that needs the delete
-    BatchDeleteManager bdm = storeMgr.getBatchDeleteManager();
+    BatchDeleteManager bdm = getBatchDeleteManager(ec);
     if (bdm.batchOperationInProgress()) {
       bdm.add(new BatchDeleteManager.BatchDeleteState(txn, keyToDelete));
 
@@ -781,7 +806,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     // Delete this object
-    delete(txn, Collections.singletonList(keyToDelete));
+    delete(ec, txn, Collections.singletonList(keyToDelete));
 
     if (relatedObjectsToDelete != null && !relatedObjectsToDelete.isEmpty()) {
       // Delete any related objects that need deleting after the delete of this object
