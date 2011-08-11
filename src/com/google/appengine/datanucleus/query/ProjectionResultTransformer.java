@@ -18,19 +18,26 @@ package com.google.appengine.datanucleus.query;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
+import org.datanucleus.query.QueryUtils;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.util.Localiser;
+import org.datanucleus.util.NucleusLogger;
 
+import java.lang.reflect.Field;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import javax.jdo.spi.PersistenceCapable;
 
@@ -41,25 +48,41 @@ import javax.jdo.spi.PersistenceCapable;
  */
 class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
 
+  protected static final Localiser LOCALISER=Localiser.getInstance(
+      "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+
   private final Utils.Function<Entity, Object> entityToPojoFunc;
   private final ExecutionContext ec;
   private final List<String> projectionFields;
-  private final String alias;
+  private final List<String> projectionAliases;
+  private final String candidateAlias;
+  private final Class resultClass;
+  private final Map<String, Field> resultClassFieldsByName = new HashMap();
 
-  ProjectionResultTransformer(Utils.Function<Entity, Object> entityToPojoFunc,
-                              ExecutionContext ec,
-                              List<String> projectionFields,
-                              String alias) {
+  ProjectionResultTransformer(Utils.Function<Entity, Object> entityToPojoFunc, ExecutionContext ec,
+      String candidateAlias, Class resultClass, List<String> projectionFields, List<String> projectionAliases) {
     this.entityToPojoFunc = entityToPojoFunc;
     this.ec = ec;
     this.projectionFields = projectionFields;
-    this.alias = alias;
+    this.projectionAliases = projectionAliases;
+    this.candidateAlias = candidateAlias;
+    this.resultClass = resultClass;
+    if (resultClass != null) {
+      populateDeclaredFieldsForUserType(resultClass, resultClassFieldsByName);
+    }
   }
 
+  /**
+   * Method to convert the Entity for this row into the required query result.
+   * Processes any result expression(s), and any result class.
+   * @param from The entity
+   * @return The required result format, for this Entity
+   */
   public Object apply(Entity from) {
     PersistenceCapable pc = (PersistenceCapable) entityToPojoFunc.apply(from);
     ObjectProvider op = ec.findObjectProvider(pc);
     List<Object> values = Utils.newArrayList();
+
     // Need to fetch the fields one at a time instead of using
     // sm.provideFields() because that method doesn't respect the ordering
     // of the field numbers and that ordering is important here.
@@ -67,7 +90,7 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
       ObjectProvider currentOP = op;
       DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
       ClassLoaderResolver clr = ec.getClassLoaderResolver();
-      List<String> fieldNames = getTuples(projectionField, alias);
+      List<String> fieldNames = getTuples(projectionField, candidateAlias);
       JavaTypeMapping typeMapping;
       Object curValue = null;
       boolean shouldBeDone = false;
@@ -101,12 +124,77 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
       // the value we have left at the end is the embedded field value we want to return
       values.add(curValue);
     }
+
+    if (resultClass != null) {
+      // Convert field values into result object
+      Object[] valueArray = values.toArray(new Object[values.size()]);
+      return getResultObjectForValues(valueArray);
+    }
+
     if (values.size() == 1) {
       // If there's only one value, just return it.
       return values.get(0);
     }
     // Return an Object array.
     return values.toArray(new Object[values.size()]);
+  }
+
+  private Object getResultObjectForValues(Object[] values) {
+
+    if (QueryUtils.resultClassIsSimple(resultClass.getName())) {
+      // User wants a single field
+      if (values.length == 1 && (values[0] == null || resultClass.isAssignableFrom(values[0].getClass()))) {
+        // Simple object is the correct type so just give them the field
+        return values[0];
+      }
+      else if (values.length == 1 && !resultClass.isAssignableFrom(values[0].getClass())) {
+        // Simple object is not assignable to the ResultClass so throw an error
+        String msg = LOCALISER.msg("021202",
+            resultClass.getName(), values[0].getClass().getName());
+        NucleusLogger.QUERY.error(msg);
+        throw new NucleusUserException(msg);
+      }
+      else {
+        throw new NucleusUserException("Result class is simple, but field value " + values + " not convertible into that");
+      }
+    } else {
+      // User requires creation of one of his own type of objects, or a Map
+      // A. Find a constructor with the correct constructor arguments
+      Class[] resultFieldTypes = new Class[values.length];
+      for (int i=0;i<values.length;i++) {
+        resultFieldTypes[i] = values[i].getClass(); // TODO Cater for null (need passing in from field info)
+      }
+      Object obj = QueryUtils.createResultObjectUsingArgumentedConstructor(resultClass, values, resultFieldTypes);
+      if (obj != null) {
+        return obj;
+      }
+
+      // B. No argumented constructor exists so create an object and update fields using fields/put method/set method
+      String[] resultFieldNames = projectionAliases.toArray(new String[projectionAliases.size()]);
+      obj = QueryUtils.createResultObjectUsingDefaultConstructorAndSetters(resultClass, resultFieldNames, 
+          resultClassFieldsByName, values);
+
+      return obj;
+    }
+  }
+
+  /**
+   * Populate a map with the declared fields of the result class and super classes.
+   * @param cls the class to find the declared fields and populate the map
+   */
+  private void populateDeclaredFieldsForUserType(Class cls, Map resultClassFieldsByName)
+  {
+      for (int i=0;i<cls.getDeclaredFields().length;i++)
+      {
+          if (resultClassFieldsByName.put(cls.getDeclaredFields()[i].getName().toUpperCase(), cls.getDeclaredFields()[i]) != null)
+          {
+              throw new NucleusUserException(LOCALISER.msg("021210", cls.getDeclaredFields()[i].getName()));
+          }
+      }
+      if (cls.getSuperclass() != null)
+      {
+          populateDeclaredFieldsForUserType(cls.getSuperclass(), resultClassFieldsByName);
+      }
   }
 
   /**
@@ -117,5 +205,4 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
     List<String> tuples = Arrays.asList(dotDelimitedFieldName.split("\\."));
     return DatastoreQuery.getTuples(tuples, alias);
   }
-
 }

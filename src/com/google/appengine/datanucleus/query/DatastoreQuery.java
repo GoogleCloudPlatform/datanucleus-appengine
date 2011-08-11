@@ -784,7 +784,8 @@ public class DatastoreQuery implements Serializable {
     }
 
     final List<String> projectionFields = Utils.newArrayList();
-    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields);
+    final List<String> projectionAliases = Utils.newArrayList();
+    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields, projectionAliases);
     String kind = table.getIdentifier().getIdentifierName();
     Function<Entity, Object> resultTransformer;
     if (resultType == ResultType.KEYS_ONLY) {
@@ -808,12 +809,14 @@ public class DatastoreQuery implements Serializable {
       };
     }
 
-    if (!projectionFields.isEmpty()) {
+    if (!projectionFields.isEmpty() || query.getResultClass() != null && 
+        query.getResultClass() != query.getCandidateClass()) {
       // Wrap the existing transformer with a transformer that will apply the
       // appropriate projection to each Entity in the result set.
       resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
-                                                          projectionFields, compilation.getCandidateAlias());
+          compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
     }
+
     QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 
         resultTransformer, isJDO);
 
@@ -835,7 +838,8 @@ public class DatastoreQuery implements Serializable {
    * @return The ResultType
    */
   private ResultType validateResultExpression(
-      QueryCompilation compilation, AbstractClassMetaData acmd, List<String> projectionFields) {
+      QueryCompilation compilation, AbstractClassMetaData acmd, List<String> projectionFields,
+      List<String> projectionAliases) {
     ResultType resultType = null;
     if (compilation.getExprResult() != null) {
       // the only expression results we support are count() and PrimaryExpression
@@ -864,6 +868,12 @@ public class DatastoreQuery implements Serializable {
             if (ammd == null) {
               throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
             }
+
+            if (resultExpr.getAlias() != null) {
+              projectionAliases.add(resultExpr.getAlias());
+            } else {
+              projectionAliases.add(ammd.getName());
+            }
             projectionFields.add(primaryExpr.getId());
             if (ammd.getParent() instanceof EmbeddedMetaData || !ammd.isPrimaryKey()) {
               // A single non-pk field locks the result type on entity projection
@@ -878,6 +888,10 @@ public class DatastoreQuery implements Serializable {
         }
       }
     }
+    if (query.getResultClass() != null && query.getResultClass() != query.getCandidateClass()) {
+      resultType = ResultType.ENTITY_PROJECTION;
+    }
+
     if (resultType == null) {
       resultType = ResultType.ENTITY;
     }
