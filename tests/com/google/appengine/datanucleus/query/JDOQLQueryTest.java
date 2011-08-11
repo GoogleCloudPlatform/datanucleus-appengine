@@ -3151,6 +3151,25 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  /**
+   * Test of projection "SELECT result FROM candidate" returning just the field rather than the whole entity.
+   */
+  public void testProjectionAsResultFields() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 3, 4));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    String query = "SELECT origin, dest FROM " + Flight.class.getName() + " WHERE you == 3";
+    Query q = pm.newQuery(query);
+    List results = (List) q.execute();
+    assertEquals("Number of results is wrong", 1, results.size());
+    Object obj = results.iterator().next();
+    assertTrue("Result row is of invalid type", obj instanceof Object[]);
+    Object[] row = (Object[])obj;
+    assertEquals("Number of returned fields is incorrect", 2, row.length);
+    assertEquals("Origin field is wrong", "yar", row[0]);
+    assertEquals("Dest field is wrong", "bam", row[1]);
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
