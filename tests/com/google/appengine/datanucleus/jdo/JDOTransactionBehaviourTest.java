@@ -1,5 +1,5 @@
 /**********************************************************************
-Copyright (c) 2009 Google Inc.
+Copyright (c) 2011 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,34 +13,42 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus.bugs.jdo;
+package com.google.appengine.datanucleus.jdo;
+
+import com.google.appengine.datanucleus.test.Flight;
 
 import javax.jdo.PersistenceManager;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.bugs.test.Issue174Entity;
+/**
+ * Tests that really would be nice to put in JDOTransactionTest but that don't want interception of 
+ * transaction calls.
+ */
+public class JDOTransactionBehaviourTest extends JDOTestCase {
 
-public class Issue174Test extends JDOBugTestCase {
-
-  public void testSimultaneousTransactionsSameThread() {
+  /**
+   * Test where we have 2 PMs in the same thread and we start a transaction on each, with a different
+   * entity-group on each. Tests that the transactions are indeed isolated.
+   * Note that if we did the second PM as non-transactional then this would fail due to GAE/J datastore nonsense
+   * about implicit transactions, with the non-transactional call being dumped into the other transaction.
+   */
+  public void testInterlacedTransactions() {
     // Create base data of object1, object2
-    Issue174Entity ent1 = new Issue174Entity();
-    pm.makePersistent(ent1);
-    Object id1 = pm.getObjectId(ent1);
+    Flight fl1 = new Flight("LHR", "CHI", "BA201", 1, 2);
+    pm.makePersistent(fl1);
+    Object id1 = pm.getObjectId(fl1);
     pm.close();
     pm = pmf.getPersistenceManager();
-    Issue174Entity ent2 = new Issue174Entity();
-    pm.makePersistent(ent2);
-    Object id2 = pm.getObjectId(ent2);
+    Flight fl2 = new Flight("SYD", "HKG", "QA176", 7, 9);
+    pm.makePersistent(fl2);
+    Object id2 = pm.getObjectId(fl2);
     pm.close();
 
     // Start first PM and retrieve the first object in a transaction
     PersistenceManager pm1 = pmf.getPersistenceManager();
     try {
-      NucleusLogger.GENERAL.info(">> PM1 : txn.begin");
       pm1.currentTransaction().begin();
-      NucleusLogger.GENERAL.info(">> PM1(TXN) : getObjectById");
       pm1.getObjectById(id1);
 
       // Start second PM and retrieve the second object in a transaction
@@ -48,7 +56,6 @@ public class Issue174Test extends JDOBugTestCase {
       try {
         pm2.currentTransaction().begin();
         // GAE/J v1 threw an exception here
-        NucleusLogger.GENERAL.info(">> PM2 : getObjectById");
         pm2.getObjectById(id2);
       }
       catch (Exception e) {
