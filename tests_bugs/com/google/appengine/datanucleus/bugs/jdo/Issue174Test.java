@@ -24,7 +24,7 @@ import com.google.appengine.datanucleus.bugs.test.Issue174Entity;
 public class Issue174Test extends JDOBugTestCase {
 
   public void testSimultaneousTransactionsSameThread() {
-    // Create base data
+    // Create base data of object1, object2
     Issue174Entity ent1 = new Issue174Entity();
     pm.makePersistent(ent1);
     Object id1 = pm.getObjectId(ent1);
@@ -35,7 +35,7 @@ public class Issue174Test extends JDOBugTestCase {
     Object id2 = pm.getObjectId(ent2);
     pm.close();
 
-    // Start first PM and retrieve the object in a transaction
+    // Start first PM and retrieve the first object in a transaction
     PersistenceManager pm1 = pmf.getPersistenceManager();
     try {
       NucleusLogger.GENERAL.info(">> PM1 : txn.begin");
@@ -43,9 +43,10 @@ public class Issue174Test extends JDOBugTestCase {
       NucleusLogger.GENERAL.info(">> PM1(TXN) : getObjectById");
       pm1.getObjectById(id1);
 
-      // Start second PM and retrieve the same 
+      // Start second PM and retrieve the second object in a transaction
       PersistenceManager pm2 = pmf.getPersistenceManager();
       try {
+        pm2.currentTransaction().begin();
         // GAE/J v1 threw an exception here
         NucleusLogger.GENERAL.info(">> PM2 : getObjectById");
         pm2.getObjectById(id2);
@@ -55,6 +56,7 @@ public class Issue174Test extends JDOBugTestCase {
         fail("Should have allowed simultaneous PM transactions but didnt : caught exception - " + e.getMessage());
       }
       finally {
+        pm2.currentTransaction().commit();
         pm2.close();
       }
     }
