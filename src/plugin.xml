@@ -339,8 +339,11 @@ limitations under the License.
 		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"/>
     </extension>
 
+    <!-- CUSTOM ANNOTATIONS -->
     <extension point="org.datanucleus.member_annotation_handler">
         <member-annotation-handler annotation-class="com.google.appengine.datanucleus.annotations.Unindexed" 
             handler="com.google.appengine.datanucleus.annotations.UnindexedHandler"/>
+        <member-annotation-handler annotation-class="com.google.appengine.datanucleus.annotations.Unowned" 
+            handler="com.google.appengine.datanucleus.annotations.UnownedHandler"/>
     </extension>
 </plugin>
