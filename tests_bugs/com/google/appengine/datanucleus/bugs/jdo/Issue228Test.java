@@ -3,15 +3,15 @@ package com.google.appengine.datanucleus.bugs.jdo;
 import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.datanucleus.bugs.jdo.JDOBugTestCase;
-import com.google.appengine.datanucleus.bugs.test.AChild;
-import com.google.appengine.datanucleus.bugs.test.AParent;
+import com.google.appengine.datanucleus.bugs.test.Issue228Child;
+import com.google.appengine.datanucleus.bugs.test.Issue228Parent;
 
 public class Issue228Test extends JDOBugTestCase {
 
   public void testInsert() {
-    AChild c = new AChild();
+    Issue228Child c = new Issue228Child();
     c.setAString("Child info");
-    AParent p = new AParent();
+    Issue228Parent p = new Issue228Parent();
     p.setAString("Not important");
     p.setChild(c);
     assertTrue(p.getChild() == c && c.getParent() == p);

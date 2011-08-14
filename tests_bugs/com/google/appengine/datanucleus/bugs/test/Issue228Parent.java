@@ -8,7 +8,7 @@ import javax.jdo.annotations.PrimaryKey;
 import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable
-public class AParent {
+public class Issue228Parent {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   Key id;
@@ -17,11 +17,14 @@ public class AParent {
   String aString;
   
   @Persistent(mappedBy = "parent")
-  AChild child;
+  Issue228Child child;
   
-  public void setChild(AChild c) { child = c; child.parent = this; }
+  public void setChild(Issue228Child c) { 
+    child = c; 
+    child.parent = this;
+  }
 
   public void setAString(String str) { aString = str;}
 
-  public AChild getChild() {return child;}
+  public Issue228Child getChild() {return child;}
 }
