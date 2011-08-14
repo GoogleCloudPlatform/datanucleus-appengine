@@ -37,8 +37,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.jdo.JDOObjectNotFoundException;
-
 /**
  * Encapsulates logic that supports deletion of dependent objects.
  * Code based pretty closely on the rdbms version of DeleteRequest.
@@ -84,20 +82,18 @@ public class DependentDeleteRequest {
       int relationType = mmd.getRelationType(clr);
       if (mmd.isDependent() && (relationType == Relation.ONE_TO_ONE_UNI ||
           (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null))) {
-        try {
-          op.getExecutionContext().getApiAdapter().isLoaded(op, mmd.getAbsoluteFieldNumber());
-          Object relatedPc = op.provideField(mmd.getAbsoluteFieldNumber());
-          if (relatedPc != null) {
-            boolean relatedObjectDeleted = op.getExecutionContext().getApiAdapter().isDeleted(relatedPc);
-            if (!relatedObjectDeleted) {
-              if (relatedObjectsToDelete == null) {
-                relatedObjectsToDelete = new HashSet();
-              }
-              relatedObjectsToDelete.add(relatedPc);
+        // Make sure the field is loaded
+        op.loadField(mmd.getAbsoluteFieldNumber());
+        Object relatedPc = op.provideField(mmd.getAbsoluteFieldNumber());
+        if (relatedPc != null) {
+          boolean relatedObjectDeleted = op.getExecutionContext().getApiAdapter().isDeleted(relatedPc);
+          if (!relatedObjectDeleted) {
+            if (relatedObjectsToDelete == null) {
+              relatedObjectsToDelete = new HashSet();
             }
+            relatedObjectsToDelete.add(relatedPc);
           }
-        } 
-        catch (JDOObjectNotFoundException onfe) {}
+        }
       }
     }
 

@@ -605,13 +605,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           parentKey = getKeyFromParentPojo(parentPojo);
         }
       }
-//      if (parentKey == null) {
-//        // Mechanism 4
-//        Object parentPojo = DatastoreJPACallbackHandler.getAttachingParent(op.getObject());
-//        if (parentPojo != null) {
-//          parentKey = getKeyFromParentPojo(parentPojo);
-//        }
-//      }
+
       if (parentKey != null) {
         recreateEntityWithParent(parentKey);
       }
@@ -626,8 +620,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   void recreateEntityWithParent(Key parentKey) {
     Entity old = datastoreEntity;
     if (old.getKey().getName() != null) {
-      datastoreEntity =
-          new Entity(old.getKind(), old.getKey().getName(), parentKey);
+      datastoreEntity = new Entity(old.getKind(), old.getKey().getName(), parentKey);
     } else {
       datastoreEntity = new Entity(old.getKind(), parentKey);
     }

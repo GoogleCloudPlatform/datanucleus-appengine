@@ -268,29 +268,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     return txn;
   }
 
-  void delete(ExecutionContext ec, DatastoreTransaction txn, List<Key> keys) {
-    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
-
-    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
-    }
-
-    if (txn == null) {
-      if (keys.size() == 1) {
-        ds.delete(keys.get(0));
-      } else {
-        ds.delete(keys);
-      }
-    } else {
-      Transaction innerTxn = txn.getInnerTxn();
-      if (keys.size() == 1) {
-        ds.delete(innerTxn, keys.get(0));
-      } else {
-        ds.delete(innerTxn, keys);
-      }
-    }
-  }
-
   /**
    * Token used to make sure we don't try to insert the pc associated with a
    * state manager more than once.  This can happen in the case of a
@@ -736,7 +713,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
 
-    ExecutionContext ec = op.getExecutionContext();
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
 
     long startTime = System.currentTimeMillis();
@@ -745,15 +721,13 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.toPrintableID(), op.getInternalObjectId()));
     }
 
-    Entity entity = (Entity) op.getAssociatedValue(DatastoreManager.getDatastoreTransaction(op.getExecutionContext()));
+    ExecutionContext ec = op.getExecutionContext();
+    Entity entity = (Entity) op.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ec));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = getPkAsKey(op);
       entity = getEntityFromDatastore(op, key);
     }
-
-    ClassLoaderResolver clr = ec.getClassLoaderResolver();
-    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
 
     DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
     if (txn != null) {
@@ -761,8 +735,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         // need to check this _before_ we execute the dependent delete request
         // because that might set off a chain of cascades that could bring us
         // back here or to an update for the same entity, and we need to make
-        // sure those recursive calls can see that we're already deleting
-        // this entity.
+        // sure those recursive calls can see that we're already deleting this entity.
         return;
       }
       txn.addDeletedKey(entity.getKey());
@@ -776,17 +749,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     handleVersioningBeforeWrite(op, entity, VersionBehavior.NO_INCREMENT, "deleting");
 
     // first handle any dependent deletes that need deleting before we delete this object
+    ClassLoaderResolver clr = ec.getClassLoaderResolver();
+    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
     DependentDeleteRequest req = new DependentDeleteRequest(dc, op.getClassMetaData(), clr);
     Set relatedObjectsToDelete = req.execute(op, entity);
 
-    // Null out all non-PK fields in the datastore. Why not just delete it?
-    DatastoreFieldManager fieldMgr = new DatastoreDeleteFieldManager(op, storeMgr, entity);
-    AbstractClassMetaData acmd = op.getClassMetaData();
-    op.provideFields(acmd.getNonPKMemberPositions(), fieldMgr);
-
     Key keyToDelete = getPkAsKey(op);
 
-    // If we're in the middle of a batch operation just register the statemanager that needs the delete
+    // If we're in the middle of a batch operation just register the key that needs the delete
     BatchDeleteManager bdm = getBatchDeleteManager(ec);
     if (bdm.batchOperationInProgress()) {
       bdm.add(new BatchDeleteManager.BatchDeleteState(txn, keyToDelete));
@@ -799,7 +769,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           ec.deleteObjectInternal(relatedObject);
         }
       }
-
       if (storeMgr.getRuntimeManager() != null) {
         storeMgr.getRuntimeManager().incrementDeleteCount();
       }
@@ -808,7 +777,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     // Delete this object
-    delete(ec, txn, Collections.singletonList(keyToDelete));
+    deleteEntitiesFromDatastore(ec, Collections.singletonList(keyToDelete));
 
     if (relatedObjectsToDelete != null && !relatedObjectsToDelete.isEmpty()) {
       // Delete any related objects that need deleting after the delete of this object
@@ -818,13 +787,42 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         ec.deleteObjectInternal(relatedObject);
       }
     }
+    if (storeMgr.getRuntimeManager() != null) {
+      storeMgr.getRuntimeManager().incrementDeleteCount();
+    }
 
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
         (System.currentTimeMillis() - startTime)));
     }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementDeleteCount();
+  }
+
+  /**
+   * Method to actually perform the deletion of Entity(s) from the datastore.
+   * @param ec ExecutionContext
+   * @param keys Keys to delete
+   */
+  void deleteEntitiesFromDatastore(ExecutionContext ec, List<Key> keys) {
+    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
+    }
+
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
+    if (txn == null) {
+      if (keys.size() == 1) {
+        ds.delete(keys.get(0));
+      } else {
+        ds.delete(keys);
+      }
+    } else {
+      Transaction innerTxn = txn.getInnerTxn();
+      if (keys.size() == 1) {
+        ds.delete(innerTxn, keys.get(0));
+      } else {
+        ds.delete(innerTxn, keys);
+      }
     }
   }
 
