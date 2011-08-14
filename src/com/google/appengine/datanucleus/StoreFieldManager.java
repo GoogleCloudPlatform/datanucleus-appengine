@@ -79,7 +79,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   public static final int IS_FK_VALUE = -2;
   private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
 
-  public enum Operation { INSERT, UPDATE, DELETE };
+  public enum Operation { INSERT, UPDATE };
 
   protected final Operation operation;
 
@@ -199,8 +199,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
       storeFieldInEntity(fieldNumber, value);
 
       if (!(value instanceof SCO)) {
-        // TODO Wrap SCO fields. Currently this causes some tests to fail due to the fragility of the design of this plugin
-        //          getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
+        // TODO Wrap SCO fields, uncomment this line. See Issue 144
+        // This is currently not done since the elements may not be persisted at this point and the test classes
+        // rely on "id" being set for hashCode/equals to work. Fix the persistence process first
+        // getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
       }
     }
   }
@@ -212,26 +214,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * @return Whether it stored the value (doesn't mean an error, just that wasn't needed to be stored)
    */
   private boolean storeFieldInEntity(int fieldNumber, Object value) {
-    ClassLoaderResolver clr = getClassLoaderResolver();
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    if (value != null ) {
-      if (ammd.isSerialized()) {
-        // If the field is serialized we don't need to apply any conversions before setting it on the 
-        // entity since the serialization is guaranteed to produce a Blob.
-        value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
-      } else {
-        // Perform any conversions from the field type to the stored-type
-        value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
-      }
+
+    if (!(operation == Operation.INSERT && ammd.isInsertable()) &&
+        !(operation == Operation.UPDATE && ammd.isUpdateable())) {
+      return false;
     }
 
     if (ammd.getEmbeddedMetaData() != null) {
       // Embedded field handling
       ObjectProvider embeddedOP = getEmbeddedObjectProvider(ammd, fieldNumber, value);
       // TODO Create own FieldManager instead of reusing this one
-/*      StoreEmbeddedFieldManager embFM = 
-        new StoreEmbeddedFieldManager(embeddedOP, datastoreEntity, ammd, operation);
-      embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), embFM);*/
       // We need to build a mapping consumer for the embedded class so that we get correct
       // fieldIndex --> metadata mappings for the class in the proper embedded context
       // TODO(maxr) Consider caching this
@@ -244,8 +237,18 @@ public class StoreFieldManager extends DatastoreFieldManager {
       embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
       fieldManagerStateStack.removeFirst();
     }
-    else if ((operation == Operation.INSERT && ammd.isInsertable()) ||
-        (operation == Operation.UPDATE && ammd.isUpdateable())) {
+    else {
+      ClassLoaderResolver clr = getClassLoaderResolver();
+      if (value != null ) {
+        if (ammd.isSerialized()) {
+          // Serialize the field, producing a Blob
+          value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
+        } else {
+          // Perform any conversions from the field type to the stored-type
+          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
+        }
+      }
+
       if (ammd.getRelationType(clr) != Relation.NONE && !ammd.isSerialized()) {
 
         if (!repersistingForChildKeys) {
