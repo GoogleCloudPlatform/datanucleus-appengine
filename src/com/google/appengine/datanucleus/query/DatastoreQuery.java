@@ -73,7 +73,6 @@ import com.google.appengine.datanucleus.DatastoreTransaction;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.PrimitiveArrays;
-import com.google.appengine.datanucleus.QueryEntityPKFetchFieldManager;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;

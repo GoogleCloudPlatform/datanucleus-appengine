@@ -15,7 +15,7 @@ limitations under the License.
 Contributors:
    ...
 **********************************************************************/
-package com.google.appengine.datanucleus;
+package com.google.appengine.datanucleus.query;
 
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -25,6 +25,8 @@ import org.datanucleus.store.fieldmanager.AbstractFieldManager;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.MetaDataUtils;
 
 /**
  * Simple implementation of a field manager for fetching values out of queries.
