@@ -21,12 +21,10 @@ import com.google.appengine.api.datastore.Text;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.ArrayMetaData;
-import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.metadata.ContainerMetaData;
-import org.datanucleus.store.ObjectProvider;
-import org.datanucleus.store.types.sco.SCOUtils;
+import org.datanucleus.store.types.ObjectLongConverter;
+import org.datanucleus.store.types.ObjectStringConverter;
+import org.datanucleus.store.types.TypeManager;
 
 import com.google.appengine.datanucleus.Utils.Function;
 
@@ -42,6 +40,33 @@ import java.util.*;
  */
 class TypeConversionUtils {
   TypeConversionUtils() {}
+
+  private static final Set<Class> SUPPORTED_CLASSES = buildSupportedClasses();
+
+  private static final Set<Class> buildSupportedClasses() {
+    Set<Class> classes = new HashSet<Class>();
+    classes.add(Byte.class);
+    classes.add(Boolean.class);
+    classes.add(Character.class);
+    classes.add(Double.class);
+    classes.add(Float.class);
+    classes.add(Integer.class);
+    classes.add(Long.class);
+    classes.add(Short.class);
+    classes.add(byte.class);
+    classes.add(boolean.class);
+    classes.add(char.class);
+    classes.add(double.class);
+    classes.add(float.class);
+    classes.add(int.class);
+    classes.add(long.class);
+    classes.add(short.class);
+    classes.add(String.class);
+    classes.add(Enum.class);
+    classes.add(Date.class);
+    classes.add(BigDecimal.class);
+    return classes;
+  }
 
   /**
    * A {@link Function} that converts {@link Long} to {@link Integer}.
@@ -234,8 +259,7 @@ class TypeConversionUtils {
    * @return {@code true} if the pojo property is a collection of bytes.
    */
   private boolean pojoPropertyIsByteCollection(AbstractMemberMetaData metaData) {
-    ContainerMetaData cmd = metaData.getContainer();
-    String containerClassStr = ((CollectionMetaData) cmd).getElementType();
+    String containerClassStr = metaData.getCollection().getElementType();
     return containerClassStr.equals(Byte.class.getName()) ||
            containerClassStr.equals(Byte.TYPE.getName());
   }
@@ -308,22 +332,19 @@ class TypeConversionUtils {
    * will return a zero-length array of the appropriate type.  Similarly, if
    * the property is a {@link Collection} and the value is {@code null}, this
    * method will return an empty {@link Collection} of the appropriate type.
-   *
+   * @param typeMgr TypeManager
    * @param clr class loader resolver to use for string to class conversions
    * @param value The datastore value. Can be null.
-   * @param ownerOP The owning state manager.  Used for creating change-detecting wrappers.
-   * @param ammd The meta data for the pojo property which will eventually
-   * receive the result of the conversion.
+   * @param ammd The meta data for the pojo member that this value applies to
    *
    * @return A representation of the datastore property value that can be set on the pojo.
    */
-  Object datastoreValueToPojoValue(
-      ClassLoaderResolver clr, Object value, ObjectProvider ownerOP, AbstractMemberMetaData ammd) {
-    ContainerMetaData cmd = ammd.getContainer();
-    if (pojoPropertyIsArray(ammd)) {
+  Object datastoreValueToPojoValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
+      AbstractMemberMetaData ammd) {
+    if (ammd.hasArray()) {
       value = datastoreValueToPojoArray(value, ammd);
-    } else if (pojoPropertyIsCollection(cmd)) {
-      value = datastoreValueToPojoCollection(clr, value, ownerOP, ammd, cmd);
+    } else if (ammd.hasCollection()) {
+      value = datastoreValueToPojoCollection(clr, value, ammd);
     } else {
       if (value != null) {
         if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
@@ -352,8 +373,25 @@ class TypeConversionUtils {
             value = Enum.valueOf(enumClass, (String) value);
           }
         } else {
-          // nothing to convert
-          value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+          if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
+              ammd.getTypeName().startsWith("com.google.appengine.api")) {
+            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+          } else if (value instanceof String) {
+            ObjectStringConverter conv = typeMgr.getStringConverter(ammd.getType());
+            if (conv != null) {
+              // Persisted as String, so convert back
+              value = conv.toObject((String)value);
+            }
+          } else if (value instanceof Long) {
+            ObjectLongConverter conv = typeMgr.getLongConverter(ammd.getType());
+            if (conv != null) {
+              // Persisted as Long, so convert back
+              value = conv.toObject((Long)value);
+            }
+          } else {
+            // Unsupported type on GAE/J ?
+            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+          }
         }
       }
     }
@@ -364,16 +402,12 @@ class TypeConversionUtils {
    *
    * @param clr
    * @param value Can be null.
-   * @param ownerOP
    * @param ammd
    * @param cmd
    * @return
    */
-  private Object datastoreValueToPojoCollection(ClassLoaderResolver clr, Object value,
-                                                ObjectProvider ownerOP, AbstractMemberMetaData ammd,
-                                                ContainerMetaData cmd) {
-    CollectionMetaData collMetaData = (CollectionMetaData) cmd;
-    String memberTypeStr = collMetaData.getElementType();
+  private Object datastoreValueToPojoCollection(ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
+    String memberTypeStr = ammd.getCollection().getElementType();
     Class<?> memberType = classForName(clr, memberTypeStr);
     Function<Object, Object> conversionFunc = DATASTORE_TO_POJO_TYPE_FUNC.get(memberType);
     if (value instanceof ShortBlob) {
@@ -397,7 +431,7 @@ class TypeConversionUtils {
       Class<? extends Collection> listType = ammd.getType();
       value = convertDatastoreListToPojoCollection(datastoreList, memberType, listType, conversionFunc);
     }
-    return wrap(ownerOP, ammd, value);
+    return value;
   }
 
   /**
@@ -409,7 +443,6 @@ class TypeConversionUtils {
    */
   private Object datastoreValueToPojoArray(Object value, AbstractMemberMetaData ammd) {
     Class<?> memberType = ammd.getType().getComponentType();
-
     if (value instanceof ShortBlob) {
       if (!memberType.equals(Byte.TYPE) && !memberType.equals(Byte.class)) {
         throw new NucleusException(
@@ -424,13 +457,6 @@ class TypeConversionUtils {
       value = convertDatastoreListToPojoArray(datastoreList, memberType);
     }
     return value;
-  }
-
-  Object wrap(ObjectProvider ownerOP, AbstractMemberMetaData ammd, Object value) {
-    // Wrap the provided value in a state-manager aware object.  This allows
-    // us to detect changes to Lists, Sets, etc.
-    return SCOUtils.newSCOInstance(
-        ownerOP, ammd, ammd.getType(), value.getClass(), value, false, false, true);
   }
 
   /**
@@ -607,20 +633,12 @@ class TypeConversionUtils {
     return candidate != null ? candidate : defaultVal;
   }
 
-  private boolean pojoPropertyIsCollection(ContainerMetaData cmd) {
-    return cmd instanceof CollectionMetaData;
-  }
-
   private boolean pojoPropertyIsSet(AbstractMemberMetaData ammd) {
     return Set.class.isAssignableFrom(ammd.getType());
   }
 
   private boolean pojoPropertyIsCollection(AbstractMemberMetaData ammd) {
     return Collection.class.isAssignableFrom(ammd.getType());
-  }
-
-  private boolean pojoPropertyIsArray(AbstractMemberMetaData ammd) {
-    return ammd.getContainer() instanceof ArrayMetaData;
   }
 
   private List<String> convertEnumsToStringList(Iterable<Enum> enums) {
@@ -633,17 +651,18 @@ class TypeConversionUtils {
 
   /**
    * Performs type conversions on a pojo value to return the value to be stored.
+   * @param typeMgr TypeManager
    * @param clr class loader resolver to use for string to class conversions
    * @param value The pojo value.
    * @param ammd The meta data for the pojo property.
    * @return A representation of the pojo value that can be set on a datastore {@link Entity}.
    */
   @SuppressWarnings("deprecation")
-  Object pojoValueToDatastoreValue(
-      ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
-    if (pojoPropertyIsArray(ammd)) {
+  Object pojoValueToDatastoreValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
+      AbstractMemberMetaData ammd) {
+    if (ammd.hasArray()) {
       value = convertPojoArrayToDatastoreValue(ammd, value);
-    } else if (pojoPropertyIsCollection(ammd.getContainer())) {
+    } else if (ammd.hasCollection()) {
       value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
     } else {
       if (value != null) {
@@ -695,7 +714,25 @@ class TypeConversionUtils {
             value = ((Enum) value).name();
           }
         } else {
-          value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+          if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
+              ammd.getTypeName().startsWith("com.google.appengine.api")) {
+            value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+          } else {
+            ObjectStringConverter strConv = typeMgr.getStringConverter(ammd.getType());
+            if (strConv != null) {
+              // Persist as String
+              value = strConv.toString(value);
+            } else {
+              ObjectLongConverter longConv = typeMgr.getLongConverter(ammd.getType());
+              if (longConv != null) {
+                // Persist as Long
+                value = longConv.toLong(value);
+              } else {
+                // Unsupported type on GAE/J ?
+                value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+              }
+            }
+          }
         }
       }
     }
@@ -713,7 +750,6 @@ class TypeConversionUtils {
     } else if (pojoPropertyIsByteCollection(ammd)) {
       result = convertByteCollectionToShortBlob((Collection<Byte>) value);
     } else {
-
       if (POJO_TO_DATASTORE_TYPE_FUNC.get(elementType) != null) {
         // this will transform non-lists into lists while also transforming
         // the elements of the collection

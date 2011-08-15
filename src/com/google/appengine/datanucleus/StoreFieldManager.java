@@ -39,6 +39,7 @@ import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
+import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -247,8 +248,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
           value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
         } else {
           // Perform any conversions from the field type to the stored-type
-          // TODO If the value type is not supported on GAE, check for ObjectStringConverter
-          value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
+          TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+          value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
         }
       }
 

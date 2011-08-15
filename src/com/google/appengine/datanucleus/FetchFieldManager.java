@@ -29,6 +29,8 @@ import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
+import org.datanucleus.store.types.TypeManager;
+import org.datanucleus.store.types.sco.SCO;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
@@ -177,7 +179,12 @@ public class FetchFieldManager extends DatastoreFieldManager
         }
 
         // Perform any conversions from the stored-type to the field type
-        value = getConversionUtils().datastoreValueToPojoValue(clr, value, getObjectProvider(), ammd);
+        TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+        value = getConversionUtils().datastoreValueToPojoValue(typeMgr, clr, value, ammd);
+
+        if (value != null && !(value instanceof SCO)) {
+          value = getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
+        }
       }
       return value;
     }
