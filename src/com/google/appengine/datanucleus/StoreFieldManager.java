@@ -189,9 +189,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
     } else {
       ClassLoaderResolver clr = getClassLoaderResolver();
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
+      int relationType = ammd.getRelationType(clr);
 
-      // TODO Work out what this next block does!
-      if (repersistingForChildKeys && !PARENT_RELATION_TYPES.contains(ammd.getRelationType(clr))) {
+      // TODO Work out what this next block does! and then remove it
+      if (repersistingForChildKeys && !PARENT_RELATION_TYPES.contains(relationType)) {
         // nothing for us to store
         return;
       }
@@ -199,10 +200,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
       storeFieldInEntity(fieldNumber, value);
 
       if (!(value instanceof SCO)) {
-        // TODO Wrap SCO fields, uncomment this line. See Issue 144
+        // TODO Wrap SCO fields, remove the relation check so it applies to all. See Issue 144
         // This is currently not done since the elements may not be persisted at this point and the test classes
         // rely on "id" being set for hashCode/equals to work. Fix the persistence process first
-        // getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
+        if (relationType == Relation.NONE) {
+          getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
+        }
       }
     }
   }
@@ -215,7 +218,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
    */
   private boolean storeFieldInEntity(int fieldNumber, Object value) {
     AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-
     if (!(operation == Operation.INSERT && ammd.isInsertable()) &&
         !(operation == Operation.UPDATE && ammd.isUpdateable())) {
       return false;
@@ -245,6 +247,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
         } else {
           // Perform any conversions from the field type to the stored-type
+          // TODO If the value type is not supported on GAE, check for ObjectStringConverter
           value = getConversionUtils().pojoValueToDatastoreValue(clr, value, ammd);
         }
       }

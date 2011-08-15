@@ -24,7 +24,7 @@ The major change with version 2 is to use DataNucleus v3.x. This brings with it 
 * There is now no longer an exception on duplicate EMF allocation. Instead if you have the persistence property
   "datanucleus.singletonEMFForName" set to "true" then it will return the currently allocated singleton EMF for that name.
 
-* The EMF persistence provider is now the standard DataNucleus variant "org.datanucleus.api.jpa.PersistenceProviderImpl"
+* JDOQL/JPQL setResultClass now works
 
-* The PMF is now the standard DataNucleus variant "org.datanucleus.api.jdo.JDOPersistenceManagerFactory"
+* Primary Keys can now also be of type long.
 
