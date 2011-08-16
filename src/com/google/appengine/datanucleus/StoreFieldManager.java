@@ -727,10 +727,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  void storeRelationField(final AbstractClassMetaData acmd,
-      final AbstractMemberMetaData ammd, final Object value,
+  void storeRelationField(final AbstractClassMetaData acmd, final AbstractMemberMetaData ammd, final Object value,
       final boolean isInsert, final InsertMappingConsumer consumer) {
     NucleusLogger.GENERAL.info(">> StoreFM.storeRelationField " + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(value));
+
     StoreRelationEvent event = new StoreRelationEvent() {
       public void apply() {
         DatastoreTable table = getDatastoreTable();
@@ -748,6 +748,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
             setObjectViaMapping(mapping, table, value, op, fieldNumber);
             op.wrapSCOField(fieldNumber, value, false, true, true);
           } else {
+            // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
+            // relation fields. Why ? Should just call postInsert on this field
             if (isInsert) {
               for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
                 callback.postInsert(op);
