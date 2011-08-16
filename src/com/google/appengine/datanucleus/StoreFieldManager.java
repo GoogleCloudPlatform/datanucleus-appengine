@@ -21,7 +21,6 @@ import java.util.List;
 import java.util.Set;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -172,9 +171,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
       Object valueToStore = value;
       AbstractMemberMetaData ammd = getMetaData(fieldNumber);
       if (ammd.getColumnMetaData() != null &&
-          ammd.getColumnMetaData().length == 1 &&
-          "CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
-        valueToStore = new Text(value);
+          ammd.getColumnMetaData().length == 1) {
+        if ("CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
+          valueToStore = new Text(value);
+        }/* else if (ammd.getColumnMetaData()[0].getLength() > 500) {
+          // Can only store up to 500 characters in String, so use Text
+          valueToStore = new Text(value);
+        }*/
       }
 
       storeFieldInEntity(fieldNumber, valueToStore);
@@ -259,7 +262,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
         if (!repersistingForChildKeys) {
           // register a callback for later
-          storeRelationField(getClassMetaData(), ammd, value, createdWithoutEntity, getInsertMappingConsumer());
+          storeRelationField(getClassMetaData(), ammd, value, createdWithoutEntity,
+              fieldManagerStateStack.getFirst().mappingConsumer);
         }
 
         DatastoreTable table = getDatastoreTable();
@@ -294,7 +298,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
   }
 
   void storeParentField(int fieldNumber, Object value) {
-    if (fieldIsOfTypeKey(fieldNumber)) {
+    AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+    if (mmd.getType().equals(Key.class)) {
       storeParentKeyPK((Key) value);
     } else {
       throw exceptionForUnexpectedKeyType("Parent primary key", fieldNumber);
@@ -302,13 +307,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
   }
 
   private void storePrimaryKey(int fieldNumber, Object value) {
-    if (fieldIsOfTypeLong(fieldNumber)) {
+    AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+    if (mmd.getType().equals(Long.class)) {
       Key key = null;
       if (value != null) {
         key = KeyFactory.createKey(datastoreEntity.getKind(), (Long) value);
       }
       storeKeyPK(key);
-    } else if (fieldIsOfTypeKey(fieldNumber)) {
+    } else if (mmd.getType().equals(Key.class)) {
       Key key = (Key) value;
       if (key != null && key.getParent() != null && parentAlreadySet) {
         throw new NucleusFatalUserException(PARENT_ALREADY_SET);
@@ -320,7 +326,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
   }
 
   void storePKIdField(int fieldNumber, Object value) {
-    if (!fieldIsOfTypeLong(fieldNumber)) {
+    AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+    if (!mmd.getType().equals(Long.class)) {
       throw new NucleusFatalUserException(
           "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type Long");
     }
@@ -466,52 +473,49 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  boolean storeRelations() {
-    return storeRelations(KeyRegistry.getKeyRegistry(getExecutionContext()));
-  }
-
   private Object extractRelationKeys(Object value) {
     if (value == null) {
       return null;
     }
+
     if (value instanceof Collection) {
       Collection coll = (Collection) value;
       // TODO What if any persistable objects here have not yet been flushed?
       int size = coll.size();
 
       List<Key> keys = Utils.newArrayList();
-      for (Object obj : (Collection) value) {
+      for (Object obj : coll) {
         Key key = extractChildKey(obj);
         if (key != null) {
           keys.add(key);
         }
       }
 
-      // if we have fewer keys than objects then there is at least one child
-      // object that still needs to be inserted.  communicate this upstream.
-      getObjectProvider().setAssociatedValue(
-          DatastorePersistenceHandler.MISSING_RELATION_KEY,
+      // if we have fewer keys than objects then there is at least one child object that still needs to be inserted.
+      // communicate this upstream.
+      getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY,
           repersistingForChildKeys && size != keys.size() ? true : null);
       return keys;
+    } else {
+      Key key = extractChildKey(value);
+      // if we didn't come up with a key that there is a child object that still needs to be inserted.
+      // communicate this upstream.
+      getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY,
+          repersistingForChildKeys && key == null ? true : null);
+      return key;
     }
-    Key key = extractChildKey(value);
-    // if we didn't come up with a key that there is a child object that
-    // still needs to be inserted.  communicate this upstream.
-    getObjectProvider().setAssociatedValue(
-        DatastorePersistenceHandler.MISSING_RELATION_KEY,
-        repersistingForChildKeys && key == null ? true : null);
-    return key;
   }
 
   /**
-   * @param value The object from which to extract a key.
-   * @return The key of the object.  Returns {@code null} if the object is
-   * being deleted or the object does not yet have a key.
+   * @param value The persistable object from which to extract a key.
+   * @return The key of the object. Returns {@code null} if the object is being deleted 
+   *    or the object does not yet have a key.
    */
   private Key extractChildKey(Object value) {
     if (value == null) {
       return null;
     }
+
     ExecutionContext ec = getExecutionContext();
     ObjectProvider valueOP = ec.findObjectProvider(value);
     if (valueOP == null) {
@@ -524,7 +528,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return null;
     }
 
-    Object primaryKey = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(
+    // TODO Cater for datastore identity
+    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(
         valueOP.getInternalObjectId());
     /*      if (primaryKey == null && operation == Operation.UPDATE && op.getInternalObjectId() != null) {
         // *** This was added to attempt to get child objects persistent so we note their ids for persist of parent ***
@@ -575,27 +580,22 @@ public class StoreFieldManager extends DatastoreFieldManager {
   }
 
   /**
-   * Currently all relationships are parent-child.  If a datastore entity
+   * Currently all relationships are parent-child. If a datastore entity
    * doesn't have a parent there are 4 places we can look for one.
-   * 1)  It's possible that a pojo in the cascade chain registered itself as
-   * the parent.
-   * 2)  It's possible that the pojo has an external foreign key mapping
-   * to the object that owns it, in which case we can use the key of that field
-   * as the parent.
-   * 3)  It's possible that the pojo has a field containing the parent that is
-   * not an external foreign key mapping but is labeled as a "parent
-   * provider" (this is an app engine orm term).  In this case, as with
-   * #2, we can use the key of that field as the parent.
-   * 4) If part of the attachment process we can consult the ExecutionContext
-   * for the owner of this object (that caused the attach of this object).
+   * 1) It's possible that a pojo in the cascade chain registered itself as the parent.
+   * 2) It's possible that the pojo has an external foreign key mapping to the object that owns it, 
+   *    in which case we can use the key of that field as the parent.
+   * 3) It's possible that the pojo has a field containing the parent that is not an external foreign-key 
+   *    mapping but is labeled as a "parent provider" (this is an app engine orm term). In this case, as with
+   *    #2, we can use the key of that field as the parent.
+   * 4) If part of the attachment process we can consult the ExecutionContext for the owner of this object 
+   *    (that caused the attach of this object).
    *
-   * It _should_ be possible to get rid of at least one of these
-   * mechanisms, most likely the first.
+   * It _should_ be possible to get rid of at least one of these mechanisms, most likely the first.
    *
-   * @return The parent key if the pojo class has a parent property.
-   * Note that a return value of {@code null} does not mean that an entity
-   * group was not established, it just means the pojo doesn't have a distinct
-   * field for the parent.
+   * @return The parent key if the pojo class has a parent property. Note that a return value of {@code null} 
+   *   does not mean that an entity group was not established, it just means the pojo doesn't have a distinct
+   *   field for the parent.
    */
   Object establishEntityGroup() {
     Key parentKey = getEntity().getParent();
@@ -603,20 +603,41 @@ public class StoreFieldManager extends DatastoreFieldManager {
       ObjectProvider op = getObjectProvider();
       // Mechanism 1
       parentKey = KeyRegistry.getKeyRegistry(getExecutionContext()).getRegisteredKey(op.getObject());
+
       if (parentKey == null) {
         // Mechanism 2
-        parentKey = getParentKeyFromExternalFKMappings(op);
+        // We don't have a registered key for the object associated with the ObjectProvider but there might
+        // be one tied to the foreign key mappings for this object.  If this is the Many side of a bidirectional
+        // One To Many it might also be available on the parent object.
+        // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
+        Collection<JavaTypeMapping> externalFKMappings = table.getExternalFkMappings().values();
+        for (JavaTypeMapping fkMapping : externalFKMappings) {
+          Object fkValue = op.getAssociatedValue(fkMapping);
+          if (fkValue != null) {
+            parentKey = EntityUtils.getKeyForObject(fkValue, getExecutionContext());
+            break;
+          }
+        }
       }
+
       if (parentKey == null) {
         // Mechanism 3
-        parentKey = getParentKeyFromParentField(op);
+        AbstractMemberMetaData parentField = table.getParentMappingMember();
+        if (parentField != null) {
+          Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
+          parentKey = parent == null ? null : EntityUtils.getKeyForObject(parent, getExecutionContext());
+        }
       }
+
       if (parentKey == null) {
         // Mechanism 4, use attach parent info from ExecutionContext
         ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
         if (ownerOP != null) {
           Object parentPojo = ownerOP.getObject();
-          parentKey = getKeyFromParentPojo(parentPojo);
+          ObjectProvider mergeOP = getExecutionContext().findObjectProvider(parentPojo);
+          if (mergeOP != null) {
+            parentKey = EntityUtils.getPrimaryKeyAsKey(getExecutionContext().getApiAdapter(), mergeOP);
+          }
         }
       }
 
@@ -624,6 +645,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         recreateEntityWithParent(parentKey);
       }
     }
+
     if (parentKey != null && getParentMemberMetaData() != null) {
       return getParentMemberMetaData().getType().equals(Key.class)
           ? parentKey : KeyFactory.keyToString(parentKey);
@@ -641,53 +663,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
     EntityUtils.copyProperties(old, datastoreEntity);
   }
 
-  InsertMappingConsumer getInsertMappingConsumer() {
-    return fieldManagerStateStack.getFirst().mappingConsumer;
-  }
-
-  private Key getKeyFromParentPojo(Object mergeEntity) {
-    ObjectProvider mergeOP = getExecutionContext().findObjectProvider(mergeEntity);
-    if (mergeOP == null) {
-      return null;
-    }
-    return EntityUtils.getPrimaryKeyAsKey(getExecutionContext().getApiAdapter(), mergeOP);
-  }
-
-  private Key getParentKeyFromParentField(ObjectProvider op) {
-    AbstractMemberMetaData parentField = getInsertMappingConsumer().getParentMappingField();
-    if (parentField == null) {
-      return null;
-    }
-    Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
-    return parent == null ? null : getKeyForObject(parent);
-  }
-
-  private Key getParentKeyFromExternalFKMappings(ObjectProvider op) {
-    // We don't have a registered key for the object associated with the
-    // state manager but there might be one tied to the foreign key
-    // mappings for this object.  If this is the Many side of a bidirectional
-    // One To Many it might also be available on the parent object.
-    // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
-    Set<JavaTypeMapping> externalFKMappings = getInsertMappingConsumer().getExternalFKMappings();
-    for (JavaTypeMapping fkMapping : externalFKMappings) {
-      Object fkValue = op.getAssociatedValue(fkMapping);
-      if (fkValue != null) {
-        return getKeyForObject(fkValue);
-      }
-    }
-    return null;
-  }
-
-  private Key getKeyForObject(Object pc) {
-    ApiAdapter adapter = getStoreManager().getApiAdapter();
-    Object internalPk = adapter.getTargetKeyForSingleFieldIdentity(adapter.getIdForObject(pc));
-    AbstractClassMetaData acmd =
-        getExecutionContext().getMetaDataManager().getMetaDataForClass(pc.getClass(), getClassLoaderResolver());
-    return EntityUtils.getPkAsKey(internalPk, acmd, getExecutionContext());
-  }
-
   /**
-   * Indexed 1-to-many relationsihps are expressed using a {@link List} and are ordered by a 
+   * Indexed 1-to-many relationships are expressed using a {@link List} and are ordered by a 
    * column in the child table that stores the position of the child in the parent's list.
    * This function is responsible for making sure the appropriate values
    * for these columns find their way into the Entity.  In certain scenarios,
@@ -702,12 +679,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * to request the update with the index, we perform the insert.  This will
    * break someday.  Fortunately we have tests so we should find out.
    *
-   * @return {@code true} if the caller (expected to be
-   * {@link DatastorePersistenceHandler#insertObject}) should delay its write
-   * of this object.
+   * @return {@code true} if the caller (expected to be {@link DatastorePersistenceHandler#insertObject}) 
+   *    should delay its write of this object.
    */
   boolean handleIndexFields() {
-    Set<JavaTypeMapping> orderMappings = getInsertMappingConsumer().getExternalOrderMappings();
+    Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
     boolean delayWrite = false;
     for (JavaTypeMapping orderMapping : orderMappings) {
       if (orderMapping instanceof IndexMapping) {
@@ -723,16 +699,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
     }
     return delayWrite;
-  }
-
-  protected boolean fieldIsOfTypeLong(int fieldNumber) {
-    // Long is final so we don't need to worry about checking for subclasses.
-    return getMetaData(fieldNumber).getType().equals(Long.class);
-  }
-
-  protected boolean fieldIsOfTypeKey(int fieldNumber) {
-    // Key is final so we don't need to worry about checking for subclasses.
-    return getMetaData(fieldNumber).getType().equals(Key.class);
   }
 
   /**

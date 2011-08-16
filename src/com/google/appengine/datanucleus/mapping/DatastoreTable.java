@@ -155,8 +155,8 @@ public class DatastoreTable implements DatastoreClass {
   private final List<AbstractMemberMetaData> sameEntityGroupMemberMetaData = Utils.newArrayList();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
-  private AbstractMemberMetaData parentMappingField;
-  
+  private AbstractMemberMetaData parentMappingMember;
+
   /** MetaData for all classes being managed here. */
   private final Collection<AbstractClassMetaData> managedClassMetaData = new HashSet<AbstractClassMetaData>();
   
@@ -448,9 +448,9 @@ public class DatastoreTable implements DatastoreClass {
       // sometimes the parent table is not yet initialized
       if (dt != null) {
         // inherit the parentMappingField
-        if (parentMappingField == null) {
-          if (dt.parentMappingField != null) {
-            parentMappingField = dt.parentMappingField;
+        if (parentMappingMember == null) {
+          if (dt.parentMappingMember != null) {
+            parentMappingMember = dt.parentMappingMember;
             break;
           }
         }
@@ -601,9 +601,9 @@ public class DatastoreTable implements DatastoreClass {
   private void markFieldAsParentKeyProvider(String mappedBy) {
 
     AbstractMemberMetaData newParentMappingField = getFieldMetaData(mappedBy);
-    if (parentMappingField == null) {
-      parentMappingField = newParentMappingField;
-    } else if (parentMappingField != newParentMappingField) { // intentional reference compare
+    if (parentMappingMember == null) {
+      parentMappingMember = newParentMappingField;
+    } else if (parentMappingMember != newParentMappingField) { // intentional reference compare
       throw new NucleusException(
           "App Engine ORM does not support multiple parent key provider fields.");
     }
@@ -1081,21 +1081,6 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public void provideExternalMappings(MappingConsumer consumer, int mappingType) {
-    if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK) {
-      for (AbstractMemberMetaData fmd : externalFkMappings.keySet()) {
-        JavaTypeMapping fieldMapping = externalFkMappings.get(fmd);
-        if (fieldMapping != null) {
-          consumer.consumeMapping(fieldMapping, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-        }
-      }
-    } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX) {
-      for (AbstractMemberMetaData fmd : externalOrderMappings.keySet()) {
-        JavaTypeMapping fieldMapping = externalOrderMappings.get(fmd);
-        if (fieldMapping != null) {
-          consumer.consumeMapping(fieldMapping, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
-        }
-      }
-    }
   }
 
   public JavaTypeMapping getExternalMapping(AbstractMemberMetaData fmd, int mappingType) {
@@ -1144,15 +1129,19 @@ public class DatastoreTable implements DatastoreClass {
     return sameEntityGroupMemberMetaData;
   }
 
-  private Map<AbstractMemberMetaData, JavaTypeMapping> getExternalFkMappings() {
+  /**
+   * Accessor for all of the external FK mappings (used by FK Lists, Collections, Arrays)
+   * @return The mappings for the FKs of 1-Ns, keyed by the field/property metadata.
+   */
+  public Map<AbstractMemberMetaData, JavaTypeMapping> getExternalFkMappings() {
     return externalFkMappings;
   }
 
   /**
    * Accessor for all of the order mappings (used by FK Lists, Collections, Arrays)
-   * @return The mappings for the order columns.
-   **/
-  private Map<AbstractMemberMetaData, JavaTypeMapping> getExternalOrderMappings() {
+   * @return The mappings for the order columns of Lists, keyed by the field/property metadata.
+   */
+  public Map<AbstractMemberMetaData, JavaTypeMapping> getExternalOrderMappings() {
     return externalOrderMappings;
   }
 
@@ -1377,13 +1366,11 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
-    return ammd.equals(parentMappingField);
+    return ammd.equals(parentMappingMember);
   }
 
-  public void provideParentMappingField(InsertMappingConsumer consumer) {
-    if (parentMappingField != null) {
-      consumer.setParentMappingField(parentMappingField);
-    }
+  public AbstractMemberMetaData getParentMappingMember() {
+    return parentMappingMember;
   }
 
   /**

@@ -28,26 +28,21 @@ import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 import com.google.appengine.datanucleus.Utils;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * {@link MappingConsumer} implementation that is used for the insertions.
- * Largely based on InsertMappingConsumer.
+ * Largely based on DataNucleus RDBMS InsertMappingConsumer.
  *
  * @author Max Ross <maxr@google.com>
  */
 public class InsertMappingConsumer implements MappingConsumer {
 
-  private final Set<JavaTypeMapping> externalFKMappings = new HashSet<JavaTypeMapping>();
-  private final Set<JavaTypeMapping> externalOrderMappings = new HashSet<JavaTypeMapping>();
   private final List<MappingCallbacks> mc = new ArrayList<MappingCallbacks>();
   private final Map<Integer, AbstractMemberMetaData> fieldIndexToMemberMetaData = Utils.newHashMap();
   private final AbstractClassMetaData cmd;
 
-  private AbstractMemberMetaData parentMapping = null;
   // running tally of the number of fields we've consumed
   // we assume that fields are consumed in fieldIndex order
   private int numFields = 0;
@@ -91,37 +86,11 @@ public class InsertMappingConsumer implements MappingConsumer {
     }
   }
 
-  public void consumeMapping(JavaTypeMapping m, int mappingType) {
-    if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_FK) {
-      // External FK mapping (1-N uni)
-      externalFKMappings.add(m);
-    } else if (mappingType == MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX) {
-      // External FK order mapping (1-N uni List)
-      externalOrderMappings.add(m);
-    }
-  }
-
-  public void consumeUnmappedDatastoreField(DatastoreField fld) {
-  }
+  public void consumeMapping(JavaTypeMapping m, int mappingType) {}
+  public void consumeUnmappedDatastoreField(DatastoreField fld) {}
 
   public List<MappingCallbacks> getMappingCallbacks() {
     return mc;
-  }
-
-  public Set<JavaTypeMapping> getExternalFKMappings() {
-    return externalFKMappings;
-  }
-
-  public Set<JavaTypeMapping> getExternalOrderMappings() {
-    return externalOrderMappings;
-  }
-
-  public AbstractMemberMetaData getParentMappingField() {
-    return parentMapping;
-  }
-
-  void setParentMappingField(AbstractMemberMetaData parentMapping) {
-    this.parentMapping = parentMapping;
   }
 
   public AbstractMemberMetaData getMemberMetaDataForIndex(int index) {

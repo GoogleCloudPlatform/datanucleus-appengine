@@ -447,6 +447,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Key key = EntityUtils.getPkAsKey(op);
       entity = EntityUtils.getEntityFromDatastore(datastoreServiceForReads, op, key);
     }
+
     StoreFieldManager fieldMgr = new StoreFieldManager(op, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
     op.provideFields(fieldNumbers, fieldMgr);
     handleVersioningBeforeWrite(op, entity, true, "updating");
@@ -468,7 +469,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   private void storeRelations(StoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
-    if (fieldMgr.storeRelations() &&
+    if (fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(op.getExecutionContext())) &&
         storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
       // Return value of true means that storing the relations resulted in
       // changes that need to be reflected on the current object.

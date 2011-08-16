@@ -79,6 +79,8 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   // key of the current value does not have a parent, or if the pk gets set.
   protected Entity datastoreEntity;
 
+  protected DatastoreTable table;
+
   // We'll assign this if we have a parent member and we store a value into it.
   protected AbstractMemberMetaData parentMemberMetaData;
 
@@ -93,6 +95,9 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     this.op = op;
     this.createdWithoutEntity = createdWithoutEntity;
     this.datastoreEntity = datastoreEntity;
+    this.table = getStoreManager().getDatastoreClass(op.getClassMetaData().getFullClassName(),
+        op.getExecutionContext().getClassLoaderResolver());
+
     InsertMappingConsumer mappingConsumer = buildMappingConsumer(op.getClassMetaData(), 
         op.getExecutionContext().getClassLoaderResolver(), fieldNumbers, null);
     this.fieldManagerStateStack.addFirst(new FieldManagerState(op, ammdProvider, mappingConsumer, false));
@@ -208,8 +213,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
       AbstractClassMetaData acmd, ClassLoaderResolver clr, int[] fieldNumbers, EmbeddedMetaData emd) {
     DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
     if (table == null) {
-      // We've seen this when there is a class with the superclass inheritance
-      // strategy that does not have a parent
+      // We've seen this when there is a class with the superclass inheritance strategy that does not have a parent
       throw new NoPersistenceInformationException(acmd.getFullClassName());
     }
 
@@ -220,14 +224,11 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     } else {
       // skip pk mappings if embedded
     }
-    table.provideParentMappingField(consumer);
 
     if (createdWithoutEntity || emd != null) {
       // This is the insert case or we're dealing with an embedded field.
       // Either way we want to fill the consumer with mappings for everything.
       table.provideNonPrimaryKeyMappings(consumer, emd != null);
-      table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-      table.provideExternalMappings(consumer, MappingConsumer.MAPPING_TYPE_EXTERNAL_INDEX);
     } else {
       // This is the update case.  We only want to fill the consumer mappings
       // for the specific fields that were provided.

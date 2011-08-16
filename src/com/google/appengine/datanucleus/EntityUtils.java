@@ -200,6 +200,14 @@ public final class EntityUtils {
     return result;
   }
 
+  static Key getKeyForObject(Object pc, ExecutionContext ec) {
+    // TODO Cater for datastore-identity
+    Object internalPk = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ec.getApiAdapter().getIdForObject(pc));
+    AbstractClassMetaData acmd =
+        ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver());
+    return EntityUtils.getPkAsKey(internalPk, acmd, ec);
+  }
+
   static Key getPkAsKey(ObjectProvider op) {
     // TODO Cater for datastore-identity
     Object pk = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
