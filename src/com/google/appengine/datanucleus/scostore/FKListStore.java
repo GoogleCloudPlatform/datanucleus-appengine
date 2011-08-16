@@ -242,11 +242,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     orderMapping.setObject(ec, entity, new int[] {1}, oldIndex);
     String indexProp = entity.getProperties().keySet().iterator().next();
     q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN_OR_EQUAL, oldIndex);
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       Long pos = (Long) shiftMe.getProperty(indexProp);
       shiftMe.setProperty(indexProp, pos + amount);
-      handler.put(ec, acmd, shiftMe);
+      EntityUtils.putEntityIntoDatastore(ec, shiftMe);
     }
     return null;
   }
@@ -264,8 +263,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return false;
     }
 
-    ExecutionContext ec = sm.getExecutionContext();
-
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
@@ -275,6 +272,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return false;
     }
 
+    ExecutionContext ec = sm.getExecutionContext();
     ObjectProvider elementOP = ec.findObjectProvider(element);
     // The fk is already set but we still need to set the index
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
@@ -419,7 +417,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     }
     if (allowCascadeDelete && dependent && !collmd.isEmbeddedElement()) {
       // Delete the element if it is dependent
-      ownerOP.getExecutionContext().deleteObjectInternal(elementToRemove);
+      ec.deleteObjectInternal(elementToRemove);
     }
 
     return modified;
@@ -520,7 +518,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           // TODO This is ManagedRelations - move into RelationshipManager
           elementSM.replaceFieldMakeDirty(ownerMemberMetaData.getRelatedMemberMetaData(clr)[0].getAbsoluteFieldNumber(), 
               null);
-          if (ownerOP.getExecutionContext().isFlushing()) {
+          if (ec.isFlushing()) {
             elementSM.flush();
           }
         }
@@ -601,7 +599,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
           Long pos = (Long) shiftMe.getProperty(indexProp);
           shiftMe.setProperty(indexProp, pos - 1);
-          handler.put(ec, acmd, shiftMe);
+          EntityUtils.putEntityIntoDatastore(ec, shiftMe);
         }
       }
     }
@@ -746,9 +744,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @see org.datanucleus.store.scostore.ListStore#indexOf(org.datanucleus.store.ObjectProvider, java.lang.Object)
    */
   public int indexOf(ObjectProvider ownerOP, Object element) {
-    validateElementForReading(ownerOP.getExecutionContext(), element);
-
     ExecutionContext ec = ownerOP.getExecutionContext();
+    validateElementForReading(ec, element);
+
     ObjectProvider elementOP = ec.findObjectProvider(element);
     Key elementKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), elementOP);
     if (elementKey == null) {

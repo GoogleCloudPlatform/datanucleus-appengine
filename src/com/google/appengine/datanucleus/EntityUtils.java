@@ -16,11 +16,16 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import java.lang.reflect.Field;
+import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
+import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.Transaction;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.store.ExecutionContext;
@@ -40,6 +45,8 @@ import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 /**
  * Utility methods for determining entity property names and kinds.
@@ -191,6 +198,15 @@ public final class EntityUtils {
           + cls.getName() + ".");
     }
     return result;
+  }
+
+  static Key getPkAsKey(ObjectProvider op) {
+    // TODO Cater for datastore-identity
+    Object pk = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
+    if (pk == null) {
+      throw new IllegalStateException("Primary key for object of type " + op.getClassMetaData().getName() + " is null.");
+    }
+    return EntityUtils.getPkAsKey(pk, op.getClassMetaData(), op.getExecutionContext());
   }
 
   static Key getPkAsKey(Object pk, AbstractClassMetaData acmd, ExecutionContext ec) {
@@ -514,6 +530,141 @@ public final class EntityUtils {
           + "parent of " + childKey + " but the entity identified by "
           + childKey + " is already a child of " + childKey.getParent() + ".  A parent cannot "
           + "be established or changed once an object has been persisted.");
+    }
+  }
+
+  /**
+   * Method to retrieve the Entity with the specified key from the datastore.
+   * @param ds DatastoreService to use
+   * @param op ObjectProvider that we want to associate this Entity with (if any)
+   * @param key The key
+   * @return The Entity
+   */
+  public static Entity getEntityFromDatastore(DatastoreService ds, ObjectProvider op, Key key) {
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(op.getExecutionContext());
+
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
+    }
+
+    Entity entity;
+    try {
+      if (txn == null) {
+        entity = ds.get(key);
+      } else {
+        entity = ds.get(txn.getInnerTxn(), key);
+      }
+    } catch (EntityNotFoundException e) {
+      throw DatastoreExceptionTranslator.wrapEntityNotFoundException(e, key);
+    }
+
+    if (op != null) {
+      op.setAssociatedValue(txn, entity);
+    }
+
+    return entity;
+  }
+
+  /**
+   * Method to put the provided entity into the datastore.
+   * @param ec ExecutionContext
+   * @param entity The entity
+   * @return The DatastoreTransaction
+   */
+  public static DatastoreTransaction putEntityIntoDatastore(ExecutionContext ec, Entity entity) {
+    return putEntitiesIntoDatastore(ec, Collections.singletonList(entity));
+  }
+
+  /**
+   * Method to put the provided entities into the datastore.
+   * @param ec ExecutionContext
+   * @param entities The entities
+   * @return The DatastoreTransaction
+   */
+  public static DatastoreTransaction putEntitiesIntoDatastore(ExecutionContext ec, List<Entity> entities) {
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
+    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+    List<Entity> putMe = Utils.newArrayList();
+    for (Entity entity : entities) {
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        StringBuffer str = new StringBuffer();
+        for (Map.Entry<String, Object> entry : entity.getProperties().entrySet()) {
+          str.append(entry.getKey() + "[" + entry.getValue() + "]");
+          str.append(", ");
+        }
+        NucleusLogger.DATASTORE_NATIVE.debug("Putting entity of kind " + entity.getKind() + 
+            " with key " + entity.getKey() + " as {" + str.toString() + "}");
+      }
+      if (txn == null) {
+        putMe.add(entity);
+      } else {
+        if (txn.getDeletedKeys().contains(entity.getKey())) {
+          // entity was already deleted - just skip it
+          // I'm a bit worried about swallowing user errors but we'll
+          // see what bubbles up when we launch.  In theory we could
+          // keep the entity that the user was deleting along with the key
+          // and check to see if they changed anything between the
+          // delete and the put.
+        } else {
+          Entity previouslyPut = txn.getPutEntities().get(entity.getKey());
+          // It's ok to put if we haven't put this entity before or we have
+          // and something has changed.  The reason we want to reput if something has
+          // changed is that this will generate a datastore error, and we want users
+          // to get this error because it means they have done something wrong.
+
+          // TODO(maxr) Throw this exception ourselves with lots of good error detail.
+          if (previouslyPut == null || !previouslyPut.getProperties().equals(entity.getProperties())) {
+            putMe.add(entity);
+          }
+        }
+      }
+    }
+    if (!putMe.isEmpty()) {
+      if (txn == null) {
+        if (putMe.size() == 1) {
+          ds.put(putMe.get(0));
+        } else {
+          ds.put(putMe);
+        }
+      } else {
+        Transaction innerTxn = txn.getInnerTxn();
+        if (putMe.size() == 1) {
+          ds.put(innerTxn, putMe.get(0));
+        } else {
+          ds.put(innerTxn, putMe);
+        }
+        txn.addPutEntities(putMe);
+      }
+    }
+    return txn;
+  }
+
+  /**
+   * Method to actually perform the deletion of Entity(s) from the datastore.
+   * @param ec ExecutionContext
+   * @param keys Keys to delete
+   */
+  public static void deleteEntitiesFromDatastore(ExecutionContext ec, List<Key> keys) {
+    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
+    }
+
+    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
+    if (txn == null) {
+      if (keys.size() == 1) {
+        ds.delete(keys.get(0));
+      } else {
+        ds.delete(keys);
+      }
+    } else {
+      Transaction innerTxn = txn.getInnerTxn();
+      if (keys.size() == 1) {
+        ds.delete(innerTxn, keys.get(0));
+      } else {
+        ds.delete(innerTxn, keys);
+      }
     }
   }
 }

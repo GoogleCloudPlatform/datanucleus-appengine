@@ -57,6 +57,6 @@ public class BatchDeleteManager extends BatchManager<BatchDeleteManager.BatchDel
       }
       keyList.add(bds.key);
     }
-    handler.deleteEntitiesFromDatastore(ec, keyList);
+    EntityUtils.deleteEntitiesFromDatastore(ec, keyList);
   }
 }

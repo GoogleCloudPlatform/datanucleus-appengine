@@ -22,10 +22,12 @@ import java.util.Set;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.api.ApiAdapter;
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -551,14 +553,19 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   private void checkNullValue(AbstractMemberMetaData ammd, Object value) {
     if (value == null) {
-      // This test goes against the member meta data, since the member meta data
-      // says how to behave in case of unwanted null values (but JDO only).
-      // All other cases of unwanted null values will be handled
-      // by the DatastoreTable as the proxy for "tables" in the datastore.
       if (ammd.getNullValue() == NullValue.EXCEPTION) {
-        // always throw a XXXUserException as required by the jdo spec
-        throw new NucleusUserException("Field " + ammd.getFullFieldName() +
-        " is null, but is mandatory as it's described in the jdo metadata");
+        // JDO spec 18.15, throw XXXUserException when trying to store null and have handler set to EXCEPTION
+        throw new NucleusUserException("Field/Property " + ammd.getFullFieldName() +
+          " is null, but is mandatory as it's described in the jdo metadata");
+      }
+
+      ColumnMetaData[] colmds = ammd.getColumnMetaData();
+      if (colmds != null && colmds.length > 0) {
+        if (colmds[0].getAllowsNull() == Boolean.FALSE) {
+          // Column specifically marked as not-nullable
+          throw new NucleusDataStoreException("Field/Property " + ammd.getFullFieldName() +
+            " is null, but the column is specified as not-nullable");
+        }
       }
     }
   }
