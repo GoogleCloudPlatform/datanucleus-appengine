@@ -54,7 +54,7 @@ public final class DatastoreServiceFactoryInternal {
     }
 
     // Wrap the service in an impl that properly translates the runtime exceptions thrown by the datastore api
-    return new RuntimeExceptionWrappingDatastoreService(
+    return new WrappedDatastoreService(
         DatastoreServiceFactory.getDatastoreService(config));
   }
 

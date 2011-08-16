@@ -41,11 +41,11 @@ import static com.google.appengine.datanucleus.DatastoreExceptionTranslator.wrap
  *
  * @author Max Ross <maxr@google.com>
  */
-public class RuntimeExceptionWrappingDatastoreService implements DatastoreService {
+public class WrappedDatastoreService implements DatastoreService {
 
   private final DatastoreService inner;
 
-  public RuntimeExceptionWrappingDatastoreService(DatastoreService inner) {
+  public WrappedDatastoreService(DatastoreService inner) {
     this.inner = inner;
   }
 

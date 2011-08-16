@@ -107,9 +107,9 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
       DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
       DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
       if (NucleusLogger.CONNECTION.isDebugEnabled()) {
-        if (datastoreService instanceof RuntimeExceptionWrappingDatastoreService) {
+        if (datastoreService instanceof WrappedDatastoreService) {
           NucleusLogger.CONNECTION.debug("Created ManagedConnection using DatastoreService = " + 
-              ((RuntimeExceptionWrappingDatastoreService)datastoreService).getDelegate());
+              ((WrappedDatastoreService)datastoreService).getDelegate());
         } else {
           NucleusLogger.CONNECTION.debug("Created ManagedConnection using DatastoreService = " + datastoreService);
         }
