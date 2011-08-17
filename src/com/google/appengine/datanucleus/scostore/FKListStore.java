@@ -32,7 +32,6 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -252,13 +251,13 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
   /**
    * Utility to update a foreign-key in the element in the case of a unidirectional 1-N relationship.
-   * @param sm StateManager for the owner
+   * @param op ObjectProvider for the owner
    * @param element The element to update
    * @param owner The owner object to set in the FK
    * @param index The index position (or -1 if not known)
    * @return Whether it was performed successfully
    */
-  protected boolean updateElementFk(ObjectProvider sm, Object element, Object owner, int index) {
+  protected boolean updateElementFk(ObjectProvider op, Object element, Object owner, int index) {
     if (element == null) {
       return false;
     }
@@ -266,19 +265,17 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    EntityUtils.checkParentage(element, sm);
+    EntityUtils.checkParentage(element, op);
 
     if (orderMapping == null) {
       return false;
     }
 
-    ExecutionContext ec = sm.getExecutionContext();
+    ExecutionContext ec = op.getExecutionContext();
     ObjectProvider elementOP = ec.findObjectProvider(element);
     // The fk is already set but we still need to set the index
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    // See DatastoreFieldManager.handleIndexFields for info on why this absurdity is necessary.
-    Entity entity =
-      (Entity) elementOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+    Entity entity = (Entity) elementOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
     if (entity != null) {
       elementOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
       elementOP.setAssociatedValue(orderMapping, index);
@@ -289,6 +286,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         KeyRegistry.getKeyRegistry(ec).registerKey(element, parentKey, elementOP, 
             ownerMemberMetaData.getCollection().getElementType());
       }
+
+      // TODO Remove this nonsense. You should NEVER NEVER NEVER call PersistenceHandler to do your persistence
+      // Use the ExecutionContext.persistObjectInternal, like ALL other plugins
       handler.insertObject(elementOP);
     }
     return true;
@@ -396,31 +396,19 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @see org.datanucleus.store.scostore.CollectionStore#remove(org.datanucleus.store.ObjectProvider, java.lang.Object, int, boolean)
    */
   public boolean remove(ObjectProvider ownerOP, Object element, int currentSize, boolean allowCascadeDelete) {
-    if (!validateElementForReading(ownerOP.getExecutionContext(), element)) {
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    if (!validateElementForReading(ec, element)) {
       return false;
     }
 
     Object elementToRemove = element;
-    ExecutionContext ec = ownerOP.getExecutionContext();
     if (ec.getApiAdapter().isDetached(element)) {
       // Element passed in is detached so find attached version (DON'T attach this object)
       elementToRemove = ec.findObject(ec.getApiAdapter().getIdForObject(element), true, false,
           element.getClass().getName());
     }
 
-    boolean modified = internalRemove(ownerOP, elementToRemove, currentSize);
-
-    CollectionMetaData collmd = ownerMemberMetaData.getCollection();
-    boolean dependent = collmd.isDependentElement();
-    if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
-      dependent = true;
-    }
-    if (allowCascadeDelete && dependent && !collmd.isEmbeddedElement()) {
-      // Delete the element if it is dependent
-      ec.deleteObjectInternal(elementToRemove);
-    }
-
-    return modified;
+    return internalRemove(ownerOP, elementToRemove, currentSize);
   }
 
   /* (non-Javadoc)
@@ -449,16 +437,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       throw new NucleusException("Not yet implemented FKListStore.remove for ordered lists");
     }
 
-    boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
-    if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
-      dependent = true;
-    }
-    if (dependent) {
-      // "delete-dependent" : delete elements if the collection is marked as dependent
-      // TODO What if the collection contains elements that are not in the List ? should not delete them
-      ownerOP.getExecutionContext().deleteObjects(elements.toArray());
-    }
-
     return modified;
   }
 
@@ -476,12 +454,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       internalRemove(ownerOP, element, currentSize);
     }
 
-    CollectionMetaData collmd = ownerMemberMetaData.getCollection();
-    boolean dependent = collmd.isDependentElement();
+    boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
     if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
       dependent = true;
     }
-    if (dependent && !collmd.isEmbeddedElement()) {
+    if (dependent && !ownerMemberMetaData.getCollection().isEmbeddedElement()) {
       if (!contains(ownerOP, element)) {
         // Delete the element if it is dependent and doesn't have a duplicate entry in the list
         ownerOP.getExecutionContext().deleteObjectInternal(element);
@@ -500,8 +477,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   protected boolean internalRemove(ObjectProvider ownerOP, Object element, int size)
   {
     if (indexedList) {
-      // Indexed List
-      // The element can be at one position only (no duplicates allowed in FK list)
+      // Indexed List - The element can be at one position only (no duplicates allowed in FK list)
       int index = indexOf(ownerOP, element);
       if (index == -1) {
         return false;
@@ -510,9 +486,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     }
     else {
       // Ordered List - no index so null the FK (if nullable) or delete the element
+      ExecutionContext ec = ownerOP.getExecutionContext();
       if (ownerMapping.isNullable()) {
         // Nullify the FK
-        ExecutionContext ec = ownerOP.getExecutionContext();
         ObjectProvider elementSM = ec.findObjectProvider(element);
         if (relationType == Relation.ONE_TO_MANY_BI) {
           // TODO This is ManagedRelations - move into RelationshipManager
@@ -530,7 +506,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       else {
         // Delete the element
         // TODO Log this
-        ownerOP.getExecutionContext().deleteObjectInternal(element);
+        ec.deleteObjectInternal(element);
       }
     }
 
@@ -550,7 +526,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     }
 
     boolean nullify = false;
-    if (ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
+    boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
+    if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
+      dependent = true;
+    }
+
+    if (!dependent && ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
       NucleusLogger.DATASTORE.debug(LOCALISER.msg("056043"));
       nullify = true;
     }
@@ -569,13 +550,14 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       // first we need to delete the element
       ExecutionContext ec = ownerOP.getExecutionContext();
       Object element = get(ownerOP, index);
-      ObjectProvider elementOP = ec.findObjectProvider(element);
-      DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
+//      ObjectProvider elementOP = ec.findObjectProvider(element);
+//      DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
       // the delete call can end up cascading back here, so set a thread-local
       // to make sure we don't do it more than once
       removing.set(true);
       try {
-        handler.deleteObject(elementOP);
+        ec.deleteObjectInternal(element);
+//        handler.deleteObject(elementOP);
       } finally {
         removing.set(false);
       }
@@ -794,10 +776,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       ObjectProvider childOP = ec.findObjectProvider(element);
       // See DatastoreFieldManager.handleIndexFields for info on why this absurdity is necessary.
       Entity childEntity =
-          (Entity) childOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
+        (Entity) childOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
       if (childEntity != null) {
-          childOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
-          childOP.setAssociatedValue(orderMapping, index);
+        childOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
+        childOP.setAssociatedValue(orderMapping, index);
+        // TODO Remove this nonsense. You should NEVER NEVER NEVER call PersistenceHandler to do your persistence
+        // Use the ExecutionContext.persistObjectInternal, like ALL other plugins
         handler.insertObject(childOP);
       }
     }

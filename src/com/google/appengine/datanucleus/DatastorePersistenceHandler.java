@@ -167,7 +167,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   public void insertObject(ObjectProvider op) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
-
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
     NucleusLogger.GENERAL.info(">> PersistenceHandler.insertObject FOR " + op);
 
@@ -418,11 +417,10 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
+    storeMgr.validateMetaDataForClass(op.getClassMetaData());
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject FOR " + op);
 
     AbstractClassMetaData cmd = op.getClassMetaData();
-    storeMgr.validateMetaDataForClass(cmd);
-
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       StringBuffer fieldStr = new StringBuffer();
@@ -504,7 +502,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   public void deleteObject(ObjectProvider op) {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
-
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
 
     long startTime = System.currentTimeMillis();
@@ -523,17 +520,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     DatastoreTransaction txn = storeMgr.getDatastoreTransaction(ec);
     if (txn != null) {
-      if (txn.getDeletedKeys().contains(entity.getKey())) {
-        // need to check this _before_ we execute the dependent delete request
-        // because that might set off a chain of cascades that could bring us
-        // back here or to an update for the same entity, and we need to make
-        // sure those recursive calls can see that we're already deleting this entity.
-        return;
-      }
       txn.addDeletedKey(entity.getKey());
-    } else if (Boolean.TRUE.equals(op.getAssociatedValue("deleted"))) {
-      // same issue as above except we may not be in a txn
-      return;
     }
     op.setAssociatedValue("deleted", true);
 
