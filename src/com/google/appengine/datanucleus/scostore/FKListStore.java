@@ -159,26 +159,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         startAt = currentListSize; // Not shifting so we insert from the end
       }
 
-      boolean elementsNeedPositioning = false;
-      int position = startAt;
-      Iterator elementIter = elements.iterator();
-      while (elementIter.hasNext()) {
-        // Persist any non-persistent objects optionally at their final list position (persistence-by-reachability)
-        if (shiftingElements) {
-          // We have to shift things so dont bother with positioning
-          position = -1;
-        }
-
-        boolean inserted = validateElementForWriting(ownerOP, elementIter.next(), position);
-        if (!inserted || shiftingElements) {
-          // This element wasnt positioned in the validate so we need to set the positions later
-          elementsNeedPositioning = true;
-        }
-        if (!shiftingElements) {
-          position++;
-        }
-      }
-
       if (shiftingElements)
       {
         // We need to shift existing elements before positioning the new ones
@@ -197,7 +177,20 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         }
       }
 
-      if (shiftingElements || elementsNeedPositioning) {
+      boolean elementsNeedPositioning = false;
+      int position = startAt;
+      Iterator elementIter = elements.iterator();
+      while (elementIter.hasNext()) {
+        // Persist any non-persistent objects at their final list position (persistence-by-reachability)
+        boolean inserted = validateElementForWriting(ownerOP, elementIter.next(), position);
+        if (!inserted) {
+          // This element wasn't positioned in the validate so we need to set the positions later
+          elementsNeedPositioning = true;
+        }
+        position++;
+      }
+
+      if (elementsNeedPositioning) {
         // Some elements have been shifted so the new elements need positioning now, or we already had some
         // of the new elements persistent and so they need their positions setting now
         elementIter = elements.iterator();
@@ -271,10 +264,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return false;
     }
 
+    // The fk is already set but we still need to set the index
     ExecutionContext ec = op.getExecutionContext();
     ObjectProvider elementOP = ec.findObjectProvider(element);
-    // The fk is already set but we still need to set the index
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     Entity entity = (Entity) elementOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
     if (entity != null) {
       elementOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
@@ -289,7 +281,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
       // TODO Remove this nonsense. You should NEVER NEVER NEVER call PersistenceHandler to do your persistence
       // Use the ExecutionContext.persistObjectInternal, like ALL other plugins
-      handler.insertObject(elementOP);
+      // FWIW This is linked to Handler.insertObject and ENTITY_WRITE_DELAYED
+      storeMgr.getPersistenceHandler().insertObject(elementOP);
     }
     return true;
   }
@@ -767,8 +760,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @see org.datanucleus.store.scostore.ListStore#set(org.datanucleus.store.ObjectProvider, int, java.lang.Object, boolean)
    */
   public Object set(ObjectProvider ownerOP, int index, Object element, boolean allowCascadeDelete) {
-    validateElementForWriting(ownerOP, element, -1); // Last argument means dont set the position on any INSERT
+    // Get current element at this position
     Object obj = get(ownerOP, index);
+
+    // Make sure the element going to this position is persisted (and give it its index)
+    validateElementForWriting(ownerOP, element, index);
 
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     ExecutionContext ec = ownerOP.getExecutionContext();
@@ -786,6 +782,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       }
     }
 
+    // TODO Allow for a user setting position x as element1 and then setting element2 (that used to be there) to position y
+    // At the moment we just delete the previous element
     if (ownerMemberMetaData.getCollection().isDependentElement() && allowCascadeDelete && obj != null) {
       ec.deleteObjectInternal(obj);
     }

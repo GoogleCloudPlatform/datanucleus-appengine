@@ -33,7 +33,6 @@ import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
-import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
@@ -73,7 +72,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
         Relation.ONE_TO_ONE_BI,
         Relation.ONE_TO_ONE_UNI));
 
-  private static final int[] NOT_USED = {0};
   public static final int IS_PARENT_VALUE = -1;
   private static final int[] IS_PARENT_VALUE_ARR = {IS_PARENT_VALUE};
   public static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
@@ -661,44 +659,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
       datastoreEntity = new Entity(old.getKind(), parentKey);
     }
     EntityUtils.copyProperties(old, datastoreEntity);
-  }
-
-  /**
-   * Indexed 1-to-many relationships are expressed using a {@link List} and are ordered by a 
-   * column in the child table that stores the position of the child in the parent's list.
-   * This function is responsible for making sure the appropriate values
-   * for these columns find their way into the Entity.  In certain scenarios,
-   * DataNucleus does not make the index of the container element being
-   * written available until later on in the workflow.  The expectation
-   * is that we will insert the record without the index and then perform
-   * an update later on when the value becomes available.  This is problematic
-   * for the App Engine datastore because we can only write an entity once
-   * per transaction.  So, to get around this, we detect the case where the
-   * index is not available and instruct the caller to hold off writing.
-   * Later on in the workflow, when DataNucleus calls down into our plugin
-   * to request the update with the index, we perform the insert.  This will
-   * break someday.  Fortunately we have tests so we should find out.
-   *
-   * @return {@code true} if the caller (expected to be {@link DatastorePersistenceHandler#insertObject}) 
-   *    should delay its write of this object.
-   */
-  boolean handleIndexFields() {
-    Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
-    boolean delayWrite = false;
-    for (JavaTypeMapping orderMapping : orderMappings) {
-      if (orderMapping instanceof IndexMapping) {
-        delayWrite = true;
-        // DataNucleus hides the value in the state manager, keyed by the
-        // mapping for the order field.
-        Object orderValue = getObjectProvider().getAssociatedValue(orderMapping);
-        if (orderValue != null) {
-          // We got a value!  Set it on the entity.
-          delayWrite = false;
-          orderMapping.setObject(getExecutionContext(), getEntity(), NOT_USED, orderValue);
-        }
-      }
-    }
-    return delayWrite;
   }
 
   /**

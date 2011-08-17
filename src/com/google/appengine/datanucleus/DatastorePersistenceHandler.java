@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.mapping.DependentDeleteRequest;
 import com.google.appengine.datanucleus.mapping.FetchMappingConsumer;
 
@@ -41,11 +42,14 @@ import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.VersionHelper;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
+import org.datanucleus.store.mapped.mapping.IndexMapping;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.sql.Timestamp;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -65,8 +69,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * Magic property we use to signal to downstream writers that
    * they should write the entity associated with this property.
    * This has to do with the datastore constraint of only allowing
-   * a single write per entity in a txn.  See
-   * {@link DatastoreFieldManager#handleIndexFields()} for more info.
+   * a single write per entity in a txn.  See {@link #handleIndexFields()} for more info.
    */
   public static final Object ENTITY_WRITE_DELAYED = "___entity_write_delayed___";
 
@@ -207,7 +210,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         Object assignedParentPk = fieldMgr.establishEntityGroup();
 
         Entity entity = fieldMgr.getEntity();
-        if (fieldMgr.handleIndexFields()) {
+        if (handleIndexFields(op, entity)) {
+          // TODO Remove this block and merge handleIndexFields here to set the order mapping
           // signal to downstream writers that they should insert this entity when they are invoked
           op.setAssociatedValue(ENTITY_WRITE_DELAYED, entity);
           continue;
@@ -321,6 +325,35 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         op.setAssociatedValue(INSERTION_TOKEN, null);
       }
     }
+  }
+
+  /**
+   * Indexed 1-to-many relationships are expressed using a {@link List} and are ordered by a 
+   * column in the child table that stores the position of the child in the parent's list.
+   * This function is responsible for making sure the appropriate values for these columns find their way 
+   * into the Entity. The index is always known if a method is invoked on the List, but in the case of a
+   * persist of the object itself it will not be part of a List so the index is not known, and likely
+   * should just be set to null. This currently delays its persistence, but maybe ought to be changed.
+   * @return {@code true} if the caller should delay its write of this object.
+   */
+  protected boolean handleIndexFields(ObjectProvider op, Entity entity) {
+    DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
+        op.getExecutionContext().getClassLoaderResolver());
+    Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
+    boolean delayWrite = false;
+    for (JavaTypeMapping orderMapping : orderMappings) {
+      if (orderMapping instanceof IndexMapping) {
+        delayWrite = true;
+        // DataNucleus provides the value in the ObjectProvider, keyed by the mapping for the order field.
+        Object orderValue = op.getAssociatedValue(orderMapping);
+        if (orderValue != null) {
+          // We got a value!  Set it on the entity.
+          delayWrite = false;
+          orderMapping.setObject(op.getExecutionContext(), entity, new int[] {0}, orderValue);
+        }
+      }
+    }
+    return delayWrite;
   }
 
   /**
