@@ -17,13 +17,13 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.AbstractBaseClassesJDO.Concrete1;
 import com.google.appengine.datanucleus.test.AbstractBaseClassesJDO.Concrete2;
 import com.google.appengine.datanucleus.test.AbstractBaseClassesJDO.Concrete3;
 import com.google.appengine.datanucleus.test.AbstractBaseClassesJDO.Concrete4;
-
 
 import java.util.Collection;
 
@@ -81,6 +81,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(concrete4a.getId(), concrete.getConcrete4().get(0).getId());
     assertEquals(concrete4a.getStr(), concrete.getConcrete4().get(0).getStr());
     assertEquals(concrete4b.getId(), concrete.getConcrete4().get(1).getId());
+    Key concrete4bKey = concrete4b.getId();
     assertEquals(concrete4b.getStr(), concrete.getConcrete4().get(1).getStr());
 
     concrete.setBase1Str("not base 1");
@@ -108,7 +109,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
     try {
-      ds.get(concrete4b.getId());
+      ds.get(concrete4bKey);
     } catch (EntityNotFoundException enfe) {
       // good
     }
@@ -194,6 +195,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(concrete4a.getStr(), concrete.getConcrete4().get(0).getStr());
     assertEquals(concrete4b.getId(), concrete.getConcrete4().get(1).getId());
     assertEquals(concrete4b.getStr(), concrete.getConcrete4().get(1).getStr());
+    Key concrete4bKey = concrete4b.getId();
 
     concrete.setBase1Str("not base 1");
     concrete.setBase2Str("not base 2");
@@ -223,7 +225,7 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals("blam4", concrete4aEntity.getProperty("str"));
     assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
     try {
-      ds.get(concrete4b.getId());
+      ds.get(concrete4bKey);
     } catch (EntityNotFoundException enfe) {
       // good
     }
