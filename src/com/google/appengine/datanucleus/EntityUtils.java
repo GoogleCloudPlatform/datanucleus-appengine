@@ -208,7 +208,7 @@ public final class EntityUtils {
     return EntityUtils.getPkAsKey(internalPk, acmd, ec);
   }
 
-  static Key getPkAsKey(ObjectProvider op) {
+  public static Key getPkAsKey(ObjectProvider op) {
     // TODO Cater for datastore-identity
     Object pk = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
     if (pk == null) {

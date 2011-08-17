@@ -687,7 +687,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  void storeRelationField(final AbstractClassMetaData acmd, final AbstractMemberMetaData ammd, final Object value,
+  private void storeRelationField(final AbstractClassMetaData acmd, final AbstractMemberMetaData ammd, final Object value,
       final boolean isInsert, final InsertMappingConsumer consumer) {
     NucleusLogger.GENERAL.info(">> StoreFM.storeRelationField " + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(value));
 

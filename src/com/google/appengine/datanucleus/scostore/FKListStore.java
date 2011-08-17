@@ -28,7 +28,6 @@ import org.datanucleus.ClassNameConstants;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusDataStoreException;
-import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -53,11 +52,9 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.ForceFlushPreCommitTransactionEventListener;
-import com.google.appengine.datanucleus.KeyRegistry;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
@@ -264,26 +261,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return false;
     }
 
-    // The fk is already set but we still need to set the index
-    ExecutionContext ec = op.getExecutionContext();
-    ObjectProvider elementOP = ec.findObjectProvider(element);
-    Entity entity = (Entity) elementOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
-    if (entity != null) {
-      elementOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
-      elementOP.setAssociatedValue(orderMapping, index);
-      if (entity.getParent() == null) {
-        ObjectProvider parentOP = ec.findObjectProvider(owner);
-        // need to register the proper parent for this entity
-        Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), parentOP);
-        KeyRegistry.getKeyRegistry(ec).registerKey(element, parentKey, elementOP, 
-            ownerMemberMetaData.getCollection().getElementType());
-      }
-
-      // TODO Remove this nonsense. You should NEVER NEVER NEVER call PersistenceHandler to do your persistence
-      // Use the ExecutionContext.persistObjectInternal, like ALL other plugins
-      // FWIW This is linked to Handler.insertObject and ENTITY_WRITE_DELAYED
-      storeMgr.getPersistenceHandler().insertObject(elementOP);
-    }
     return true;
   }
 
@@ -425,9 +402,15 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       }
     }
     else {
-      // Ordered List
-      // TODO Remove the list item
-      throw new NucleusException("Not yet implemented FKListStore.remove for ordered lists");
+      // Ordered List, so remove the elements
+      Iterator iter = elements.iterator();
+      while (iter.hasNext()) {
+        Object element = iter.next();
+        boolean mod = internalRemove(ownerOP, element, -1);
+        if (mod) {
+          modified = true;
+        }
+      }
     }
 
     return modified;
@@ -766,21 +749,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Make sure the element going to this position is persisted (and give it its index)
     validateElementForWriting(ownerOP, element, index);
 
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     ExecutionContext ec = ownerOP.getExecutionContext();
-    if (orderMapping != null) {
-      ObjectProvider childOP = ec.findObjectProvider(element);
-      // See DatastoreFieldManager.handleIndexFields for info on why this absurdity is necessary.
-      Entity childEntity =
-        (Entity) childOP.getAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED);
-      if (childEntity != null) {
-        childOP.setAssociatedValue(DatastorePersistenceHandler.ENTITY_WRITE_DELAYED, null);
-        childOP.setAssociatedValue(orderMapping, index);
-        // TODO Remove this nonsense. You should NEVER NEVER NEVER call PersistenceHandler to do your persistence
-        // Use the ExecutionContext.persistObjectInternal, like ALL other plugins
-        handler.insertObject(childOP);
-      }
-    }
 
     // TODO Allow for a user setting position x as element1 and then setting element2 (that used to be there) to position y
     // At the moment we just delete the previous element
@@ -957,13 +926,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
               if (orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.JAVA_LANG_LONG) ||
                   orderMapping.getMemberMetaData().getTypeName().equals(ClassNameConstants.LONG)) {
                 indexValue = Long.valueOf(index);
-              }
-              else {
+              } else {
                 indexValue = Integer.valueOf(index);
               }
               elementOP.replaceFieldMakeDirty(orderMapping.getMemberMetaData().getAbsoluteFieldNumber(), indexValue);
-            }
-            else {
+            } else {
               // Order is stored in a surrogate column so save its vaue for the element to use later
               elementOP.setAssociatedValue(orderMapping, Integer.valueOf(index));
             }

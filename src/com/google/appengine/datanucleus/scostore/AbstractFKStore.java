@@ -45,8 +45,8 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Query.FilterPredicate;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastorePersistenceHandler;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 /**
@@ -160,10 +160,11 @@ public abstract class AbstractFKStore {
    * @see org.datanucleus.store.scostore.CollectionStore#size(org.datanucleus.store.ObjectProvider)
    */
   public int size(ObjectProvider ownerOP) {
-    DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
     Entity parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
     if (parentEntity == null) {
-      handler.locateObject(ownerOP);
+      storeMgr.validateMetaDataForClass(ownerOP.getClassMetaData());
+      EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ownerOP.getExecutionContext()), ownerOP, 
+          EntityUtils.getPkAsKey(ownerOP));
       parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
     }
 
@@ -273,8 +274,8 @@ public abstract class AbstractFKStore {
     }
 
     if (element != null) {
-      if ((!ec.getApiAdapter().isPersistent(element) ||
-          ec != ec.getApiAdapter().getExecutionContext(element)) && !ec.getApiAdapter().isDetached(element)) {
+      if ((!ec.getApiAdapter().isPersistent(element) || ec != ec.getApiAdapter().getExecutionContext(element)) && 
+          !ec.getApiAdapter().isDetached(element)) {
         return false;
       }
     }

@@ -40,8 +40,8 @@ import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.PersistenceBatchType;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.VersionHelper;
-import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
+import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
@@ -58,20 +58,15 @@ import java.util.Map;
 import java.util.Set;
 
 /**
+ * Handler for persistence requests for GAE/J datastore. Lifecycle management processes persists, updates, deletes
+ * and field access and hands them off here to interface with the datastore
+ * 
  * @author Max Ross <maxr@google.com>
+ * @author Andy Jefferson
  */
 public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
-
   protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
       "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
-
-  /**
-   * Magic property we use to signal to downstream writers that
-   * they should write the entity associated with this property.
-   * This has to do with the datastore constraint of only allowing
-   * a single write per entity in a txn.  See {@link #handleIndexFields()} for more info.
-   */
-  public static final Object ENTITY_WRITE_DELAYED = "___entity_write_delayed___";
 
   /**
    * Magic property that we use to signal that an associated child object
@@ -151,19 +146,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   /**
-   * Token used to make sure we don't try to insert the pc associated with an ObjectProvider more than once.
-   * This can happen in the case of a bi-directional one-to-one where we add a child to an existing parent and
-   * call merge() on the parent.  In this scenario we receive a call to {@link #insertObject(StateManager)} with 
-   * the state manager for the new child. When we invoke {@link StateManager#provideFields(int[], FieldManager)}
-   * we will recurse back to the parent field on the child (remember, bidirectional relationship), which will 
-   * then recurse back to the child. Since the child has not yet been inserted, insertObject will be invoked
-   * _again_ and we end up creating 2 instances of the child in the datastore, which is not good.
-   * There are probably better ways to solve this problem, but for now this looks ok.  We're making the assumption 
-   * that state managers are only accessed by a single thread at a time.
-   */
-  private static final Object INSERTION_TOKEN = new Object();
-
-  /**
    * Method to insert the specified managed object into the datastore.
    * @param op ObjectProvider for the managed object
    */
@@ -190,170 +172,138 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * managers at once, and then does post processing on all the state managers.
    */
   void insertObjectsInternal(List<ObjectProvider> opsToInsert) {
-    try {
-      List<PutState> putStateList = Utils.newArrayList();
-      for (ObjectProvider op : opsToInsert) {
-        if (op.getAssociatedValue(INSERTION_TOKEN) != null) {
-          // already inserting the pc associated with this state manager
-          continue;
-        }
+    List<PutState> putStateList = Utils.newArrayList();
+    for (ObjectProvider op : opsToInsert) {
+      // For inserts we let the field manager create the Entity and then retrieve it afterwards.
+      // We do this because the entity isn't ready to put until after provideFields has been called.
+      ExecutionContext ec = op.getExecutionContext();
+      String kind = EntityUtils.determineKind(op.getClassMetaData(), ec);
+      StoreFieldManager fieldMgr = new StoreFieldManager(op, kind, StoreFieldManager.Operation.INSERT);
+      op.provideFields(op.getClassMetaData().getAllMemberPositions(), fieldMgr);
 
-        // set the token so if we recurse down to the same state manager we know we're already inserting
-        op.setAssociatedValue(INSERTION_TOKEN, INSERTION_TOKEN);
+      Object assignedParentPk = fieldMgr.establishEntityGroup();
+      Entity entity = fieldMgr.getEntity();
 
-        // For inserts we let the field manager create the Entity and then retrieve it afterwards.
-        // We do this because the entity isn't ready to put until after provideFields has been called.
-        String kind = EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
-        StoreFieldManager fieldMgr = new StoreFieldManager(op, kind, StoreFieldManager.Operation.INSERT);
-        op.provideFields(op.getClassMetaData().getAllMemberPositions(), fieldMgr);
-
-        Object assignedParentPk = fieldMgr.establishEntityGroup();
-
-        Entity entity = fieldMgr.getEntity();
-        if (handleIndexFields(op, entity)) {
-          // TODO Remove this block and merge handleIndexFields here to set the order mapping
-          // signal to downstream writers that they should insert this entity when they are invoked
-          op.setAssociatedValue(ENTITY_WRITE_DELAYED, entity);
-          continue;
-        } else {
-          // Set version
-          handleVersioningBeforeWrite(op, entity, true, "inserting");
-
-          if (op.getClassMetaData().hasDiscriminatorStrategy()) {
-            // Set discriminator
-            DiscriminatorMetaData dismd = op.getClassMetaData().getDiscriminatorMetaDataRoot();
-            EntityUtils.setEntityProperty(entity, dismd, 
-                EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), dismd), 
-                op.getClassMetaData().getDiscriminatorValue());
+      // Set any order mapping(s)
+      DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
+          ec.getClassLoaderResolver());
+      Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
+      for (JavaTypeMapping orderMapping : orderMappings) {
+        if (orderMapping instanceof IndexMapping) {
+          Object orderValue = op.getAssociatedValue(orderMapping);
+          if (orderValue != null) {
+            // Set order index on the entity
+            DatastoreField indexProp = orderMapping.getDatastoreMapping(0).getDatastoreField();
+            entity.setProperty(indexProp.getIdentifier().toString(), orderValue); // Is this indexed in the datastore?
+          } else {
+            // Element has been persisted and has the owner set, but not positioned, so leave til user does it
           }
-        }
-
-        // Add the state for this put to the list.
-        putStateList.add(new PutState(op, fieldMgr, assignedParentPk, entity));
-      }
-
-      // Save the parent entities first so we can have a key to use as a parent on owned child entities.
-      if (!putStateList.isEmpty()) {
-        DatastoreTransaction txn = null;
-        ExecutionContext ec = null;
-        AbstractClassMetaData acmd = null;
-        List<Entity> entityList = Utils.newArrayList();
-        for (PutState putState : putStateList) {
-          if (txn == null) {
-            txn = storeMgr.getDatastoreTransaction(putState.op.getExecutionContext());
-          }
-          if (ec == null) {
-            ec = putState.op.getExecutionContext();
-          }
-          if (acmd == null) {
-            acmd = putState.op.getClassMetaData();
-          }
-          entityList.add(putState.entity);
-        }
-
-        EntityUtils.putEntitiesIntoDatastore(ec, entityList);
-        for (PutState putState : putStateList) {
-          putState.op.setAssociatedValue(txn, putState.entity);
         }
       }
 
-      // Post-processing for all puts
+      // Set version
+      handleVersioningBeforeWrite(op, entity, true, "inserting");
+
+      // Set discriminator
+      if (op.getClassMetaData().hasDiscriminatorStrategy()) {
+        DiscriminatorMetaData dismd = op.getClassMetaData().getDiscriminatorMetaDataRoot();
+        EntityUtils.setEntityProperty(entity, dismd, 
+            EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), dismd), 
+            op.getClassMetaData().getDiscriminatorValue());
+      }
+
+      // Add the state for this put to the list.
+      putStateList.add(new PutState(op, fieldMgr, assignedParentPk, entity));
+    }
+
+    // Save the parent entities first so we can have a key to use as a parent on owned child entities.
+    if (!putStateList.isEmpty()) {
+      DatastoreTransaction txn = null;
+      ExecutionContext ec = null;
+      AbstractClassMetaData acmd = null;
+      List<Entity> entityList = Utils.newArrayList();
       for (PutState putState : putStateList) {
-        AbstractClassMetaData cmd = putState.op.getClassMetaData();
-
-        // Set the generated key back on the pojo.  If the pk field is a Key just set it on the field directly. 
-        // If the pk field is a String, convert the Key to a String, similarly for long.
-        // Assumes we only have a single pk member position
-        Object newId = null;
-        Class pkType = null;
-        boolean identityStrategyUsed = false;
-        if (cmd.getIdentityType() == IdentityType.APPLICATION) {
-          int[] pkFields = cmd.getPKMemberPositions();
-          // TODO Allow for multiple PK fields
-          AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFields[0]);
-          if (pkMmd.getValueStrategy() == IdentityStrategy.IDENTITY) {
-            identityStrategyUsed = true;
-            pkType = cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]).getType();
-          }
-        } else if (cmd.getIdentityType() == IdentityType.DATASTORE &&
-            cmd.getIdentityMetaData().getValueStrategy() == IdentityStrategy.IDENTITY) {
-          pkType = Long.class;
-          ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
-          if (colmd != null && 
-              ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
-            pkType = String.class;
-          }
+        if (txn == null) {
+          txn = storeMgr.getDatastoreTransaction(putState.op.getExecutionContext());
         }
-
-        if (identityStrategyUsed) {
-          // Update the identity of the object with the datastore-assigned id
-          if (pkType.equals(Key.class)) {
-            newId = putState.entity.getKey();
-          } else if (pkType.equals(String.class)) {
-            if (MetaDataUtils.hasEncodedPKField(cmd)) {
-              newId = KeyFactory.keyToString(putState.entity.getKey());
-            } else {
-              newId = putState.entity.getKey().getName();
-            }
-          } else if (pkType.equals(Long.class) || pkType.equals(long.class)) {
-            newId = putState.entity.getKey().getId();
-          }
-
-          putState.op.setPostStoreNewObjectId(newId);
+        if (ec == null) {
+          ec = putState.op.getExecutionContext();
         }
-
-        if (putState.assignedParentPk != null) {
-          // we automatically assigned a parent to the entity so make sure that makes it back on to the pojo
-          putState.op.replaceFieldMakeDirty(putState.fieldMgr.getParentMemberMetaData().getAbsoluteFieldNumber(), 
-              putState.assignedParentPk);
+        if (acmd == null) {
+          acmd = putState.op.getClassMetaData();
         }
-
-        storeRelations(putState.fieldMgr, putState.op, putState.entity);
-
-        if (putState.entity.getParent() != null) {
-          // We inserted a new child.  Register the parent key so we know we need to update the parent.
-          KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.op.getExecutionContext());
-          keyReg.registerModifiedParent(putState.entity.getParent());
-        }
-
-        if (storeMgr.getRuntimeManager() != null) {
-          storeMgr.getRuntimeManager().incrementInsertCount();
-        }
+        entityList.add(putState.entity);
       }
-    } finally {
-      for (ObjectProvider op : opsToInsert) {
-        op.setAssociatedValue(INSERTION_TOKEN, null);
+
+      EntityUtils.putEntitiesIntoDatastore(ec, entityList);
+      for (PutState putState : putStateList) {
+        putState.op.setAssociatedValue(txn, putState.entity);
       }
     }
-  }
 
-  /**
-   * Indexed 1-to-many relationships are expressed using a {@link List} and are ordered by a 
-   * column in the child table that stores the position of the child in the parent's list.
-   * This function is responsible for making sure the appropriate values for these columns find their way 
-   * into the Entity. The index is always known if a method is invoked on the List, but in the case of a
-   * persist of the object itself it will not be part of a List so the index is not known, and likely
-   * should just be set to null. This currently delays its persistence, but maybe ought to be changed.
-   * @return {@code true} if the caller should delay its write of this object.
-   */
-  protected boolean handleIndexFields(ObjectProvider op, Entity entity) {
-    DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
-        op.getExecutionContext().getClassLoaderResolver());
-    Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
-    boolean delayWrite = false;
-    for (JavaTypeMapping orderMapping : orderMappings) {
-      if (orderMapping instanceof IndexMapping) {
-        delayWrite = true;
-        // DataNucleus provides the value in the ObjectProvider, keyed by the mapping for the order field.
-        Object orderValue = op.getAssociatedValue(orderMapping);
-        if (orderValue != null) {
-          // We got a value!  Set it on the entity.
-          delayWrite = false;
-          orderMapping.setObject(op.getExecutionContext(), entity, new int[] {0}, orderValue);
+    // Post-processing for all puts
+    for (PutState putState : putStateList) {
+      AbstractClassMetaData cmd = putState.op.getClassMetaData();
+
+      // Set the generated key back on the pojo.  If the pk field is a Key just set it on the field directly. 
+      // If the pk field is a String, convert the Key to a String, similarly for long.
+      // Assumes we only have a single pk member position
+      Object newId = null;
+      Class pkType = null;
+      boolean identityStrategyUsed = false;
+      if (cmd.getIdentityType() == IdentityType.APPLICATION) {
+        int[] pkFields = cmd.getPKMemberPositions();
+        // TODO Allow for multiple PK fields
+        AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFields[0]);
+        if (pkMmd.getValueStrategy() == IdentityStrategy.IDENTITY) {
+          identityStrategyUsed = true;
+          pkType = cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]).getType();
+        }
+      } else if (cmd.getIdentityType() == IdentityType.DATASTORE &&
+          cmd.getIdentityMetaData().getValueStrategy() == IdentityStrategy.IDENTITY) {
+        pkType = Long.class;
+        ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
+        if (colmd != null && 
+            ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
+          pkType = String.class;
         }
       }
+
+      if (identityStrategyUsed) {
+        // Update the identity of the object with the datastore-assigned id
+        if (pkType.equals(Key.class)) {
+          newId = putState.entity.getKey();
+        } else if (pkType.equals(String.class)) {
+          if (MetaDataUtils.hasEncodedPKField(cmd)) {
+            newId = KeyFactory.keyToString(putState.entity.getKey());
+          } else {
+            newId = putState.entity.getKey().getName();
+          }
+        } else if (pkType.equals(Long.class) || pkType.equals(long.class)) {
+          newId = putState.entity.getKey().getId();
+        }
+
+        putState.op.setPostStoreNewObjectId(newId);
+      }
+
+      if (putState.assignedParentPk != null) {
+        // we automatically assigned a parent to the entity so make sure that makes it back on to the pojo
+        putState.op.replaceFieldMakeDirty(putState.fieldMgr.getParentMemberMetaData().getAbsoluteFieldNumber(), 
+            putState.assignedParentPk);
+      }
+
+      storeRelations(putState.fieldMgr, putState.op, putState.entity);
+
+      if (putState.entity.getParent() != null) {
+        // We inserted a new child.  Register the parent key so we know we need to update the parent.
+        KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.op.getExecutionContext());
+        keyReg.registerModifiedParent(putState.entity.getParent());
+      }
+
+      if (storeMgr.getRuntimeManager() != null) {
+        storeMgr.getRuntimeManager().incrementInsertCount();
+      }
     }
-    return delayWrite;
   }
 
   /**
@@ -555,7 +505,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (txn != null) {
       txn.addDeletedKey(entity.getKey());
     }
-    op.setAssociatedValue("deleted", true);
 
     // Check the version is valid to delete; any updates since read?
     handleVersioningBeforeWrite(op, entity, false, "deleting");
@@ -616,8 +565,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   public void locateObject(ObjectProvider op) {
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
-
-    // get throws NucleusObjectNotFoundException if the entity isn't found, which is what we want.
     EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(op.getExecutionContext()), op, 
         EntityUtils.getPkAsKey(op));
   }
