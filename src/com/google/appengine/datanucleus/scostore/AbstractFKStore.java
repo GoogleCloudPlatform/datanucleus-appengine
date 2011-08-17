@@ -161,10 +161,10 @@ public abstract class AbstractFKStore {
    */
   public int size(ObjectProvider ownerOP) {
     DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-    Entity parentEntity = (Entity) ownerOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ownerOP.getExecutionContext()));
+    Entity parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
     if (parentEntity == null) {
       handler.locateObject(ownerOP);
-      parentEntity = (Entity) ownerOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ownerOP.getExecutionContext()));
+      parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
     }
 
     String kindName = elementTable.getIdentifier().getIdentifierName();

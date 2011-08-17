@@ -141,6 +141,8 @@ public class DatastoreManager extends MappedStoreManager {
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
 
+  private final DatastoreService datastoreServiceForReads;
+
   protected SerializationManager serializationMgr = null;
 
   MetaDataValidator metadataValidator;
@@ -191,6 +193,9 @@ public class DatastoreManager extends MappedStoreManager {
     initialiseAutoStart(clr);
 
     logConfiguration();
+
+    datastoreServiceForReads = DatastoreServiceFactoryInternal.getDatastoreService(
+        getDefaultDatastoreServiceConfigForReads());
   }
 
   @Override
@@ -487,7 +492,7 @@ public class DatastoreManager extends MappedStoreManager {
    * @param ec ExecutionContext
    * @return The DatastoreTransaction if active, or null
    */
-  public static DatastoreTransaction getDatastoreTransaction(ExecutionContext ec) {
+  public DatastoreTransaction getDatastoreTransaction(ExecutionContext ec) {
     ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     return ((EmulatedXAResource) mconn.getXAResource()).getCurrentTransaction();
   }
@@ -498,9 +503,20 @@ public class DatastoreManager extends MappedStoreManager {
    * @param ec ExecutionContext
    * @return The DatastoreService
    */
-  public static DatastoreService getDatastoreService(ExecutionContext ec) {
+  public DatastoreService getDatastoreService(ExecutionContext ec) {
     ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     return ((EmulatedXAResource) mconn.getXAResource()).getDatastoreService();
+  }
+
+  /**
+   * Accessor for the DatastoreService to use for reads for this ExecutionContext.
+   * We currently just use the same DatastoreService for all ExecutionContext, but parameter passed in so
+   * we can extend in the future.
+   * @param ec ExecutionContext
+   * @return The DatastoreService
+   */
+  public DatastoreService getDatastoreServiceForReads(ExecutionContext ec) {
+    return datastoreServiceForReads;
   }
 
   /**

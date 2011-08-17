@@ -487,7 +487,8 @@ public final class EntityUtils {
 
     ObjectProvider childOP = ec.findObjectProvider(child);
     if (apiAdapter.isNew(child) &&
-        (childOP == null || childOP.getAssociatedValue(DatastoreManager.getDatastoreTransaction(ec)) == null)) {
+        (childOP == null || 
+         childOP.getAssociatedValue(((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec)) == null)) {
       // This condition is difficult to get right.  An object that has been persisted
       // (and therefore had its primary key already established) may still be considered
       // NEW by the apiAdapter if there is a txn and the txn has not yet committed.
@@ -549,7 +550,8 @@ public final class EntityUtils {
    * @return The Entity
    */
   public static Entity getEntityFromDatastore(DatastoreService ds, ObjectProvider op, Key key) {
-    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(op.getExecutionContext());
+    DatastoreTransaction txn = 
+      ((DatastoreManager)op.getExecutionContext().getStoreManager()).getDatastoreTransaction(op.getExecutionContext());
 
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
@@ -590,8 +592,8 @@ public final class EntityUtils {
    * @return The DatastoreTransaction
    */
   public static DatastoreTransaction putEntitiesIntoDatastore(ExecutionContext ec, List<Entity> entities) {
-    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
-    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+    DatastoreTransaction txn = ((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec);
+    DatastoreService ds = ((DatastoreManager)ec.getStoreManager()).getDatastoreService(ec);
     List<Entity> putMe = Utils.newArrayList();
     for (Entity entity : entities) {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -653,13 +655,13 @@ public final class EntityUtils {
    * @param keys Keys to delete
    */
   public static void deleteEntitiesFromDatastore(ExecutionContext ec, List<Key> keys) {
-    DatastoreService ds = DatastoreManager.getDatastoreService(ec);
+    DatastoreService ds = ((DatastoreManager)ec.getStoreManager()).getDatastoreService(ec);
 
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
     }
 
-    DatastoreTransaction txn = DatastoreManager.getDatastoreTransaction(ec);
+    DatastoreTransaction txn = ((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec);
     if (txn == null) {
       if (keys.size() == 1) {
         ds.delete(keys.get(0));
