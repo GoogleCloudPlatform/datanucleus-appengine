@@ -93,33 +93,27 @@ public class StoreFieldManager extends DatastoreFieldManager {
   private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
 
   /**
+   * Constructor for a StoreFieldManager when inserting a new object.
+   * The Entity will be constructed.
+   * @param op ObjectProvider of the object being stored
+   * @param kind Kind of entity
+   * @param operation Operation being performed
+   */
+  public StoreFieldManager(ObjectProvider op, String kind, Operation operation) {
+    super(op, new Entity(kind), null);
+    this.operation = operation;
+  }
+
+  /**
+   * Constructor for a StoreFieldManager when updating an object.
+   * The Entity will be passed in (to be updated).
    * @param op ObjectProvider of the object being stored
    * @param datastoreEntity The Entity to update with the field values
    * @param fieldNumbers The field numbers being updated in the Entity
    * @param operation Operation being performed
    */
   public StoreFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers, Operation operation) {
-    super(op, false, datastoreEntity, fieldNumbers);
-    this.operation = operation;
-  }
-
-  /**
-   * @param op ObjectProvider of the object being stored
-   * @param datastoreEntity The Entity to update with the field values
-   * @param operation Operation being performed
-   */
-  public StoreFieldManager(ObjectProvider op, Entity datastoreEntity, Operation operation) {
-    super(op, false, datastoreEntity, new int[0]);
-    this.operation = operation;
-  }
-
-  /**
-   * @param op ObjectProvider of the object being stored
-   * @param kind Kind of entity
-   * @param operation Operation being performed
-   */
-  public StoreFieldManager(ObjectProvider op, String kind, Operation operation) {
-    super(op, true, new Entity(kind), new int[0]);
+    super(op, datastoreEntity, fieldNumbers);
     this.operation = operation;
   }
 
@@ -159,7 +153,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     if (isPK(fieldNumber)) {
       storeStringPKField(fieldNumber, value);
     } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
-      parentMemberMetaData = getMetaData(fieldNumber);
       storeParentStringField(value);
     } else if (MetaDataUtils.isPKNameField(getClassMetaData(), fieldNumber)) {
       storePKNameField(fieldNumber, value);
@@ -186,7 +179,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     if (isPK(fieldNumber)) {
       storePrimaryKey(fieldNumber, value);
     } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
-      parentMemberMetaData = getMetaData(fieldNumber);
       storeParentField(fieldNumber, value);
     } else if (MetaDataUtils.isPKIdField(getClassMetaData(), fieldNumber)) {
       storePKIdField(fieldNumber, value);
@@ -260,7 +252,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
         if (!repersistingForChildKeys) {
           // register a callback for later
-          storeRelationField(getClassMetaData(), ammd, value, createdWithoutEntity,
+          storeRelationField(getClassMetaData(), ammd, value, operation == StoreFieldManager.Operation.INSERT,
               fieldManagerStateStack.getFirst().mappingConsumer);
         }
 
@@ -287,7 +279,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
 
       // Set the property on the entity, allowing for null rules
-      checkNullValue(ammd, value);
+      checkSettingToNullValue(ammd, value);
       EntityUtils.setEntityProperty(datastoreEntity, ammd, 
           EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
       return true;
@@ -338,7 +330,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   private void storePKNameField(int fieldNumber, String value) {
     // TODO(maxr) make sure the pk is an encoded string
-    if (!fieldIsOfTypeString(fieldNumber)) {
+    AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+    if (!mmd.getType().equals(String.class)) {
       throw new NucleusFatalUserException(
           "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String");
     }
@@ -378,7 +371,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
     } else if (key != null) {
-      if (!createdWithoutEntity) {
+      if (operation == StoreFieldManager.Operation.UPDATE) {
         // Shouldn't even happen.
         throw new NucleusFatalUserException("You can only rely on this class to properly handle "
             + "parent pks if you instantiated the class without providing a datastore "
@@ -392,7 +385,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // If this field is labeled as a parent PK we need to recreate the Entity, passing
       // the value of this field as an arg to the Entity constructor and then moving all
       // properties on the old entity to the new entity.
-      recreateEntityWithParent(key);
+      datastoreEntity = EntityUtils.recreateEntityWithParent(key, datastoreEntity);
       parentAlreadySet = true;
     } else {
       // Null parent.  Parent is defined on a per-instance basis so
@@ -488,7 +481,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           keys.add(key);
         }
       }
-
+NucleusLogger.GENERAL.info(">> StoreFM.extractRelationKeys input=" + coll.size() + " numKeys=" + keys.size() + " repersisting=" + repersistingForChildKeys);
       // if we have fewer keys than objects then there is at least one child object that still needs to be inserted.
       // communicate this upstream.
       getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY,
@@ -554,7 +547,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     return key;
   }
 
-  private void checkNullValue(AbstractMemberMetaData ammd, Object value) {
+  private void checkSettingToNullValue(AbstractMemberMetaData ammd, Object value) {
     if (value == null) {
       if (ammd.getNullValue() == NullValue.EXCEPTION) {
         // JDO spec 18.15, throw XXXUserException when trying to store null and have handler set to EXCEPTION
@@ -575,90 +568,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   void setRepersistingForChildKeys(boolean repersistingForChildKeys) {
     this.repersistingForChildKeys = repersistingForChildKeys;
-  }
-
-  /**
-   * Currently all relationships are parent-child. If a datastore entity
-   * doesn't have a parent there are 4 places we can look for one.
-   * 1) It's possible that a pojo in the cascade chain registered itself as the parent.
-   * 2) It's possible that the pojo has an external foreign key mapping to the object that owns it, 
-   *    in which case we can use the key of that field as the parent.
-   * 3) It's possible that the pojo has a field containing the parent that is not an external foreign-key 
-   *    mapping but is labeled as a "parent provider" (this is an app engine orm term). In this case, as with
-   *    #2, we can use the key of that field as the parent.
-   * 4) If part of the attachment process we can consult the ExecutionContext for the owner of this object 
-   *    (that caused the attach of this object).
-   *
-   * It _should_ be possible to get rid of at least one of these mechanisms, most likely the first.
-   *
-   * @return The parent key if the pojo class has a parent property. Note that a return value of {@code null} 
-   *   does not mean that an entity group was not established, it just means the pojo doesn't have a distinct
-   *   field for the parent.
-   */
-  Object establishEntityGroup() {
-    Key parentKey = getEntity().getParent();
-    if (parentKey == null) {
-      ObjectProvider op = getObjectProvider();
-      // Mechanism 1
-      parentKey = KeyRegistry.getKeyRegistry(getExecutionContext()).getRegisteredKey(op.getObject());
-
-      if (parentKey == null) {
-        // Mechanism 2
-        // We don't have a registered key for the object associated with the ObjectProvider but there might
-        // be one tied to the foreign key mappings for this object.  If this is the Many side of a bidirectional
-        // One To Many it might also be available on the parent object.
-        // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
-        Collection<JavaTypeMapping> externalFKMappings = table.getExternalFkMappings().values();
-        for (JavaTypeMapping fkMapping : externalFKMappings) {
-          Object fkValue = op.getAssociatedValue(fkMapping);
-          if (fkValue != null) {
-            parentKey = EntityUtils.getKeyForObject(fkValue, getExecutionContext());
-            break;
-          }
-        }
-      }
-
-      if (parentKey == null) {
-        // Mechanism 3
-        AbstractMemberMetaData parentField = table.getParentMappingMember();
-        if (parentField != null) {
-          Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
-          parentKey = parent == null ? null : EntityUtils.getKeyForObject(parent, getExecutionContext());
-        }
-      }
-
-      if (parentKey == null) {
-        // Mechanism 4, use attach parent info from ExecutionContext
-        ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
-        if (ownerOP != null) {
-          Object parentPojo = ownerOP.getObject();
-          ObjectProvider mergeOP = getExecutionContext().findObjectProvider(parentPojo);
-          if (mergeOP != null) {
-            parentKey = EntityUtils.getPrimaryKeyAsKey(getExecutionContext().getApiAdapter(), mergeOP);
-          }
-        }
-      }
-
-      if (parentKey != null) {
-        recreateEntityWithParent(parentKey);
-      }
-    }
-
-    if (parentKey != null && getParentMemberMetaData() != null) {
-      return getParentMemberMetaData().getType().equals(Key.class)
-          ? parentKey : KeyFactory.keyToString(parentKey);
-    }
-    return null;
-  }
-
-  void recreateEntityWithParent(Key parentKey) {
-    Entity old = datastoreEntity;
-    if (old.getKey().getName() != null) {
-      datastoreEntity = new Entity(old.getKind(), old.getKey().getName(), parentKey);
-    } else {
-      datastoreEntity = new Entity(old.getKind(), parentKey);
-    }
-    EntityUtils.copyProperties(old, datastoreEntity);
   }
 
   /**
@@ -750,7 +659,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
               ammd.getType(), getClassLoaderResolver());
           Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
           entity.removeProperty(PARENT_KEY_PROPERTY);
-          recreateEntityWithParent(parentKey);
+          datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
         }
       }
     };
@@ -769,4 +678,26 @@ public class StoreFieldManager extends DatastoreFieldManager {
     void apply();
   }
 
+  /**
+   * Method to make sure that the Entity has its parentKey assigned.
+   * Returns the assigned parent PK (when we have a "gae.parent-pk" field/property in this class).
+   * @return The parent key if the pojo class has a parent property. Note that a return value of {@code null} 
+   *   does not mean that an entity group was not established, it just means the pojo doesn't have a distinct
+   *   field for the parent.
+   */
+  Object establishEntityGroup() {
+    Key parentKey = getEntity().getParent();
+    if (parentKey == null) {
+      parentKey = EntityUtils.getParentKey(datastoreEntity, getObjectProvider());
+      if (parentKey != null) {
+        datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
+      }
+    }
+
+    AbstractMemberMetaData parentPkMmd = ((DatastoreManager)getStoreManager()).getMetaDataForParentPK(getClassMetaData());
+    if (parentKey != null && parentPkMmd != null) {
+      return parentPkMmd.getType().equals(Key.class) ? parentKey : KeyFactory.keyToString(parentKey);
+    }
+    return null;
+  }
 }

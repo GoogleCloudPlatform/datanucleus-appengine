@@ -70,33 +70,27 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   protected final LinkedList<FieldManagerState> fieldManagerStateStack =
       new LinkedList<FieldManagerState>();
 
-  // true if we instantiated the entity ourselves.
-  protected final boolean createdWithoutEntity;
-
+  /** ObjectProvider for the primary object here. Use fieldManagerStateStack for any nested embedded objects. */
   protected ObjectProvider op;
 
-  // Not final because we will reallocate if we hit a parent pk field and the
-  // key of the current value does not have a parent, or if the pk gets set.
+  /** Entity being populated by this FieldManager. */
   protected Entity datastoreEntity;
 
-  protected DatastoreTable table;
-
-  // We'll assign this if we have a parent member and we store a value into it.
-  protected AbstractMemberMetaData parentMemberMetaData;
-
-  protected DatastoreFieldManager(ObjectProvider op, boolean createdWithoutEntity,
-      Entity datastoreEntity, int[] fieldNumbers) {
-    // We start with an ammdProvider that just gets member meta data from the class meta data.
+  /**
+   * Constructor.
+   * @param op ObjectProvider for the object being handled.
+   * @param datastoreEntity Entity to represent this object
+   * @param fieldNumbers Field numbers that will be processed (optional, null means all fields).
+   */
+  protected DatastoreFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers) {
     AbstractMemberMetaDataProvider ammdProvider = new AbstractMemberMetaDataProvider() {
       public AbstractMemberMetaData get(int fieldNumber) {
         return getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber);
       }
     };
+
     this.op = op;
-    this.createdWithoutEntity = createdWithoutEntity;
     this.datastoreEntity = datastoreEntity;
-    this.table = getStoreManager().getDatastoreClass(op.getClassMetaData().getFullClassName(),
-        op.getExecutionContext().getClassLoaderResolver());
 
     InsertMappingConsumer mappingConsumer = buildMappingConsumer(op.getClassMetaData(), 
         op.getExecutionContext().getClassLoaderResolver(), fieldNumbers, null);
@@ -112,66 +106,36 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     }
   }
 
-  protected boolean fieldIsOfTypeString(int fieldNumber) {
-    // String is final so we don't need to worry about checking for subclasses.
-    return getMetaData(fieldNumber).getType().equals(String.class);
-  }
-
-  protected RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
-    return new IllegalStateException(
-        fieldType + " for type " + getClassMetaData().getName()
-            + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
-            + " (must be String, Long, or " + Key.class.getName() + ")");
-  }
-
-  protected AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
-      final InsertMappingConsumer consumer) {
-    // This implementation gets the meta data from the mapping consumer.
-    // This is needed to ensure we see column overrides that are specific to
-    // a specific embedded field and subclass fields, which aren't included
-    // in EmbeddedMetaData for some reason.
-    return new AbstractMemberMetaDataProvider() {
-      public AbstractMemberMetaData get(int fieldNumber) {
-        return consumer.getMemberMetaDataForIndex(fieldNumber);
-      }
-    };
-  }
-
-  protected ObjectProvider getEmbeddedObjectProvider(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
-    if (value == null) {
-      // Not positive this is the right approach, but when we read the values
-      // of an embedded field out of the datastore we have no way of knowing
-      // if the field should be null or it should contain an instance of the
-      // embeddable whose members are all initialized to their default values
-      // (the result of calling the default ctor).  Also, we can't risk
-      // storing 'null' for every field of the embedded class because some of
-      // the members might be base types and therefore non-nullable.  Writing
-      // nulls to the datastore for these fields would cause NPEs when we read
-      // the object back out.  Seems like the only safe thing to do here is
-      // instantiate a fresh instance of the embeddable class using the default
-      // constructor and then persist that.
-        // TODO Use metadata nullIndicatorColumn/Value
-      value = JDOImplHelper.getInstance().newInstance(
-          ammd.getType(), (javax.jdo.spi.StateManager) getObjectProvider());
-    }
-    ObjectProvider embeddedOP = getExecutionContext().findObjectProvider(value);
-    if (embeddedOP == null) {
-        embeddedOP = ObjectProviderFactory.newForEmbedded(getExecutionContext(), value, false, getObjectProvider(), fieldNumber);
-        embeddedOP.setPcObjectType(ObjectProvider.EMBEDDED_PC);
-    }
-    return embeddedOP;
-  }
-
-  ClassLoaderResolver getClassLoaderResolver() {
-    return getExecutionContext().getClassLoaderResolver();
+  Entity getEntity() {
+    return datastoreEntity;
   }
 
   ObjectProvider getObjectProvider() {
     return fieldManagerStateStack.getFirst().op;
   }
 
+  AbstractMemberMetaData getMetaData(int fieldNumber) {
+    return fieldManagerStateStack.getFirst().abstractMemberMetaDataProvider.get(fieldNumber);
+  }
+
   ExecutionContext getExecutionContext() {
     return getObjectProvider().getExecutionContext();
+  }
+
+  AbstractClassMetaData getClassMetaData() {
+    return getObjectProvider().getClassMetaData();
+  }
+
+  ClassLoaderResolver getClassLoaderResolver() {
+    return getExecutionContext().getClassLoaderResolver();
+  }
+
+  DatastoreManager getStoreManager() {
+    return (DatastoreManager) op.getExecutionContext().getStoreManager();
+  }
+
+  DatastoreTable getDatastoreTable() {
+    return getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
 
   protected boolean isPK(int fieldNumber) {
@@ -182,26 +146,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     int[] pkPositions = getClassMetaData().getPKMemberPositions();
     // Assumes that if we have a pk we only have a single field pk
     return pkPositions != null && pkPositions[0] == fieldNumber;
-  }
-
-  protected AbstractMemberMetaData getMetaData(int fieldNumber) {
-    return fieldManagerStateStack.getFirst().abstractMemberMetaDataProvider.get(fieldNumber);
-  }
-
-  AbstractClassMetaData getClassMetaData() {
-    return getObjectProvider().getClassMetaData();
-  }
-
-  Entity getEntity() {
-    return datastoreEntity;
-  }
-
-  AbstractMemberMetaData getParentMemberMetaData() {
-    return parentMemberMetaData;
-  }
-
-  DatastoreManager getStoreManager() {
-    return (DatastoreManager) op.getExecutionContext().getStoreManager();
   }
 
   /**
@@ -217,6 +161,10 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
       throw new NoPersistenceInformationException(acmd.getFullClassName());
     }
 
+    // Process all required fields for this case
+    // a). INSERT : all fields
+    // b). embedded field object : all fields
+    // c). UPDATE : specified fields only
     InsertMappingConsumer consumer = new InsertMappingConsumer(acmd);
     if (emd == null) {
       table.provideDatastoreIdMappings(consumer);
@@ -224,16 +172,11 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     } else {
       // skip pk mappings if embedded
     }
-
-    if (createdWithoutEntity || emd != null) {
-      // This is the insert case or we're dealing with an embedded field.
-      // Either way we want to fill the consumer with mappings for everything.
+    if (fieldNumbers == null || emd != null) {
       table.provideNonPrimaryKeyMappings(consumer, emd != null);
     } else {
-      // This is the update case.  We only want to fill the consumer mappings
-      // for the specific fields that were provided.
       AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
-      if (fieldNumbers.length > 0) {
+      if (fieldNumbers != null && fieldNumbers.length > 0) {
         for (int i = 0; i < fieldNumbers.length; i++) {
           fmds[i] = acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
         }
@@ -278,15 +221,46 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     return consumer;
   }
 
+  protected RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
+    return new IllegalStateException(fieldType + " for type " + getClassMetaData().getName()
+            + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
+            + " (must be String, Long, or " + Key.class.getName() + ")");
+  }
+
+  protected AbstractMemberMetaDataProvider getEmbeddedAbstractMemberMetaDataProvider(
+      final InsertMappingConsumer consumer) {
+    // This implementation gets the meta data from the mapping consumer.
+    // This is needed to ensure we see column overrides that are specific to
+    // a specific embedded field and subclass fields, which aren't included
+    // in EmbeddedMetaData for some reason.
+    return new AbstractMemberMetaDataProvider() {
+      public AbstractMemberMetaData get(int fieldNumber) {
+        return consumer.getMemberMetaDataForIndex(fieldNumber);
+      }
+    };
+  }
+
+  protected ObjectProvider getEmbeddedObjectProvider(AbstractMemberMetaData ammd, int fieldNumber, Object value) {
+    if (value == null) {
+      // We need all fields of an embedded object to have properties in the Entity.
+      // This just creates a dummy embedded object
+      value = JDOImplHelper.getInstance().newInstance(
+          ammd.getType(), (javax.jdo.spi.StateManager) getObjectProvider());
+    }
+
+    ObjectProvider embeddedOP = getExecutionContext().findObjectProvider(value);
+    if (embeddedOP == null) {
+        embeddedOP = ObjectProviderFactory.newForEmbedded(getExecutionContext(), value, false, getObjectProvider(), fieldNumber);
+        embeddedOP.setPcObjectType(ObjectProvider.EMBEDDED_PC);
+    }
+    return embeddedOP;
+  }
+
   /**
    * Just exists so we can override in tests. 
    */
   TypeConversionUtils getConversionUtils() {
     return TYPE_CONVERSION_UTILS;
-  }
-
-  DatastoreTable getDatastoreTable() {
-    return getStoreManager().getDatastoreClass(getClassMetaData().getFullClassName(), getClassLoaderResolver());
   }
 
   /**

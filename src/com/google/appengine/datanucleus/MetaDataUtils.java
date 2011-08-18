@@ -15,9 +15,11 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
+import org.datanucleus.metadata.MetaDataManager;
 
 /**
  * Series of utilities for interrogating metadata, particularly for GAE/J extensions.
@@ -73,5 +75,36 @@ public class MetaDataUtils {
       cmd = pcmd;
     }
     return false;
+  }
+
+  /**
+   * Convenience method to return the metadata for the field/property of this class that stores the 
+   * parent PK (in metadata as "gae.parent-pk").
+   * @param cmd Metadata for the class
+   * @return The parent PK member metadata (or null, if none)
+   */
+  public static AbstractMemberMetaData getParentPkMemberMetaDataForClass(AbstractClassMetaData cmd, 
+      MetaDataManager mmgr, ClassLoaderResolver clr) {
+    AbstractMemberMetaData[] mmds = cmd.getManagedMembers();
+    for (int i=0;i<mmds.length;i++) {
+      if (MetaDataUtils.isParentPKField(mmds[i])) {
+        return mmds[i];
+      }
+      else if (mmds[i].getEmbeddedMetaData() != null) {
+        // TODO Doubtful if this is really correct. The parent key of this class should not be in an embedded class
+        // since the parent of the embedded class is this class. What if we had two instances of this class embedded?
+        AbstractClassMetaData embCmd = mmgr.getMetaDataForClass(mmds[i].getType(), clr);
+        AbstractMemberMetaData embPkParentMmd = getParentPkMemberMetaDataForClass(embCmd, mmgr, clr);
+        if (embPkParentMmd != null) {
+          return embPkParentMmd;
+        }
+      }
+    }
+
+    AbstractClassMetaData superCmd = cmd.getSuperAbstractClassMetaData();
+    if (superCmd != null) {
+      return getParentPkMemberMetaDataForClass(superCmd, mmgr, clr);
+    }
+    return null;
   }
 }

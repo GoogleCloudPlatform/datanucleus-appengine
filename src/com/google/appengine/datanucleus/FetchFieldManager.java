@@ -63,7 +63,7 @@ public class FetchFieldManager extends DatastoreFieldManager
    * @param fieldNumbers The field numbers being extracted
    */
   public FetchFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers) {
-    super(op, false, datastoreEntity, fieldNumbers);
+    super(op, datastoreEntity, fieldNumbers);
   }
 
   /**
@@ -74,7 +74,7 @@ public class FetchFieldManager extends DatastoreFieldManager
    * @param datastoreEntity The Entity to extract results from
    */
   public FetchFieldManager(ObjectProvider op, Entity datastoreEntity) {
-    super(op, false, datastoreEntity, new int[0]);
+    super(op, datastoreEntity, null);
   }
 
   public boolean fetchBooleanField(int fieldNumber) {
@@ -113,10 +113,10 @@ public class FetchFieldManager extends DatastoreFieldManager
     if (isPK(fieldNumber)) {
       return fetchStringPKField(fieldNumber);
     } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
-      parentMemberMetaData = getMetaData(fieldNumber);
       return fetchParentStringPKField(fieldNumber);
     } else if (MetaDataUtils.isPKNameField(getClassMetaData(), fieldNumber)) {
-      if (!fieldIsOfTypeString(fieldNumber)) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      if (!mmd.getType().equals(String.class)) {
         throw new NucleusFatalUserException(
             "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
       }
@@ -153,7 +153,6 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
     } else if (MetaDataUtils.isParentPKField(getClassMetaData(), fieldNumber)) {
-      parentMemberMetaData = getMetaData(fieldNumber);
       if (ammd.getType().equals(Key.class)) {
         return datastoreEntity.getKey().getParent();
       }

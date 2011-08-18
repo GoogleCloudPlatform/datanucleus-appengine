@@ -59,7 +59,8 @@ import java.util.Set;
 
 /**
  * Handler for persistence requests for GAE/J datastore. Lifecycle management processes persists, updates, deletes
- * and field access and hands them off here to interface with the datastore
+ * and field access and hands them off here to interface with the datastore.
+ * No method in here should be called from anywhere other than DataNucleus core.
  * 
  * @author Max Ross <maxr@google.com>
  * @author Andy Jefferson
@@ -166,21 +167,23 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   /**
-   * If we're inserting multiple objects we want to use the low-level batch put
-   * mechanism.  This method pre-processes all the state managers, gathering
-   * up all the info needed to do the put, does the put for all the state
-   * managers at once, and then does post processing on all the state managers.
+   * Method to perform the work of inserting the specified objects. If multiple are to be inserted then
+   * performs it initially as a batch PUT. If some of these need subsequent work (e.g forcing the persist of 
+   * children followed by a repersist to link to the children) then this is done one-by-one.
    */
   void insertObjectsInternal(List<ObjectProvider> opsToInsert) {
     List<PutState> putStateList = Utils.newArrayList();
     for (ObjectProvider op : opsToInsert) {
-      // For inserts we let the field manager create the Entity and then retrieve it afterwards.
-      // We do this because the entity isn't ready to put until after provideFields has been called.
       ExecutionContext ec = op.getExecutionContext();
-      String kind = EntityUtils.determineKind(op.getClassMetaData(), ec);
-      StoreFieldManager fieldMgr = new StoreFieldManager(op, kind, StoreFieldManager.Operation.INSERT);
+      AbstractClassMetaData cmd = op.getClassMetaData();
+
+      // Create the Entity, and populate all fields that can be populated (this will omit any owned child objects 
+      // if we don't have the key of this object yet).
+      StoreFieldManager fieldMgr =
+        new StoreFieldManager(op, EntityUtils.determineKind(cmd, ec), StoreFieldManager.Operation.INSERT);
       op.provideFields(op.getClassMetaData().getAllMemberPositions(), fieldMgr);
 
+      // Make sure the Entity parent is set (if any)
       Object assignedParentPk = fieldMgr.establishEntityGroup();
       Entity entity = fieldMgr.getEntity();
 
@@ -212,11 +215,18 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
             op.getClassMetaData().getDiscriminatorValue());
       }
 
-      // Add the state for this put to the list.
-      putStateList.add(new PutState(op, fieldMgr, assignedParentPk, entity));
+      // Update parent PK field on pojo
+      AbstractMemberMetaData parentPkMmd = storeMgr.getMetaDataForParentPK(cmd);
+      if (assignedParentPk != null) {
+        // we automatically assigned a parent to the entity so make sure that makes it back on to the pojo
+        op.replaceField(parentPkMmd.getAbsoluteFieldNumber(), assignedParentPk);
+      }
+
+      // Add the "state" for this put to the list.
+      putStateList.add(new PutState(op, fieldMgr, entity));
     }
 
-    // Save the parent entities first so we can have a key to use as a parent on owned child entities.
+    // PUT all entities in single call
     if (!putStateList.isEmpty()) {
       DatastoreTransaction txn = null;
       ExecutionContext ec = null;
@@ -253,7 +263,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       boolean identityStrategyUsed = false;
       if (cmd.getIdentityType() == IdentityType.APPLICATION) {
         int[] pkFields = cmd.getPKMemberPositions();
-        // TODO Allow for multiple PK fields
         AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFields[0]);
         if (pkMmd.getValueStrategy() == IdentityStrategy.IDENTITY) {
           identityStrategyUsed = true;
@@ -286,15 +295,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         putState.op.setPostStoreNewObjectId(newId);
       }
 
-      if (putState.assignedParentPk != null) {
-        // we automatically assigned a parent to the entity so make sure that makes it back on to the pojo
-        putState.op.replaceFieldMakeDirty(putState.fieldMgr.getParentMemberMetaData().getAbsoluteFieldNumber(), 
-            putState.assignedParentPk);
-      }
-
+      // TODO Change this to force the persist of any (relation) fields that hadn't been persisted before
       storeRelations(putState.fieldMgr, putState.op, putState.entity);
+      // TODO If any fields updated above, do a PUT of this object
 
       if (putState.entity.getParent() != null) {
+        // TODO Do we need this? and why?
         // We inserted a new child.  Register the parent key so we know we need to update the parent.
         KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.op.getExecutionContext());
         keyReg.registerModifiedParent(putState.entity.getParent());
@@ -307,86 +313,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   /**
-   * Method to fetch the specified fields of the managed object from the datastore.
-   * @param op ObjectProvider of the object whose fields need fetching
-   * @param fieldNumbers Fields to fetch
-   */
-  public void fetchObject(ObjectProvider op, int fieldNumbers[]) {
-    if (fieldNumbers == null || fieldNumbers.length == 0) {
-      return;
-    }
-
-    AbstractClassMetaData cmd = op.getClassMetaData();
-    storeMgr.validateMetaDataForClass(cmd);
-
-    // We always fetch the entire object, so if the state manager
-    // already has an associated Entity we know that associated
-    // Entity has all the fields.
-    ExecutionContext ec = op.getExecutionContext();
-    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(ec));
-    if (entity == null) {
-      Key pk = EntityUtils.getPkAsKey(op);
-      entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, pk); // Throws NucleusObjectNotFoundException if necessary
-    }
-
-    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
-      // Debug information about what we are retrieving
-      StringBuffer str = new StringBuffer("Fetching object \"");
-      str.append(op.toPrintableID()).append("\" (id=");
-      str.append(op.getExecutionContext().getApiAdapter().getObjectId(op)).append(")").append(" fields [");
-      for (int i=0;i<fieldNumbers.length;i++) {
-        if (i > 0) {
-          str.append(",");
-        }
-        str.append(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]).getName());
-      }
-      str.append("]");
-      NucleusLogger.DATASTORE_RETRIEVE.debug(str);
-    }
-
-    long startTime = System.currentTimeMillis();
-    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.Fetch.Start", 
-        op.toPrintableID(), op.getInternalObjectId()));
-    }
-
-    op.replaceFields(fieldNumbers, new FetchFieldManager(op, entity, fieldNumbers));
-
-    // Refresh version - is this needed? should have been set on retrieval anyway
-    VersionMetaData vmd = cmd.getVersionMetaDataForClass();
-    if (cmd.isVersioned()) {
-      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd));
-      if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
-        versionValue = new Timestamp((Long)versionValue);
-      }
-      op.setVersion(versionValue);
-    }
-
-    // Run post-fetch mapping callbacks. What is this actually achieving?
-    AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
-    for (int i = 0; i < fmds.length; i++) {
-      fmds[i] = op.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
-    }
-    ClassLoaderResolver clr = ec.getClassLoaderResolver();
-    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
-    FetchMappingConsumer consumer = new FetchMappingConsumer(op.getClassMetaData());
-    dc.provideMappingsForMembers(consumer, fmds, true);
-    dc.provideDatastoreIdMappings(consumer);
-    dc.providePrimaryKeyMappings(consumer);
-    for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-      callback.postFetch(op);
-    }
-
-    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
-            (System.currentTimeMillis() - startTime)));
-    }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementFetchCount();
-    }
-  }
-
-  /**
    * Method to update the specified fields of the managed object in the datastore.
    * @param op ObjectProvider of the managed object
    * @param fieldNumbers Fields to be updated in the datastore
@@ -394,7 +320,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   public void updateObject(ObjectProvider op, int fieldNumbers[]) {
     if (op.getLifecycleState().isDeleted()) {
       // don't perform updates on objects that are already deleted - this will cause them to be recreated
-      // NOTE : SHOULD NEVER HAVE AN UPDATE OF A DELETED OBJECT. DEFINE THE TESTCASE THAT DOES THIS
+      // This happens with JPAOneToOneTest/JDOOneToOneTest when deleting, called from DependentDeleteRequest
+      // 
       return;
     }
 
@@ -425,14 +352,19 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, key);
     }
 
+    // Update the Entity with the specified fields
     StoreFieldManager fieldMgr = new StoreFieldManager(op, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
     op.provideFields(fieldNumbers, fieldMgr);
+
+    // Check and update the version
     handleVersioningBeforeWrite(op, entity, true, "updating");
 
+    // PUT Entity into datastore
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject PUT of " + op);
     DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(op.getExecutionContext(), entity);
     op.setAssociatedValue(txn, entity);
 
+    // TODO Change this to be before the PUT and force any child relation objects to be flushed to the datastore first
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject storeRelations of " + op);
     storeRelations(fieldMgr, op, entity);
 
@@ -466,12 +398,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       } finally {
         fieldMgr.setRepersistingForChildKeys(false);
       }
+
       // if none of the relation fields are missing relation keys then there is
       // no need for any additional puts to write the relation keys
       // we'll set a flag on the statemanager to let downstream writers know
       // and then we'll do the put ourselves
       if (!missingRelationKey) {
-        op.setAssociatedValue(ForceFlushPreCommitTransactionEventListener.ALREADY_PERSISTED_RELATION_KEYS_KEY, true);
         DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(op.getExecutionContext(), entity);
         op.setAssociatedValue(txn, entity);
       }
@@ -555,6 +487,86 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
         (System.currentTimeMillis() - startTime)));
+    }
+  }
+
+  /**
+   * Method to fetch the specified fields of the managed object from the datastore.
+   * @param op ObjectProvider of the object whose fields need fetching
+   * @param fieldNumbers Fields to fetch
+   */
+  public void fetchObject(ObjectProvider op, int fieldNumbers[]) {
+    if (fieldNumbers == null || fieldNumbers.length == 0) {
+      return;
+    }
+
+    AbstractClassMetaData cmd = op.getClassMetaData();
+    storeMgr.validateMetaDataForClass(cmd);
+
+    // We always fetch the entire object, so if the state manager
+    // already has an associated Entity we know that associated
+    // Entity has all the fields.
+    ExecutionContext ec = op.getExecutionContext();
+    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(ec));
+    if (entity == null) {
+      Key pk = EntityUtils.getPkAsKey(op);
+      entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, pk); // Throws NucleusObjectNotFoundException if necessary
+    }
+
+    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
+      // Debug information about what we are retrieving
+      StringBuffer str = new StringBuffer("Fetching object \"");
+      str.append(op.toPrintableID()).append("\" (id=");
+      str.append(op.getExecutionContext().getApiAdapter().getObjectId(op)).append(")").append(" fields [");
+      for (int i=0;i<fieldNumbers.length;i++) {
+        if (i > 0) {
+          str.append(",");
+        }
+        str.append(cmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]).getName());
+      }
+      str.append("]");
+      NucleusLogger.DATASTORE_RETRIEVE.debug(str);
+    }
+
+    long startTime = System.currentTimeMillis();
+    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.Fetch.Start", 
+        op.toPrintableID(), op.getInternalObjectId()));
+    }
+
+    op.replaceFields(fieldNumbers, new FetchFieldManager(op, entity, fieldNumbers));
+
+    // Refresh version - is this needed? should have been set on retrieval anyway
+    VersionMetaData vmd = cmd.getVersionMetaDataForClass();
+    if (cmd.isVersioned()) {
+      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd));
+      if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
+        versionValue = new Timestamp((Long)versionValue);
+      }
+      op.setVersion(versionValue);
+    }
+
+    // Run post-fetch mapping callbacks. What is this actually achieving?
+    AbstractMemberMetaData[] fmds = new AbstractMemberMetaData[fieldNumbers.length];
+    for (int i = 0; i < fmds.length; i++) {
+      fmds[i] = op.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
+    }
+    ClassLoaderResolver clr = ec.getClassLoaderResolver();
+    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
+    FetchMappingConsumer consumer = new FetchMappingConsumer(op.getClassMetaData());
+    dc.provideMappingsForMembers(consumer, fmds, true);
+    dc.provideDatastoreIdMappings(consumer);
+    dc.providePrimaryKeyMappings(consumer);
+    for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
+      callback.postFetch(op);
+    }
+
+    if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
+            (System.currentTimeMillis() - startTime)));
+    }
+    if (storeMgr.getRuntimeManager() != null) {
+      storeMgr.getRuntimeManager().incrementFetchCount();
     }
   }
 
@@ -653,13 +665,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   private static final class PutState {
     private final ObjectProvider op;
     private final StoreFieldManager fieldMgr;
-    private final Object assignedParentPk;
     private final Entity entity;
+    // TODO Add the fields that were not set on the first pass
 
-    private PutState(ObjectProvider op, StoreFieldManager fieldMgr, Object assignedParentPk, Entity entity) {
+    private PutState(ObjectProvider op, StoreFieldManager fieldMgr, Entity entity) {
       this.op = op;
       this.fieldMgr = fieldMgr;
-      this.assignedParentPk = assignedParentPk;
       this.entity = entity;
     }
   }

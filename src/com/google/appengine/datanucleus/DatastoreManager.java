@@ -64,6 +64,7 @@ import java.util.Collections;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * StoreManager for GAE/J with DataNucleus.
@@ -136,6 +137,10 @@ public class DatastoreManager extends MappedStoreManager {
    * if we're seeing contention we should look here.
    */
   private final Set<String> validatedClasses = Collections.synchronizedSet(new HashSet<String>());
+
+  /** Map of the metadata for the member of this class storing the parent ("gae.parent-pk") keyed by class name. */
+  private final Map<String, AbstractMemberMetaData> parentMemberMetaDataByClass =
+    new ConcurrentHashMap<String, AbstractMemberMetaData>();
 
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
@@ -467,13 +472,29 @@ public class DatastoreManager extends MappedStoreManager {
 
   /**
    * Perform appengine-specific validation on the provided meta data.
-   * @param acmd The meta data to validate.
+   * Also generates cached information that is needed by persistence.
+   * @param cmd The metadata to validate.
    */
-  public void validateMetaDataForClass(AbstractClassMetaData acmd) {
+  public void validateMetaDataForClass(AbstractClassMetaData cmd) {
     // Only validate each meta data once
-    if (validatedClasses.add(acmd.getFullClassName())) {
-      metadataValidator.validate(acmd);
+    if (validatedClasses.add(cmd.getFullClassName())) {
+      metadataValidator.validate(cmd);
+
+      AbstractMemberMetaData parentPkMmd = MetaDataUtils.getParentPkMemberMetaDataForClass(cmd, getMetaDataManager(),
+          getNucleusContext().getClassLoaderResolver(cmd.getClass().getClassLoader()));
+      if (parentPkMmd != null) {
+        parentMemberMetaDataByClass.put(cmd.getFullClassName(), parentPkMmd);
+      }
     }
+  }
+
+  /**
+   * Accessor for the metadata of the member of this class marked as "gae.parent-pk".
+   * @param cmd Metadata for the class
+   * @return The member marked as "gae.parent-pk".
+   */
+  public AbstractMemberMetaData getMetaDataForParentPK(AbstractClassMetaData cmd) {
+    return parentMemberMetaDataByClass.get(cmd.getFullClassName());
   }
 
   public StorageVersion getStorageVersion() {

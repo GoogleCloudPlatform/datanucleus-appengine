@@ -54,7 +54,6 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.ForceFlushPreCommitTransactionEventListener;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
@@ -134,7 +133,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @return Whether it was successful
    */
   protected boolean internalAdd(ObjectProvider ownerOP, int startAt, boolean atEnd, Collection elements, int currentSize) {
-    ExecutionContext ec = ownerOP.getExecutionContext();
     boolean success = false;
     if (elements == null || elements.size() == 0) {
       success = true;
@@ -201,12 +199,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       success = true;
     }
 
-    if (success && !ec.getTransaction().isActive()) {
-      // TODO Remove this nonsense
-      ec.getTransaction().addTransactionEventListener(new ForceFlushPreCommitTransactionEventListener(ownerOP));
-      return true;
-    }
-    return false;
+    return success;
   }
 
   protected int[] internalShift(ObjectProvider ownerOP, boolean batched, int oldIndex, int amount) 
@@ -481,7 +474,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       }
       else {
         // Delete the element
-        // TODO Log this
         ec.deleteObjectInternal(element);
       }
     }
@@ -732,11 +724,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    */
   public int lastIndexOf(ObjectProvider ownerOP, Object element) {
     validateElementForReading(ownerOP.getExecutionContext(), element);
-    // TODO(maxr) Only seems to be called when useCache on the List
-    // is false, but it's true in all my tests and it looks like you
-    // need to set datanucleus-specific properties to get it to be false.
-    // See SCOUtils#useContainerCache.  We'll take care of this later.
-    throw new UnsupportedOperationException();
+    // TODO Cater for "FK" lists that can have an element more than once. Currently assumes only present once
+    return indexOf(ownerOP, element);
   }
 
   /* (non-Javadoc)
@@ -757,10 +746,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       ec.deleteObjectInternal(obj);
     }
 
-    // TODO Remove this nonsense
-    if (!ec.getTransaction().isActive()) {
-      ec.getTransaction().addTransactionEventListener(new ForceFlushPreCommitTransactionEventListener(ownerOP));
-    }
     return obj;
   }
 

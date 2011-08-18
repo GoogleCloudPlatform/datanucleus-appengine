@@ -155,7 +155,7 @@ public class DatastoreTable implements DatastoreClass {
   private final List<AbstractMemberMetaData> sameEntityGroupMemberMetaData = Utils.newArrayList();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
-  private AbstractMemberMetaData parentMappingMember;
+  private AbstractMemberMetaData parentMappingMemberMetaData;
 
   /** MetaData for all classes being managed here. */
   private final Collection<AbstractClassMetaData> managedClassMetaData = new HashSet<AbstractClassMetaData>();
@@ -448,9 +448,9 @@ public class DatastoreTable implements DatastoreClass {
       // sometimes the parent table is not yet initialized
       if (dt != null) {
         // inherit the parentMappingField
-        if (parentMappingMember == null) {
-          if (dt.parentMappingMember != null) {
-            parentMappingMember = dt.parentMappingMember;
+        if (parentMappingMemberMetaData == null) {
+          if (dt.parentMappingMemberMetaData != null) {
+            parentMappingMemberMetaData = dt.parentMappingMemberMetaData;
             break;
           }
         }
@@ -601,9 +601,9 @@ public class DatastoreTable implements DatastoreClass {
   private void markFieldAsParentKeyProvider(String mappedBy) {
 
     AbstractMemberMetaData newParentMappingField = getFieldMetaData(mappedBy);
-    if (parentMappingMember == null) {
-      parentMappingMember = newParentMappingField;
-    } else if (parentMappingMember != newParentMappingField) { // intentional reference compare
+    if (parentMappingMemberMetaData == null) {
+      parentMappingMemberMetaData = newParentMappingField;
+    } else if (parentMappingMemberMetaData != newParentMappingField) { // intentional reference compare
       throw new NucleusException(
           "App Engine ORM does not support multiple parent key provider fields.");
     }
@@ -1366,11 +1366,11 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   public boolean isParentKeyProvider(AbstractMemberMetaData ammd) {
-    return ammd.equals(parentMappingMember);
+    return ammd.equals(parentMappingMemberMetaData);
   }
 
-  public AbstractMemberMetaData getParentMappingMember() {
-    return parentMappingMember;
+  public AbstractMemberMetaData getParentMappingMemberMetaData() {
+    return parentMappingMemberMetaData;
   }
 
   /**
