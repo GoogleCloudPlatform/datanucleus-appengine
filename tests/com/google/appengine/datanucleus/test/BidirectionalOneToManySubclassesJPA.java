@@ -33,25 +33,29 @@ import javax.persistence.OneToMany;
 import javax.persistence.OrderBy;
 
 /**
- * Example 1:
+ * Example 1 (A-X):
  * A has List<X>
+ * B extends A
+ * X has back-pointer to A
+ * Y extends X
+ *
+ * Example 2 (B-Y):
+ * A
+ * B extends A has List<Y extends X>
+ * X
+ * Y extends X, has a back-pointer to A
+ *
+ * Example 3 (B-X):
+ * A
  * B extends A has List<X>
- * X has a back-pointer to A
+ * X has back-pointer to B
+ * Y extends X
  *
- * Example 2:
- * A
- * B extends A has List<Y extends X>
- * X has a back-pointer to A
- *
- * Example 3:
- * A
- * B extends A has List<Y extends X>
- * Y has a back-pointer to B
- *
- * Example 4:
+ * Example 4 (A-Y):
  * A has List<Y extends X>
  * B extends A
  * X has a back-pointer to A
+ * Y extends X
  *
  * @author Max Ross <max.ross@gmail.com>
  */
@@ -203,9 +207,6 @@ public class BidirectionalOneToManySubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
-      @ManyToOne(fetch = FetchType.LAZY)
-      private A parent;
-
       private String xString;
 
       public Key getId() {
@@ -223,15 +224,18 @@ public class BidirectionalOneToManySubclassesJPA {
       public void setXString(String xString) {
         this.xString = xString;
       }
-
-      public A getParent() {
-        return parent;
-      }
     }
 
     @Entity
     public static class Y extends X {
+      @ManyToOne(fetch = FetchType.LAZY)
+      private B parent;
+
       private String yString;
+
+      public B getParent() {
+        return parent;
+      }
 
       public String getYString() {
         return yString;
@@ -272,6 +276,7 @@ public class BidirectionalOneToManySubclassesJPA {
 
     @Entity
     public static class B extends A {
+      // TODO This ought to be generic of X not Y!
       @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
       @OrderBy(value = "xString desc")
       private List<Y> children = new ArrayList<Y>();
@@ -323,18 +328,9 @@ public class BidirectionalOneToManySubclassesJPA {
 
     @Entity
     public static class Y extends X{
-      private String yString;
-
+      // TODO This ought to be on X not Y!
       @ManyToOne(fetch = FetchType.LAZY)
       private B parent;
-
-      public String getYString() {
-        return yString;
-      }
-
-      public void setYString(String yString) {
-        this.yString = yString;
-      }
 
       public B getParent() {
         return parent;
@@ -342,6 +338,16 @@ public class BidirectionalOneToManySubclassesJPA {
 
       public void setParent(B parent) {
         this.parent = parent;
+      }
+
+      private String yString;
+
+      public String getYString() {
+        return yString;
+      }
+
+      public void setYString(String yString) {
+        this.yString = yString;
       }
     }
   }
@@ -405,9 +411,6 @@ public class BidirectionalOneToManySubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
-      @ManyToOne(fetch = FetchType.LAZY)
-      private A parent;
-
       private String xString;
 
       public Key getId() {
@@ -425,15 +428,18 @@ public class BidirectionalOneToManySubclassesJPA {
       public void setXString(String xString) {
         this.xString = xString;
       }
-
-      public A getParent() {
-        return parent;
-      }
     }
 
     @Entity
     public static class Y extends X {
+      @ManyToOne(fetch = FetchType.LAZY)
+      private A parent;
+
       private String yString;
+
+      public A getParent() {
+        return parent;
+      }
 
       public String getYString() {
         return yString;

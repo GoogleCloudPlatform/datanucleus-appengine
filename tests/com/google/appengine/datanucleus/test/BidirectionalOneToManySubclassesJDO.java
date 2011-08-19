@@ -30,25 +30,29 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 /**
- * Example 1:
+ * Example 1 (A-X):
  * A has List<X>
- * B extends A has List<X>
- * X has a back-pointer to A
- *
- * Example 2:
- * A
- * B extends A has List<Y extends X>
- * X has a back-pointer to A
- *
- * Example 3:
- * A
- * B extends A has List<Y extends X>
- * Y has a back-pointer to B
- * 
- * Example 4:
- * A has List<Y extends X>
  * B extends A
  * X has a back-pointer to A
+ * Y extends X
+ *
+ * Example 2 (B-Y):
+ * A
+ * B extends A has List<Y extends X>
+ * X
+ * Y has a back-pointer to A
+ *
+ * Example 3 (B-X):
+ * A
+ * B extends A has List<X>
+ * X has back-pointer to B
+ * Y extends X
+ * 
+ * Example 4 (A-Y):
+ * A has List<Y extends X>
+ * B extends A
+ * X
+ * Y extends X, has a back-pointer to A
  *
  * @author Max Ross <max.ross@gmail.com>
  */
@@ -202,9 +206,6 @@ public class BidirectionalOneToManySubclassesJDO {
       @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
       private Key id;
 
-      @Persistent
-      private A parent;
-
       private String xString;
 
       public Key getId() {
@@ -222,15 +223,18 @@ public class BidirectionalOneToManySubclassesJDO {
       public void setXString(String xString) {
         this.xString = xString;
       }
-
-      public A getParent() {
-        return parent;
-      }
     }
 
     @PersistenceCapable(detachable = "true")
     public static class Y extends X {
+      @Persistent
+      private B parent;
+
       private String yString;
+
+      public B getParent() {
+        return parent;
+      }
 
       public String getYString() {
         return yString;
@@ -271,6 +275,7 @@ public class BidirectionalOneToManySubclassesJDO {
 
     @PersistenceCapable(detachable = "true")
     public static class B extends A {
+      // TODO This ought to be generic of X not Y
       @Element(dependent = "true")
       @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="xString DESC"))
       @Persistent(mappedBy = "parent")
@@ -323,18 +328,9 @@ public class BidirectionalOneToManySubclassesJDO {
 
     @PersistenceCapable(detachable = "true")
     public static class Y extends X{
-      private String yString;
-
+      // TODO This ought to be on X not Y
       @Persistent
       private B parent;
-
-      public String getYString() {
-        return yString;
-      }
-
-      public void setYString(String yString) {
-        this.yString = yString;
-      }
 
       public B getParent() {
         return parent;
@@ -342,6 +338,16 @@ public class BidirectionalOneToManySubclassesJDO {
 
       public void setParent(B parent) {
         this.parent = parent;
+      }
+
+      private String yString;
+
+      public String getYString() {
+        return yString;
+      }
+
+      public void setYString(String yString) {
+        this.yString = yString;
       }
     }
   }
@@ -406,9 +412,6 @@ public class BidirectionalOneToManySubclassesJDO {
       @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
       private Key id;
 
-      @Persistent
-      private A parent;
-
       private String xString;
 
       public Key getId() {
@@ -426,15 +429,18 @@ public class BidirectionalOneToManySubclassesJDO {
       public void setXString(String xString) {
         this.xString = xString;
       }
-
-      public A getParent() {
-        return parent;
-      }
     }
 
     @PersistenceCapable(detachable = "true")
     public static class Y extends X {
+      @Persistent
+      private A parent;
+
       private String yString;
+
+      public A getParent() {
+        return parent;
+      }
 
       public String getYString() {
         return yString;
