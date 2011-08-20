@@ -8,28 +8,23 @@ import javax.jdo.annotations.PrimaryKey;
 import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable
-public class Issue228Child {
+public class Issue228Owner {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   Key id;
-
-  String name;
-
-  Issue228Parent parent;
-
-  public String getName() {
-    return name;
+  
+  @Persistent
+  String aString;
+  
+  @Persistent(mappedBy = "parent")
+  Issue228Related child;
+  
+  public void setChild(Issue228Related c) { 
+    child = c; 
+    child.parent = this;
   }
 
-  public void setName(String str) {
-    this.name = str;
-  }
+  public void setAString(String str) { aString = str;}
 
-  public void setParent(Issue228Parent o) {
-    this.parent = o;
-  }
-
-  public Issue228Parent getParent() {
-    return parent;
-  }
+  public Issue228Related getChild() {return child;}
 }

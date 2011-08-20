@@ -1,5 +1,8 @@
 package com.google.appengine.datanucleus.bugs.test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
@@ -12,19 +15,21 @@ public class Issue228Parent {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   Key id;
-  
-  @Persistent
-  String aString;
-  
-  @Persistent(mappedBy = "parent")
-  Issue228Child child;
-  
-  public void setChild(Issue228Child c) { 
-    child = c; 
-    child.parent = this;
+
+  String name;
+
+  @Persistent(mappedBy="parent")
+  Set<Issue228Child> children = new HashSet<Issue228Child>();
+
+  public String getName() {
+    return name;
   }
 
-  public void setAString(String str) { aString = str;}
+  public void setName(String str) {
+    this.name = str;
+  }
 
-  public Issue228Child getChild() {return child;}
+  public Set<Issue228Child> getChildren() {
+    return children;
+  }
 }
