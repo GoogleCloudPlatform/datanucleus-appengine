@@ -26,7 +26,6 @@ import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.StoreManager;
-import org.datanucleus.store.fieldmanager.SingleValueFieldManager;
 
 import java.util.Arrays;
 import java.util.HashSet;
@@ -35,25 +34,21 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * A registry for the keys of objects that have been inserted as part of a
- * transaction.
+ * A registry for the keys of objects that have been inserted as part of a transaction.
  *
  * @author Max Ross <maxr@google.com>
  */
 public class KeyRegistry {
 
   /**
-   * Map is used to pass messages between parent and child
-   * during cascades.  We use an IdentityHashMap here
-   * because we really really (really) want reference equality, not object
-   * equality.
+   * Map is used to pass messages between parent and child during cascades.
+   * We use an IdentityHashMap here because we want reference equality, not object equality.
    */
   private final Map<Object, Key> parentKeyMap = new IdentityHashMap<Object, Key>();
 
   /**
-   * Set is used to pass messages between child and parent during
-   * cascades.  The entity uniquely identified by Any {@link Key}
-   * in this set needs to have its relation fields re-persisted.
+   * Set is used to pass messages between child and parent during cascades.
+   * The entity uniquely identified by any {@link Key} in this set needs to have its relation fields re-persisted.
    */
   private final Set<Key> modifiedParentSet = new HashSet<Key>();
 
@@ -71,21 +66,18 @@ public class KeyRegistry {
    */
   void registerKey(ObjectProvider op, DatastoreFieldManager fieldMgr) {
     DatastoreTable dt = fieldMgr.getDatastoreTable();
-    SingleValueFieldManager sfv = new SingleValueFieldManager();
     Key key = fieldMgr.getEntity().getKey();
     AbstractClassMetaData acmd = op.getClassMetaData();
     for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
       // Make sure we only provide the field for the correct part of any inheritance tree
       if (dependent.getAbstractClassMetaData().isSameOrAncestorOf(acmd)) {
-        op.provideFields(new int[]{dependent.getAbsoluteFieldNumber()}, sfv);
-        Object childValue = sfv.fetchObjectField(dependent.getAbsoluteFieldNumber());
+        Object childValue = op.provideField(dependent.getAbsoluteFieldNumber());
         if (childValue != null) {
           if (childValue instanceof Object[]) {
             childValue  = Arrays.asList((Object[]) childValue);
           }
           if (childValue instanceof Iterable) {
-            // TODO(maxr): Make sure we're not pulling back unnecessary data
-            // when we iterate over the values.
+            // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
             String expectedType = getExpectedChildType(dependent);
             for (Object element : (Iterable) childValue) {
               addToParentKeyMap(element, key, op, expectedType, true);

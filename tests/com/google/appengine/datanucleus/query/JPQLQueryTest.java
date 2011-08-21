@@ -3084,7 +3084,7 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testSubclassesNotSupported() {
-    JPQLQuery q = new JPQLQuery(getExecutionContext());
+    JPQLQuery q = new JPQLQuery(getExecutionContext().getStoreManager(), getExecutionContext());
     q.setCandidateClass(Base1.class);
     q.setSubclasses(false);
     try {

@@ -2929,7 +2929,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testSubclassesNotSupported() {
-    JDOQLQuery q = new JDOQLQuery(getExecutionContext());
+    JDOQLQuery q = new JDOQLQuery(getExecutionContext().getStoreManager(), getExecutionContext());
     q.setCandidateClass(Base1.class);
     q.setSubclasses(false);
     try {

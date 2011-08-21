@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
@@ -45,7 +46,7 @@ class PojoDatastoreBridge {
         return DatastoreQuery.entityToPojo(from, acmd, clr, ec, true, ec.getFetchPlan().getCopy());
       }
     };
-    AbstractJavaQuery query = new DummyQuery(ec);
+    AbstractJavaQuery query = new DummyQuery(ec.getStoreManager(), ec);
     ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     try {
       return (List<T>) DatastoreQuery.newStreamingQueryResultForEntities(
@@ -57,8 +58,8 @@ class PojoDatastoreBridge {
 
   private static final class DummyQuery extends AbstractJavaQuery {
 
-    private DummyQuery(ExecutionContext ec) {
-      super(ec);
+    private DummyQuery(StoreManager storeMgr, ExecutionContext ec) {
+      super(storeMgr, ec);
     }
 
     public String getSingleStringQuery() {

@@ -26,6 +26,7 @@ import org.datanucleus.query.evaluator.JDOQLEvaluator;
 import org.datanucleus.query.evaluator.JavaQueryEvaluator;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
+import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
 import org.datanucleus.util.NucleusLogger;
@@ -45,30 +46,33 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
   private final DatastoreQuery datastoreQuery;
 
   /**
-   * Constructs a new query instance that uses the given object manager.
+   * Constructs a new query instance that uses the given StoreManager and ExecutionContext.
+   * @param storeMgr StoreManager
    * @param ec ExecutionContext
    */
-  public JDOQLQuery(ExecutionContext ec) {
-    this(ec, (JDOQLQuery) null);
+  public JDOQLQuery(StoreManager storeMgr, ExecutionContext ec) {
+    this(storeMgr, ec, (JDOQLQuery) null);
   }
 
   /**
    * Constructs a new query instance having the same criteria as the given query.
+   * @param storeMgr StoreManager
    * @param ec ExecutionContext
    * @param q The query from which to copy criteria.
    */
-  public JDOQLQuery(ExecutionContext ec, JDOQLQuery q) {
-    super(ec, q);
+  public JDOQLQuery(StoreManager storeMgr, ExecutionContext ec, JDOQLQuery q) {
+    super(storeMgr, ec, q);
     datastoreQuery = new DatastoreQuery(this);
   }
 
   /**
    * Constructor for a JDOQL query where the query is specified using the "Single-String" format.
+   * @param storeMgr StoreManager
    * @param ec ExecutionContext.
    * @param query The JDOQL query string.
    */
-  public JDOQLQuery(ExecutionContext ec, String query) {
-    super(ec, query);
+  public JDOQLQuery(StoreManager storeMgr, ExecutionContext ec, String query) {
+    super(storeMgr, ec, query);
     datastoreQuery = new DatastoreQuery(this);
   }
 

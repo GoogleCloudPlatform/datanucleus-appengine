@@ -180,7 +180,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       // Create the Entity, and populate all fields that can be populated (this will omit any owned child objects 
       // if we don't have the key of this object yet).
       StoreFieldManager fieldMgr =
-        new StoreFieldManager(op, EntityUtils.determineKind(cmd, ec), StoreFieldManager.Operation.INSERT);
+        new StoreFieldManager(op, EntityUtils.determineKind(cmd, ec));
       op.provideFields(op.getClassMetaData().getAllMemberPositions(), fieldMgr);
 
       // Make sure the Entity parent is set (if any)
@@ -353,7 +353,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     // Update the Entity with the specified fields
-    StoreFieldManager fieldMgr = new StoreFieldManager(op, entity, fieldNumbers, StoreFieldManager.Operation.UPDATE);
+    StoreFieldManager fieldMgr = new StoreFieldManager(op, entity, fieldNumbers);
     op.provideFields(fieldNumbers, fieldMgr);
 
     // Check and update the version
