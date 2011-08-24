@@ -22,7 +22,6 @@ import com.google.appengine.datanucleus.test.BidirectionalOneToOneSubclassesJPA.
 import com.google.appengine.datanucleus.test.BidirectionalOneToOneSubclassesJPA.Example2;
 import com.google.appengine.datanucleus.test.BidirectionalOneToOneSubclassesJPA.Example3;
 
-
 /**
  * @author Max Ross <max.ross@gmail.com>
  */
@@ -36,6 +35,8 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
 
     Example1.X child = new Example1.X();
     child.setXString("x string");
+
+    child.setParent(parent);
     parent.setChild(child);
 
     beginTxn();
@@ -80,7 +81,9 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
 
     Example1.X child = new Example1.X();
     child.setXString("x string");
+
     parent.setChild(child);
+    child.setParent(parent);
 
     beginTxn();
     em.persist(parent);
@@ -124,7 +127,9 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     Example2.Y child = new Example2.Y();
     child.setXString("x string");
     child.setYString("y string");
+
     parent.setChild(child);
+    child.setParent(parent);
 
     beginTxn();
     em.persist(parent);
@@ -199,7 +204,9 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
     Example3.Y child = new Example3.Y();
     child.setXString("x string");
     child.setYString("y string");
+
     parent.setChild(child);
+    child.setParent(parent);
 
     beginTxn();
     em.persist(parent);
@@ -270,9 +277,12 @@ public class JPABidirectionalOneToOneSubclassTest extends JPATestCase {
   public void testWrongChildType() {
     Example1.A parent = new Example1.A();
     parent.setAString("a string");
+
     Example1.Y child = new Example1.Y();
     child.setXString("x string");
+
     parent.setChild(child);
+    child.setParent(parent);
 
     beginTxn();
     em.persist(parent);

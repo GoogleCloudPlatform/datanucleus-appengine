@@ -105,7 +105,6 @@ public class BidirectionalOneToOneSubclassesJPA {
       @GeneratedValue(strategy= GenerationType.IDENTITY)
       private Key id;
 
-      @SuppressWarnings("unused")
       @OneToOne(fetch = FetchType.LAZY, mappedBy = "child")
       private A parent;
 
@@ -117,6 +116,14 @@ public class BidirectionalOneToOneSubclassesJPA {
 
       public void setId(Key id) {
         this.id = id;
+      }
+
+      public void setParent(A parent) {
+        this.parent = parent;
+      }
+
+      public A getParent() {
+        return parent;
       }
 
       public String getXString() {
@@ -313,6 +320,10 @@ public class BidirectionalOneToOneSubclassesJPA {
 
       public void setXString(String xString) {
         this.xString = xString;
+      }
+
+      public void setParent(A a) {
+        this.parent = a;
       }
 
       public A getParent() {
