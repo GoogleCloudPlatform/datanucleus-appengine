@@ -78,6 +78,20 @@ public class MetaDataUtils {
   }
 
   /**
+   * Convenience accessor for whether this relation is owned (or not).
+   * Currently assumes owned unless otherwise specified.
+   * @param mmd Metadata for the field/property
+   * @return Whether it is owned
+   */
+  public static boolean isOwnedRelation(AbstractMemberMetaData mmd) {
+    boolean owned = true;
+    if ("false".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
+      owned = false;
+    }
+    return owned;
+  }
+
+  /**
    * Convenience method to return the metadata for the field/property of this class that stores the 
    * parent PK (in metadata as "gae.parent-pk").
    * @param cmd Metadata for the class

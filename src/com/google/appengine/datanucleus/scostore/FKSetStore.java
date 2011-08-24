@@ -37,10 +37,11 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.KeyRegistry;
+import com.google.appengine.datanucleus.MetaDataUtils;
 
 /**
  * Backing store for sets stored with a "FK" in the element.
@@ -64,6 +65,12 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
     if (element == null) {
       // FK sets allow no nulls (since can't have a FK on a null element!)
       throw new NucleusUserException(LOCALISER.msg("056039"));
+    }
+
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Register the parent key for the element when owned
+      Key parentKey = EntityUtils.getKeyForObject(ownerOP.getObject(), ownerOP.getExecutionContext());
+      KeyRegistry.getKeyRegistry(ownerOP.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
     }
 
     // Make sure that the element is persisted in the datastore (reachability)
@@ -222,7 +229,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
 
     // Since we only support owned relationships right now, we can check containment simply 
     // by looking to see if the element's Key contains the parent Key.
-    Key childKey = extractElementKey(ec, element);
+    Key childKey = EntityUtils.getKeyForObject(element, ec);
     // Child key can be null if element has not yet been persisted
     if (childKey == null || childKey.getParent() == null) {
       return false;
@@ -356,15 +363,5 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
   protected int getFieldNumberInElementForBidirectional(ObjectProvider elementOP) {
     return (relationType == Relation.ONE_TO_MANY_BI ? 
         elementOP.getClassMetaData().getAbsolutePositionOfMember(ownerMemberMetaData.getMappedBy()) : -1);
-  }
-
-  protected Key extractElementKey(ExecutionContext ec, Object element) {
-    ApiAdapter apiAdapter = ec.getApiAdapter();
-    Object id = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(element));
-    if (id == null) {
-      return null;
-    }
-    // This is a child object so we know the pk is Key or encoded String
-    return id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
   }
 }

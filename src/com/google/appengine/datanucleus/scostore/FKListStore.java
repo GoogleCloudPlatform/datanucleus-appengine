@@ -54,6 +54,8 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.KeyRegistry;
+import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
@@ -176,8 +178,16 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       int position = startAt;
       Iterator elementIter = elements.iterator();
       while (elementIter.hasNext()) {
+        Object element = elementIter.next();
+
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          // Register the parent key for the element when owned
+          Key parentKey = EntityUtils.getKeyForObject(ownerOP.getObject(), ownerOP.getExecutionContext());
+          KeyRegistry.getKeyRegistry(ownerOP.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
+        }
+
         // Persist any non-persistent objects at their final list position (persistence-by-reachability)
-        boolean inserted = validateElementForWriting(ownerOP, elementIter.next(), position);
+        boolean inserted = validateElementForWriting(ownerOP, element, position);
         if (!inserted) {
           // This element wasn't positioned in the validate so we need to set the positions later
           elementsNeedPositioning = true;
@@ -734,6 +744,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   public Object set(ObjectProvider ownerOP, int index, Object element, boolean allowCascadeDelete) {
     // Get current element at this position
     Object obj = get(ownerOP, index);
+
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Register the parent key for the element when owned
+      Key parentKey = EntityUtils.getKeyForObject(ownerOP.getObject(), ownerOP.getExecutionContext());
+      KeyRegistry.getKeyRegistry(ownerOP.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
+    }
 
     // Make sure the element going to this position is persisted (and give it its index)
     validateElementForWriting(ownerOP, element, index);

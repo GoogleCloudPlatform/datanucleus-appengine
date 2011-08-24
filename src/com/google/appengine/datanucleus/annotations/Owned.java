@@ -21,9 +21,9 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to mark a relation field/property as not owned.
+ * Annotation to mark a relation field/property as owned.
  */
 @Target({ElementType.FIELD, ElementType.METHOD}) @Retention(RetentionPolicy.RUNTIME)
-public @interface Unowned
+public @interface Owned
 {
 }

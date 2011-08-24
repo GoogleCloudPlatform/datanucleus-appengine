@@ -16,7 +16,6 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import java.lang.reflect.Field;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -47,7 +46,6 @@ import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
-import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
@@ -203,12 +201,16 @@ public final class EntityUtils {
     return result;
   }
 
-  static Key getKeyForObject(Object pc, ExecutionContext ec) {
-    // TODO Cater for datastore-identity
+  public static Key getKeyForObject(Object pc, ExecutionContext ec) {
+    // TODO Cater for datastore-identity, composite identity
     Object internalPk = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ec.getApiAdapter().getIdForObject(pc));
-    AbstractClassMetaData acmd =
-        ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver());
-    return EntityUtils.getPkAsKey(internalPk, acmd, ec);
+    if (internalPk == null) {
+      // Not yet persistent, so return null
+      return null;
+    }
+
+    return EntityUtils.getPkAsKey(internalPk, 
+        ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver()), ec);
   }
 
   public static Key getPkAsKey(ObjectProvider op) {
@@ -701,17 +703,12 @@ public final class EntityUtils {
 
   /**
    * Convenience method to find the parent key for the supplied entity and its ObjectProvider about to be
-   * persisted. If a datastore entity doesn't have a parent there are 4 places we can look for one.
+   * persisted. If a datastore entity doesn't have a parent there are 3 places we can look for one.
    * 1) It's possible that a pojo in the cascade chain registered itself as the parent.
    * 2) It's possible that the pojo has an external foreign key mapping to the object that owns it, 
    *    in which case we can use the key of that field as the parent.
-   * 3) It's possible that the pojo has a field containing the parent that is not an external foreign-key 
-   *    mapping but is labeled as a "parent provider" (this is an app engine orm term). In this case, as with
-   *    #2, we can use the key of that field as the parent.
-   * 4) If part of the attachment process we can consult the ExecutionContext for the owner of this object 
+   * 3) If part of the attachment process we can consult the ExecutionContext for the owner of this object 
    *    (that caused the attach of this object).
-   *
-   * It _should_ be possible to get rid of at least one of these mechanisms, most likely the first.
    * @return The parent key
    */
   public static Key getParentKey(Entity entity, ObjectProvider op) {
@@ -721,31 +718,15 @@ public final class EntityUtils {
     }
 
     ExecutionContext ec = op.getExecutionContext();
-    DatastoreTable table =
-      ((DatastoreManager)ec.getStoreManager()).getDatastoreClass(op.getClassMetaData().getFullClassName(),
-        ec.getClassLoaderResolver());
 
-    // Mechanism 1
-    parentKey = KeyRegistry.getKeyRegistry(ec).getRegisteredKey(op.getObject());
+    // Mechanism 1, from the registry
+    parentKey = KeyRegistry.getKeyRegistry(ec).getParentKeyForOwnedObject(op.getObject());
 
     if (parentKey == null) {
-      // Mechanism 2
-      // We don't have a registered key for the object associated with the ObjectProvider but there might
-      // be one tied to the foreign key mappings for this object.  If this is the Many side of a bidirectional
-      // One To Many it might also be available on the parent object.
-      // TODO(maxr): Unify the 2 mechanisms.  We probably want to get rid of the KeyRegistry.
-      Collection<JavaTypeMapping> externalFKMappings = table.getExternalFkMappings().values();
-      for (JavaTypeMapping fkMapping : externalFKMappings) {
-        Object fkValue = op.getAssociatedValue(fkMapping);
-        if (fkValue != null) {
-          parentKey = EntityUtils.getKeyForObject(fkValue, ec);
-          break;
-        }
-      }
-    }
-
-    if (parentKey == null) {
-      // Mechanism 3
+      // Mechanism 2, from the parent end of a bidir relation where this is a child
+      DatastoreTable table =
+        ((DatastoreManager)ec.getStoreManager()).getDatastoreClass(op.getClassMetaData().getFullClassName(),
+          ec.getClassLoaderResolver());
       AbstractMemberMetaData parentField = table.getParentMappingMemberMetaData();
       if (parentField != null) {
         Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
@@ -754,7 +735,7 @@ public final class EntityUtils {
     }
 
     if (parentKey == null) {
-      // Mechanism 4, use attach parent info from ExecutionContext
+      // Mechanism 3, use attach parent info from ExecutionContext
       ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
       if (ownerOP != null) {
         Object parentPojo = ownerOP.getObject();

@@ -345,5 +345,7 @@ limitations under the License.
             handler="com.google.appengine.datanucleus.annotations.UnindexedHandler"/>
         <member-annotation-handler annotation-class="com.google.appengine.datanucleus.annotations.Unowned" 
             handler="com.google.appengine.datanucleus.annotations.UnownedHandler"/>
+        <member-annotation-handler annotation-class="com.google.appengine.datanucleus.annotations.Owned" 
+            handler="com.google.appengine.datanucleus.annotations.OwnedHandler"/>
     </extension>
 </plugin>

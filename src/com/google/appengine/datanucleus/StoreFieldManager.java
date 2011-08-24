@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -26,6 +27,8 @@ import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ArrayMetaData;
+import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
@@ -260,24 +263,31 @@ public class StoreFieldManager extends DatastoreFieldManager {
           EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
       return;
     } else {
-      // Relation type, so provide treatment depending on whether this object is persistent yet, or unowned relation
+      boolean owned = MetaDataUtils.isOwnedRelation(ammd);
+      if (!owned) {
+        NucleusLogger.GENERAL.debug("Field=" + ammd.getFullFieldName() + " is UNOWNED");
+      }
+
+      // Relation type, so provide treatment depending on whether this object is persistent yet
       if (!repersistingForChildKeys) {
         // register a callback for later TODO Remove this
         storeRelationField(getClassMetaData(), ammd, value, operation == StoreFieldManager.Operation.INSERT,
             fieldManagerStateStack.getFirst().mappingConsumer);
       }
 
-      // Skip out for all situations where we don't store any relation keys
-      if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
-        // don't write child keys to the parent if the storage version isn't high enough
-        return;
-      }
-      if (relationType == Relation.MANY_TO_ONE_BI) {
-        // We don't store any "FK" of the parent TODO We ought to
-        return;
-      } else if (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() != null) {
-        // We don't store any "FK" of the other side TODO We ought to
-        return;
+      if (owned) {
+        // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
+        if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+          // don't write child keys to the parent if the storage version isn't high enough
+          return;
+        }
+        if (relationType == Relation.MANY_TO_ONE_BI) {
+          // We don't store any "FK" of the parent TODO We ought to but Google don't want to
+          return;
+        } else if (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() != null) {
+          // We don't store any "FK" of the other side TODO We ought to but Google don't want to
+          return;
+        }
       }
 
       if (value == null) {
@@ -527,8 +537,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     // TODO Cater for datastore identity
-    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(
-        valueOP.getInternalObjectId());
+    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueOP.getInternalObjectId());
     /*      if (primaryKey == null && operation == Operation.UPDATE && op.getInternalObjectId() != null) {
         // *** This was added to attempt to get child objects persistent so we note their ids for persist of parent ***
         NucleusLogger.GENERAL.info(">> this.op=" + op + " childobject.op=" + valueOP + " does not provide its id, so flushing it (since part of UPDATE)");
@@ -545,11 +554,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
       throw new NullPointerException("Could not extract a key from " + value);
     }
 
-//    establishEntityGroup();
-    NucleusLogger.GENERAL.info(">> key=" + key + " parentKey=" + datastoreEntity.getParent());
     // We only support owned relationships so this key should be a child of the entity we are persisting. WRONG!
     if (key.getParent() == null) {
-      // TODO This check is wrong. If we have a 1-N bidir this will fail since the N side thinks it ought to be the parent
+      // TODO This is caused by persisting from non-owner side of a relation when owned and GAE having a very basic
+      // restriction of not allowing persistence of such things due to its silly parent-key rationale.
       throw new EntityUtils.ChildWithoutParentException(datastoreEntity.getKey(), key);
     } else if (!key.getParent().equals(datastoreEntity.getKey())) {
       throw new EntityUtils.ChildWithWrongParentException(datastoreEntity.getKey(), key);
@@ -592,8 +600,60 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     if (datastoreEntity.getKey() != null) {
-      keyRegistry.registerKey(getObjectProvider(), this);
+      // TODO Enable this when we have the key set upon creation of Entity.
+      /*      if (relationType == Relation.ONE_TO_MANY_UNI || relationType == Relation.ONE_TO_MANY_BI) {
+                // Owner of 1-N, so other side has this as parent
+                Object childValue = op.provideField(ammd.getAbsoluteFieldNumber());
+                if (childValue != null) {
+                  NucleusLogger.GENERAL.info(">> StoreFM field=" + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(childValue));
+                  if (childValue instanceof Object[]) {
+                    childValue  = Arrays.asList((Object[]) childValue);
+                  }
+                  if (childValue instanceof Iterable) {
+                    for (Object element : (Iterable)childValue) {
+                      // TODO Check polymorphism
+                      keyReg.registerParentKeyForOwnedObject(element, key);
+                    }
+                  }
+                }
+              } else if (relationType == Relation.ONE_TO_ONE_UNI ||
+                  (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() == null)) {
+                // Owner of 1-1 relation, so other side is child
+                Object childValue = op.provideField(ammd.getAbsoluteFieldNumber());
+                if (childValue != null) {
+                  // TODO Check polymorphism
+                  keyReg.registerParentKeyForOwnedObject(childValue, key);
+                }
+              }*/
+      // Register parent key - TODO why do this for all and not just for the relations being updated?!!!
+      ObjectProvider op = getObjectProvider();
+      DatastoreTable dt = getDatastoreTable();
+      Key key = datastoreEntity.getKey();
+      AbstractClassMetaData acmd = op.getClassMetaData();
+      for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
+        // Make sure we only provide the field for the correct part of any inheritance tree
+        if (dependent.getAbstractClassMetaData().isSameOrAncestorOf(acmd)) {
+          Object childValue = op.provideField(dependent.getAbsoluteFieldNumber());
+          if (childValue != null) {
+            if (childValue instanceof Object[]) {
+              childValue  = Arrays.asList((Object[]) childValue);
+            }
+            if (childValue instanceof Iterable) {
+              // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
+              String expectedType = getExpectedChildType(dependent);
+              for (Object element : (Iterable) childValue) {
+                addToParentKeyMap(keyRegistry, element, key, op.getExecutionContext(), expectedType, true);
+              }
+            } else {
+              boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
+              addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), 
+                  getExpectedChildType(dependent), checkForPolymorphism);
+            }
+          }
+        }
+      }
     }
+
     for (StoreRelationEvent event : storeRelationEvents) {
       event.apply();
     }
@@ -604,6 +664,36 @@ public class StoreFieldManager extends DatastoreFieldManager {
     } finally {
       keyRegistry.clearModifiedParent(datastoreEntity.getKey());
     }
+  }
+
+  // Nonsense about registering parent key
+  private String getExpectedChildType(AbstractMemberMetaData dependent) {
+    if (dependent.getCollection() != null) {
+      CollectionMetaData cmd = dependent.getCollection();
+      return cmd.getElementType();
+    } else if (dependent.getArray() != null) {
+      ArrayMetaData amd = dependent.getArray();
+      return amd.getElementType();
+    }
+    return dependent.getTypeName();
+  }
+
+  // Nonsense about registering parent key
+  private void addToParentKeyMap(KeyRegistry keyRegistry, Object childValue, Key key, ExecutionContext ec,
+      String expectedType, boolean checkForPolymorphism) {
+    if (checkForPolymorphism && childValue != null && !childValue.getClass().getName().equals(expectedType)) {
+      AbstractClassMetaData acmd = ec.getMetaDataManager().getMetaDataForClass(childValue.getClass(),
+          ec.getClassLoaderResolver());
+      if (!MetaDataUtils.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
+        // TODO cache the result of this evaluation to improve performance
+        throw new UnsupportedOperationException(
+            "Received a child of type " + childValue.getClass().getName() + " for a field of type " +
+            expectedType + ". Unfortunately polymorphism in relationships is only supported for the " +
+            "superclass-table inheritance mapping strategy.");
+      }
+    }
+
+    keyRegistry.registerParentKeyForOwnedObject(childValue, key);
   }
 
   private void storeRelationField(final AbstractClassMetaData acmd, final AbstractMemberMetaData ammd, final Object value,
@@ -696,14 +786,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
    *   field for the parent.
    */
   Object establishEntityGroup() {
-    Key parentKey = getEntity().getParent();
+    Key parentKey = datastoreEntity.getParent();
     if (parentKey == null) {
-      parentKey = EntityUtils.getParentKey(datastoreEntity, getObjectProvider());
+      parentKey = EntityUtils.getParentKey(datastoreEntity, op);
       if (parentKey != null) {
         datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
       }
     }
-NucleusLogger.GENERAL.info(">> establishEntityGroup parentKey=" + parentKey + " this=" + op);
+
     AbstractMemberMetaData parentPkMmd = ((DatastoreManager)getStoreManager()).getMetaDataForParentPK(getClassMetaData());
     if (parentKey != null && parentPkMmd != null) {
       return parentPkMmd.getType().equals(Key.class) ? parentKey : KeyFactory.keyToString(parentKey);
