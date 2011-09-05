@@ -18,6 +18,7 @@ package com.google.appengine.datanucleus;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.metadata.MetaDataManager;
 
@@ -25,6 +26,22 @@ import org.datanucleus.metadata.MetaDataManager;
  * Series of utilities for interrogating metadata, particularly for GAE/J extensions.
  */
 public class MetaDataUtils {
+
+  /**
+   * Accessor for the default value specified for the provided member.
+   * If no defaultValue is provided on the column then returns null.
+   * @param mmd Metadata for the member
+   * @return The default value
+   */
+  public static String getDefaultValueForMember(AbstractMemberMetaData mmd)
+  {
+      ColumnMetaData[] colmds = mmd.getColumnMetaData();
+      if (colmds == null || colmds.length < 1)
+      {
+          return null;
+      }
+      return colmds[0].getDefaultValue();
+  }
 
   public static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
     int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs

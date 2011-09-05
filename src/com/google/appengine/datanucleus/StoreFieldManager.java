@@ -238,103 +238,108 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     ClassLoaderResolver clr = getClassLoaderResolver();
-    if (value != null ) {
-      if (ammd.isSerialized()) {
-        // Serialize the field, producing a Blob
+    if (ammd.isSerialized()) {
+      if (value != null) {
+        // Serialize the field (producing a Blob)
         value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
       } else {
-        // Perform any conversions from the field type to the stored-type
-        TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
-        value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
+        // Make sure we can have a null property for this field
+        checkSettingToNullValue(ammd, value);
       }
+      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
+      return;
+    }
+
+    if (value != null ) {
+      // Perform any conversions from the field type to the stored-type
+      TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+      value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
     }
 
     int relationType = ammd.getRelationType(clr);
-    if (ammd.isSerialized() || relationType == Relation.NONE) {
-      // Basic field or serialised so just set the property
-      if (value instanceof SCO) {
-        // Use the unwrapped value so the datastore doesn't fail on unknown types
-        value = ((SCO)value).getValue();
-      }
-
-      // Set the property on the entity, allowing for null rules
-      checkSettingToNullValue(ammd, value);
-      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
-      return;
-    } else {
-      boolean owned = MetaDataUtils.isOwnedRelation(ammd);
-      if (!owned) {
-        NucleusLogger.GENERAL.debug("Field=" + ammd.getFullFieldName() + " is UNOWNED");
-      }
-
-      // Relation type, so provide treatment depending on whether this object is persistent yet
-      if (!repersistingForChildKeys) {
-        // register a callback for later TODO Remove this
-        storeRelationField(getClassMetaData(), ammd, value, operation == StoreFieldManager.Operation.INSERT,
-            fieldManagerStateStack.getFirst().mappingConsumer);
-      }
-
-      if (owned) {
-        // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
-        if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
-          // don't write child keys to the parent if the storage version isn't high enough
-          return;
-        }
-        if (relationType == Relation.MANY_TO_ONE_BI) {
-          // We don't store any "FK" of the parent TODO We ought to but Google don't want to
-          return;
-        } else if (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() != null) {
-          // We don't store any "FK" of the other side TODO We ought to but Google don't want to
-          return;
-        }
-      }
-
+    if (relationType == Relation.NONE) {
+      // Basic field
       if (value == null) {
-        // Nothing to extract
-      } else if (Relation.isRelationSingleValued(relationType)) {
-        // TODO Cater for flushing the object where necessary
-        Key key = extractChildKey(value);
-        if (key == null && repersistingForChildKeys) {
-          // Flag that the key for this member isn't yet set
-          getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
-        }
-        value = key;
-      } else if (Relation.isRelationMultiValued(relationType)) {
-        if (ammd.hasCollection()) {
-          Collection coll = (Collection) value;
-          int size = coll.size();
-
-          List<Key> keys = Utils.newArrayList();
-          for (Object obj : coll) {
-            Key key = extractChildKey(obj);
-            if (key != null) {
-              keys.add(key);
-            } else {
-              // TODO Cater for flushing this element where necessary
-            }
-          }
-
-          if (size != keys.size() && repersistingForChildKeys) {
-            // Flag that some key(s) for this member aren't yet set
-            getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
-          }
-          value = keys;
-        }
-        // TODO Cater for PC array, maps
+        checkSettingToNullValue(ammd, value);
       }
-
       if (value instanceof SCO) {
         // Use the unwrapped value so the datastore doesn't fail on unknown types
         value = ((SCO)value).getValue();
       }
-
-      // Set the property on the entity, allowing for null rules
-      checkSettingToNullValue(ammd, value);
       EntityUtils.setEntityProperty(datastoreEntity, ammd, 
           EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
       return;
     }
+
+    // Relation type, so provide treatment depending on whether this object is persistent yet
+    if (!repersistingForChildKeys) {
+      // register a callback for later TODO Remove this
+      storeRelationField(getClassMetaData(), ammd, value, operation == StoreFieldManager.Operation.INSERT,
+          fieldManagerStateStack.getFirst().mappingConsumer);
+    }
+
+    boolean owned = MetaDataUtils.isOwnedRelation(ammd);
+    if (!owned) {
+      NucleusLogger.GENERAL.debug("Field=" + ammd.getFullFieldName() + " is UNOWNED");
+    }
+    if (owned) {
+      // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
+      if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+        // don't write child keys to the parent if the storage version isn't high enough
+        return;
+      }
+      if (relationType == Relation.MANY_TO_ONE_BI) {
+        // We don't store any "FK" of the parent TODO We ought to but Google don't want to
+        return;
+      } else if (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() != null) {
+        // We don't store any "FK" of the other side TODO We ought to but Google don't want to
+        return;
+      }
+    }
+
+    if (value == null) {
+      // Nothing to extract
+      checkSettingToNullValue(ammd, value);
+    } else if (Relation.isRelationSingleValued(relationType)) {
+      // TODO Cater for flushing the object where necessary
+      Key key = extractChildKey(value);
+      if (key == null && repersistingForChildKeys) {
+        // Flag that the key for this member isn't yet set
+        getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
+      }
+      value = key;
+    } else if (Relation.isRelationMultiValued(relationType)) {
+      if (ammd.hasCollection()) {
+        Collection coll = (Collection) value;
+        int size = coll.size();
+
+        List<Key> keys = Utils.newArrayList();
+        for (Object obj : coll) {
+          Key key = extractChildKey(obj);
+          if (key != null) {
+            keys.add(key);
+          } else {
+            // TODO Cater for flushing this element where necessary
+          }
+        }
+
+        if (size != keys.size() && repersistingForChildKeys) {
+          // Flag that some key(s) for this member aren't yet set
+          getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
+        }
+        value = keys;
+      }
+      // TODO Cater for PC array, maps
+
+      if (value instanceof SCO) {
+        // Use the unwrapped value so the datastore doesn't fail on unknown types
+        value = ((SCO)value).getValue();
+      }
+    }
+
+    EntityUtils.setEntityProperty(datastoreEntity, ammd, 
+        EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
   }
 
   void storeParentField(int fieldNumber, Object value) {

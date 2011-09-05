@@ -78,35 +78,107 @@ public class FetchFieldManager extends DatastoreFieldManager
   }
 
   public boolean fetchBooleanField(int fieldNumber) {
-    return (Boolean) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Boolean.valueOf(dflt);
+      }
+      return false;
+    }
+    return (Boolean) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public byte fetchByteField(int fieldNumber) {
-    return (Byte) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Byte.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Byte) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public char fetchCharField(int fieldNumber) {
-    return (Character) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null && dflt.length() > 0) {
+          return dflt.charAt(0);
+      }
+      return 0;
+    }
+    return (Character) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public double fetchDoubleField(int fieldNumber) {
-    return (Double) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Double.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Double) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public float fetchFloatField(int fieldNumber) {
-    return (Float) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Float.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Float) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public int fetchIntField(int fieldNumber) {
-    return (Integer) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Integer.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Integer) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public long fetchLongField(int fieldNumber) {
-    return (Long) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Long.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Long) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public short fetchShortField(int fieldNumber) {
-    return (Short) checkAssignmentToNotNullField(fetchFieldFromEntity(fieldNumber), fieldNumber);
+    Object value = fetchFieldFromEntity(fieldNumber);
+    if (value == null) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      String dflt = MetaDataUtils.getDefaultValueForMember(mmd);
+      if (dflt != null) {
+          return Short.valueOf(dflt);
+      }
+      return 0;
+    }
+    return (Short) checkAssignmentToNotNullField(value, fieldNumber);
   }
 
   public String fetchStringField(int fieldNumber) {
