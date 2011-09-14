@@ -15,8 +15,6 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
-import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
-
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
@@ -36,6 +34,7 @@ import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
+import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Base1;
 import com.google.appengine.datanucleus.test.BidirectionalChildListJPA;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkListJPA;
 import com.google.appengine.datanucleus.test.BidirectionalGrandchildListJPA;
@@ -67,14 +66,13 @@ import com.google.appengine.datanucleus.test.InTheHouseJPA;
 import com.google.appengine.datanucleus.test.KitchenSink;
 import com.google.appengine.datanucleus.test.NullDataJPA;
 import com.google.appengine.datanucleus.test.Person;
-import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Base1;
 import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirTop;
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
 
-import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.api.jpa.JPAQuery;
+import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.query.expression.Expression;
 import org.easymock.EasyMock;
 
@@ -89,6 +87,7 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 
 import javax.persistence.NoResultException;
@@ -97,7 +96,7 @@ import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.persistence.QueryTimeoutException;
 
-import junit.framework.Assert;
+import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -231,7 +230,7 @@ public class JPQLQueryTest extends JPATestCase {
     q.setHint("datanucleus.query.evaluateInMemory", "true");
     try {
        List<Flight> results = (List<Flight>) q.getResultList();
-       Assert.assertEquals("Number of results was wrong", 2, results.size());
+       assertEquals("Number of results was wrong", 2, results.size());
     } catch (RuntimeException e) {
       fail("Threw exception when evaluating query in-memory, but should have run");
     }
@@ -3169,61 +3168,69 @@ public class JPQLQueryTest extends JPATestCase {
     }
   }
 
-  public void testOverrideReadConsistency() {
+  public void testOverrideReadConsistency() throws ExecutionException, InterruptedException {
     DatastoreServiceFactoryInternal.setDatastoreService(null);
     ApiProxy.Delegate original = getDelegateForThread();
     try {
       ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      Future<DatastorePb.QueryResult> result = EasyMock.createMock(Future.class);
       setDelegateForThread(delegate);
       ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
       EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
                                 FailoverMsMatcher.eqFailoverMs(null),
-                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
-      EasyMock.replay(delegate);
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.expect(result.get()).andReturn(null);
+      EasyMock.replay(delegate, result);
       Query q = em.createQuery("select from " + Book.class.getName() + " c");
-      q.getResultList();
-      EasyMock.verify(delegate);
+      q.getResultList().isEmpty();
+      EasyMock.verify(delegate, result);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
+      result = EasyMock.createMock(Future.class);
       EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
                                 FailoverMsMatcher.eqFailoverMs(null),
-                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
-      EasyMock.replay(delegate);
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.expect(result.get()).andReturn(null);
+      EasyMock.replay(delegate, result);
       q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", null);
-      q.getResultList();
+      q.getResultList().isEmpty();
       EasyMock.verify(delegate);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
+      result = EasyMock.createMock(Future.class);
       EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
                                 FailoverMsMatcher.eqFailoverMs(null),
-                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
-      EasyMock.replay(delegate);
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.expect(result.get()).andReturn(null);
+      EasyMock.replay(delegate, result);
       q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "STRONG");
-      q.getResultList();
-      EasyMock.verify(delegate);
+      q.getResultList().isEmpty();
+      EasyMock.verify(delegate, result);
 
       delegate = EasyMock.createMock(ApiProxy.Delegate.class);
       setDelegateForThread(delegate);
+      result = EasyMock.createMock(Future.class);
       EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
                                 EasyMock.eq(LocalDatastoreService.PACKAGE),
                                 EasyMock.eq("RunQuery"),
                                 FailoverMsMatcher.eqFailoverMs(-1L),
-                                ApiConfigMatcher.eqApiConfig(config))).andReturn(null);
-      EasyMock.replay(delegate);
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.expect(result.get()).andReturn(null);
+      EasyMock.replay(delegate, result);
       q = em.createQuery("select from " + Book.class.getName() + " c");
       q.setHint("datanucleus.appengine.datastoreReadConsistency", "EVENTUAL");
-      q.getResultList();
-      EasyMock.verify(delegate);
+      q.getResultList().isEmpty();
+      EasyMock.verify(delegate, result);
     } finally {
       setDelegateForThread(original);
     }
