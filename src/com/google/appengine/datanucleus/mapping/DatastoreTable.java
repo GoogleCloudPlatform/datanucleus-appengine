@@ -1410,6 +1410,15 @@ public class DatastoreTable implements DatastoreClass {
     return owningClassMetaData.get(col);
   }
 
+  public JavaTypeMapping getMultitenancyMapping() {
+    // Don't support multitenancy via discriminator currently
+    return null;
+  }
+
+  public void provideMultitenancyMapping(MappingConsumer consumer) {
+    // Don't support multitenancy via discriminator currently
+  }
+
   class DatastoreKind implements DatastoreIdentifier {
 
     private final String identifier;
