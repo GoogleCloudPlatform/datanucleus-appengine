@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.TestUtils;
@@ -39,8 +40,6 @@ import com.google.appengine.datanucleus.test.HasOneToOneStringPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToOneStringPkParentJDO;
 import com.google.appengine.datanucleus.test.HasOneToOneStringPkParentKeyPkJDO;
 
-import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
-
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.util.NucleusLogger;
 import org.easymock.EasyMock;
@@ -50,6 +49,8 @@ import java.util.List;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
+
+import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -747,7 +748,7 @@ public class JDOOneToOneTest extends JDOTestCase {
       txn.commit();
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
-      EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
+      EasyMock.expect(mockDatastore.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(txn);
       EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(mockDatastore);
 

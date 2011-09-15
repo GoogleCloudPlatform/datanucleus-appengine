@@ -22,6 +22,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceRecordingImpl;
 import com.google.appengine.datanucleus.DatastoreTestCase;
@@ -30,11 +31,6 @@ import com.google.appengine.datanucleus.test.Book;
 import com.google.appengine.datanucleus.test.Flight;
 import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
 
-import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
-import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed;
-import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_allowed;
-import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed;
-
 import org.easymock.EasyMock;
 
 import javax.persistence.EntityManager;
@@ -42,6 +38,11 @@ import javax.persistence.EntityManagerFactory;
 import javax.persistence.EntityTransaction;
 import javax.persistence.Persistence;
 import javax.persistence.Query;
+
+import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed;
+import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_not_allowed;
+import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_allowed;
+import static com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName.transactional_ds_non_transactional_ops_not_allowed;
 
 /**
  * Verifies jpa txn behavior across the following variables:
@@ -95,7 +96,7 @@ public class JPATransactionTest extends DatastoreTestCase {
   private void testWritePermutationWithExpectedDatastoreTxn(
       EntityManagerFactory emf, boolean explicitDemarcation) {
     if (explicitDemarcation) {
-      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
       EasyMock.expect(mockDatastoreService.put(
           EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
           EasyMock.isA(Entity.class))).andReturn(null);
@@ -135,7 +136,7 @@ public class JPATransactionTest extends DatastoreTestCase {
   private void testReadPermutationWithExpectedDatastoreTxn(
       EntityManagerFactory emf, boolean explicitDemarcation) throws EntityNotFoundException {
 
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
@@ -314,7 +315,7 @@ public class JPATransactionTest extends DatastoreTestCase {
       EntityManager em, boolean explicitDemarcation,
       QueryRunner queryRunner) throws EntityNotFoundException {
 
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     }
@@ -423,7 +424,7 @@ public class JPATransactionTest extends DatastoreTestCase {
     EntityManagerFactory emf = getEntityManagerFactory(transactional_ds_non_transactional_ops_allowed.name());
     EntityManager em = emf.createEntityManager();
     try {
-      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
       EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       mockTxn.commit();

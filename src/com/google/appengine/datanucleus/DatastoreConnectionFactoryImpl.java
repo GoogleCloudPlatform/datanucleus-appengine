@@ -18,13 +18,13 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 
+import org.datanucleus.PersistenceConfiguration;
+import org.datanucleus.Transaction;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.AbstractConnectionFactory;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.PersistenceConfiguration;
-import org.datanucleus.Transaction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,7 +62,7 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
    * Constructs a connection factory for the datastore.
    * Provides ManagedConnections to communicate with the datastore.
    *
-   * @param nucContext The NucleusContext
+   * @param storeMgr The store manager
    * @param resourceType Name of the resource ("appengine", "appengine-nontx")
    */
   public DatastoreConnectionFactoryImpl(StoreManager storeMgr, String resourceType) {
@@ -104,7 +104,8 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     private final XAResource datastoreXAResource;
 
     DatastoreManagedConnection(StoreManager storeMgr, boolean autoCreateTransaction) {
-      DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
+      DatastoreManager datastoreManager = (DatastoreManager) storeMgr;
+      DatastoreServiceConfig config = datastoreManager.getDefaultDatastoreServiceConfigForWrites();
       DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
       if (NucleusLogger.CONNECTION.isDebugEnabled()) {
         if (datastoreService instanceof WrappedDatastoreService) {
@@ -115,7 +116,8 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
         }
       }
       if (autoCreateTransaction) {
-        datastoreXAResource = new DatastoreXAResource(datastoreService);
+        datastoreXAResource = new DatastoreXAResource(
+            datastoreService, datastoreManager.getDefaultDatastoreTransactionOptions());
       } else {
         datastoreXAResource = new EmulatedXAResource(datastoreService);
       }

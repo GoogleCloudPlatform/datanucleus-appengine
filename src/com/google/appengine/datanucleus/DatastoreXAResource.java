@@ -17,6 +17,7 @@ package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 
 import org.datanucleus.util.NucleusLogger;
 
@@ -36,9 +37,11 @@ class DatastoreXAResource extends EmulatedXAResource {
 
   /** The current datastore transaction. */
   private DatastoreTransaction currentTxn;
+  private final TransactionOptions txnOpts;
 
-  public DatastoreXAResource(DatastoreService datastoreService) {
+  public DatastoreXAResource(DatastoreService datastoreService, TransactionOptions txnOpts) {
     super(datastoreService);
+    this.txnOpts = txnOpts;
   }
 
   @Override
@@ -51,7 +54,7 @@ class DatastoreXAResource extends EmulatedXAResource {
     super.start(xid, flags);
     if (currentTxn == null) {
       // No currentTxn, and DatastoreService will have been created by DatastoreConnectionFactoryImpl, so call beginTxn
-      Transaction datastoreTxn = datastoreService.beginTransaction();
+      Transaction datastoreTxn = datastoreService.beginTransaction(txnOpts);
       currentTxn = new DatastoreTransaction(datastoreTxn);
       if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
         NucleusLogger.TRANSACTION.debug("Started datastore transaction: " + currentTxn.getInnerTxn().getId());

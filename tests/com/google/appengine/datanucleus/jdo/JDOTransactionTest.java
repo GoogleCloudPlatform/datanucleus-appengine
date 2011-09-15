@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceRecordingImpl;
 import com.google.appengine.datanucleus.DatastoreTestCase;
@@ -91,7 +92,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
   private void testWritePermutationWithExpectedDatastoreTxn(
       PersistenceManager pm, boolean explicitDemarcation,
       boolean nonTransactionalWrite) {
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.put(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Entity.class))).andReturn(null);
@@ -129,7 +130,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
       throws EntityNotFoundException {
     Entity flightEntity = Flight.newFlightEntity("Harold", "BOS", "MIA", 1, 2);
     ds.put(flightEntity);
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(flightEntity);
@@ -167,7 +168,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
       PersistenceManager pm, boolean explicitDemarcation,
       boolean nonTransactionalRead) throws EntityNotFoundException {
 
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     EasyMock.expect(mockDatastoreService.get(
         EasyMock.isA(com.google.appengine.api.datastore.Transaction.class),
         EasyMock.isA(Key.class))).andReturn(null);
@@ -322,7 +323,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
       PersistenceManager pm, boolean explicitDemarcation,
       boolean nonTransactionalRead, QueryRunner queryRunner) throws EntityNotFoundException {
 
-    EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+    EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
     if (queryRunner.isAncestor()) {
       EasyMock.expect(mockDatastoreService.getCurrentTransaction(null)).andReturn(mockTxn);
     }
@@ -628,7 +629,7 @@ public class JDOTransactionTest extends DatastoreTestCase {
         JDOTestCase.PersistenceManagerFactoryName.transactional.name());
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
-      EasyMock.expect(mockDatastoreService.beginTransaction()).andReturn(mockTxn);
+      EasyMock.expect(mockDatastoreService.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(mockTxn);
       EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       EasyMock.expect(mockTxn.getId()).andAnswer(txnIdAnswer);
       mockTxn.commit();

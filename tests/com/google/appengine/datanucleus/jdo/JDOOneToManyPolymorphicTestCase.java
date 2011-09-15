@@ -23,13 +23,13 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.PolymorphicTestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildJDO;
-import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO;
 import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildJDO.BidirTop;
 import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildJDO.BidirTopLongPk;
 import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildJDO.BidirTopUnencodedStringPkJDO;
@@ -38,6 +38,7 @@ import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJDO.HasOneTo
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJDO.HasOneToManyLongPkJDO;
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJDO.HasOneToManyUnencodedStringPkJDO;
 import com.google.appengine.datanucleus.test.HasPolymorphicRelationsJDO.HasOneToManyWithOrderByJDO;
+import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirBottom;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirMiddle;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTop;
@@ -977,7 +978,7 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
       txn.commit();
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
-      EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
+      EasyMock.expect(mockDatastore.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(txn);
       // the only get we're going to perform is for the pojo
       EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(mockDatastore);

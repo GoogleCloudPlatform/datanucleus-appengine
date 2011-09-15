@@ -22,6 +22,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.Utils;
@@ -36,8 +37,6 @@ import com.google.appengine.datanucleus.test.HasOneToManyLongPkJPA;
 import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkJPA;
 import com.google.appengine.datanucleus.test.HasOneToManyWithOrderByJPA;
 
-import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
-
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
@@ -45,6 +44,8 @@ import java.util.Collections;
 import java.util.List;
 
 import javax.persistence.PersistenceException;
+
+import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -523,7 +524,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
       txn.commit();
       EasyMock.expectLastCall();
       EasyMock.replay(txn);
-      EasyMock.expect(mockDatastore.beginTransaction()).andReturn(txn);
+      EasyMock.expect(mockDatastore.beginTransaction(EasyMock.isA(TransactionOptions.class))).andReturn(txn);
       // the only get we're going to perform is for the pojo
       EasyMock.expect(mockDatastore.get(txn, pojoEntity.getKey())).andReturn(pojoEntity);
       EasyMock.replay(mockDatastore);

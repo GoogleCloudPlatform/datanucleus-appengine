@@ -19,14 +19,13 @@ import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ReadPolicy.Consistency;
+import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.scostore.FKListStore;
 import com.google.appengine.datanucleus.scostore.FKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.store.connection.ConnectionFactory;
 import org.datanucleus.FetchPlan;
-import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.api.ApiAdapter;
@@ -42,6 +41,8 @@ import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.StoreData;
+import org.datanucleus.store.connection.ConnectionFactory;
+import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.exceptions.NoExtentException;
 import org.datanucleus.store.exceptions.NoTableManagedException;
 import org.datanucleus.store.fieldmanager.FieldManager;
@@ -111,6 +112,9 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String DATASTORE_READ_CONSISTENCY_PROPERTY =
       "datanucleus.appengine.datastoreReadConsistency";
 
+  public static final String DATASTORE_ALLOW_MULTI_EG_TXNS_PROPERTY =
+      "datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions";
+
   /**
    * The name of the extension that indicates the return value of the batch
    * delete query should be as accurate as possible at the expense of
@@ -145,6 +149,7 @@ public class DatastoreManager extends MappedStoreManager {
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
+  private final TransactionOptions defaultDatastoreTransactionOptionsPrototype;
 
   private final DatastoreService datastoreServiceForReads;
 
@@ -183,6 +188,8 @@ public class DatastoreManager extends MappedStoreManager {
         createDatastoreServiceConfigPrototypeForReads(nucContext.getPersistenceConfiguration());
     defaultDatastoreServiceConfigPrototypeForWrites =
         createDatastoreServiceConfigPrototypeForWrites(nucContext.getPersistenceConfiguration());
+    defaultDatastoreTransactionOptionsPrototype =
+        createDatastoreTransactionOptionsPrototype(nucContext.getPersistenceConfiguration());
 
     // Handler for persistence process
     persistenceHandler = new DatastorePersistenceHandler(this);
@@ -438,6 +445,10 @@ public class DatastoreManager extends MappedStoreManager {
     return getStorageVersion().ordinal() >= storageVersion.ordinal();
   }
 
+  public TransactionOptions getDefaultDatastoreTransactionOptions() {
+    return copyTransactionOptions(defaultDatastoreTransactionOptionsPrototype);
+  }
+
   @Override
   public DatastorePersistenceHandler getPersistenceHandler() {
     return (DatastorePersistenceHandler) super.getPersistenceHandler();
@@ -600,6 +611,13 @@ public class DatastoreManager extends MappedStoreManager {
     return datastoreServiceConfig;
   }
 
+  private TransactionOptions createDatastoreTransactionOptionsPrototype(
+      PersistenceConfiguration persistenceConfig) {
+    return TransactionOptions.Builder.allowMultipleEntityGroups(
+        persistenceConfig.getBooleanProperty(DATASTORE_ALLOW_MULTI_EG_TXNS_PROPERTY));
+  }
+
+
   // For testing
   String getTxConnectionFactoryName() {
     return txConnectionFactoryName;
@@ -620,5 +638,19 @@ public class DatastoreManager extends MappedStoreManager {
       newConfig.deadline(config.getDeadline());
     }
     return newConfig;
+  }
+
+  // visible for testing
+  static TransactionOptions copyTransactionOptions(TransactionOptions txnOpts) {
+    // Maintenance nightmare, use clone() once it's available in the sdk
+    TransactionOptions options = TransactionOptions.Builder.withDefaults();
+    if (txnOpts.allowsMultipleEntityGroups() != null) {
+      if (txnOpts.allowsMultipleEntityGroups()) {
+        options.allowsMultipleEntityGroups();
+      } else {
+        options.clearMultipleEntityGroups();
+      }
+    }
+    return txnOpts;
   }
 }
