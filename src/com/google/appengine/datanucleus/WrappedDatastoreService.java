@@ -20,11 +20,13 @@ import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Index;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 
 import java.util.Collection;
 import java.util.ConcurrentModificationException;
@@ -219,6 +221,16 @@ public class WrappedDatastoreService implements DatastoreService {
     }
   }
 
+  public Transaction beginTransaction(TransactionOptions transactionOptions) {
+    try {
+      return inner.beginTransaction(transactionOptions);
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
   public Transaction getCurrentTransaction() {
     try {
       return inner.getCurrentTransaction();
@@ -282,6 +294,16 @@ public class WrappedDatastoreService implements DatastoreService {
   public DatastoreAttributes getDatastoreAttributes() {
     try {
       return inner.getDatastoreAttributes();
+    } catch (IllegalArgumentException e) {
+      throw wrapIllegalArgumentException(e);
+    } catch (DatastoreFailureException e) {
+      throw wrapDatastoreFailureException(e);
+    }
+  }
+
+  public Map<Index, Index.IndexState> getIndexes() {
+    try {
+      return inner.getIndexes();
     } catch (IllegalArgumentException e) {
       throw wrapIllegalArgumentException(e);
     } catch (DatastoreFailureException e) {

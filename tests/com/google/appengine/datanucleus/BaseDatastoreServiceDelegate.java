@@ -19,11 +19,13 @@ import com.google.appengine.api.datastore.DatastoreAttributes;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Index;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 
 import java.util.Collection;
 import java.util.List;
@@ -100,6 +102,10 @@ public class BaseDatastoreServiceDelegate implements DatastoreService {
     return delegate.beginTransaction();
   }
 
+  public Transaction beginTransaction(TransactionOptions txnOpts) {
+    return delegate.beginTransaction(txnOpts);
+  }
+
   public Transaction getCurrentTransaction() {
     return delegate.getCurrentTransaction();
   }
@@ -126,5 +132,9 @@ public class BaseDatastoreServiceDelegate implements DatastoreService {
 
   public DatastoreAttributes getDatastoreAttributes() {
     return delegate.getDatastoreAttributes();
+  }
+
+  public Map<Index, Index.IndexState> getIndexes() {
+    return delegate.getIndexes();
   }
 }

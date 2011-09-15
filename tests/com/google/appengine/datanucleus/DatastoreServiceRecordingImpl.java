@@ -19,11 +19,13 @@ import com.google.appengine.api.datastore.DatastoreAttributes;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Index;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyRange;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Transaction;
+import com.google.appengine.api.datastore.TransactionOptions;
 
 import java.util.Collection;
 import java.util.List;
@@ -118,6 +120,13 @@ public class DatastoreServiceRecordingImpl implements DatastoreService {
     return new TransactionRecordingImpl(txn, txnRecorder);
   }
 
+  public Transaction beginTransaction(TransactionOptions transactionOptions) {
+    Transaction txn =  delegate.beginTransaction(transactionOptions);
+    txnIdAnswer.setExpectedTxnId(txn.getId());
+    recorder.beginTransaction(transactionOptions);
+    return new TransactionRecordingImpl(txn, txnRecorder);
+  }
+
   public Transaction getCurrentTransaction() {
     Transaction t1 = recorder.getCurrentTransaction();
     Transaction t2 = delegate.getCurrentTransaction();
@@ -169,5 +178,10 @@ public class DatastoreServiceRecordingImpl implements DatastoreService {
   public DatastoreAttributes getDatastoreAttributes() {
     recorder.getDatastoreAttributes();
     return delegate.getDatastoreAttributes();
+  }
+
+  public Map<Index, Index.IndexState> getIndexes() {
+    recorder.getIndexes();
+    return delegate.getIndexes();
   }
 }
