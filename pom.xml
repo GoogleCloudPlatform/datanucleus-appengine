@@ -170,6 +170,7 @@
                 <version>2.8.1</version>
                 <configuration>
                     <argLine>-Xmx256m</argLine>
+                    <argLine>-Djava.util.logging.config.file=logging.properties</argLine>
                     <forkMode>always</forkMode>
                     <excludes>
                         <exclude>**/*TestCase.java</exclude>
