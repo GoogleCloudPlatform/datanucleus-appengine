@@ -428,19 +428,23 @@ public final class EntityUtils {
     return result;
   }
 
-  public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
-    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
-    String kind = EntityUtils.determineKind(op.getClassMetaData(), op.getExecutionContext());
-    if (primaryKey instanceof Key) {
-      return (Key) primaryKey;
-    } else if (long.class.isInstance(primaryKey) || primaryKey instanceof Long) {
-      return KeyFactory.createKey(kind, (Long) primaryKey);
+  public static Key getPrimaryKeyAsKey(Object pk, ExecutionContext ec, AbstractClassMetaData cmd) {
+    String kind = EntityUtils.determineKind(cmd, ec);
+    if (pk instanceof Key) {
+      return (Key) pk;
+    } else if (long.class.isInstance(pk) || pk instanceof Long) {
+      return KeyFactory.createKey(kind, (Long) pk);
     }
     try {
-      return KeyFactory.stringToKey((String) primaryKey);
+      return KeyFactory.stringToKey((String) pk);
     } catch (IllegalArgumentException iae) {
-      return KeyFactory.createKey(kind, (String) primaryKey);
+      return KeyFactory.createKey(kind, (String) pk);
     }
+  }
+
+  public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
+    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
+    return getPrimaryKeyAsKey(primaryKey, op.getExecutionContext(), op.getClassMetaData());
   }
 
   private static final Field PROPERTY_MAP_FIELD;

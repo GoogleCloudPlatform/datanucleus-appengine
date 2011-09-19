@@ -532,8 +532,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
     ExecutionContext ec = getExecutionContext();
     ObjectProvider valueOP = ec.findObjectProvider(value);
     if (valueOP == null) {
-      // TODO If this is detached it should still be possible to get the identity which is all we need here!
-      // that's fine, it just means the object hasn't been saved or that it is detached
+      if (ec.getApiAdapter().isDetached(value)) {
+        // Child is detached, so return its id
+        Object valueID = ec.getApiAdapter().getIdForObject(value);
+        Object valuePK = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueID);
+        Key key = EntityUtils.getPrimaryKeyAsKey(valuePK, op.getExecutionContext(),
+            ec.getMetaDataManager().getMetaDataForClass(value.getClass(), op.getExecutionContext().getClassLoaderResolver()));
+        return key;
+      }
       return null;
     }
 
