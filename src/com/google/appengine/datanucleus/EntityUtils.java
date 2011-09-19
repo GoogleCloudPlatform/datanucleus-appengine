@@ -752,4 +752,60 @@ public final class EntityUtils {
 
     return parentKey;
   }
+
+  /**
+   * Method to return the key of the provided child object.
+   * @param childObj The persistable object from which to extract a key.
+   * @param ec ExecutionContext
+   * @param parentEntity The Entity of the parent (if owned).
+   * @return The key of the object. Returns {@code null} if the object is being deleted 
+   *    or the object does not yet have a key.
+   */
+  public static Key extractChildKey(Object childObj, ExecutionContext ec, Entity parentEntity) {
+    if (childObj == null) {
+      return null;
+    }
+
+    if (ec.getApiAdapter().isDetached(childObj)) {
+      // Child is detached, so return its id
+      Object valueID = ec.getApiAdapter().getIdForObject(childObj);
+      Object valuePK = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueID);
+      Key key = EntityUtils.getPrimaryKeyAsKey(valuePK, ec,
+          ec.getMetaDataManager().getMetaDataForClass(childObj.getClass(), ec.getClassLoaderResolver()));
+      return key;
+    } else if (ec.getApiAdapter().isDeleted(childObj)) {
+      // Child is deleted, so return null
+      return null;
+    }
+
+    ObjectProvider childOP = ec.findObjectProvider(childObj);
+    if (childOP == null) {
+      // Not yet persistent
+      return null;
+    }
+
+    // TODO Cater for datastore identity
+    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
+    if (primaryKey == null) {
+      // this is ok, it just means the object has not yet been persisted
+      return null;
+    }
+
+    Key key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), childOP);
+    if (key == null) {
+      throw new NullPointerException("Could not extract a key from " + childObj);
+    }
+
+    if (parentEntity != null) {
+      // We only support owned relationships so this key should be a child of the entity we are persisting.
+      if (key.getParent() == null) {
+        // TODO This is caused by persisting from non-owner side of a relation when owned and GAE having a very basic
+        // restriction of not allowing persistence of such things due to its silly parent-key rationale.
+        throw new ChildWithoutParentException(parentEntity.getKey(), key);
+      } else if (!key.getParent().equals(parentEntity.getKey())) {
+        throw new ChildWithWrongParentException(parentEntity.getKey(), key);
+      }
+    }
+    return key;
+  }
 }

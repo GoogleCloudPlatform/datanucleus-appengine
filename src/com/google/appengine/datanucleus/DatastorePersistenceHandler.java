@@ -47,6 +47,7 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -378,8 +379,12 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   private void storeRelations(StoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
+    int[] relationFieldNumsForUpdate = fieldMgr.getRelationFieldNumbersNeedingUpdate();
+    NucleusLogger.GENERAL.debug(">> PersistenceHandler.storeRelations " + op +
+        " fieldsToUpdate=" + StringUtils.intArrayToString(relationFieldNumsForUpdate));
     if (fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(op.getExecutionContext())) &&
         storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+
       // Return value of true means that storing the relations resulted in
       // changes that need to be reflected on the current object.
       // That means we need to re-save.

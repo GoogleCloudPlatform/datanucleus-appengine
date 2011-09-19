@@ -18,8 +18,12 @@ package com.google.appengine.datanucleus;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
+
+import javax.jdo.JDOHelper;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusDataStoreException;
@@ -94,6 +98,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   // Events that know how to store relations.
   private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
+
+  private Set<Integer> relationFieldNumbersNeedingPersist = new HashSet<Integer>();
 
   /**
    * Constructor for a StoreFieldManager when inserting a new object.
@@ -237,6 +243,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
+    ExecutionContext ec = getExecutionContext();
     ClassLoaderResolver clr = getClassLoaderResolver();
     if (ammd.isSerialized()) {
       if (value != null) {
@@ -302,11 +309,18 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // Nothing to extract
       checkSettingToNullValue(ammd, value);
     } else if (Relation.isRelationSingleValued(relationType)) {
-      // TODO Cater for flushing the object where necessary
-      Key key = extractChildKey(value);
-      if (key == null && repersistingForChildKeys) {
-        // Flag that the key for this member isn't yet set
-        getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
+      Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
+      NucleusLogger.GENERAL.info(">> storeFM.storeField " + ammd.getFullFieldName() + 
+          " element.state=" + JDOHelper.getObjectState(value) + " key=" + key);
+      if (key == null) {
+        if (repersistingForChildKeys) {
+          Object childPC = processPersistable(ammd, value);
+          key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
+          // Flag that the key for this member isn't yet set
+          getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
+        } else {
+          relationFieldNumbersNeedingPersist.add(fieldNumber);
+        }
       }
       value = key;
     } else if (Relation.isRelationMultiValued(relationType)) {
@@ -316,11 +330,19 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
         List<Key> keys = Utils.newArrayList();
         for (Object obj : coll) {
-          Key key = extractChildKey(obj);
+          Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
+          NucleusLogger.GENERAL.info(">> storeFM.storeField " + ammd.getFullFieldName() +
+              " element.state=" + JDOHelper.getObjectState(obj) + " key=" + key);
           if (key != null) {
             keys.add(key);
           } else {
-            // TODO Cater for flushing this element where necessary
+            if (repersistingForChildKeys) {
+              Object childPC = processPersistable(ammd, obj);
+              key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
+              keys.add(key);
+            } else {
+              relationFieldNumbersNeedingPersist.add(fieldNumber);
+            }
           }
         }
 
@@ -340,6 +362,36 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     EntityUtils.setEntityProperty(datastoreEntity, ammd, 
         EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
+  }
+
+  Object processPersistable(AbstractMemberMetaData mmd, Object childObj) {
+    if (!repersistingForChildKeys) {
+      return childObj;
+    }
+
+    Object childPC = childObj;
+    ExecutionContext ec = getExecutionContext();
+    if (ec.getApiAdapter().isDetached(childObj)) {
+      // Child is detached, so attach it
+      childPC = ec.persistObjectInternal(childObj, null, -1, ObjectProvider.PC);
+    } else if (ec.getApiAdapter().isDeleted(childObj)) {
+      // Child is deleted, so return null
+      return null;
+    }
+
+    ObjectProvider childOP = ec.findObjectProvider(childPC);
+    if (childOP == null) {
+      // Not yet persistent, so persist it
+      childPC = ec.persistObjectInternal(childPC, null, -1, ObjectProvider.PC);
+    }
+
+    // TODO Cater for datastore identity
+    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
+    if (primaryKey == null) {
+      // Object has not yet flushed to the datastore
+      childOP.flush();
+    }
+    return childPC;
   }
 
   void storeParentField(int fieldNumber, Object value) {
@@ -519,63 +571,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  /**
-   * @param value The persistable object from which to extract a key.
-   * @return The key of the object. Returns {@code null} if the object is being deleted 
-   *    or the object does not yet have a key.
-   */
-  private Key extractChildKey(Object value) {
-    if (value == null) {
-      return null;
-    }
-
-    ExecutionContext ec = getExecutionContext();
-    ObjectProvider valueOP = ec.findObjectProvider(value);
-    if (valueOP == null) {
-      if (ec.getApiAdapter().isDetached(value)) {
-        // Child is detached, so return its id
-        Object valueID = ec.getApiAdapter().getIdForObject(value);
-        Object valuePK = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueID);
-        Key key = EntityUtils.getPrimaryKeyAsKey(valuePK, op.getExecutionContext(),
-            ec.getMetaDataManager().getMetaDataForClass(value.getClass(), op.getExecutionContext().getClassLoaderResolver()));
-        return key;
-      }
-      return null;
-    }
-
-    if (valueOP.getLifecycleState().isDeleted()) {
-      return null;
-    }
-
-    // TODO Cater for datastore identity
-    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueOP.getInternalObjectId());
-    /*      if (primaryKey == null && operation == Operation.UPDATE && op.getInternalObjectId() != null) {
-        // *** This was added to attempt to get child objects persistent so we note their ids for persist of parent ***
-        NucleusLogger.GENERAL.info(">> this.op=" + op + " childobject.op=" + valueOP + " does not provide its id, so flushing it (since part of UPDATE)");
-        valueOP.flush();
-        primaryKey = storeManager.getApiAdapter().getTargetKeyForSingleFieldIdentity(
-            valueOP.getInternalObjectId());
-      }*/
-    if (primaryKey == null) {
-      // this is ok, it just means the object has not yet been persisted
-      return null;
-    }
-    Key key = EntityUtils.getPrimaryKeyAsKey(op.getExecutionContext().getApiAdapter(), valueOP);
-    if (key == null) {
-      throw new NullPointerException("Could not extract a key from " + value);
-    }
-
-    // We only support owned relationships so this key should be a child of the entity we are persisting. WRONG!
-    if (key.getParent() == null) {
-      // TODO This is caused by persisting from non-owner side of a relation when owned and GAE having a very basic
-      // restriction of not allowing persistence of such things due to its silly parent-key rationale.
-      throw new EntityUtils.ChildWithoutParentException(datastoreEntity.getKey(), key);
-    } else if (!key.getParent().equals(datastoreEntity.getKey())) {
-      throw new EntityUtils.ChildWithWrongParentException(datastoreEntity.getKey(), key);
-    }
-    return key;
-  }
-
   private void checkSettingToNullValue(AbstractMemberMetaData ammd, Object value) {
     if (value == null) {
       if (ammd.getNullValue() == NullValue.EXCEPTION) {
@@ -595,6 +590,24 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
+  /**
+   * Accessor for the field numbers that need updating to persist related objects (once this object is persisted).
+   * @return The field numbers needing persisting
+   */
+  public int[] getRelationFieldNumbersNeedingUpdate() {
+    if (relationFieldNumbersNeedingPersist.isEmpty()) {
+      return null;
+    }
+    int[] fieldNumbers = new int[relationFieldNumbersNeedingPersist.size()];
+    Iterator<Integer> iter = relationFieldNumbersNeedingPersist.iterator();
+    int i = 0;
+    while (iter.hasNext()) {
+      Integer fldNum = iter.next();
+      fieldNumbers[i++] = fldNum;
+    }
+    return fieldNumbers;
+  }
+
   void setRepersistingForChildKeys(boolean repersistingForChildKeys) {
     this.repersistingForChildKeys = repersistingForChildKeys;
   }
@@ -611,31 +624,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     if (datastoreEntity.getKey() != null) {
-      // TODO Enable this when we have the key set upon creation of Entity.
-      /*      if (relationType == Relation.ONE_TO_MANY_UNI || relationType == Relation.ONE_TO_MANY_BI) {
-                // Owner of 1-N, so other side has this as parent
-                Object childValue = op.provideField(ammd.getAbsoluteFieldNumber());
-                if (childValue != null) {
-                  NucleusLogger.GENERAL.info(">> StoreFM field=" + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(childValue));
-                  if (childValue instanceof Object[]) {
-                    childValue  = Arrays.asList((Object[]) childValue);
-                  }
-                  if (childValue instanceof Iterable) {
-                    for (Object element : (Iterable)childValue) {
-                      // TODO Check polymorphism
-                      keyReg.registerParentKeyForOwnedObject(element, key);
-                    }
-                  }
-                }
-              } else if (relationType == Relation.ONE_TO_ONE_UNI ||
-                  (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() == null)) {
-                // Owner of 1-1 relation, so other side is child
-                Object childValue = op.provideField(ammd.getAbsoluteFieldNumber());
-                if (childValue != null) {
-                  // TODO Check polymorphism
-                  keyReg.registerParentKeyForOwnedObject(childValue, key);
-                }
-              }*/
       // Register parent key - TODO why do this for all and not just for the relations being updated?!!!
       ObjectProvider op = getObjectProvider();
       DatastoreTable dt = getDatastoreTable();
@@ -725,7 +713,28 @@ public class StoreFieldManager extends DatastoreFieldManager {
               mapping instanceof SerialisedReferenceMapping ||
               mapping instanceof PersistableMapping ||
               mapping instanceof InterfaceMapping) {
-            setObjectViaMapping(mapping, table, value, op, fieldNumber);
+            boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
+            if (!fieldIsParentKeyProvider) {
+              EntityUtils.checkParentage(value, op);
+            }
+            Entity entity = datastoreEntity;
+            mapping.setObject(getExecutionContext(), entity,
+                fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
+                    value, op, fieldNumber);
+
+            // If the field we're setting is the one side of an owned many-to-one,
+            // its pk needs to be the parent of the key of the entity we're
+            // currently populating.  We look for a magic property that tells
+            // us if this change needs to be made.  See
+            // DatastoreFKMapping.setObject for all the gory details.
+            Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
+            if (parentKeyObj != null) {
+              AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
+                  ammd.getType(), getClassLoaderResolver());
+              Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
+              entity.removeProperty(PARENT_KEY_PROPERTY);
+              datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
+            }
             op.wrapSCOField(fieldNumber, value, false, true, true);
           } else {
             // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
@@ -745,32 +754,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
             throw e;
           }
           op.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
-        }
-      }
-
-      private void setObjectViaMapping(JavaTypeMapping mapping, DatastoreTable table, Object value,
-          ObjectProvider op, int fieldNumber) {
-        boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
-        if (!fieldIsParentKeyProvider) {
-          EntityUtils.checkParentage(value, op);
-        }
-        Entity entity = datastoreEntity;
-        mapping.setObject(getExecutionContext(), entity,
-            fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
-                value, op, fieldNumber);
-
-        // If the field we're setting is the one side of an owned many-to-one,
-        // its pk needs to be the parent of the key of the entity we're
-        // currently populating.  We look for a magic property that tells
-        // us if this change needs to be made.  See
-        // DatastoreFKMapping.setObject for all the gory details.
-        Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
-        if (parentKeyObj != null) {
-          AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
-              ammd.getType(), getClassLoaderResolver());
-          Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
-          entity.removeProperty(PARENT_KEY_PROPERTY);
-          datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
         }
       }
     };
@@ -799,6 +782,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   Object establishEntityGroup() {
     Key parentKey = datastoreEntity.getParent();
     if (parentKey == null) {
+      // TODO If unowned then return
       parentKey = EntityUtils.getParentKey(datastoreEntity, op);
       if (parentKey != null) {
         datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
