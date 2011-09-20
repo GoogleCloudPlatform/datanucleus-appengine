@@ -47,7 +47,6 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import java.sql.Timestamp;
 import java.util.Collection;
@@ -296,13 +295,13 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         putState.op.setPostStoreNewObjectId(newId);
       }
 
-      // TODO Change this to force the persist of any (relation) fields that hadn't been persisted before
+      // Update relation fields (including cascade-persist etc)
       storeRelations(putState.fieldMgr, putState.op, putState.entity);
-      // TODO If any fields updated above, do a PUT of this object
+      // TODO Do a PUT to the datastore if any fields were updated
 
       if (putState.entity.getParent() != null) {
         // TODO Do we need this? and why?
-        // We inserted a new child.  Register the parent key so we know we need to update the parent.
+        // We inserted a new child. Register the parent key so we know we need to update the parent.
         KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.op.getExecutionContext());
         keyReg.registerModifiedParent(putState.entity.getParent());
       }
@@ -322,7 +321,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (op.getLifecycleState().isDeleted()) {
       // don't perform updates on objects that are already deleted - this will cause them to be recreated
       // This happens with JPAOneToOneTest/JDOOneToOneTest when deleting, called from DependentDeleteRequest
-      // 
       return;
     }
 
@@ -360,14 +358,13 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // Check and update the version
     handleVersioningBeforeWrite(op, entity, true, "updating");
 
+    // Update relation fields (including cascade-persist etc)
+    storeRelations(fieldMgr, op, entity);
+
     // PUT Entity into datastore
     NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject PUT of " + op);
-    DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(op.getExecutionContext(), entity);
+    DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(ec, entity);
     op.setAssociatedValue(txn, entity);
-
-    // TODO Change this to be before the PUT and force any child relation objects to be flushed to the datastore first
-    NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject storeRelations of " + op);
-    storeRelations(fieldMgr, op, entity);
 
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
@@ -379,9 +376,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   private void storeRelations(StoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
-    int[] relationFieldNumsForUpdate = fieldMgr.getRelationFieldNumbersNeedingUpdate();
-    NucleusLogger.GENERAL.debug(">> PersistenceHandler.storeRelations " + op +
-        " fieldsToUpdate=" + StringUtils.intArrayToString(relationFieldNumsForUpdate));
     if (fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(op.getExecutionContext())) &&
         storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
 
@@ -522,7 +516,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       // Debug information about what we are retrieving
       StringBuffer str = new StringBuffer("Fetching object \"");
       str.append(op.toPrintableID()).append("\" (id=");
-      str.append(op.getExecutionContext().getApiAdapter().getObjectId(op)).append(")").append(" fields [");
+      str.append(ec.getApiAdapter().getObjectId(op)).append(")").append(" fields [");
       for (int i=0;i<fieldNumbers.length;i++) {
         if (i > 0) {
           str.append(",");

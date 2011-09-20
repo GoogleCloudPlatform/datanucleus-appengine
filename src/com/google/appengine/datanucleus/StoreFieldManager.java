@@ -18,8 +18,6 @@ package com.google.appengine.datanucleus;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashSet;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
@@ -49,7 +47,6 @@ import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -96,10 +93,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   protected boolean keyAlreadySet = false;
 
-  // Events that know how to store relations.
-  private final List<StoreRelationEvent> storeRelationEvents = Utils.newArrayList();
-
-  private Set<Integer> relationFieldNumbersNeedingPersist = new HashSet<Integer>();
+  private final List<RelationStoreInformation> relationStoreInfos = Utils.newArrayList();
 
   /**
    * Constructor for a StoreFieldManager when inserting a new object.
@@ -279,11 +273,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
-    // Relation type, so provide treatment depending on whether this object is persistent yet
     if (!repersistingForChildKeys) {
-      // register a callback for later TODO Remove this
-      storeRelationField(getClassMetaData(), ammd, value, operation == StoreFieldManager.Operation.INSERT,
-          fieldManagerStateStack.getFirst().mappingConsumer);
+      // Register this relation field for later update
+      relationStoreInfos.add(new RelationStoreInformation(ammd, value, fieldManagerStateStack.getFirst().mappingConsumer));
     }
 
     boolean owned = MetaDataUtils.isOwnedRelation(ammd);
@@ -315,11 +307,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (key == null) {
         if (repersistingForChildKeys) {
           Object childPC = processPersistable(ammd, value);
+          if (childPC != value) {
+            // Child object has been persisted/attached, so update it in the owner
+            ObjectProvider childOP = ec.findObjectProvider(childPC);
+            childOP.replaceField(fieldNumber, childPC);
+          }
           key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
           // Flag that the key for this member isn't yet set
           getObjectProvider().setAssociatedValue(DatastorePersistenceHandler.MISSING_RELATION_KEY, true);
-        } else {
-          relationFieldNumbersNeedingPersist.add(fieldNumber);
         }
       }
       value = key;
@@ -340,8 +335,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
               Object childPC = processPersistable(ammd, obj);
               key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
               keys.add(key);
-            } else {
-              relationFieldNumbersNeedingPersist.add(fieldNumber);
             }
           }
         }
@@ -369,16 +362,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return childObj;
     }
 
-    Object childPC = childObj;
     ExecutionContext ec = getExecutionContext();
-    if (ec.getApiAdapter().isDetached(childObj)) {
-      // Child is detached, so attach it
-      childPC = ec.persistObjectInternal(childObj, null, -1, ObjectProvider.PC);
-    } else if (ec.getApiAdapter().isDeleted(childObj)) {
+    if (ec.getApiAdapter().isDeleted(childObj)) {
       // Child is deleted, so return null
       return null;
     }
 
+    Object childPC = childObj;
+    if (ec.getApiAdapter().isDetached(childObj)) {
+      // Child is detached, so attach it
+      childPC = ec.persistObjectInternal(childObj, null, -1, ObjectProvider.PC);
+    }
     ObjectProvider childOP = ec.findObjectProvider(childPC);
     if (childOP == null) {
       // Not yet persistent, so persist it
@@ -590,24 +584,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  /**
-   * Accessor for the field numbers that need updating to persist related objects (once this object is persisted).
-   * @return The field numbers needing persisting
-   */
-  public int[] getRelationFieldNumbersNeedingUpdate() {
-    if (relationFieldNumbersNeedingPersist.isEmpty()) {
-      return null;
-    }
-    int[] fieldNumbers = new int[relationFieldNumbersNeedingPersist.size()];
-    Iterator<Integer> iter = relationFieldNumbersNeedingPersist.iterator();
-    int i = 0;
-    while (iter.hasNext()) {
-      Integer fldNum = iter.next();
-      fieldNumbers[i++] = fldNum;
-    }
-    return fieldNumbers;
-  }
-
   void setRepersistingForChildKeys(boolean repersistingForChildKeys) {
     this.repersistingForChildKeys = repersistingForChildKeys;
   }
@@ -618,45 +594,96 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * requires an update to the relation owner, {@code false} otherwise.
    */
   boolean storeRelations(KeyRegistry keyRegistry) {
-    NucleusLogger.GENERAL.info(">> StoreFM.storeRelations ");
-    if (storeRelationEvents.isEmpty()) {
+    NucleusLogger.GENERAL.info(">> StoreFM.storeRelations number=" + relationStoreInfos.size());
+    if (relationStoreInfos.isEmpty()) {
+      // No relations waiting to be persisted
       return false;
     }
 
+    ObjectProvider op = getObjectProvider();
+    ExecutionContext ec = op.getExecutionContext();
+    DatastoreTable table = getDatastoreTable();
     if (datastoreEntity.getKey() != null) {
-      // Register parent key - TODO why do this for all and not just for the relations being updated?!!!
-      ObjectProvider op = getObjectProvider();
-      DatastoreTable dt = getDatastoreTable();
+      // Register parent key for all owned related objects
       Key key = datastoreEntity.getKey();
       AbstractClassMetaData acmd = op.getClassMetaData();
-      for (AbstractMemberMetaData dependent : dt.getSameEntityGroupMemberMetaData()) {
-        // Make sure we only provide the field for the correct part of any inheritance tree
-        if (dependent.getAbstractClassMetaData().isSameOrAncestorOf(acmd)) {
-          Object childValue = op.provideField(dependent.getAbsoluteFieldNumber());
-          if (childValue != null) {
-            if (childValue instanceof Object[]) {
-              childValue  = Arrays.asList((Object[]) childValue);
-            }
-            if (childValue instanceof Iterable) {
-              // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
-              String expectedType = getExpectedChildType(dependent);
-              for (Object element : (Iterable) childValue) {
-                addToParentKeyMap(keyRegistry, element, key, op.getExecutionContext(), expectedType, true);
+      int[] relationFieldNums = acmd.getRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
+      if (relationFieldNums != null) {
+        for (int i=0;i<relationFieldNums.length;i++) {
+          AbstractMemberMetaData mmd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNums[i]);
+          boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+          if (owned) {
+            Object childValue = op.provideField(mmd.getAbsoluteFieldNumber());
+            if (childValue != null) {
+              if (childValue instanceof Object[]) {
+                childValue = Arrays.asList((Object[]) childValue);
               }
-            } else {
-              boolean checkForPolymorphism = !dt.isParentKeyProvider(dependent);
-              addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), 
-                  getExpectedChildType(dependent), checkForPolymorphism);
+              if (childValue instanceof Iterable) {
+                // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
+                String expectedType = getExpectedChildType(mmd);
+                for (Object element : (Iterable) childValue) {
+                  addToParentKeyMap(keyRegistry, element, key, op.getExecutionContext(), expectedType, true);
+                }
+              } else {
+                boolean checkForPolymorphism = !table.isParentKeyProvider(mmd);
+                addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), 
+                    getExpectedChildType(mmd), checkForPolymorphism);
+              }
             }
           }
         }
       }
     }
 
-    for (StoreRelationEvent event : storeRelationEvents) {
-      event.apply();
+    for (RelationStoreInformation relInfo : relationStoreInfos) {
+      try {
+        JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(relInfo.mmd);
+        if (mapping instanceof EmbeddedPCMapping ||
+            mapping instanceof SerialisedPCMapping ||
+            mapping instanceof SerialisedReferenceMapping ||
+            mapping instanceof PersistableMapping ||
+            mapping instanceof InterfaceMapping) {
+          boolean fieldIsParentKeyProvider = table.isParentKeyProvider(relInfo.mmd);
+          if (!fieldIsParentKeyProvider) {
+            EntityUtils.checkParentage(relInfo.value, op);
+          }
+          Entity entity = datastoreEntity;
+          mapping.setObject(getExecutionContext(), entity,
+              fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
+                  relInfo.value, op, relInfo.mmd.getAbsoluteFieldNumber());
+
+          // If the field we're setting is the one side of an owned many-to-one,
+          // its pk needs to be the parent of the key of the entity we're
+          // currently populating.  We look for a magic property that tells
+          // us if this change needs to be made.  See
+          // DatastoreFKMapping.setObject for all the gory details.
+          Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
+          if (parentKeyObj != null) {
+            AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
+                relInfo.mmd.getType(), getClassLoaderResolver());
+            Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
+            entity.removeProperty(PARENT_KEY_PROPERTY);
+            datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
+          }
+        } else {
+          // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
+          // relation fields for each of those relation fields. Why ? Should just call postInsert once per field
+          if (operation == StoreFieldManager.Operation.INSERT) {
+            for (MappingCallbacks callback : relInfo.consumer.getMappingCallbacks()) {
+              callback.postInsert(op);
+            }
+          } else {
+            for (MappingCallbacks callback : relInfo.consumer.getMappingCallbacks()) {
+              callback.postUpdate(op);
+            }
+          }
+        }
+      } catch (NotYetFlushedException e) {
+        // Ignore this. We always have the object in the datastore, at least partially to get the key
+      }
     }
-    storeRelationEvents.clear();
+
+    relationStoreInfos.clear();
 
     try {
       return keyRegistry.parentNeedsUpdate(datastoreEntity.getKey());
@@ -695,81 +722,16 @@ public class StoreFieldManager extends DatastoreFieldManager {
     keyRegistry.registerParentKeyForOwnedObject(childValue, key);
   }
 
-  private void storeRelationField(final AbstractClassMetaData acmd, final AbstractMemberMetaData ammd, final Object value,
-      final boolean isInsert, final InsertMappingConsumer consumer) {
-    NucleusLogger.GENERAL.info(">> StoreFM.storeRelationField " + ammd.getFullFieldName() + " value=" + StringUtils.toJVMIDString(value));
+  private class RelationStoreInformation {
+    AbstractMemberMetaData mmd;
+    Object value;
+    InsertMappingConsumer consumer;
 
-    StoreRelationEvent event = new StoreRelationEvent() {
-      public void apply() {
-        DatastoreTable table = getDatastoreTable();
-
-        ObjectProvider op = getObjectProvider();
-        int fieldNumber = ammd.getAbsoluteFieldNumber();
-        // Based on ParameterSetter
-        try {
-          JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(ammd);
-          if (mapping instanceof EmbeddedPCMapping ||
-              mapping instanceof SerialisedPCMapping ||
-              mapping instanceof SerialisedReferenceMapping ||
-              mapping instanceof PersistableMapping ||
-              mapping instanceof InterfaceMapping) {
-            boolean fieldIsParentKeyProvider = table.isParentKeyProvider(ammd);
-            if (!fieldIsParentKeyProvider) {
-              EntityUtils.checkParentage(value, op);
-            }
-            Entity entity = datastoreEntity;
-            mapping.setObject(getExecutionContext(), entity,
-                fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
-                    value, op, fieldNumber);
-
-            // If the field we're setting is the one side of an owned many-to-one,
-            // its pk needs to be the parent of the key of the entity we're
-            // currently populating.  We look for a magic property that tells
-            // us if this change needs to be made.  See
-            // DatastoreFKMapping.setObject for all the gory details.
-            Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
-            if (parentKeyObj != null) {
-              AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
-                  ammd.getType(), getClassLoaderResolver());
-              Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
-              entity.removeProperty(PARENT_KEY_PROPERTY);
-              datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
-            }
-            op.wrapSCOField(fieldNumber, value, false, true, true);
-          } else {
-            // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
-            // relation fields. Why ? Should just call postInsert on this field
-            if (isInsert) {
-              for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-                callback.postInsert(op);
-              }
-            } else {
-              for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-                callback.postUpdate(op);
-              }
-            }
-          }
-        } catch (NotYetFlushedException e) {
-          if (acmd.getMetaDataForManagedMemberAtAbsolutePosition(fieldNumber).getNullValue() == NullValue.EXCEPTION) {
-            throw e;
-          }
-          op.updateFieldAfterInsert(e.getPersistable(), fieldNumber);
-        }
-      }
-    };
-
-    // If the related object can't exist without the parent it should be part
-    // of the parent's entity group.  In order to be part of the parent's
-    // entity group we need the parent's key.  In order to get the parent's key
-    // we must save the parent before we save the child.  In order to avoid
-    // saving the child until after we've saved the parent we register an event
-    // that we will apply later.
-    storeRelationEvents.add(event);
-  }
-
-  /** Supports a mechanism for delaying the storage of a relation. */
-  private interface StoreRelationEvent {
-    void apply();
+    public RelationStoreInformation(AbstractMemberMetaData mmd, Object val, InsertMappingConsumer cons) {
+      this.mmd = mmd;
+      this.value = val;
+      this.consumer = cons;
+    }
   }
 
   /**
