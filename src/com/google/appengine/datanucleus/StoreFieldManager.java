@@ -66,19 +66,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
     + "provide a named key, leave the parent pk field blank and set the primary key to be a "
     + "Key object made up of both the parent key and the named child.";
 
-  /**
-   * Relation types where we want to store child keys on the parent
-   */
+  /** Relation types where we want to store child keys on the parent. */
   private static final Set<Integer> PARENT_RELATION_TYPES =
     Collections.synchronizedSet(Utils.newHashSet(
         Relation.ONE_TO_MANY_BI,
         Relation.ONE_TO_MANY_UNI,
         Relation.ONE_TO_ONE_BI,
         Relation.ONE_TO_ONE_UNI));
-
-  public static final int IS_PARENT_VALUE = -1;
-  private static final int[] IS_PARENT_VALUE_ARR = {IS_PARENT_VALUE};
-  public static final String PARENT_KEY_PROPERTY = "____PARENT_KEY____";
 
   public static final int IS_FK_VALUE = -2;
   private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
@@ -279,9 +273,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     boolean owned = MetaDataUtils.isOwnedRelation(ammd);
-    if (!owned) {
-      NucleusLogger.GENERAL.debug("Field=" + ammd.getFullFieldName() + " is UNOWNED");
-    }
     if (owned) {
       // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
       if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
@@ -643,27 +634,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof SerialisedReferenceMapping ||
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
-          boolean fieldIsParentKeyProvider = table.isParentKeyProvider(relInfo.mmd);
-          if (!fieldIsParentKeyProvider) {
+          if (!table.isParentKeyProvider(relInfo.mmd)) {
             EntityUtils.checkParentage(relInfo.value, op);
-          }
-          Entity entity = datastoreEntity;
-          mapping.setObject(getExecutionContext(), entity,
-              fieldIsParentKeyProvider ? IS_PARENT_VALUE_ARR : IS_FK_VALUE_ARR,
-                  relInfo.value, op, relInfo.mmd.getAbsoluteFieldNumber());
-
-          // If the field we're setting is the one side of an owned many-to-one,
-          // its pk needs to be the parent of the key of the entity we're
-          // currently populating.  We look for a magic property that tells
-          // us if this change needs to be made.  See
-          // DatastoreFKMapping.setObject for all the gory details.
-          Object parentKeyObj = entity.getProperty(PARENT_KEY_PROPERTY);
-          if (parentKeyObj != null) {
-            AbstractClassMetaData parentCmd = op.getExecutionContext().getMetaDataManager().getMetaDataForClass(
-                relInfo.mmd.getType(), getClassLoaderResolver());
-            Key parentKey = EntityUtils.getPkAsKey(parentKeyObj, parentCmd, getExecutionContext());
-            entity.removeProperty(PARENT_KEY_PROPERTY);
-            datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
+            mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op,
+                relInfo.mmd.getAbsoluteFieldNumber());
           }
         } else {
           // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
