@@ -581,7 +581,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * requires an update to the relation owner, {@code false} otherwise.
    */
   boolean storeRelations(KeyRegistry keyRegistry) {
-    NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations number=" + relationStoreInfos.size());
+    NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations " + getObjectProvider() + " numRelations=" + relationStoreInfos.size());
     if (relationStoreInfos.isEmpty()) {
       // No relations waiting to be persisted
       return false;
@@ -664,7 +664,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     for (RelationStoreInformation relInfo : relationStoreInfos) {
       AbstractMemberMetaData mmd = relInfo.mmd;
       int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
-      NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations field=" + mmd.getFullFieldName());
+      NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations " + getObjectProvider() + " field=" + mmd.getFullFieldName());
 
       boolean owned = MetaDataUtils.isOwnedRelation(mmd);
       if (owned) {
@@ -735,7 +735,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     relationStoreInfos.clear();
 
-    NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations entityModified=" + modifiedEntity);
+    NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations " + getObjectProvider() + " entityModified=" + modifiedEntity);
     // TODO Return if we have modified the entity in this call
 
     try {
