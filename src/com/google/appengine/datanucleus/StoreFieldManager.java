@@ -267,7 +267,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     if (!repersistingForChildKeys) {
       // Register this relation field for later update
-      relationStoreInfos.add(new RelationStoreInformation(ammd, value, fieldManagerStateStack.getFirst().mappingConsumer));
+      relationStoreInfos.add(new RelationStoreInformation(ammd, value));
     }
 
     // TODO Remove all of this code below since it is all done in storeRelations (once we remove repersistingForChildKeys)
@@ -623,10 +623,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     boolean modifiedEntity = false;
+
+    // Stage 1 : process FKs
     for (RelationStoreInformation relInfo : relationStoreInfos) {
       AbstractMemberMetaData mmd = relInfo.mmd;
-      int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
-      NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations field=" + mmd.getFullFieldName());
       try {
         JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(relInfo.mmd);
         if (mapping instanceof EmbeddedPCMapping ||
@@ -634,27 +634,37 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof SerialisedReferenceMapping ||
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
-          if (!table.isParentKeyProvider(relInfo.mmd)) {
+          if (!table.isParentKeyProvider(mmd)) {
             EntityUtils.checkParentage(relInfo.value, op);
-            mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op,
-                relInfo.mmd.getAbsoluteFieldNumber());
-          }
-        } else {
-          // TODO This is total crap. We are storing a particular field and this code calls postInsert on ALL
-          // relation fields for each of those relation fields. Why ? Should just call postInsert once per field
-          if (operation == StoreFieldManager.Operation.INSERT) {
-            for (MappingCallbacks callback : relInfo.consumer.getMappingCallbacks()) {
-              callback.postInsert(op);
-            }
-          } else {
-            for (MappingCallbacks callback : relInfo.consumer.getMappingCallbacks()) {
-              callback.postUpdate(op);
-            }
+            mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
           }
         }
       } catch (NotYetFlushedException e) {
         // Ignore this. We always have the object in the datastore, at least partially to get the key
       }
+    }
+
+    // Stage 2 : postInsert/postUpdate
+    for (RelationStoreInformation relInfo : relationStoreInfos) {
+      try {
+        JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(relInfo.mmd);
+        if (mapping instanceof MappingCallbacks) {
+          if (operation == StoreFieldManager.Operation.INSERT) {
+            ((MappingCallbacks)mapping).postInsert(op);
+          } else {
+            ((MappingCallbacks)mapping).postUpdate(op);
+          }
+        }
+      } catch (NotYetFlushedException e) {
+        // Ignore this. We always have the object in the datastore, at least partially to get the key
+      }
+    }
+
+    // Stage 3 : set child keys in parent
+    for (RelationStoreInformation relInfo : relationStoreInfos) {
+      AbstractMemberMetaData mmd = relInfo.mmd;
+      int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
+      NucleusLogger.GENERAL.debug(">> StoreFM.storeRelations field=" + mmd.getFullFieldName());
 
       boolean owned = MetaDataUtils.isOwnedRelation(mmd);
       if (owned) {
@@ -768,12 +778,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
   private class RelationStoreInformation {
     AbstractMemberMetaData mmd;
     Object value;
-    InsertMappingConsumer consumer;
 
-    public RelationStoreInformation(AbstractMemberMetaData mmd, Object val, InsertMappingConsumer cons) {
+    public RelationStoreInformation(AbstractMemberMetaData mmd, Object val) {
       this.mmd = mmd;
       this.value = val;
-      this.consumer = cons;
     }
   }
 
