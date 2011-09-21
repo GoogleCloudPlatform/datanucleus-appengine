@@ -35,10 +35,10 @@ public class Issue165Test extends JDOBugTestCase {
   public void testInsert() {
     Issue165Child c = new Issue165Child();
     c.setAString("Child info");
-
     Issue165Parent p = new Issue165Parent();
     p.setAString("Not important");
     p.setChild(c);
+    c.setParent(p);
     assertTrue(p.getChild() == c && c.getParent() == p);
 
     NucleusLogger.GENERAL.info(">> pm.makePersistent");

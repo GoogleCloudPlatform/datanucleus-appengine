@@ -13,7 +13,7 @@ public class Issue165Child {
   @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
   private String id;
 
-  @Persistent
+  @Persistent(mappedBy = "child")
   Issue165Parent parent;
   
   @Persistent
@@ -25,6 +25,10 @@ public class Issue165Child {
 
   public void setAString(String str) {
     aString = str;
+  }
+
+  public void setParent(Issue165Parent parent) {
+    this.parent = parent;
   }
 
   public Issue165Parent getParent() {
