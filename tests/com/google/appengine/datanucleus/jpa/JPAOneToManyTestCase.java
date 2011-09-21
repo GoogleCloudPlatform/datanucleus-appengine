@@ -139,6 +139,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
 
     bidirChild.setChildVal("yam");
     pojo.getBidirChildren().add(bidirChild);
+    bidirChild.setParent(pojo);
 
     em.merge(pojo);
     startEnd.end();
