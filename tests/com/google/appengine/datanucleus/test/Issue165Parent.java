@@ -1,4 +1,4 @@
-package com.google.appengine.datanucleus.bugs.test;
+package com.google.appengine.datanucleus.test;
 
 import java.util.TreeSet;
 

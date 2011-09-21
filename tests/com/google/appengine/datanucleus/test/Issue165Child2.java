@@ -1,4 +1,4 @@
-package com.google.appengine.datanucleus.bugs.test;
+package com.google.appengine.datanucleus.test;
 
 import javax.jdo.annotations.Extension;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -7,13 +7,13 @@ import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 
 @PersistenceCapable
-public class Issue165Child {
+public class Issue165Child2 {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
   private String id;
 
-  @Persistent(mappedBy = "child")
+  @Persistent
   Issue165Parent parent;
   
   @Persistent
