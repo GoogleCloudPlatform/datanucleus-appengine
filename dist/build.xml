@@ -39,7 +39,6 @@
     <path refid="appengine.plugin.compile.deps"/>
     <pathelement location="${orm.lib.dir}/appengine-local-runtime.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-api-stubs.jar"/>
-    <pathelement location="${orm.lib.dir}/appengine-api-labs.jar"/>
     <pathelement location="${orm.lib.dir}/appengine-testing.jar"/>
     <!--<pathelement location="${orm.lib.dir}/cloudcover-1.0.2.final.jar"/>-->
     <pathelement location="${orm.lib.dir}/junit.jar"/>
@@ -273,7 +272,6 @@
       /tmp/testdist/lib/appengine-tools-api.jar
       /tmp/testdist/lib/impl/appengine-local-runtime.jar
       /tmp/testdist/lib/impl/appengine-api.jar
-      /tmp/testdist/lib/impl/appengine-api-labs.jar
       /tmp/testdist/lib/impl/appengine-api-stubs.jar
       /tmp/testdist/lib/shared/geronimo-servlet_2.5_spec-1.2.jar
       /tmp/testdist/lib/shared/geronimo-jsp_2.1_spec-1.0.1.jar
@@ -289,7 +287,6 @@
       /tmp/testdist/lib/impl/agent
       /tmp/testdist/lib/impl/agent/appengine-agentruntime.jar
       /tmp/testdist/lib/user/appengine-api.jar
-      /tmp/testdist/lib/user/appengine-api-labs.jar
       /tmp/testdist/config/user/ant-macros.xml
      -->
     <delete dir="${orm.tmpdist.dir}"/>
@@ -309,7 +306,6 @@
         <include name="appengine-local-runtime.jar"/>
         <include name="appengine-api-stubs.jar"/>
         <include name="appengine-api.jar"/>
-        <include name="appengine-api-labs.jar"/>
       </fileset>
     </copy>
 
@@ -351,7 +347,6 @@
     <copy todir="${orm.sdk.tmpdist.lib.dir}/user">
       <fileset dir="${orm.lib.dir}">
         <include name="appengine-api.jar"/>
-        <include name="appengine-api-labs.jar"/>
       </fileset>
     </copy>
 
