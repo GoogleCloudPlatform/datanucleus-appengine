@@ -644,7 +644,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (value == null) {
         // Nothing to extract
         checkSettingToNullValue(mmd, value);
-        if (!datastoreEntity.hasProperty(propName)) {
+        if (!datastoreEntity.hasProperty(propName) || datastoreEntity.getProperty(propName) != null) {
           modifiedEntity = true;
           EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
         }

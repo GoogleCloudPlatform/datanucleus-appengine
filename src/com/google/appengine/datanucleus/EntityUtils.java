@@ -27,22 +27,29 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.query.QueryEntityPKFetchFieldManager;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.FetchPlan;
 import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
+import org.datanucleus.metadata.DiscriminatorStrategy;
+import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.VersionMetaData;
 
+import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -807,5 +814,137 @@ public final class EntityUtils {
       }
     }
     return key;
+  }
+
+  /**
+   * Converts the provided Entity to a pojo.
+   * @param entity The entity to convert
+   * @param acmd The meta data for the pojo class
+   * @param clr The classloader resolver
+   * @param om The object manager
+   * @param ignoreCache Whether or not the cache should be ignored when the PM/EM attempts to find the pojo
+   * @param fetchPlan the fetch plan to use
+   * @return The pojo that corresponds to the provided entity.
+   */
+  public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
+      final ClassLoaderResolver clr, ExecutionContext ec, boolean ignoreCache, final FetchPlan fetchPlan) {
+    final DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
+    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
+    storeMgr.validateMetaDataForClass(acmd);
+
+    FieldValues fv = null;
+    if (fetchPlan != null) {
+      // candidate select : load all fetch plan fields from the Entity
+
+      // Make sure this class is managed in the FetchPlan
+      fetchPlan.manageFetchPlanForClass(acmd);
+
+      final int[] fieldsToFetch = fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers();
+      fv = new FieldValues() {
+        public void fetchFields(ObjectProvider op) {
+          op.replaceFields(fieldsToFetch, new FetchFieldManager(op, entity));
+        }
+        public void fetchNonLoadedFields(ObjectProvider op) {
+          op.replaceNonLoadedFields(fieldsToFetch, new FetchFieldManager(op, entity));
+        }
+        public FetchPlan getFetchPlanForLoading() {
+          return fetchPlan;
+        }
+      };
+    } else {
+      // projection select : load PK fields only here, and all later
+      fv = new FieldValues() {
+        public void fetchFields(ObjectProvider op) {
+          op.replaceFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, entity));
+        }
+        public void fetchNonLoadedFields(ObjectProvider op) {
+          op.replaceNonLoadedFields(acmd.getPKMemberPositions(), new FetchFieldManager(op, entity));
+        }
+        public FetchPlan getFetchPlanForLoading() {
+          return null;
+        }
+      };
+    }
+
+    Object id = null;
+    Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
+    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+      FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
+      id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
+    }
+    else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      // TODO Implement support for datastore id
+    }
+
+    Object pojo = ec.findObject(id, fv, cls, ignoreCache);
+    ObjectProvider op = ec.findObjectProvider(pojo);
+
+    // TODO(maxr): Seems like we should be able to refactor the handler
+    // so that we can do a fetch without having to hide the entity in the state manager.
+    op.setAssociatedValue(((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec), entity);
+
+    if (fetchPlan == null) {
+      // Projection, so load everything
+      // TODO Remove this. It prevents postLoad calls being made, but do we care since its a projection?
+      storeMgr.getPersistenceHandler().fetchObject(op, acmd.getAllMemberPositions());
+    }
+
+    return pojo;
+  }
+
+  /**
+   * Method to return the class that this Entity is an instance of. Uses a discriminator property in the
+   * Entity if present, otherwise returns the candidate type
+   * @param entity The Entity to get values from
+   * @param acmd Metadata for the candidate
+   * @param table Table we're retrieving information from
+   * @param clr ClassLoader resolver
+   * @param ec ExecutionContext
+   * @return The class of this Entity
+   */
+  private static Class<?> getClassFromDiscriminator(Entity entity, AbstractClassMetaData acmd,
+      DatastoreTable table, ClassLoaderResolver clr, ExecutionContext ec) {
+    if (!acmd.hasDiscriminatorStrategy()) {
+      return clr.classForName(acmd.getFullClassName());
+    }
+
+    String discrimPropertyName = EntityUtils.getDiscriminatorPropertyName(
+        table.getStoreManager().getIdentifierFactory(), acmd.getDiscriminatorMetaDataRoot());
+    Object discrimValue = entity.getProperty(discrimPropertyName);
+
+    if (discrimValue == null) {
+      throw new NucleusUserException("Discriminator of this entity is null: " + entity);
+    }
+    String rowClassName = null;
+
+    if (acmd.getDiscriminatorStrategy() == DiscriminatorStrategy.CLASS_NAME) {
+      rowClassName = (String) discrimValue;
+    } else if (acmd.getDiscriminatorStrategy() == DiscriminatorStrategy.VALUE_MAP) {
+      // Check the main class type for the table
+      Object discrimMDValue = acmd.getDiscriminatorValue();
+      if (discrimMDValue.equals(discrimValue)) {
+        rowClassName = acmd.getFullClassName();
+      } else {
+        // Go through all possible subclasses to find one with this value
+        for (Object o : ec.getStoreManager().getSubClassesForClass(acmd.getFullClassName(), true, clr)) {
+          String className = (String) o;
+          AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(className, clr);
+          discrimMDValue = cmd.getDiscriminatorValue();
+          if (discrimValue.equals(discrimMDValue)) {
+            rowClassName = className;
+            break;
+          }
+        }
+      }
+    }
+
+    if (rowClassName == null) {
+      throw new NucleusUserException("Cannot get the class for entity " + entity + "\n" +
+          "This can happen if the meta data for the subclasses of " + acmd.getFullClassName() +
+          " is not yet loaded! You may want to consider using the datanucleus autostart mechanism" +
+          " to tell datanucleus about these classes.");
+    }
+
+    return clr.classForName(rowClassName);
   }
 }

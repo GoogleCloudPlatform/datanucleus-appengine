@@ -47,7 +47,6 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 /**
  * Abstract base class for backing stores using a "FK" in the element.
@@ -201,7 +200,7 @@ public abstract class AbstractFKStore {
       // We only want direct children
       if (parentKey.equals(e.getKey().getParent())) {
         numChildren++;
-        result.add(DatastoreQuery.entityToPojo(e, elementCmd, clr, ec, false, ec.getFetchPlan()));
+        result.add(EntityUtils.entityToPojo(e, elementCmd, clr, ec, false, ec.getFetchPlan()));
         if (NucleusLogger.PERSISTENCE.isDebugEnabled()) {
           NucleusLogger.PERSISTENCE.debug("Retrieved entity with key " + e.getKey());
         }

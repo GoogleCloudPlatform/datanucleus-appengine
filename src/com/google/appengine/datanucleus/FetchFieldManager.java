@@ -36,13 +36,13 @@ import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceConfig;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
-import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 /**
  * FieldManager to handle the fetching of fields from an Entity into a managed object.
@@ -306,8 +306,7 @@ public class FetchFieldManager extends DatastoreFieldManager
           value = lookupOneToOneChild(ammd, clr);
         }
       } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        // Do not complain about a non existing parent
-        // if we have a self referencing relation
+        // Do not complain about a non existing parent if we have a self referencing relation 
         // and are on the top of the hierarchy.
         MetaData other = ammd.getRelatedMemberMetaData(clr)[0].getParent();
         MetaData parent = ammd.getParent();
@@ -342,13 +341,29 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   private Object lookupOneToOneChild(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
     ExecutionContext ec = getObjectProvider().getExecutionContext();
-    AbstractClassMetaData childClassMetaData =
-        ec.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
-    String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(
-        childClassMetaData).getIdentifierName();
-    Entity parentEntity = datastoreEntity;
+    AbstractClassMetaData childCmd = ec.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
+    String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(childCmd).getIdentifierName();
+    if (getStoreManager().storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Use the child key stored in the parent (if present)
+      String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd);
+      if (datastoreEntity.hasProperty(propName)) {
+        Object value = datastoreEntity.getProperty(propName);
+        if (value instanceof Key) {
+          DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+          DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+          try {
+            Entity childEntity = datastoreService.get((Key)value);
+            return EntityUtils.entityToPojo(childEntity, childCmd, clr, ec, false, ec.getFetchPlan());
+          } catch (EntityNotFoundException enfe) {
+            // TODO Handle child key pointing to non-existent Entity
+          }
+        }
+      }
+    }
+
     // We're going to issue a query for all entities of the given kind with
     // the parent entity's key as their parent.  There should be only 1.
+    Entity parentEntity = datastoreEntity;
     Query q = new Query(kind, parentEntity.getKey());
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
@@ -359,8 +374,7 @@ public class FetchFieldManager extends DatastoreFieldManager
     // a/c
     for (Entity e : datastoreService.prepare(q).asIterable()) {
       if (parentEntity.getKey().equals(e.getKey().getParent())) {
-        // TODO(maxr) Figure out how to hook this up to a StateManager!
-        return DatastoreQuery.entityToPojo(e, childClassMetaData, clr, ec, false, ec.getFetchPlan());
+        return EntityUtils.entityToPojo(e, childCmd, clr, ec, false, ec.getFetchPlan());
         // We are potentially ignoring data errors where there is more than one
         // direct child for the one to one.  Unfortunately, in order to detect
         // this we need to read all the way to the end of the Iterable and that

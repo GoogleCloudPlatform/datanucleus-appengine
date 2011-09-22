@@ -43,7 +43,7 @@ class PojoDatastoreBridge {
     final AbstractClassMetaData acmd = ec.getMetaDataManager().getMetaDataForClass(cls, clr);
     Utils.Function<Entity, Object> func = new Utils.Function<Entity, Object>() {
       public Object apply(Entity from) {
-        return DatastoreQuery.entityToPojo(from, acmd, clr, ec, true, ec.getFetchPlan().getCopy());
+        return EntityUtils.entityToPojo(from, acmd, clr, ec, true, ec.getFetchPlan().getCopy());
       }
     };
     AbstractJavaQuery query = new DummyQuery(ec.getStoreManager(), ec);
