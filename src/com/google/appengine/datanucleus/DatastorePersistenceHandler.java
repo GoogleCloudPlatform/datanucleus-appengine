@@ -154,7 +154,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
-    NucleusLogger.GENERAL.info(">> PersistenceHandler.insertObject FOR " + op);
 
     // If we're in the middle of a batch operation just register the ObjectProvider that needs the insertion
     BatchPutManager batchPutMgr = getBatchPutManager(op.getExecutionContext());
@@ -296,14 +295,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       }
 
       // Update relation fields (including cascade-persist etc)
-      storeRelations(putState.fieldMgr, putState.op, putState.entity);
-      // TODO Do a PUT to the datastore if any fields were updated
-
-      if (putState.entity.getParent() != null) {
-        // TODO Do we need this? and why?
-        // We inserted a new child. Register the parent key so we know we need to update the parent.
-        KeyRegistry keyReg = KeyRegistry.getKeyRegistry(putState.op.getExecutionContext());
-        keyReg.registerModifiedParent(putState.entity.getParent());
+      if (putState.fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(putState.op.getExecutionContext()))) {
+        // PUT Entity into datastore with these changes
+        EntityUtils.putEntityIntoDatastore(putState.op.getExecutionContext(), putState.entity);
       }
 
       if (storeMgr.getRuntimeManager() != null) {
@@ -327,7 +321,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // Make sure writes are permitted
     storeMgr.assertReadOnlyForUpdateOfObject(op);
     storeMgr.validateMetaDataForClass(op.getClassMetaData());
-    NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject FOR " + op);
 
     AbstractClassMetaData cmd = op.getClassMetaData();
     long startTime = System.currentTimeMillis();
@@ -359,10 +352,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     handleVersioningBeforeWrite(op, entity, true, "updating");
 
     // Update relation fields (including cascade-persist etc)
-    storeRelations(fieldMgr, op, entity);
+    fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(op.getExecutionContext()));
 
     // PUT Entity into datastore
-    NucleusLogger.GENERAL.info(">> PersistenceHandler.updateObject PUT of " + op);
     DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(ec, entity);
     op.setAssociatedValue(txn, entity);
 
@@ -372,40 +364,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
     if (storeMgr.getRuntimeManager() != null) {
       storeMgr.getRuntimeManager().incrementUpdateCount();
-    }
-  }
-
-  private void storeRelations(StoreFieldManager fieldMgr, ObjectProvider op, Entity entity) {
-    if (fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(op.getExecutionContext())) &&
-        storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
-
-      // Return value of true means that storing the relations resulted in
-      // changes that need to be reflected on the current object.
-      // That means we need to re-save.
-      ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
-      boolean missingRelationKey = false;
-      try {
-        fieldMgr.setRepersistingForChildKeys(true);
-        AbstractClassMetaData acmd = op.getClassMetaData();
-        for (int field : acmd.getRelationMemberPositions(clr, storeMgr.getMetaDataManager())) {
-          op.provideFields(new int[] {field}, fieldMgr);
-          if (op.getAssociatedValue(MISSING_RELATION_KEY) != null) {
-            missingRelationKey = true;
-          }
-          op.setAssociatedValue(MISSING_RELATION_KEY, null);
-        }
-      } finally {
-        fieldMgr.setRepersistingForChildKeys(false);
-      }
-
-      // if none of the relation fields are missing relation keys then there is
-      // no need for any additional puts to write the relation keys
-      // we'll set a flag on the statemanager to let downstream writers know
-      // and then we'll do the put ourselves
-      if (!missingRelationKey) {
-        DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(op.getExecutionContext(), entity);
-        op.setAssociatedValue(txn, entity);
-      }
     }
   }
 
@@ -665,7 +623,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     private final ObjectProvider op;
     private final StoreFieldManager fieldMgr;
     private final Entity entity;
-    // TODO Add the fields that were not set on the first pass
 
     private PutState(ObjectProvider op, StoreFieldManager fieldMgr, Entity entity) {
       this.op = op;

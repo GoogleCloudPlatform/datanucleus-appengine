@@ -21,10 +21,8 @@ import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.StoreManager;
 
-import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
-import java.util.Set;
 
 /**
  * A registry mechanism to aid in the identification of parent objects when inserting new (owned) objects.
@@ -69,26 +67,5 @@ public class KeyRegistry {
 
   public void clearParentKeys() {
     parentKeyMap.clear();
-  }
-
-  // TODO Drop these methods. Nonsense to try to get related objects updated which you don't need when you 
-  // write your persistence process properly
-
-  /**
-   * Set is used to pass messages between child and parent during cascades.
-   * The entity uniquely identified by any {@link Key} in this set needs to have its relation fields re-persisted.
-   */
-  private final Set<Key> modifiedParentSet = new HashSet<Key>();
-
-  void registerModifiedParent(Key key) {
-    modifiedParentSet.add(key);
-  }
-
-  void clearModifiedParent(Key key) {
-    modifiedParentSet.remove(key);
-  }
-
-  boolean parentNeedsUpdate(Key key) {
-    return modifiedParentSet.contains(key);
   }
 }
