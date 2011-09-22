@@ -326,26 +326,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   }
 
   /* (non-Javadoc)
-   * @see org.datanucleus.store.scostore.CollectionStore#contains(org.datanucleus.store.ObjectProvider, java.lang.Object)
-   */
-  public boolean contains(ObjectProvider op, Object element) {
-    if (!validateElementForReading(op.getExecutionContext(), element)) {
-      return false;
-    }
-
-    // Since we only support owned relationships right now, we can check containment simply by looking 
-    // to see if the element's Key contains the parent Key.
-    ExecutionContext ec = op.getExecutionContext();
-    Key childKey = extractElementKey(ec, element);
-    // Child key can be null if element has not yet been persisted
-    if (childKey == null || childKey.getParent() == null) {
-      return false;
-    }
-
-    return childKey.getParent().equals(EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op));
-  }
-
-  /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#iterator(org.datanucleus.store.ObjectProvider)
    */
   public Iterator iterator(ObjectProvider op) {
@@ -972,15 +952,5 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     });
 
     return inserted;
-  }
-
-  protected Key extractElementKey(ExecutionContext ec, Object element) {
-    ApiAdapter apiAdapter = ec.getApiAdapter();
-    Object id = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(element));
-    if (id == null) {
-      return null;
-    }
-    // This is a child object so we know the pk is Key or encoded String
-    return id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
   }
 }

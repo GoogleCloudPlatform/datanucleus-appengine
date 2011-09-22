@@ -203,6 +203,48 @@ public abstract class AbstractFKStore {
     return 0;
   }
 
+  /* (non-Javadoc)
+   * @see org.datanucleus.store.scostore.CollectionStore#contains(org.datanucleus.store.ObjectProvider, java.lang.Object)
+   */
+  public boolean contains(ObjectProvider op, Object element) {
+    ExecutionContext ec = op.getExecutionContext();
+    if (!validateElementForReading(ec, element)) {
+      return false;
+    }
+
+    Key childKey = EntityUtils.getKeyForObject(element, ec);
+    if (childKey == null) {
+      // Not yet persistent
+      return false;
+    }
+
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)){
+      // Check containment using field in parent containing "List<Key>"
+      Entity datastoreEntity = getOwnerEntity(op);
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      if (datastoreEntity.hasProperty(propName)) {
+        Object value = datastoreEntity.getProperty(propName);
+        if (value == null) {
+          return false;
+        } else {
+          List<Key> keys = (List<Key>)value;
+          return keys.contains(childKey);
+        }
+      } else {
+        return false;
+      }
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Check containment using parent key of the element key
+      // Child key can be null if element has not yet been persisted
+      if (childKey.getParent() == null) {
+        return false;
+      }
+      Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op);
+      return childKey.getParent().equals(parentKey);
+    }
+    return false;
+  }
+
   /**
    * Method to run a query with the supplied filter and sort predicates, to get the child objects for the 
    * specified parent.
