@@ -42,6 +42,8 @@ import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.KeyRegistry;
 import com.google.appengine.datanucleus.MetaDataUtils;
+import com.google.appengine.datanucleus.StorageVersion;
+import com.google.appengine.datanucleus.Utils;
 
 /**
  * Backing store for sets stored with a "FK" in the element.
@@ -243,10 +245,18 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
    */
   public Iterator iterator(ObjectProvider op) {
     ExecutionContext ec = op.getExecutionContext();
-    ApiAdapter apiAdapter = ec.getApiAdapter();
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
-    return getChildren(parentKey, Collections.<Query.FilterPredicate>emptyList(),
-        Collections.<Query.SortPredicate>emptyList(), ec).iterator();
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Get child keys from field in owner Entity
+      return getChildrenFromParentField(op, ec).listIterator();
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Get child keys by doing a query with the owner as the parent Entity
+      ApiAdapter apiAdapter = ec.getApiAdapter();
+      Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
+      return getChildrenUsingParentQuery(parentKey, Collections.<Query.FilterPredicate>emptyList(),
+          Collections.<Query.SortPredicate>emptyList(), ec).iterator();
+    } else {
+      return Utils.newArrayList().listIterator();
+    }
   }
 
   /* (non-Javadoc)

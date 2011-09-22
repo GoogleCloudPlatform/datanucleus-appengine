@@ -56,6 +56,7 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.KeyRegistry;
 import com.google.appengine.datanucleus.MetaDataUtils;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
@@ -212,7 +213,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     return success;
   }
 
-  protected int[] internalShift(ObjectProvider ownerOP, boolean batched, int oldIndex, int amount) 
+  protected int[] internalShift(ObjectProvider op, boolean batched, int oldIndex, int amount) 
   throws MappedDatastoreException {
     if (orderMapping == null) {
       return null;
@@ -224,8 +225,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     String kind =
         storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
     Query q = new Query(kind);
-    ExecutionContext ec = ownerOP.getExecutionContext();
-    Object id = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ownerOP.getInternalObjectId());
+    ExecutionContext ec = op.getExecutionContext();
+    Object id = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
     Key key = id instanceof Key ? (Key) id : KeyFactory.stringToKey((String) id);
     q.setAncestor(key);
 
@@ -270,9 +271,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#clear(org.datanucleus.store.ObjectProvider)
    */
-  public void clear(ObjectProvider ownerOP) {
+  public void clear(ObjectProvider op) {
     boolean deleteElements = false;
-    ExecutionContext ec = ownerOP.getExecutionContext();
+    ExecutionContext ec = op.getExecutionContext();
 
     boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
     if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
@@ -303,7 +304,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
     if (deleteElements) {
       // Find elements present in the datastore and delete them one-by-one
-      Iterator elementsIter = iterator(ownerOP);
+      Iterator elementsIter = iterator(op);
       if (elementsIter != null) {
         while (elementsIter.hasNext()) {
           Object element = elementsIter.next();
@@ -327,49 +328,57 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#contains(org.datanucleus.store.ObjectProvider, java.lang.Object)
    */
-  public boolean contains(ObjectProvider ownerOP, Object element) {
-    if (!validateElementForReading(ownerOP.getExecutionContext(), element)) {
+  public boolean contains(ObjectProvider op, Object element) {
+    if (!validateElementForReading(op.getExecutionContext(), element)) {
       return false;
     }
 
     // Since we only support owned relationships right now, we can check containment simply by looking 
     // to see if the element's Key contains the parent Key.
-    ExecutionContext ec = ownerOP.getExecutionContext();
+    ExecutionContext ec = op.getExecutionContext();
     Key childKey = extractElementKey(ec, element);
     // Child key can be null if element has not yet been persisted
     if (childKey == null || childKey.getParent() == null) {
       return false;
     }
 
-    return childKey.getParent().equals(EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), ownerOP));
+    return childKey.getParent().equals(EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op));
   }
 
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#iterator(org.datanucleus.store.ObjectProvider)
    */
-  public Iterator iterator(ObjectProvider ownerOP) {
-    return listIterator(ownerOP);
+  public Iterator iterator(ObjectProvider op) {
+    return listIterator(op);
   }
 
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#listIterator(org.datanucleus.store.ObjectProvider)
    */
-  public ListIterator listIterator(ObjectProvider ownerOP) {
-    return listIterator(ownerOP, -1, -1);
+  public ListIterator listIterator(ObjectProvider op) {
+    return listIterator(op, -1, -1);
   }
 
-  protected ListIterator listIterator(ObjectProvider ownerOP, int startIdx, int endIdx) {
-    ExecutionContext ec = ownerOP.getExecutionContext();
-    ApiAdapter apiAdapter = ec.getApiAdapter();
-    Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, ownerOP);
-    return getChildren(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
+  protected ListIterator listIterator(ObjectProvider op, int startIdx, int endIdx) {
+    ExecutionContext ec = op.getExecutionContext();
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Get child keys from field in owner Entity
+      return getChildrenFromParentField(op, ec).listIterator();
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Get child keys by doing a query with the owner as the parent Entity
+      ApiAdapter apiAdapter = ec.getApiAdapter();
+      Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
+      return getChildrenUsingParentQuery(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
+    } else {
+      return Utils.newArrayList().listIterator();
+    }
   }
 
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#remove(org.datanucleus.store.ObjectProvider, java.lang.Object, int, boolean)
    */
-  public boolean remove(ObjectProvider ownerOP, Object element, int currentSize, boolean allowCascadeDelete) {
-    ExecutionContext ec = ownerOP.getExecutionContext();
+  public boolean remove(ObjectProvider op, Object element, int currentSize, boolean allowCascadeDelete) {
+    ExecutionContext ec = op.getExecutionContext();
     if (!validateElementForReading(ec, element)) {
       return false;
     }
@@ -381,7 +390,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           element.getClass().getName());
     }
 
-    return internalRemove(ownerOP, elementToRemove, currentSize);
+    return internalRemove(op, elementToRemove, currentSize);
   }
 
   /* (non-Javadoc)
@@ -624,17 +633,17 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /**
    * Utility to find the indices of a collection of elements.
    * The returned list are in reverse order (highest index first).
-   * @param ownerOP ObjectProvider for the owner of the list
+   * @param op ObjectProvider for the owner of the list
    * @param elements The elements
    * @return The indices of the elements in the List.
    */
-  protected int[] getIndicesOf(ObjectProvider ownerOP, Collection elements)
+  protected int[] getIndicesOf(ObjectProvider op, Collection elements)
   {
     if (elements == null || elements.size() == 0) {
       return null;
     }
 
-    ExecutionContext ec = ownerOP.getExecutionContext();
+    ExecutionContext ec = op.getExecutionContext();
     Iterator iter = elements.iterator();
     while (iter.hasNext()) {
       validateElementForReading(ec, iter.next());
@@ -703,8 +712,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#indexOf(org.datanucleus.store.ObjectProvider, java.lang.Object)
    */
-  public int indexOf(ObjectProvider ownerOP, Object element) {
-    ExecutionContext ec = ownerOP.getExecutionContext();
+  public int indexOf(ObjectProvider op, Object element) {
+    ExecutionContext ec = op.getExecutionContext();
     validateElementForReading(ec, element);
 
     ObjectProvider elementOP = ec.findObjectProvider(element);
@@ -732,29 +741,29 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#lastIndexOf(org.datanucleus.store.ObjectProvider, java.lang.Object)
    */
-  public int lastIndexOf(ObjectProvider ownerOP, Object element) {
-    validateElementForReading(ownerOP.getExecutionContext(), element);
+  public int lastIndexOf(ObjectProvider op, Object element) {
+    validateElementForReading(op.getExecutionContext(), element);
     // TODO Cater for "FK" lists that can have an element more than once. Currently assumes only present once
-    return indexOf(ownerOP, element);
+    return indexOf(op, element);
   }
 
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#set(org.datanucleus.store.ObjectProvider, int, java.lang.Object, boolean)
    */
-  public Object set(ObjectProvider ownerOP, int index, Object element, boolean allowCascadeDelete) {
+  public Object set(ObjectProvider op, int index, Object element, boolean allowCascadeDelete) {
     // Get current element at this position
-    Object obj = get(ownerOP, index);
+    Object obj = get(op, index);
 
     if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Register the parent key for the element when owned
-      Key parentKey = EntityUtils.getKeyForObject(ownerOP.getObject(), ownerOP.getExecutionContext());
-      KeyRegistry.getKeyRegistry(ownerOP.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
+      Key parentKey = EntityUtils.getKeyForObject(op.getObject(), op.getExecutionContext());
+      KeyRegistry.getKeyRegistry(op.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
     }
 
     // Make sure the element going to this position is persisted (and give it its index)
-    validateElementForWriting(ownerOP, element, index);
+    validateElementForWriting(op, element, index);
 
-    ExecutionContext ec = ownerOP.getExecutionContext();
+    ExecutionContext ec = op.getExecutionContext();
 
     // TODO Allow for a user setting position x as element1 and then setting element2 (that used to be there) to position y
     // At the moment we just delete the previous element
@@ -768,8 +777,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#subList(org.datanucleus.store.ObjectProvider, int, int)
    */
-  public List subList(ObjectProvider ownerOP, int startIdx, int endIdx) {
-    ListIterator iter = listIterator(ownerOP, startIdx, endIdx);
+  public List subList(ObjectProvider op, int startIdx, int endIdx) {
+    ListIterator iter = listIterator(op, startIdx, endIdx);
     java.util.List list = new ArrayList();
     while (iter.hasNext()) {
       list.add(iter.next());
@@ -873,17 +882,17 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /**
    * Method to validate that an element is valid for writing to the datastore.
    * TODO Minimise differences to super.validateElementForWriting()
-   * @param ownerOP ObjectProvider for the owner of the List
+   * @param op ObjectProvider for the owner of the List
    * @param element The element to validate
    * @param index The position that the element is being stored at in the list
    * @return Whether the element was inserted
    */
-  protected boolean validateElementForWriting(final ObjectProvider ownerOP, Object element, final int index)
+  protected boolean validateElementForWriting(final ObjectProvider op, Object element, final int index)
   {
-    final Object newOwner = ownerOP.getObject();
+    final Object newOwner = op.getObject();
 
     // Check if element is ok for use in the datastore, specifying any external mappings that may be required
-    boolean inserted = super.validateElementForWriting(ownerOP.getExecutionContext(), element, new FieldValues()
+    boolean inserted = super.validateElementForWriting(op.getExecutionContext(), element, new FieldValues()
     {
       public void fetchFields(ObjectProvider elementOP)
       {
@@ -916,7 +925,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           JavaTypeMapping externalFKMapping = elementTable.getExternalMapping(ownerMemberMetaData, MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
           if (externalFKMapping != null) {
             // The element has an external FK mapping so set the value it needs to use in the INSERT
-            elementOP.setAssociatedValue(externalFKMapping, ownerOP.getObject());
+            elementOP.setAssociatedValue(externalFKMapping, op.getObject());
           }
 
           if (orderMapping != null && index >= 0) {
@@ -944,15 +953,15 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           if (currentOwner == null) {
             // No owner, so correct it
             NucleusLogger.PERSISTENCE.info(LOCALISER.msg("056037",
-                ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(elementOP.getObject())));
             elementOP.replaceFieldMakeDirty(elementMemberMetaData.getAbsoluteFieldNumber(), newOwner);
           }
-          else if (currentOwner != newOwner && ownerOP.getReferencedPC() == null) {
+          else if (currentOwner != newOwner && op.getReferencedPC() == null) {
             // Owner of the element is neither this container nor is it being attached
             // Inconsistent owner, so throw exception
             throw new NucleusUserException(LOCALISER.msg("056038",
-                ownerOP.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(elementOP.getObject()),
                 StringUtils.toJVMIDString(currentOwner)));
           }

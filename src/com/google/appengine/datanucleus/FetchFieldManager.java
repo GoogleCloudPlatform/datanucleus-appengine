@@ -31,6 +31,7 @@ import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
+import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
@@ -348,6 +349,9 @@ public class FetchFieldManager extends DatastoreFieldManager
       String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd);
       if (datastoreEntity.hasProperty(propName)) {
         Object value = datastoreEntity.getProperty(propName);
+        if (value == null) {
+          return null;
+        }
         if (value instanceof Key) {
           DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
           DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
@@ -355,30 +359,30 @@ public class FetchFieldManager extends DatastoreFieldManager
             Entity childEntity = datastoreService.get((Key)value);
             return EntityUtils.entityToPojo(childEntity, childCmd, clr, ec, false, ec.getFetchPlan());
           } catch (EntityNotFoundException enfe) {
-            // TODO Handle child key pointing to non-existent Entity
+            NucleusLogger.PERSISTENCE.error("Field " + ammd.getFullFieldName() + " of " + getObjectProvider().getInternalObjectId() +
+                " was pointing to object with key " + value + " but this doesn't exist!");
+            return null;
           }
         }
       }
     }
 
-    // We're going to issue a query for all entities of the given kind with
-    // the parent entity's key as their parent.  There should be only 1.
-    Entity parentEntity = datastoreEntity;
-    Query q = new Query(kind, parentEntity.getKey());
-    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    // We have to pull back all children because the datastore does not let us
-    // filter ancestors by depth and an indirect child could come back before a
-    // direct child.  eg:
-    // a/b/c
-    // a/c
-    for (Entity e : datastoreService.prepare(q).asIterable()) {
-      if (parentEntity.getKey().equals(e.getKey().getParent())) {
-        return EntityUtils.entityToPojo(e, childCmd, clr, ec, false, ec.getFetchPlan());
-        // We are potentially ignoring data errors where there is more than one
-        // direct child for the one to one.  Unfortunately, in order to detect
-        // this we need to read all the way to the end of the Iterable and that
-        // might pull back a lot more data than is really necessary.
+    if (MetaDataUtils.isOwnedRelation(ammd)) {
+      // Owned 1-1, so find all entities with this as a parent. There ought to be only 1 (limitation of early GAE)
+      Entity parentEntity = datastoreEntity;
+      Query q = new Query(kind, parentEntity.getKey());
+      DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+      DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      // We have to pull back all children because the datastore does not let us filter ancestors by 
+      // depth and an indirect child could come back before a direct child.  eg: a/b/c,  a/c
+      for (Entity e : datastoreService.prepare(q).asIterable()) {
+        if (parentEntity.getKey().equals(e.getKey().getParent())) {
+          return EntityUtils.entityToPojo(e, childCmd, clr, ec, false, ec.getFetchPlan());
+          // We are potentially ignoring data errors where there is more than one
+          // direct child for the one to one.  Unfortunately, in order to detect
+          // this we need to read all the way to the end of the Iterable and that
+          // might pull back a lot more data than is really necessary.
+        }
       }
     }
     return null;

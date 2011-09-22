@@ -280,13 +280,14 @@ public class MetaDataValidator implements MetaDataListener {
         handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
       }
 
-      // We don't support many-to-many at all
       if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI) {
+        // We don't support many-to-many at all
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ManyToManyRelationNotSupported",
             ammd.getFullFieldName());
       } else if (ammd.getEmbeddedMetaData() == null &&
                  NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
                  !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE)) {
+        // TODO Make this conditional on storageVersion being below READ_OWNED_CHILD_KEYS_FROM_PARENT
         Class<?> relationClass;
         if (ammd.getCollection() != null) {
           relationClass = clr.classForName(ammd.getCollection().getElementType());

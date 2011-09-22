@@ -18,6 +18,7 @@ package com.google.appengine.datanucleus.scostore;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusUserException;
@@ -27,7 +28,6 @@ import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
-import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
@@ -47,6 +47,9 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.MetaDataUtils;
+import com.google.appengine.datanucleus.StorageVersion;
+import com.google.appengine.datanucleus.Utils;
 
 /**
  * Abstract base class for backing stores using a "FK" in the element.
@@ -140,11 +143,19 @@ public abstract class AbstractFKStore {
     }
   }
 
-  /* (non-Javadoc)
-   * @see org.datanucleus.store.scostore.Store#getStoreManager()
-   */
-  public StoreManager getStoreManager() {
+  public DatastoreManager getStoreManager() {
     return storeMgr;
+  }
+
+  protected Entity getOwnerEntity(ObjectProvider op) {
+    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(op.getExecutionContext()));
+    if (entity == null) {
+      storeMgr.validateMetaDataForClass(op.getClassMetaData());
+      EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(op.getExecutionContext()), op, 
+          EntityUtils.getPkAsKey(op));
+      return (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(op.getExecutionContext()));
+    }
+    return entity;
   }
 
   /* (non-Javadoc)
@@ -158,28 +169,38 @@ public abstract class AbstractFKStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#size(org.datanucleus.store.ObjectProvider)
    */
-  public int size(ObjectProvider ownerOP) {
-    Entity parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
-    if (parentEntity == null) {
-      storeMgr.validateMetaDataForClass(ownerOP.getClassMetaData());
-      EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ownerOP.getExecutionContext()), ownerOP, 
-          EntityUtils.getPkAsKey(ownerOP));
-      parentEntity = (Entity) ownerOP.getAssociatedValue(storeMgr.getDatastoreTransaction(ownerOP.getExecutionContext()));
-    }
+  public int size(ObjectProvider op) {
+    Entity ownerEntity = getOwnerEntity(op);
 
-    String kindName = elementTable.getIdentifier().getIdentifierName();
-    Iterable<Entity> children = prepareChildrenQuery(parentEntity.getKey(),
-        Collections.<FilterPredicate>emptyList(),
-        Collections.<SortPredicate>emptyList(), // Sort not important when counting
-        true, kindName).asIterable();
-
-    int count = 0;
-    for (Entity e : children) {
-      if (parentEntity.getKey().equals(e.getKey().getParent())) {
-        count++;
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Child keys are stored in field in owner Entity
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      if (ownerEntity.hasProperty(propName)) {
+        Object value = ownerEntity.getProperty(propName);
+        if (value == null) {
+          return 0;
+        }
+        List<Key> keys = (List<Key>) value;
+        return keys.size();
       }
+      return 0;
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Get size from child keys by doing a query with the owner as the parent Entity
+      String kindName = elementTable.getIdentifier().getIdentifierName();
+      Iterable<Entity> children = prepareChildrenQuery(ownerEntity.getKey(),
+          Collections.<FilterPredicate>emptyList(),
+          Collections.<SortPredicate>emptyList(), // Sort not important when counting
+          true, kindName).asIterable();
+
+      int count = 0;
+      for (Entity e : children) {
+        if (ownerEntity.getKey().equals(e.getKey().getParent())) {
+          count++;
+        }
+      }
+      return count;
     }
-    return count;
+    return 0;
   }
 
   /**
@@ -191,7 +212,7 @@ public abstract class AbstractFKStore {
    * @param ec ExecutionContext
    * @return The child objects list
    */
-  List<?> getChildren(Key parentKey, Iterable<FilterPredicate> filterPredicates,
+  List<?> getChildrenUsingParentQuery(Key parentKey, Iterable<FilterPredicate> filterPredicates,
       Iterable<SortPredicate> sortPredicates, ExecutionContext ec) {
     List<Object> result = new ArrayList<Object>();
     int numChildren = 0;
@@ -208,6 +229,36 @@ public abstract class AbstractFKStore {
     }
     NucleusLogger.PERSISTENCE.debug(String.format("Query had %d result%s.", numChildren, numChildren == 1 ? "" : "s"));
     return result;
+  }
+
+  /**
+   * Method to return the List of children for this collection using the "List<Key>" stored in the owner field.
+   * @param op ObjectProvider for the owner
+   * @param ec ExecutionContext
+   * @return The child objects list
+   */
+  List<?> getChildrenFromParentField(ObjectProvider op, ExecutionContext ec) {
+    Entity datastoreEntity = getOwnerEntity(op);
+    String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+    if (datastoreEntity.hasProperty(propName)) {
+      Object value = datastoreEntity.getProperty(propName);
+      if (value == null) {
+        return Utils.newArrayList();
+      }
+
+      List children = new ArrayList();
+      List<Key> keys = (List<Key>)value;
+      DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+      DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      Map<Key, Entity> entitiesByKey = ds.get(keys);
+      for (Key key : keys) {
+        Entity entity = entitiesByKey.get(key);
+        Object pojo = EntityUtils.entityToPojo(entity, elementCmd, clr, ec, false, ec.getFetchPlan());
+        children.add(pojo);
+      }
+      return children;
+    }
+    return Utils.newArrayList();
   }
 
   /**
