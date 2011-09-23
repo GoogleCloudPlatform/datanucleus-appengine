@@ -478,6 +478,11 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     bidirEntity.setProperty("DTYPE", bidirClass.getName());
     ds.put(bidirEntity);
 
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     registerSubclasses();
     HasOneToManyJPA pojo = em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -513,6 +518,11 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("DTYPE", bidirClass.getName());
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    ds.put(pojoEntity);
 
     startEnd.start();
     registerSubclasses();
@@ -609,6 +619,11 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("DTYPE", bidirClass.getName());
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    ds.put(pojoEntity);
 
     startEnd.start();
     registerSubclasses();
@@ -908,12 +923,15 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName() + " b").getSingleResult();
     bidir.setParent(pojo);
+    pojo.getBidirChildren().add(bidir);
     em.persist(bidir);
     startEnd.end();
+
     startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName() + " b").getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
+
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
@@ -930,15 +948,17 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     startEnd.end();
 
     startEnd.start();
-
     pojo = em.find(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
+    pojo.getBidirChildren().add(bidir);
     em.persist(bidir);
     startEnd.end();
+
     startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName() + " b").getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
+
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
