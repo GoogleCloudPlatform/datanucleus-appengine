@@ -517,14 +517,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       // first we need to delete the element
       ExecutionContext ec = ownerOP.getExecutionContext();
       Object element = get(ownerOP, index);
-//      ObjectProvider elementOP = ec.findObjectProvider(element);
-//      DatastorePersistenceHandler handler = storeMgr.getPersistenceHandler();
-      // the delete call can end up cascading back here, so set a thread-local
-      // to make sure we don't do it more than once
+      // the delete call can end up cascading back here, so set a thread-local to make sure we don't do it more than once
       removing.set(true);
       try {
         ec.deleteObjectInternal(element);
-//        handler.deleteObject(elementOP);
       } finally {
         removing.set(false);
       }
@@ -671,7 +667,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     int index = 0;
     for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
       if (keySet.contains(e.getKey())) {
-        indices[index++] = extractIndexProperty(e, ec);
+        Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
+        if (indexVal == null) {
+          throw new NucleusDataStoreException("Null index value");
+        }
+        indices[index++] = indexVal.intValue();
       }
     }
     if (index != indices.length) {
@@ -679,14 +679,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       throw new NucleusDataStoreException("Too few keys returned.");
     }
     return indices;
-  }
-
-  private int extractIndexProperty(Entity e, ExecutionContext ec) {
-    Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
-    if (indexVal == null) {
-      throw new NucleusDataStoreException("Null index value");
-    }
-    return indexVal.intValue();
   }
 
   /* (non-Javadoc)
@@ -699,32 +691,74 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     ObjectProvider elementOP = ec.findObjectProvider(element);
     Key elementKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), elementOP);
     if (elementKey == null) {
-      throw new NucleusUserException("Collection element does not have a primary key.");
-    } else if (elementKey.getParent() == null) {
-      throw new NucleusUserException("Collection element primary key does not have a parent.");
+      // Not persistent
+      return -1;
     }
 
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
-    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    try {
-      Entity e = service.get(elementKey);
-      Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
-      if (indexVal == null) {
-        throw new NucleusDataStoreException("Null index value");
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Return the position using the field of List<Key> in the owner
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      Entity ownerEntity = getOwnerEntity(op);
+      if (ownerEntity.hasProperty(propName)) {
+        Object value = ownerEntity.getProperty(propName);
+        if (value == null) {
+          return -1;
+        }
+        List<Key> keys = (List<Key>) value;
+        return keys.indexOf(elementKey);
       }
-      return indexVal.intValue();
-    } catch (EntityNotFoundException enfe) {
-      throw new NucleusDataStoreException("Could not determine index of entity.", enfe);
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Owned relation in earlier storage version so use parentKey to determine membership of list (only present once)
+      if (elementKey.getParent() == null) {
+        throw new NucleusUserException("Element primary-key does not have a parent.");
+      }
+
+      DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+      DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      try {
+        Entity e = service.get(elementKey);
+        Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
+        if (indexVal == null) {
+          throw new NucleusDataStoreException("Null index value");
+        }
+        return indexVal.intValue();
+      } catch (EntityNotFoundException enfe) {
+        throw new NucleusDataStoreException("Could not determine index of entity.", enfe);
+      }
     }
+    return -1;
   }
 
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#lastIndexOf(org.datanucleus.store.ObjectProvider, java.lang.Object)
    */
   public int lastIndexOf(ObjectProvider op, Object element) {
-    validateElementForReading(op.getExecutionContext(), element);
-    // TODO Cater for "FK" lists that can have an element more than once. Currently assumes only present once
-    return indexOf(op, element);
+    ExecutionContext ec = op.getExecutionContext();
+    validateElementForReading(ec, element);
+    ObjectProvider elementOP = ec.findObjectProvider(element);
+    Key elementKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), elementOP);
+    if (elementKey == null) {
+      // Not persistent
+      return -1;
+    }
+
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Return the position using the field of List<Key> in the owner
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      Entity ownerEntity = getOwnerEntity(op);
+      if (ownerEntity.hasProperty(propName)) {
+        Object value = ownerEntity.getProperty(propName);
+        if (value == null) {
+          return -1;
+        }
+        List<Key> keys = (List<Key>) value;
+        return keys.lastIndexOf(elementKey);
+      }
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Owned relation in earlier storage version so use parentKey to determine membership of list (only present once)
+      return indexOf(op, element);
+    }
+    return -1;
   }
 
   /* (non-Javadoc)
