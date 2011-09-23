@@ -1050,11 +1050,8 @@ public class JDOOneToOneTest extends JDOTestCase {
     }
     pm.close();
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Flight.class));
-    pm = pmf.getPersistenceManager();
-    pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
-    assertNull(pojo.getFlight());
   }
 
   public void testAddAlreadyPersistedChildToParent_NoTxnSamePm() {

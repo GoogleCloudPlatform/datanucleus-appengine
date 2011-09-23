@@ -42,6 +42,7 @@ import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
+import org.datanucleus.util.Localiser;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -62,6 +63,9 @@ import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
  * from step 1, perform cascade-persist on them, and set child keys in the (parent) Entity where required.
  */
 public class StoreFieldManager extends DatastoreFieldManager {
+  protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
+      "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
+
   private static final String PARENT_ALREADY_SET =
     "Cannot set both the primary key and a parent pk field.  If you want the datastore to "
     + "generate an id for you, set the parent pk field to be the value of your parent key "
@@ -278,6 +282,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
       checkSettingToNullValue(ammd, value);
     } else if (Relation.isRelationSingleValued(relationType)) {
       Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
+      if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
+        // Detect attempt to add an object with its key set (and hence parent set) on owned field
+        throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+            key, datastoreEntity.getKey()));
+      }
       value = key;
     } else if (Relation.isRelationMultiValued(relationType)) {
       if (ammd.hasCollection()) {
@@ -287,6 +296,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
           Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
           if (key != null) {
             keys.add(key);
+            if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
+              // Detect attempt to add an object with its key set (and hence parent set) on owned field
+              throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                  key, datastoreEntity.getKey()));
+            }
           }
         }
         value = keys;
@@ -661,6 +675,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
             }
             key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
           }
+          if (owned) {
+            // Check that we aren't assigning an owned child with different parent
+            if (!datastoreEntity.getKey().equals(key.getParent())) {
+              throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                  key, datastoreEntity.getKey()));
+            }
+          }
           value = key;
           if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
             modifiedEntity = true;
@@ -681,6 +702,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
                 Object childPC = processPersistable(mmd, obj);
                 key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
                 keys.add(key);
+              }
+
+              if (owned) {
+                // Check that we aren't assigning an owned child with different parent
+                if (!datastoreEntity.getKey().equals(key.getParent())) {
+                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                      key, datastoreEntity.getKey()));
+                }
               }
             }
           }

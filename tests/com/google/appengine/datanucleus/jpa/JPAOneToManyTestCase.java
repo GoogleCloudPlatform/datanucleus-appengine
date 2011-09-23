@@ -730,11 +730,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Book.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getBooks().size());
   }
 
   void testAddAlreadyPersistedChildToParent_NoTxnSameEm(HasOneToManyJPA pojo) {
@@ -752,11 +749,8 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Book.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getBooks().size());
   }
 
   void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJPA pojo,

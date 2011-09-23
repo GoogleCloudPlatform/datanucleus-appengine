@@ -164,26 +164,17 @@ public class JPAOneToOneTest extends JPATestCase {
     pojo.setHasParent(hasParent);
     pojo.setHasParentKeyPK(hasParentKeyPk);
     startEnd.start();
-    boolean rolledBack = false;
     try {
       em.persist(pojo);
       startEnd.end();
       fail("expected exception");
     } catch (PersistenceException e) {
       if (em.getTransaction().isActive()) {
-        rolledBack = true;
         rollbackTxn();
       }
     }
 
     int expectedParents = 0;
-    if (!rolledBack) {
-      // With non-tx case we have no roll-back hence the "pojo" will have been put before the exception came
-      assertNotNull(pojo.getId());
-      Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
-      assertNotNull(pojoEntity);
-      expectedParents = 1;
-    }
 
     Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     assertNotNull(bookEntity);
@@ -933,11 +924,8 @@ public class JPAOneToOneTest extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Book.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertNull(pojo.getBook());
   }
 
   public void testAddAlreadyPersistedChildToParent_NoTxnSameEm() {
@@ -956,11 +944,8 @@ public class JPAOneToOneTest extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(Book.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertNull(pojo.getBook());
   }
 
   public void testChildAtMultipleLevels() throws EntityNotFoundException {

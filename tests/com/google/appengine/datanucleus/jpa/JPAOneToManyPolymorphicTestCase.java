@@ -42,14 +42,12 @@ import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.Un
 import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirMiddle;
 import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirTop;
 
-import org.datanucleus.util.NucleusLogger;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
 import java.util.Collections;
 import java.util.List;
 
-import javax.jdo.JDOHelper;
 import javax.persistence.PersistenceException;
 
 import static com.google.appengine.datanucleus.PolymorphicTestUtils.getEntityKind;
@@ -137,11 +135,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
                                          int expectedParent, int expectedChildren) throws Exception {
     pojo.setVal("yar");
 
-    NucleusLogger.GENERAL.info(">> txn.start");
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> em.persist of " + pojo);
     em.persist(pojo);
-    NucleusLogger.GENERAL.info(">> txn.end");
     startEnd.end();
     assertNotNull(pojo.getId());
     assertTrue(pojo.getUnidirChildren().isEmpty());
@@ -158,27 +153,21 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     assertTrue(pojoEntity.hasProperty("hasKeyPks"));
     assertNull(pojoEntity.getProperty("hasKeyPks"));
 
-    NucleusLogger.GENERAL.info(">> txn.start pojo.state=" + JDOHelper.getObjectState(pojo));
     startEnd.start();
     UnidirTop unidir = newUnidir(unidirLevel);
     String expectedName = unidir.getName();
     String expectedStr = unidir.getStr();
-    NucleusLogger.GENERAL.info(">> pojo.unidirChildren.add(" + unidir + ")");
     pojo.getUnidirChildren().add(unidir);
 
     HasKeyPkJPA hasKeyPk = new HasKeyPkJPA();
     hasKeyPk.setStr("yag");
-    NucleusLogger.GENERAL.info(">> pojo.haskeypks.add(" + hasKeyPk + ")");
     pojo.getHasKeyPks().add(hasKeyPk);
 
     bidirChild.setChildVal("yam");
-    NucleusLogger.GENERAL.info(">> pojo.bidirChildren.add(" + bidirChild + ")");
     pojo.getBidirChildren().add(bidirChild);
     bidirChild.setParent(pojo);
 
-    NucleusLogger.GENERAL.info(">> em.merge of " + pojo);
     em.merge(pojo);
-    NucleusLogger.GENERAL.info(">> txn.end");
     startEnd.end();
 
     assertNotNull(bidirChild.getId());
@@ -795,11 +784,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(UnidirTop.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getUnidirChildren().size());
   }
 
   void testAddAlreadyPersistedChildToParent_NoTxnSameEm(HasOneToManyJPA pojo) {
@@ -817,11 +803,8 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
       // good
     }
 
-    assertEquals(1, countForClass(pojo.getClass()));
+    assertEquals(0, countForClass(pojo.getClass()));
     assertEquals(1, countForClass(UnidirTop.class));
-    em = emf.createEntityManager();
-    pojo = em.find(pojo.getClass(), pojo.getId());
-    assertEquals(0, pojo.getUnidirChildren().size());
   }
 
   void testFetchOfOneToManyParentWithKeyPk(HasOneToManyKeyPkJPA pojo,
