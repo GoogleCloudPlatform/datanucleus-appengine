@@ -585,25 +585,51 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.ListStore#get(org.datanucleus.store.ObjectProvider, int)
    */
-  public Object get(ObjectProvider ownerOP, int index) {
-    ListIterator iter = listIterator(ownerOP, index, index);
-    if (iter == null || !iter.hasNext()) {
-      return null;
-    }
-    if (!indexedList) {
-      // Restrict to the actual element since can't be done in the query
-      Object obj = null;
-      int position = 0;
-      while (iter.hasNext()) {
-        obj = iter.next();
-        if (position == index) {
-          return obj;
+  public Object get(ObjectProvider op, int index) {
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Get child keys from field in owner Entity
+      ExecutionContext ec = op.getExecutionContext();
+      Entity datastoreEntity = getOwnerEntity(op);
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      if (datastoreEntity.hasProperty(propName)) {
+        Object value = datastoreEntity.getProperty(propName);
+        if (value == null) {
+          return null;
         }
-        position++;
-      }
-    }
 
-    return iter.next();
+        List<Key> keys = (List<Key>)value;
+        Key indexKey = keys.get(index);
+        DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+        DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+        try {
+          return EntityUtils.entityToPojo(ds.get(indexKey), elementCmd, clr, ec, false, ec.getFetchPlan());
+        } catch (EntityNotFoundException enfe) {
+          throw new NucleusDataStoreException("Could not determine entity for index=" + index + " with key=" + indexKey, enfe);
+        }
+      }
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Earlier storage version, for owned relation, so use parentKey for membership of List
+      ListIterator iter = listIterator(op, index, index);
+      if (iter == null || !iter.hasNext()) {
+        return null;
+      }
+
+      if (!indexedList) {
+        // Restrict to the actual element since can't be done in the query
+        Object obj = null;
+        int position = 0;
+        while (iter.hasNext()) {
+          obj = iter.next();
+          if (position == index) {
+            return obj;
+          }
+          position++;
+        }
+      }
+
+      return iter.next();
+    }
+    return null;
   }
 
   /**
@@ -633,52 +659,93 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return new int[0];
     }
 
-    List<Key> keys = Utils.newArrayList();
-    Set<Key> keySet = Utils.newHashSet();
-    for (Object ele : elements) {
-      ApiAdapter apiAdapter = ec.getApiAdapter();
-      Object keyOrString =
-          apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(ele));
-      Key key = keyOrString instanceof Key ? (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
-      if (key == null) {
-        throw new NucleusUserException("Collection element does not have a primary key.");
-      } else if (key.getParent() == null) {
-        throw new NucleusUserException("Collection element primary key does not have a parent.");
-      }
-      keys.add(key);
-      keySet.add(key);
-    }
-    Collections.sort(keys);
-    AbstractClassMetaData emd = elementCmd;
-    String kind =
-        storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(emd).getIdentifierName();
-    Query q = new Query(kind);
-    // This is safe because we know we have at least one element and therefore
-    // at least one key.
-    q.setAncestor(keys.get(0).getParent());
-    q.addFilter(
-        Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.GREATER_THAN_OR_EQUAL, keys.get(0));
-    q.addFilter(
-        Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN_OR_EQUAL, keys.get(keys.size() - 1));
-    q.addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING);
-    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
-    DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
-    int[] indices = new int[keys.size()];
-    int index = 0;
-    for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
-      if (keySet.contains(e.getKey())) {
-        Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
-        if (indexVal == null) {
-          throw new NucleusDataStoreException("Null index value");
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      // Obtain via field of List<Key> in parent
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      Entity ownerEntity = getOwnerEntity(op);
+      if (ownerEntity.hasProperty(propName)) {
+        Object value = ownerEntity.getProperty(propName);
+        if (value == null) {
+          return new int[0];
         }
-        indices[index++] = indexVal.intValue();
+
+        // Convert elements into list of keys to search for
+        List<Key> keys = (List<Key>) value;
+        Set<Key> elementKeys = Utils.newHashSet();
+        for (Object element : elements) {
+          Key key = EntityUtils.getKeyForObject(element, ec);
+          if (key != null) {
+            elementKeys.add(key);
+          }
+        }
+
+        // Generate indices list for these elements
+        int i = 0;
+        List<Integer> indicesList = new ArrayList<Integer>();
+        for (Key key : keys) {
+          if (elementKeys.contains(key)) {
+            indicesList.add(i);
+          }
+          i++;
+        }
+        int[] indices = new int[indicesList.size()];
+        i = 0;
+        for (Integer index : indicesList) {
+          indices[i++] = index;
+        }
+
+        return indices;
       }
+    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Owned relation in earlier storage version so use parentKey to determine membership of list
+      List<Key> keys = Utils.newArrayList();
+      Set<Key> keySet = Utils.newHashSet();
+      for (Object ele : elements) {
+        ApiAdapter apiAdapter = ec.getApiAdapter();
+        Object keyOrString =
+          apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(ele));
+        Key key = keyOrString instanceof Key ? (Key) keyOrString : KeyFactory.stringToKey((String) keyOrString);
+        if (key == null) {
+          throw new NucleusUserException("Collection element does not have a primary key.");
+        } else if (key.getParent() == null) {
+          throw new NucleusUserException("Collection element primary key does not have a parent.");
+        }
+        keys.add(key);
+        keySet.add(key);
+      }
+      Collections.sort(keys);
+      AbstractClassMetaData emd = elementCmd;
+      String kind =
+        storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(emd).getIdentifierName();
+      Query q = new Query(kind);
+      // This is safe because we know we have at least one element and therefore
+      // at least one key.
+      q.setAncestor(keys.get(0).getParent());
+      q.addFilter(
+          Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.GREATER_THAN_OR_EQUAL, keys.get(0));
+      q.addFilter(
+          Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.LESS_THAN_OR_EQUAL, keys.get(keys.size() - 1));
+      q.addSort(Entity.KEY_RESERVED_PROPERTY, Query.SortDirection.DESCENDING);
+      DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+      DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      int[] indices = new int[keys.size()];
+      int index = 0;
+      for (Entity e : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
+        if (keySet.contains(e.getKey())) {
+          Long indexVal = (Long) orderMapping.getObject(ec, e, new int[1]);
+          if (indexVal == null) {
+            throw new NucleusDataStoreException("Null index value");
+          }
+          indices[index++] = indexVal.intValue();
+        }
+      }
+      if (index != indices.length) {
+        // something was missing in the result set
+        throw new NucleusDataStoreException("Too few keys returned.");
+      }
+      return indices;
     }
-    if (index != indices.length) {
-      // something was missing in the result set
-      throw new NucleusDataStoreException("Too few keys returned.");
-    }
-    return indices;
+    return new int[0];
   }
 
   /* (non-Javadoc)
