@@ -69,14 +69,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
       "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
-  /**
-   * Magic property that we use to signal that an associated child object
-   * does not yet have a key.  This tells us that we can skip re-putting
-   * the parent entity because there are still children that need to be
-   * written first.
-   */
-  public static final String MISSING_RELATION_KEY = "___missing_relation_key___";
-
   private final DatastoreManager storeMgr;
 
   private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new HashMap();
