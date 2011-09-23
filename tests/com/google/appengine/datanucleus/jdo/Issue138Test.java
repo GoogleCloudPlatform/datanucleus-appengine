@@ -28,7 +28,7 @@ public class Issue138Test extends JDOTestCase {
     Issue138Child c2 = new Issue138Child();
     c2.setName("c2");
     p2.getChildren().add(c1);
-    p2.getChildren().add(c1);
+    p2.getChildren().add(c2);
     pm.makePersistent(p2);
 
     Issue138Parent1 p1 = new Issue138Parent1();
