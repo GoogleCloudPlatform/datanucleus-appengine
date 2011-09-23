@@ -438,6 +438,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
     bidirEntity.setProperty("childVal", "yap");
     ds.put(bidirEntity);
+    // TODO This test doesn't create the child keys in parent!
 
     startEnd.start();
     HasOneToManyJPA pojo = em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -470,6 +471,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     Entity bidirEntity = new Entity(bidirClass.getSimpleName(), pojoEntity.getKey());
     bidirEntity.setProperty("childVal", "yap");
     ds.put(bidirEntity);
+    // TODO This test doesn't create the child keys in parent!
 
     javax.persistence.Query q = em.createQuery(
         "select from " + pojoClass.getName() + " b where id = :key");
@@ -804,6 +806,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBidirChildren().add(bidirChild);
     bidirChild.setParent(pojo);
     startEnd.end();
+
     Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -825,6 +828,7 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     pojo.getBooks().add(b);
     pojo.getBidirChildren().add(bidirChild);
     startEnd.end();
+
     Entity bookEntity = ds.get(KeyFactory.stringToKey(b.getId()));
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     Entity pojoEntity = ds.get(KeyFactory.createKey(pojo.getClass().getSimpleName(), pojo.getId()));
@@ -843,10 +847,12 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     bidir.setParent(pojo);
     em.persist(bidir);
     startEnd.end();
+
     startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName() + " b").getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
+
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
@@ -859,16 +865,16 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     startEnd.end();
 
     startEnd.start();
-//    pojo = (HasOneToManyJDO) pm.getObjectById(pojo.getClass(), pojo.getId());
-
     pojo = em.find(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
     em.persist(bidir);
     startEnd.end();
+
     startEnd.start();
     pojo = (HasOneToManyJPA) em.createQuery("select from " + pojo.getClass().getName() + " b").getSingleResult();
     assertEquals(1, pojo.getBidirChildren().size());
     startEnd.end();
+
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertEquals(pojoEntity.getKey(), bidirEntity.getParent());
