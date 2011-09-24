@@ -277,43 +277,45 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
     }
 
-    if (value == null) {
-      // Nothing to extract
-      checkSettingToNullValue(ammd, value);
-    } else if (Relation.isRelationSingleValued(relationType)) {
-      Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
-      if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
-        // Detect attempt to add an object with its key set (and hence parent set) on owned field
-        throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-            key, datastoreEntity.getKey()));
-      }
-      value = key;
-    } else if (Relation.isRelationMultiValued(relationType)) {
-      if (ammd.hasCollection()) {
-        Collection coll = (Collection) value;
-        List<Key> keys = Utils.newArrayList();
-        for (Object obj : coll) {
-          Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
-          if (key != null) {
-            keys.add(key);
-            if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
-              // Detect attempt to add an object with its key set (and hence parent set) on owned field
-              throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                  key, datastoreEntity.getKey()));
+    if (operation == Operation.INSERT) {
+      if (value == null) {
+        // Nothing to extract
+        checkSettingToNullValue(ammd, value);
+      } else if (Relation.isRelationSingleValued(relationType)) {
+        Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
+        if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
+          // Detect attempt to add an object with its key set (and hence parent set) on owned field
+          throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+              key, datastoreEntity.getKey()));
+        }
+        value = key;
+      } else if (Relation.isRelationMultiValued(relationType)) {
+        if (ammd.hasCollection()) {
+          Collection coll = (Collection) value;
+          List<Key> keys = Utils.newArrayList();
+          for (Object obj : coll) {
+            Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
+            if (key != null) {
+              keys.add(key);
+              if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
+                // Detect attempt to add an object with its key set (and hence parent set) on owned field
+                throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                    key, datastoreEntity.getKey()));
+              }
             }
           }
+          value = keys;
         }
-        value = keys;
+
+        if (value instanceof SCO) {
+          // Use the unwrapped value so the datastore doesn't fail on unknown types
+          value = ((SCO)value).getValue();
+        }
       }
 
-      if (value instanceof SCO) {
-        // Use the unwrapped value so the datastore doesn't fail on unknown types
-        value = ((SCO)value).getValue();
-      }
+      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
     }
-
-    EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-        EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
   }
 
   /**
