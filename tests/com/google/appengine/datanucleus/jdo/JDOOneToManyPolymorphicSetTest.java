@@ -384,11 +384,11 @@ public class JDOOneToManyPolymorphicSetTest extends JDOOneToManyPolymorphicTestC
   }
   private void testAddQueriedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(new HasOneToManySet(), new BidirMiddle(), startEnd, 
-	getEntityKind(BidirTop.class));
+	  getEntityKind(BidirTop.class));
     testAddQueriedParentToBidirChild(new HasOneToManySet(), new BidirTop(), startEnd, 
-	getEntityKind(BidirTop.class));
+	  getEntityKind(BidirTop.class));
     testAddQueriedParentToBidirChild(new HasOneToManySet(), new BidirBottom(), startEnd, 
-	getEntityKind(BidirTop.class));
+	  getEntityKind(BidirTop.class));
   }
 
   public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {

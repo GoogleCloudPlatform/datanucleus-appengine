@@ -26,11 +26,9 @@ import com.google.appengine.datanucleus.test.HasOneToManyLongPkSetJDO;
 import com.google.appengine.datanucleus.test.HasOneToManySetJDO;
 import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
 
-
 import java.util.Collection;
 
 import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.util.NucleusLogger;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -57,9 +55,7 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
   public void testInsertExistingParentNewChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
-    NucleusLogger.GENERAL.info(">> testInsertExistingParentNewChild_NoTxn START");
     testInsertExistingParentNewChild(NEW_PM_START_END);
-    NucleusLogger.GENERAL.info(">> testInsertExistingParentNewChild_NoTxn END");
   }
   private void testInsertExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
     HasOneToManySetJDO parent = new HasOneToManySetJDO();
@@ -305,14 +301,15 @@ public class JDOOneToManySetTest extends JDOOneToManyTestCase {
   public void testAddQueriedParentToBidirChild() throws EntityNotFoundException {
     testAddQueriedParentToBidirChild(TXN_START_END);
   }
+
   public void testAddQueriedParentToBidirChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
     testAddQueriedParentToBidirChild(NEW_PM_START_END);
   }
+
   private void testAddQueriedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
-    testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(),
-                                     startEnd);
+    testAddQueriedParentToBidirChild(new HasOneToManySetJDO(), new BidirectionalChildSetJDO(), startEnd);
   }
 
   public void testAddFetchedParentToBidirChild() throws EntityNotFoundException {

@@ -1404,6 +1404,8 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
   void testAddQueriedParentToBidirChild(HasOneToManyJDO pojo, BidirectionalSuperclassTableChildJDO.BidirTop bidir,
       StartEnd startEnd, String bidirKind) throws EntityNotFoundException {
     deleteAll(bidirKind);
+    deleteAll(getEntityKind(pojo.getClass()));
+
     startEnd.start();
     pm.makePersistent(pojo);
     startEnd.end();
@@ -1431,6 +1433,7 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
        StartEnd startEnd, String bidirKind) throws EntityNotFoundException {
     deleteAll(bidirKind);
     deleteAll(getEntityKind(pojo.getClass()));
+
     startEnd.start();
     pm.makePersistent(pojo);
     startEnd.end();
@@ -1441,6 +1444,7 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     pm.makePersistent(bidir);
     pojo.addBidirChild(bidir);
     startEnd.end();
+
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ds.prepare(new Query(bidirKind)).asSingleEntity();
     assertNotNull(e.getParent());
