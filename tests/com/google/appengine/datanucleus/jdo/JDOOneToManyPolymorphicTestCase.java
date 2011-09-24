@@ -778,6 +778,12 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     explicitIndexEntity3.setProperty("index", 1);
     ds.put(explicitIndexEntity3);
 
+    pojoEntity.setProperty("unidirByStrAndName", Utils.newArrayList(unidirChildEntity2.getKey(), unidirChildEntity3.getKey(), unidirChildEntity1.getKey()));
+    pojoEntity.setProperty("unidirByIdAndStr", Utils.newArrayList(unidirChildEntity3.getKey(), unidirChildEntity2.getKey(), unidirChildEntity1.getKey()));
+    pojoEntity.setProperty("unidirByStrAndId", Utils.newArrayList(unidirChildEntity2.getKey(), unidirChildEntity1.getKey(), unidirChildEntity3.getKey()));
+    pojoEntity.setProperty("unidirWithIndexColumn", Utils.newArrayList(explicitIndexEntity3.getKey(), explicitIndexEntity2.getKey(), explicitIndexEntity1.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     registerSubclasses();
 
@@ -895,6 +901,10 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ds.put(bidirEntity);
 
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirChildEntity.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     registerSubclasses();
 
@@ -928,6 +938,10 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirEntity.getKey()));
+    ds.put(pojoEntity);
 
     startEnd.start();
     registerSubclasses();
@@ -1010,6 +1024,10 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     bidirEntity.setProperty("DISCRIMINATOR", bidirClass.getName());
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("unidirChildren", Utils.newArrayList(unidirEntity.getKey()));
+    ds.put(pojoEntity);
 
     startEnd.start();
     registerSubclasses();
@@ -1393,9 +1411,10 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     bidir.setParent(pojo);
-    pm.makePersistent(bidir);
     pojo.addBidirChild(bidir);
+    pm.makePersistent(bidir);
     startEnd.end();
+
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ds.prepare(new Query(bidirKind)).asSingleEntity();
     assertNotNull(e.getParent());

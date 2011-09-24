@@ -2567,9 +2567,14 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testRestrictFetchedFields_OneToMany() {
     Entity e1 = new Entity(HasOneToManyListJDO.class.getSimpleName());
     ds.put(null, e1);
+
     Entity e2 = Flight.newFlightEntity(e1.getKey(), "key name", "jimmy", "bos", "mia", 23, 24, 25);
     e2.setProperty("flights_INTEGER_IDX", 0);
     ds.put(null, e2);
+
+    e1.setProperty("flights", Utils.newArrayList(e2.getKey()));
+    ds.put(null, e1);
+
     Query q = pm.newQuery("select id, flights from " + HasOneToManyListJDO.class.getName());
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.execute();

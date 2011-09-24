@@ -397,6 +397,11 @@ abstract class JPAOneToManyTestCase extends JPATestCase {
     Entity bookEntity3 = Book.newBookEntity(pojoEntity.getKey(), "auth1", "22221", "title 0");
     ds.put(bookEntity3);
 
+    pojoEntity.setProperty("booksByAuthorAndTitle", Utils.newArrayList(bookEntity2.getKey(), bookEntity3.getKey(), bookEntity1.getKey()));
+    pojoEntity.setProperty("booksByIdAndAuthor", Utils.newArrayList(bookEntity3.getKey(), bookEntity2.getKey(), bookEntity1.getKey()));
+    pojoEntity.setProperty("booksByAuthorAndId", Utils.newArrayList(bookEntity2.getKey(), bookEntity1.getKey(), bookEntity3.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     HasOneToManyWithOrderByJPA pojo =
         em.find(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));

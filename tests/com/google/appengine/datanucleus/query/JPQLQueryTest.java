@@ -2244,8 +2244,13 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFields_OneToMany() {
     Entity e1 = new Entity(HasOneToManyListJPA.class.getSimpleName());
     ds.put(e1);
+
     Entity e2 = Book.newBookEntity(e1.getKey(), "author", "12345", "the title");
     ds.put(e2);
+
+    e1.setProperty("books", Utils.newArrayList(e2.getKey()));
+    ds.put(e1);
+
     Query q = em.createQuery("select id, books from " + HasOneToManyListJPA.class.getName() + " c");
     @SuppressWarnings("unchecked")
     List<Object[]> results = (List<Object[]>) q.getResultList();

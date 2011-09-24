@@ -34,7 +34,6 @@ import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJ
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirMiddle;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTop;
 
-
 import java.util.Collection;
 
 import org.datanucleus.store.ExecutionContext;

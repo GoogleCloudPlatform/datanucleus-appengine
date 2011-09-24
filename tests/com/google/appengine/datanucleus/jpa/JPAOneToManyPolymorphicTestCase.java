@@ -425,6 +425,11 @@ abstract class JPAOneToManyPolymorphicTestCase extends JPATestCase {
     Entity unidirEntity3 = newUnidirEntity(UnidirLevel.Top, pojoEntity.getKey(), "name1", "str 0");
     ds.put(unidirEntity3);
 
+    pojoEntity.setProperty("unidirByNameAndStr", Utils.newArrayList(unidirEntity2.getKey(), unidirEntity3.getKey(), unidirEntity1.getKey()));
+    pojoEntity.setProperty("unidirByIdAndName", Utils.newArrayList(unidirEntity3.getKey(), unidirEntity2.getKey(), unidirEntity1.getKey()));
+    pojoEntity.setProperty("unidirByNameAndId", Utils.newArrayList(unidirEntity2.getKey(), unidirEntity1.getKey(), unidirEntity3.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     registerSubclasses();
     HasPolymorphicRelationsListJPA.HasOneToManyWithOrderByJPA pojo =

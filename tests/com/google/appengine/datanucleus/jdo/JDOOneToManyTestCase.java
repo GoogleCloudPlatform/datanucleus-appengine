@@ -881,6 +881,12 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     explicitIndexEntity3.setProperty("index", 1);
     ds.put(explicitIndexEntity3);
 
+    pojoEntity.setProperty("flightsByOrigAndDest", Utils.newArrayList(flightEntity2.getKey(), flightEntity3.getKey(), flightEntity1.getKey()));
+    pojoEntity.setProperty("flightsByIdAndOrig", Utils.newArrayList(flightEntity3.getKey(), flightEntity2.getKey(), flightEntity1.getKey()));
+    pojoEntity.setProperty("flightsByOrigAndId", Utils.newArrayList(flightEntity2.getKey(), flightEntity1.getKey(), flightEntity3.getKey()));
+    pojoEntity.setProperty("hasIndexColumn", Utils.newArrayList(explicitIndexEntity3.getKey(), explicitIndexEntity2.getKey(), explicitIndexEntity1.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     HasOneToManyWithOrderByJDO pojo = pm.getObjectById(
         pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -930,6 +936,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ds.put(bidirEntity);
 
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("flights", Utils.newArrayList(flightEntity.getKey()));
+    ds.put(pojoEntity);
+
     startEnd.start();
     HasOneToManyJDO pojo =
         pm.getObjectById(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -964,6 +975,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("flights", Utils.newArrayList(flightEntity.getKey()));
+    ds.put(pojoEntity);
 
     javax.jdo.Query q = pm.newQuery(
         "select from " + pojoClass.getName() + " where id == key parameters String key");
@@ -1051,6 +1067,11 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     bidirEntity.setProperty("childVal", "yap");
     bidirEntity.setProperty("bidirChildren_INTEGER_IDX", 1);
     ds.put(bidirEntity);
+
+    pojoEntity.setProperty("bidirChildren", Utils.newArrayList(bidirEntity.getKey()));
+    pojoEntity.setProperty("hasKeyPks", Utils.newArrayList(hasKeyPkEntity.getKey()));
+    pojoEntity.setProperty("flights", Utils.newArrayList(flightEntity.getKey()));
+    ds.put(pojoEntity);
 
     startEnd.start();
     HasOneToManyJDO pojo = pm.getObjectById(pojoClass, KeyFactory.keyToString(pojoEntity.getKey()));
@@ -1423,12 +1444,14 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     bidir.setParent(pojo);
-    pm.makePersistent(bidir);
     pojo.getBidirChildren().add(bidir);
+    pm.makePersistent(bidir);
     startEnd.end();
+
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
+
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     assertEquals(1, pojo.getBidirChildren().size());
@@ -1447,9 +1470,10 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
-    pm.makePersistent(bidir);
     pojo.getBidirChildren().add(bidir);
+    pm.makePersistent(bidir);
     startEnd.end();
+
     assertEquals(1, countForClass(bidir.getClass()));
     Entity e = ds.prepare(new Query(bidir.getClass().getSimpleName())).asSingleEntity();
     assertNotNull(e.getParent());
