@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -295,6 +296,10 @@ public abstract class AbstractFKStore {
       Map<Key, Entity> entitiesByKey = ds.get(keys);
       for (Key key : keys) {
         Entity entity = entitiesByKey.get(key);
+        if (entity == null) {
+          throw new NucleusFatalUserException("Field in parent with key=" + datastoreEntity.getKey() + 
+              " refers to child of " + key + " but this doesn't exist! Check your data integrity");
+        }
         Object pojo = EntityUtils.entityToPojo(entity, elementCmd, clr, ec, false, ec.getFetchPlan());
         children.add(pojo);
       }
