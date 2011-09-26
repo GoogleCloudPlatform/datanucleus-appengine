@@ -30,10 +30,8 @@ import java.util.List;
 import javax.persistence.EntityManager;
 
 /**
- * Utilities for converting between the low-level datastore api and JPA.
- * <br>
- * This class is part of the public api of the DataNucleus App Engine plugin
- * and can be safely used.
+ * Utilities for converting between the low-level datastore api and JPA. <br>
+ * This class is part of the public api of the DataNucleus App Engine plugin and can be safely used.
  *
  * @author Max Ross <max.ross@gmail.com>
  */
@@ -43,13 +41,11 @@ public final class JPADatastoreBridge extends PojoDatastoreBridge {
    * Convert the result of a low-level datastore query into a List of JPA
    * entities.
    *
-   * @param em The EntityManager with which the conversion results will be
-   * associated.
+   * @param em The EntityManager with which the conversion results will be associated.
    * @param cls The type of object to which the {@link Entity Entities} in the
    * result list should be converted.
    * @param queryResultList The result of the low-level datastore query.
-   * @return The {@link Entity Entities} in the provided result list, converted
-   * to JPA entities.
+   * @return The {@link Entity Entities} in the provided result list, converted to JPA entities.
    *
    * @see PreparedQuery#asQueryResultList(FetchOptions)
    */
@@ -58,16 +54,13 @@ public final class JPADatastoreBridge extends PojoDatastoreBridge {
   }
 
   /**
-   * Convert the result of a low-level datastore query into a List of JPA
-   * entities.
+   * Convert the result of a low-level datastore query into a List of JPA entities.
    *
-   * @param em The EntityManager with which the conversion results will be
-   * associated.
+   * @param em The EntityManager with which the conversion results will be associated.
    * @param cls The type of object to which the {@link Entity Entities} in the
    * result iterable should be converted.
    * @param queryResultIterable The result of the low-level datastore query.
-   * @return The {@link Entity Entities} in the provided result iterable,
-   * converted to JPA entities.
+   * @return The {@link Entity Entities} in the provided result iterable, converted to JPA entities.
    *
    * @see PreparedQuery#asQueryResultIterable()
    */
