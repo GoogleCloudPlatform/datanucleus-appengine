@@ -230,18 +230,36 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
   public void testDeletePersistentAll_CascadeDelete_OneToMany_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
 
-    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
-    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Entity owner1Entity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    Key k1 = ds.put(owner1Entity);
+    Entity owner2Entity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    Key k2 = ds.put(owner2Entity);
 
-    ds.put(newFlightEntity(k1, 1));
-    ds.put(newFlightEntity(k1, 2));
-    ds.put(newFlightEntity(k2, 1));
-    ds.put(newFlightEntity(k2, 2));
+    Entity fl1 = newFlightEntity(k1, 1);
+    Entity fl2 = newFlightEntity(k1, 2);
+    Entity fl3 = newFlightEntity(k2, 1);
+    Entity fl4 = newFlightEntity(k2, 2);
+    ds.put(fl1);
+    ds.put(fl2);
+    ds.put(fl3);
+    ds.put(fl4);
 
-    ds.put(newBidirChildEntity(k1, 1));
-    ds.put(newBidirChildEntity(k1, 2));
-    ds.put(newBidirChildEntity(k2, 1));
-    ds.put(newBidirChildEntity(k2, 2));
+    Entity bi1 = newBidirChildEntity(k1, 1);
+    Entity bi2 = newBidirChildEntity(k1, 2);
+    Entity bi3 = newBidirChildEntity(k2, 1);
+    Entity bi4 = newBidirChildEntity(k2, 2);
+    ds.put(bi1);
+    ds.put(bi2);
+    ds.put(bi3);
+    ds.put(bi4);
+
+    owner1Entity.setProperty("flights", Utils.newArrayList(fl1.getKey(), fl2.getKey()));
+    owner1Entity.setProperty("bidirChildren", Utils.newArrayList(bi1.getKey(), bi2.getKey()));
+    ds.put(owner1Entity);
+
+    owner2Entity.setProperty("flights", Utils.newArrayList(fl3.getKey(), fl4.getKey()));
+    owner2Entity.setProperty("bidirChildren", Utils.newArrayList(bi3.getKey(), bi4.getKey()));
+    ds.put(owner2Entity);
 
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
     assertEquals(2, parent1.getFlights().size());
@@ -258,18 +276,36 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_MultipleEntityGroups_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
-    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName()));
+    Entity owner1Entity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    Key k1 = ds.put(owner1Entity);
+    Entity owner2Entity = new Entity(HasOneToManyListJDO.class.getSimpleName());
+    Key k2 = ds.put(owner2Entity);
 
-    ds.put(newFlightEntity(k1, 1));
-    ds.put(newFlightEntity(k1, 2));
-    ds.put(newFlightEntity(k2, 1));
-    ds.put(newFlightEntity(k2, 2));
+    Entity fl1 = newFlightEntity(k1, 1);
+    Entity fl2 = newFlightEntity(k1, 2);
+    Entity fl3 = newFlightEntity(k2, 1);
+    Entity fl4 = newFlightEntity(k2, 2);
+    ds.put(fl1);
+    ds.put(fl2);
+    ds.put(fl3);
+    ds.put(fl4);
 
-    ds.put(newBidirChildEntity(k1, 1));
-    ds.put(newBidirChildEntity(k1, 2));
-    ds.put(newBidirChildEntity(k2, 1));
-    ds.put(newBidirChildEntity(k2, 2));
+    Entity bi1 = newBidirChildEntity(k1, 1);
+    Entity bi2 = newBidirChildEntity(k1, 2);
+    Entity bi3 = newBidirChildEntity(k2, 1);
+    Entity bi4 = newBidirChildEntity(k2, 2);
+    ds.put(bi1);
+    ds.put(bi2);
+    ds.put(bi3);
+    ds.put(bi4);
+
+    owner1Entity.setProperty("flights", Utils.newArrayList(fl1.getKey(), fl2.getKey()));
+    owner1Entity.setProperty("bidirChildren", Utils.newArrayList(bi1.getKey(), bi2.getKey()));
+    ds.put(owner1Entity);
+
+    owner2Entity.setProperty("flights", Utils.newArrayList(fl3.getKey(), fl4.getKey()));
+    owner2Entity.setProperty("bidirChildren", Utils.newArrayList(bi3.getKey(), bi4.getKey()));
+    ds.put(owner2Entity);
 
     beginTxn();
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
@@ -296,18 +332,36 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_OneEntityGroup_Txn() {
     switchDatasource(PersistenceManagerFactoryName.transactional);
-    Key k1 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
-    Key k2 = ds.put(new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43)));
+    Entity owner1Entity = new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43));
+    Entity owner2Entity = new Entity(HasOneToManyListJDO.class.getSimpleName(), KeyFactory.createKey("yar", 43));
+    Key k1 = ds.put(owner1Entity);
+    Key k2 = ds.put(owner2Entity);
 
-    ds.put(newFlightEntity(k1, 1));
-    ds.put(newFlightEntity(k1, 2));
-    ds.put(newFlightEntity(k2, 1));
-    ds.put(newFlightEntity(k2, 2));
+    Entity fl1 = newFlightEntity(k1, 1);
+    Entity fl2 = newFlightEntity(k1, 2);
+    Entity fl3 = newFlightEntity(k2, 1);
+    Entity fl4 = newFlightEntity(k2, 2);
+    ds.put(fl1);
+    ds.put(fl2);
+    ds.put(fl3);
+    ds.put(fl4);
 
-    ds.put(newBidirChildEntity(k1, 1));
-    ds.put(newBidirChildEntity(k1, 2));
-    ds.put(newBidirChildEntity(k2, 1));
-    ds.put(newBidirChildEntity(k2, 2));
+    Entity bi1 = newBidirChildEntity(k1, 1);
+    Entity bi2 = newBidirChildEntity(k1, 2);
+    Entity bi3 = newBidirChildEntity(k2, 1);
+    Entity bi4 = newBidirChildEntity(k2, 2);
+    ds.put(bi1);
+    ds.put(bi2);
+    ds.put(bi3);
+    ds.put(bi4);
+
+    owner1Entity.setProperty("flights", Utils.newArrayList(fl1.getKey(), fl2.getKey()));
+    owner1Entity.setProperty("bidirChildren", Utils.newArrayList(bi1.getKey(), bi2.getKey()));
+    ds.put(owner1Entity);
+
+    owner2Entity.setProperty("flights", Utils.newArrayList(fl3.getKey(), fl4.getKey()));
+    owner2Entity.setProperty("bidirChildren", Utils.newArrayList(bi3.getKey(), bi4.getKey()));
+    ds.put(owner2Entity);
 
     beginTxn();
     HasOneToManyListJDO parent1 = pm.getObjectById(HasOneToManyListJDO.class, k1);
