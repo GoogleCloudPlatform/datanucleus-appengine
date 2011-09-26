@@ -41,7 +41,6 @@ import com.google.appengine.datanucleus.test.HasOneToManyLongPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToManyWithOrderByJDO;
 
-import org.datanucleus.util.NucleusLogger;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
@@ -53,7 +52,6 @@ import java.util.List;
 import java.util.Set;
 
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOHelper;
 
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 
@@ -141,21 +139,16 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
       BidirectionalChildJDO bidirChild, StartEnd startEnd) throws EntityNotFoundException {
     pojo.setVal("yar");
 
-    NucleusLogger.GENERAL.info(">> {}.START");
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> pm.makePersistent(HasOneToManyJDO)");
     pm.makePersistent(pojo);
-    NucleusLogger.GENERAL.info(">> {}.END");
     startEnd.end();
-    NucleusLogger.GENERAL.info(">> {}.START pojo.state="+ JDOHelper.getObjectState(pojo));
+
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> checking pojo in-memory");
     assertNotNull(pojo.getId());
     assertTrue(pojo.getFlights().isEmpty());
     assertTrue(pojo.getHasKeyPks().isEmpty());
     assertTrue(pojo.getBidirChildren().isEmpty());
 
-    NucleusLogger.GENERAL.info(">> checking pojo using low-level API");
     Entity pojoEntity = ds.get(KeyFactory.stringToKey(pojo.getId()));
     assertNotNull(pojoEntity);
     assertEquals(4, pojoEntity.getProperties().size());
@@ -166,37 +159,26 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNull(pojoEntity.getProperty("flights"));
     assertTrue(pojoEntity.hasProperty("hasKeyPks"));
     assertNull(pojoEntity.getProperty("hasKeyPks"));
-
-    NucleusLogger.GENERAL.info(">> {}.END");
     startEnd.end();
-    NucleusLogger.GENERAL.info(">> {}.START");
+
     startEnd.start();
-    NucleusLogger.GENERAL.info(">> pm.makePersistent of pojo in state="+ JDOHelper.getObjectState(pojo));
     pojo = pm.makePersistent(pojo);
     assertEquals("yar", pojo.getVal());
     Flight f = newFlight();
-    NucleusLogger.GENERAL.info(">> pojo.addFlight(new Flight()) with pojo in state " + JDOHelper.getObjectState(pojo));
     pojo.addFlight(f);
 
     HasKeyPkJDO hasKeyPk = new HasKeyPkJDO();
     hasKeyPk.setStr("yag");
-    NucleusLogger.GENERAL.info(">> pojo.addHasKeyPK(new HasKeyPK())");
     pojo.addHasKeyPk(hasKeyPk);
-
     bidirChild.setChildVal("yam");
-    NucleusLogger.GENERAL.info(">> pojo.addBidirChild(new BidirectionalChildSetJDO())");
     pojo.addBidirChild(bidirChild);
-
-    NucleusLogger.GENERAL.info(">> {}.END");
     startEnd.end();
 
-    NucleusLogger.GENERAL.info(">> {}.START");
     startEnd.start();
     assertNotNull(bidirChild.getId());
     assertNotNull(bidirChild.getParent());
     assertNotNull(f.getId());
     assertNotNull(hasKeyPk.getKey());
-    NucleusLogger.GENERAL.info(">> {}.END");
     startEnd.end();
     
     Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
@@ -1444,7 +1426,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.start();
     pojo = (HasOneToManyJDO) ((List<?>)pm.newQuery(pojo.getClass()).execute()).get(0);
     bidir.setParent(pojo);
-    pojo.getBidirChildren().add(bidir);
+    pojo.addBidirChild(bidir);
     pm.makePersistent(bidir);
     startEnd.end();
 
@@ -1470,7 +1452,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     startEnd.start();
     pojo = pm.getObjectById(pojo.getClass(), pojo.getId());
     bidir.setParent(pojo);
-    pojo.getBidirChildren().add(bidir);
+    pojo.addBidirChild(bidir);
     pm.makePersistent(bidir);
     startEnd.end();
 
