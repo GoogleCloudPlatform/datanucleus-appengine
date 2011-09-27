@@ -171,37 +171,49 @@ public abstract class AbstractFKStore {
    * @see org.datanucleus.store.scostore.CollectionStore#size(org.datanucleus.store.ObjectProvider)
    */
   public int size(ObjectProvider op) {
-    Entity ownerEntity = getOwnerEntity(op);
-
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
       // Child keys are stored in field in owner Entity
-      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
-      if (ownerEntity.hasProperty(propName)) {
-        Object value = ownerEntity.getProperty(propName);
-        if (value == null) {
-          return 0;
-        }
-        List<Key> keys = (List<Key>) value;
-        return keys.size();
-      }
-      return 0;
+      return getSizeUsingChildKeysInParent(op);
     } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Get size from child keys by doing a query with the owner as the parent Entity
-      String kindName = elementTable.getIdentifier().getIdentifierName();
-      Iterable<Entity> children = prepareChildrenQuery(ownerEntity.getKey(),
-          Collections.<FilterPredicate>emptyList(),
-          Collections.<SortPredicate>emptyList(), // Sort not important when counting
-          true, kindName).asIterable();
-
-      int count = 0;
-      for (Entity e : children) {
-        if (ownerEntity.getKey().equals(e.getKey().getParent())) {
-          count++;
-        }
-      }
-      return count;
+      return getSizeUsingParentKeyInChildren(op);
     }
     return 0;
+  }
+
+  protected int getSizeUsingChildKeysInParent(ObjectProvider op) {
+    Entity ownerEntity = getOwnerEntity(op);
+
+    // Child keys are stored in field in owner Entity
+    String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+    if (ownerEntity.hasProperty(propName)) {
+      Object value = ownerEntity.getProperty(propName);
+      if (value == null) {
+        return 0;
+      }
+      List<Key> keys = (List<Key>) value;
+      return keys.size();
+    }
+    return 0;
+  }
+
+  protected int getSizeUsingParentKeyInChildren(ObjectProvider op) {
+    Entity ownerEntity = getOwnerEntity(op);
+
+    // Get size from child keys by doing a query with the owner as the parent Entity
+    String kindName = elementTable.getIdentifier().getIdentifierName();
+    Iterable<Entity> children = prepareChildrenQuery(ownerEntity.getKey(),
+        Collections.<FilterPredicate>emptyList(),
+        Collections.<SortPredicate>emptyList(), // Sort not important when counting
+        true, kindName).asIterable();
+
+    int count = 0;
+    for (Entity e : children) {
+      if (ownerEntity.getKey().equals(e.getKey().getParent())) {
+        count++;
+      }
+    }
+    return count;
   }
 
   /* (non-Javadoc)
@@ -278,9 +290,11 @@ public abstract class AbstractFKStore {
    * Method to return the List of children for this collection using the "List<Key>" stored in the owner field.
    * @param op ObjectProvider for the owner
    * @param ec ExecutionContext
+   * @param startIdx Start index of range (or -1 if not needed)
+   * @param endIdx End index of range (or -1 if not needed)
    * @return The child objects list
    */
-  List<?> getChildrenFromParentField(ObjectProvider op, ExecutionContext ec) {
+  List<?> getChildrenFromParentField(ObjectProvider op, ExecutionContext ec, int startIdx, int endIdx) {
     Entity datastoreEntity = getOwnerEntity(op);
     String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
     if (datastoreEntity.hasProperty(propName)) {
@@ -294,7 +308,14 @@ public abstract class AbstractFKStore {
       DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
       DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
       Map<Key, Entity> entitiesByKey = ds.get(keys);
+      int i = 0;
       for (Key key : keys) {
+        if (i < startIdx) {
+          continue;
+        } else if (endIdx > 0 && i >= endIdx) {
+          continue;
+        }
+
         Entity entity = entitiesByKey.get(key);
         if (entity == null) {
           throw new NucleusFatalUserException("Field in parent with key=" + datastoreEntity.getKey() + 
@@ -302,6 +323,7 @@ public abstract class AbstractFKStore {
         }
         Object pojo = EntityUtils.entityToPojo(entity, elementCmd, clr, ec, false, ec.getFetchPlan());
         children.add(pojo);
+        i++;
       }
       return children;
     }

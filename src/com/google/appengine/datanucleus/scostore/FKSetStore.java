@@ -231,7 +231,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
     ExecutionContext ec = op.getExecutionContext();
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
       // Get child keys from field in owner Entity
-      return getChildrenFromParentField(op, ec).listIterator();
+      return getChildrenFromParentField(op, ec, -1, -1).listIterator();
     } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Get child keys by doing a query with the owner as the parent Entity
       ApiAdapter apiAdapter = ec.getApiAdapter();

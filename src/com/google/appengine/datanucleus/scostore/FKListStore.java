@@ -28,6 +28,7 @@ import org.datanucleus.ClassNameConstants;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusDataStoreException;
+import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -342,8 +343,18 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   protected ListIterator listIterator(ObjectProvider op, int startIdx, int endIdx) {
     ExecutionContext ec = op.getExecutionContext();
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
-      // Get child keys from field in owner Entity
-      return getChildrenFromParentField(op, ec).listIterator();
+      if (indexedList) {
+        return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
+      } else {
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          // Get child keys by doing a query with the owner as the parent Entity
+          ApiAdapter apiAdapter = ec.getApiAdapter();
+          Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
+          return getChildrenUsingParentQuery(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
+        } else {
+          throw new NucleusFatalUserException("Dont currently support ordered lists that are unowned");
+        }
+      }
     } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Get child keys by doing a query with the owner as the parent Entity
       ApiAdapter apiAdapter = ec.getApiAdapter();
@@ -352,6 +363,19 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     } else {
       return Utils.newArrayList().listIterator();
     }
+  }
+
+  @Override
+  public int size(ObjectProvider op) {
+    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS) && !indexedList) {
+      if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+        // Ordered list can only be done via parent key currently
+        return getSizeUsingParentKeyInChildren(op);
+      } else {
+        throw new NucleusFatalUserException("Dont currently support ordered lists that are unowned");
+      }
+    }
+    return super.size(op);
   }
 
   /* (non-Javadoc)
