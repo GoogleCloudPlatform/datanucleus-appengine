@@ -565,7 +565,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     ExecutionContext ec = op.getExecutionContext();
     DatastoreTable table = getDatastoreTable();
     if (datastoreEntity.getKey() != null) {
-      // Register parent key for all owned related objects
       Key key = datastoreEntity.getKey();
       AbstractClassMetaData acmd = op.getClassMetaData();
       int[] relationFieldNums = acmd.getRelationMemberPositions(ec.getClassLoaderResolver(), ec.getMetaDataManager());
@@ -574,6 +573,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           AbstractMemberMetaData mmd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNums[i]);
           boolean owned = MetaDataUtils.isOwnedRelation(mmd);
           if (owned) {
+            // Register parent key for all owned related objects
             Object childValue = op.provideField(mmd.getAbsoluteFieldNumber());
             if (childValue != null) {
               if (childValue instanceof Object[]) {
@@ -589,6 +589,23 @@ public class StoreFieldManager extends DatastoreFieldManager {
               } else {
                 addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), expectedType, 
                     !table.isParentKeyProvider(mmd));
+              }
+            }
+          } else {
+            // Register that related object(s) is unowned
+            Object childValue = op.provideField(mmd.getAbsoluteFieldNumber());
+            if (childValue != null) {
+              if (childValue instanceof Object[]) {
+                childValue = Arrays.asList((Object[]) childValue);
+              }
+
+              if (childValue instanceof Iterable) {
+                // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
+                for (Object element : (Iterable) childValue) {
+                  keyRegistry.registerUnownedObject(element);
+                }
+              } else {
+                keyRegistry.registerUnownedObject(childValue);
               }
             }
           }
@@ -668,14 +685,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
         if (ec.getApiAdapter().isDeleted(value)) {
           value = null;
         } else {
-          Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
+          Key key = EntityUtils.extractChildKey(value, ec, owned ? datastoreEntity : null);
           if (key == null) {
             Object childPC = processPersistable(mmd, value);
             if (childPC != value) {
               // Child object has been persisted/attached, so update it in the owner
               op.replaceField(mmd.getAbsoluteFieldNumber(), childPC);
             }
-            key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
+            key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
           }
           if (owned) {
             // Check that we aren't assigning an owned child with different parent
@@ -697,12 +714,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
           for (Object obj : coll) {
             // TODO Should process SCO before we get here so we have no deleted objects
             if (!ec.getApiAdapter().isDeleted(obj)) {
-              Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
+              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
               if (key != null) {
                 keys.add(key);
               } else {
                 Object childPC = processPersistable(mmd, obj);
-                key = EntityUtils.extractChildKey(childPC, ec, datastoreEntity);
+                key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
                 keys.add(key);
               }
 
@@ -780,7 +797,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
   Object establishEntityGroup() {
     Key parentKey = datastoreEntity.getParent();
     if (parentKey == null) {
-      // TODO If unowned then return
+      KeyRegistry keyReg = KeyRegistry.getKeyRegistry(op.getExecutionContext());
+      if (keyReg.isUnowned(op.getObject())) {
+        return null;
+      }
+
       parentKey = EntityUtils.getParentKey(datastoreEntity, op);
       if (parentKey != null) {
         datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);

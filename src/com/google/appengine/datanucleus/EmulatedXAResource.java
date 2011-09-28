@@ -58,6 +58,7 @@ class EmulatedXAResource implements XAResource {
       throw new XAException("A transaction has not been started, cannot commit");
     }
     keyRegistry.clearParentKeys();
+    keyRegistry.clearUnownedObjects();
     state = State.INACTIVE;
   }
 
@@ -66,6 +67,7 @@ class EmulatedXAResource implements XAResource {
       throw new XAException("A transaction has not been started, cannot rollback");
     }
     keyRegistry.clearParentKeys();
+    keyRegistry.clearUnownedObjects();
     state = State.INACTIVE;
   }
 
