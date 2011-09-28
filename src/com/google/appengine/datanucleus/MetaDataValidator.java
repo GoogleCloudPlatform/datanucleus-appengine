@@ -320,6 +320,11 @@ public class MetaDataValidator implements MetaDataListener {
   }
 
   private void checkForIllegalChildField(AbstractMemberMetaData ammd, boolean noParentAllowed) {
+    if (!MetaDataUtils.isOwnedRelation(ammd)) {
+      // The check only applies to owned relations
+      return;
+    }
+
     // Figure out if this field is the owning side of a one to one or a one to
     // many.  If it is, look at the mapping of the child class and make sure their
     // pk isn't Long or unencoded String.
