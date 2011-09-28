@@ -102,7 +102,7 @@ public class MetaDataUtils {
    */
   public static boolean isOwnedRelation(AbstractMemberMetaData mmd) {
     boolean owned = true;
-    if ("false".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
+    if ("true".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
       owned = false;
     }
     return owned;
