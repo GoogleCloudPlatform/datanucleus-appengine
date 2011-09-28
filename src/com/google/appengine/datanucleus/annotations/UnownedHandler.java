@@ -22,11 +22,11 @@ import org.datanucleus.metadata.annotations.MemberAnnotationHandler;
 
 /**
  * Handler for the {@link Unowned} annotation when applied to a field/property of a persistable class.
+ * Adds the metadata extension "gae.unowned" as "true" for the member in question.
  */
 public class UnownedHandler implements MemberAnnotationHandler
 {
-    public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr)
-    {
-        mmd.addExtension("gae.unowned", "true");
-    }
+  public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr) {
+    mmd.addExtension("gae.unowned", "true");
+  }
 }

@@ -25,8 +25,7 @@ import org.datanucleus.metadata.annotations.MemberAnnotationHandler;
  */
 public class OwnedHandler implements MemberAnnotationHandler
 {
-    public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr)
-    {
-        mmd.addExtension("gae.unowned", "false");
-    }
+  public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr) {
+    mmd.addExtension("gae.unowned", "false");
+  }
 }

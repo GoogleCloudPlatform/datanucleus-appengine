@@ -25,8 +25,7 @@ import org.datanucleus.metadata.annotations.MemberAnnotationHandler;
  */
 public class UnindexedHandler implements MemberAnnotationHandler
 {
-    public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr)
-    {
-        mmd.addExtension("gae.unindexed", "true");
-    }
+  public void processMemberAnnotation(AnnotationObject ann, AbstractMemberMetaData mmd, ClassLoaderResolver clr) {
+    mmd.addExtension("gae.unindexed", "true");
+  }
 }
