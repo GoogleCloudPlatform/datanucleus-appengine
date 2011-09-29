@@ -23,11 +23,13 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -343,11 +345,18 @@ public class StoreFieldManager extends DatastoreFieldManager {
       childPC = ec.persistObjectInternal(childPC, null, -1, ObjectProvider.PC);
     }
 
-    // TODO Cater for datastore identity
-    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
-    if (primaryKey == null) {
-      // Object has not yet flushed to the datastore
-      childOP.flush();
+    if (mmd.getAbstractClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
+      OID oid = (OID)childOP.getInternalObjectId();
+      if (oid == null) {
+        // Object has not yet flushed to the datastore
+        childOP.flush();
+      }
+    } else {
+      Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
+      if (primaryKey == null) {
+        // Object has not yet flushed to the datastore
+        childOP.flush();
+      }
     }
     return childPC;
   }

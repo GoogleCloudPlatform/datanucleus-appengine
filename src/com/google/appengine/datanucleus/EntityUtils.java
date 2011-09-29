@@ -36,9 +36,11 @@ import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
+import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.IdentityUtils;
+import org.datanucleus.identity.OID;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
@@ -209,24 +211,40 @@ public final class EntityUtils {
   }
 
   public static Key getKeyForObject(Object pc, ExecutionContext ec) {
-    // TODO Cater for datastore-identity, composite identity
-    Object internalPk = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ec.getApiAdapter().getIdForObject(pc));
-    if (internalPk == null) {
-      // Not yet persistent, so return null
-      return null;
+    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver());
+    if (cmd.getIdentityType() == IdentityType.DATASTORE) {
+      OID oid = (OID)ec.getApiAdapter().getIdForObject(pc);
+      if (oid == null) {
+        // Not yet persistent, so return null
+        return null;
+      }
+      Object keyValue = oid.getKeyValue();
+      return EntityUtils.getPkAsKey(keyValue, cmd, ec);
+    } else {
+      // TODO Cater for composite identity
+      Object internalPk = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(ec.getApiAdapter().getIdForObject(pc));
+      if (internalPk == null) {
+        // Not yet persistent, so return null
+        return null;
+      }
+      return EntityUtils.getPkAsKey(internalPk, 
+          ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver()), ec);
     }
-
-    return EntityUtils.getPkAsKey(internalPk, 
-        ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver()), ec);
   }
 
   public static Key getPkAsKey(ObjectProvider op) {
-    // TODO Cater for datastore-identity
-    Object pk = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
-    if (pk == null) {
-      throw new IllegalStateException("Primary key for object of type " + op.getClassMetaData().getName() + " is null.");
+    if (op.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
+      OID oid = (OID)op.getInternalObjectId();
+      Object keyValue = oid.getKeyValue();
+      return EntityUtils.getPkAsKey(keyValue, op.getClassMetaData(), op.getExecutionContext());
+    } else {
+      // TODO Support composite PK
+      Object pk = op.getExecutionContext().getApiAdapter().getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
+      if (pk == null) {
+        throw new IllegalStateException("Primary key for object of type " + op.getClassMetaData().getName() + " is null.");
+      }
+      return EntityUtils.getPkAsKey(pk, op.getClassMetaData(), op.getExecutionContext());
     }
-    return EntityUtils.getPkAsKey(pk, op.getClassMetaData(), op.getExecutionContext());
   }
 
   static Key getPkAsKey(Object pk, AbstractClassMetaData acmd, ExecutionContext ec) {
@@ -279,8 +297,7 @@ public final class EntityUtils {
   }
 
   // TODO(maxr): This method is generally useful.  Consider making it public
-  // and refactoring the error messages so that they aren't specific to
-  // object lookups.
+  // and refactoring the error messages so that they aren't specific to object lookups.
   private static Object keyToInternalKey(String kind, Class<?> pkType,
                                          AbstractMemberMetaData pkMemberMetaData, Class<?> cls,
                                          Key key, ExecutionContext ec, boolean allowSubclasses) {
@@ -791,14 +808,26 @@ public final class EntityUtils {
       return null;
     }
 
-    // TODO Cater for datastore identity
-    Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
-    if (primaryKey == null) {
-      // this is ok, it just means the object has not yet been persisted
-      return null;
+    Key key = null;
+    if (childOP.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
+      OID oid = (OID)childOP.getInternalObjectId();
+      if (oid == null) {
+        // Not yet persistent, so return null
+        return null;
+      }
+      Object keyValue = oid.getKeyValue();
+      key = EntityUtils.getPkAsKey(keyValue, childOP.getClassMetaData(), ec);
+    } else {
+      // TODO Cater for composite identity
+      Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
+      if (primaryKey == null) {
+        // Not yet persistent, so return null
+        return null;
+      }
+
+      key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), childOP);
     }
 
-    Key key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), childOP);
     if (key == null) {
       throw new NullPointerException("Could not extract a key from " + childObj);
     }
@@ -868,12 +897,12 @@ public final class EntityUtils {
 
     Object id = null;
     Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
-    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+    if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      // TODO Implement support for datastore id
+      throw new NucleusException("Dont currently support use of datastore-identity");
+    } else {
       FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
       id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
-    }
-    else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
-      // TODO Implement support for datastore id
     }
 
     Object pojo = ec.findObject(id, fv, cls, ignoreCache);
