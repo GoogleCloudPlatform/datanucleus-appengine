@@ -275,6 +275,11 @@ public class FetchFieldManager extends DatastoreFieldManager
     } else {
       int relationType = ammd.getRelationType(clr);
       if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
+        if (!MetaDataUtils.isOwnedRelation(ammd)) {
+          // Get other side via property containing key
+          return lookupOneToOneChild(ammd, clr);
+        }
+
         // Even though the mapping is 1 to 1, we model it as a 1 to many and then
         // just throw a runtime exception if we get multiple children.  We would
         // prefer to store the child id on the parent, but we can't because creating
@@ -307,17 +312,24 @@ public class FetchFieldManager extends DatastoreFieldManager
           value = lookupOneToOneChild(ammd, clr);
         }
       } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        // Do not complain about a non existing parent if we have a self referencing relation 
-        // and are on the top of the hierarchy.
-        MetaData other = ammd.getRelatedMemberMetaData(clr)[0].getParent();
-        MetaData parent = ammd.getParent();
-        boolean allowNullParent =
+        if (!MetaDataUtils.isOwnedRelation(ammd)) {
+          // Get other side via property containing key
+          value = lookupOneToOneChild(ammd, clr);
+        } else {
+          // Get owner via parent key of this object
+          // Do not complain about a non existing parent if we have a self referencing relation 
+          // and are on the top of the hierarchy.
+          MetaData other = ammd.getRelatedMemberMetaData(clr)[0].getParent();
+          MetaData parent = ammd.getParent();
+          boolean allowNullParent =
             other == parent && datastoreEntity.getKey().getParent() == null;
-        value = lookupParent(ammd, mapping, allowNullParent);
+          value = lookupParent(ammd, mapping, allowNullParent);
+        }
       } else {
         value = null;
       }
     }
+
     // Return the field value (as a wrapper if wrappable)
     return getObjectProvider().wrapSCOField(ammd.getAbsoluteFieldNumber(), value, false, false, false);
   }
