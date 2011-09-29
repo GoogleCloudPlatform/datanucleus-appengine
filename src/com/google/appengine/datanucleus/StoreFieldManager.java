@@ -625,8 +625,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof SerialisedReferenceMapping ||
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
-          if (!table.isParentKeyProvider(mmd)) {
-            EntityUtils.checkParentage(relInfo.value, op);
+          boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+          if (!owned || !table.isParentKeyProvider(mmd)) {
+            if (owned) {
+              EntityUtils.checkParentage(relInfo.value, op);
+            }
             mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
           }
         }
