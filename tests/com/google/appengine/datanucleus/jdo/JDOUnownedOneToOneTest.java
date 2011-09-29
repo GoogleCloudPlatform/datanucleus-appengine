@@ -26,7 +26,7 @@ import com.google.appengine.datanucleus.test.UnownedJDOOneToOneUniSideB;
  */
 public class JDOUnownedOneToOneTest extends JDOTestCase {
 
-  public void testPersistUniNewOwnerNonOwner() throws EntityNotFoundException {
+  public void testPersistUniNewBoth() throws EntityNotFoundException {
     // Persist A-B as unowned
     UnownedJDOOneToOneUniSideA a = new UnownedJDOOneToOneUniSideA();
     a.setName("Side A");
@@ -51,7 +51,7 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     assertEquals(bId, pm.getObjectId(b2));*/
   }
 
-  public void testPersistBiNewOwnerNonOwner() throws EntityNotFoundException {
+  public void testPersistBiNewBothFromOwner() throws EntityNotFoundException {
     // Persist A-B as unowned
     UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
     a.setName("Side A");
@@ -61,6 +61,32 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     b.setOther(a);
 
     pm.makePersistent(a);
+    // TODO Enable this when we default to latest storage version
+    /*Object aId = pm.getObjectId(a);
+    Object bId = pm.getObjectId(b);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToOneUniSideA a2 = (UnownedJDOOneToOneUniSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    UnownedJDOOneToOneUniSideB b2 = a.getOther();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));*/
+  }
+
+  public void testPersistBiNewBothFromNonowner() throws EntityNotFoundException {
+    // Persist A-B as unowned
+    UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
+    a.setName("Side A");
+    UnownedJDOOneToOneBiSideB b = new UnownedJDOOneToOneBiSideB();
+    b.setName("Side B");
+    a.setOther(b);
+    b.setOther(a);
+
+    pm.makePersistent(b);
     // TODO Enable this when we default to latest storage version
     /*Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
