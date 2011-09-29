@@ -282,7 +282,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         // Nothing to extract
         checkSettingToNullValue(ammd, value);
       } else if (Relation.isRelationSingleValued(relationType)) {
-        Key key = EntityUtils.extractChildKey(value, ec, datastoreEntity);
+        Key key = EntityUtils.extractChildKey(value, ec, owned ? datastoreEntity : null);
         if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
           // Detect attempt to add an object with its key set (and hence parent set) on owned field
           throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
@@ -294,7 +294,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           Collection coll = (Collection) value;
           List<Key> keys = Utils.newArrayList();
           for (Object obj : coll) {
-            Key key = EntityUtils.extractChildKey(obj, ec, datastoreEntity);
+            Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
             if (key != null) {
               keys.add(key);
               if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
