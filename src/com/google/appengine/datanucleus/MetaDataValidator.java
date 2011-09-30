@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.Key;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InvalidMetaDataException;
@@ -136,7 +137,21 @@ public class MetaDataValidator implements MetaDataListener {
     // validate inheritance
     // TODO Put checks on supported inheritance here
 
-    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+    AbstractMemberMetaData pkMemberMetaData = null;
+    Class<?> pkType = null;
+    boolean noParentAllowed = false;
+
+    if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      pkType = Long.class;
+      ColumnMetaData colmd = acmd.getIdentityMetaData().getColumnMetaData();
+      if (colmd != null && 
+          ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
+        pkType = String.class;
+      }
+      if (pkType == Long.class) {
+        noParentAllowed = true;
+      }
+    } else {
       // Validate primary-key
       int[] pkPositions = acmd.getPKMemberPositions();
       if (pkPositions == null) {
@@ -146,11 +161,10 @@ public class MetaDataValidator implements MetaDataListener {
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getFullClassName());
       }
       int pkPos = pkPositions[0];
-      AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
+      pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
 
       // TODO Allow int, Integer types
-      Class<?> pkType = pkMemberMetaData.getType();
-      boolean noParentAllowed = false;
+      pkType = pkMemberMetaData.getType();
       if (pkType.equals(Long.class) || pkType.equals(long.class)) {
         noParentAllowed = true;
       } else if (pkType.equals(String.class)) {
@@ -172,29 +186,29 @@ public class MetaDataValidator implements MetaDataListener {
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.InvalidPKTypeForField", 
             pkMemberMetaData.getFullFieldName(), pkType.getName());
       }
-
-      // Validate fields
-      Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
-      Map<Class<?>, String> nonRepeatableRelationTypes = Utils.newHashMap();
-      Class<?> pkClass = pkMemberMetaData.getType();
-
-      // the constraints that we check across all fields apply to the entire
-      // persistent class hierarchy so we're going to validate every field
-      // at every level of the hierarchy.  As an example, this lets us detect
-      // multiple one-to-many relationships at different levels of the class hierarchy
-      AbstractClassMetaData curCmd = acmd;
-      do {
-        for (AbstractMemberMetaData ammd : curCmd.getManagedMembers()) {
-          validateField(acmd, pkMemberMetaData, noParentAllowed, pkClass, foundOneOrZeroExtensions, nonRepeatableRelationTypes, ammd);
-        }
-        curCmd = curCmd.getSuperAbstractClassMetaData();
-      } while (curCmd != null);
     }
+
+    // Validate fields
+    Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
+    Map<Class<?>, String> nonRepeatableRelationTypes = Utils.newHashMap();
+
+    // the constraints that we check across all fields apply to the entire
+    // persistent class hierarchy so we're going to validate every field
+    // at every level of the hierarchy.  As an example, this lets us detect
+    // multiple one-to-many relationships at different levels of the class hierarchy
+    AbstractClassMetaData curCmd = acmd;
+    do {
+      for (AbstractMemberMetaData ammd : curCmd.getManagedMembers()) {
+        validateField(acmd, pkMemberMetaData, noParentAllowed, pkType, foundOneOrZeroExtensions, 
+            nonRepeatableRelationTypes, ammd);
+      }
+      curCmd = curCmd.getSuperAbstractClassMetaData();
+    } while (curCmd != null);
 
     // Look for uniqueness constraints.  Not supported but not necessarily an error
     if (acmd.getUniqueMetaData() != null && acmd.getUniqueMetaData().length > 0) {
       handleIgnorableMapping(acmd, null, "AppEngine.MetaData.UniqueConstraintsNotSupported", 
-          "The constraint definition will be ignored.");
+      "The constraint definition will be ignored.");
     }
 
     NucleusLogger.METADATA.info("Finished performing appengine-specific metadata validation for " + acmd.getFullClassName());
@@ -203,6 +217,7 @@ public class MetaDataValidator implements MetaDataListener {
   private void validateField(AbstractClassMetaData acmd, AbstractMemberMetaData pkMemberMetaData, boolean noParentAllowed,
                              Class<?> pkClass, Set<String> foundOneOrZeroExtensions,
                              Map<Class<?>, String> nonRepeatableRelationTypes, AbstractMemberMetaData ammd) {
+
     // can only have one field with this extension
     for (String extension : ONE_OR_ZERO_EXTENSIONS) {
       if (ammd.hasExtension(extension)) {
@@ -253,13 +268,15 @@ public class MetaDataValidator implements MetaDataListener {
     }
 
     // pk-name and pk-id only supported in conjunction with an encoded string
-    for (String extension : REQUIRES_ENCODED_STRING_PK_EXTENSIONS) {
-      if (ammd.hasExtension(extension)) {
-        if (!pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
-          // we've already verified that encoded-pk is on a a String pk field
-          // so we don't need to check the type of the pk here.
-          throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.FieldWithExtensionForEncodedString",
-              ammd.getFullFieldName(), extension);
+    if (pkMemberMetaData != null) {
+      for (String extension : REQUIRES_ENCODED_STRING_PK_EXTENSIONS) {
+        if (ammd.hasExtension(extension)) {
+          if (!pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)) {
+            // we've already verified that encoded-pk is on a a String pk field
+            // so we don't need to check the type of the pk here.
+            throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.FieldWithExtensionForEncodedString",
+                ammd.getFullFieldName(), extension);
+          }
         }
       }
     }
@@ -356,19 +373,32 @@ public class MetaDataValidator implements MetaDataListener {
     }
 
     // Get the type of the primary key of the child
-    int[] pkPositions = childAcmd.getPKMemberPositions();
-    if (pkPositions == null) {
-      // don't know how to verify
-      NucleusLogger.METADATA.warn("Unable to validate relation " + ammd.getFullFieldName());
-      return;
-    }
-    int pkPos = pkPositions[0];
-    AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
-    Class<?> pkType = pkMemberMetaData.getType();
-    if (noParentAllowed && (pkType.equals(Long.class) || pkType.equals(long.class) ||
-        (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)))) {
-      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ChildWithPKTypeInvalid",
-          pkMemberMetaData.getFullFieldName(), pkType.getName(), ammd.getFullFieldName());
+    if (childAcmd.getIdentityType() == IdentityType.DATASTORE) {
+      Class pkType = Long.class;
+      ColumnMetaData colmd = childAcmd.getIdentityMetaData().getColumnMetaData();
+      if (colmd != null && 
+          ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
+        pkType = String.class;
+      }
+      if (noParentAllowed && pkType.equals(Long.class)) {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ChildWithPKTypeInvalid",
+            childAcmd.getFullClassName()+".[ID]", pkType.getName(), ammd.getFullFieldName());
+      }
+    } else {
+      int[] pkPositions = childAcmd.getPKMemberPositions();
+      if (pkPositions == null) {
+        // don't know how to verify
+        NucleusLogger.METADATA.warn("Unable to validate relation " + ammd.getFullFieldName());
+        return;
+      }
+      int pkPos = pkPositions[0];
+      AbstractMemberMetaData pkMemberMetaData = childAcmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
+      Class<?> pkType = pkMemberMetaData.getType();
+      if (noParentAllowed && (pkType.equals(Long.class) || pkType.equals(long.class) ||
+          (pkType.equals(String.class) && !pkMemberMetaData.hasExtension(DatastoreManager.ENCODED_PK)))) {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ChildWithPKTypeInvalid",
+            pkMemberMetaData.getFullFieldName(), pkType.getName(), ammd.getFullFieldName());
+      }
     }
   }
 

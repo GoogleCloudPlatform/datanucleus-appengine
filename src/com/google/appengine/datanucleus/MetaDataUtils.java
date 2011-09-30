@@ -19,6 +19,8 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.IdentityMetaData;
+import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InheritanceStrategy;
 import org.datanucleus.metadata.MetaDataManager;
 
@@ -44,8 +46,13 @@ public class MetaDataUtils {
   }
 
   public static boolean hasEncodedPKField(AbstractClassMetaData acmd) {
-    int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs
-    return isEncodedPKField(acmd, pkFieldNumber);
+    if (acmd.getIdentityType() == IdentityType.DATASTORE) {
+      IdentityMetaData idmd = acmd.getIdentityMetaData();
+      return idmd.hasExtension(DatastoreManager.ENCODED_PK);
+    } else {
+      int pkFieldNumber = acmd.getPKMemberPositions()[0]; // TODO Cater for composite PKs
+      return isEncodedPKField(acmd, pkFieldNumber);
+    }
   }
 
   public static boolean isEncodedPKField(AbstractClassMetaData acmd, int fieldNumber) {

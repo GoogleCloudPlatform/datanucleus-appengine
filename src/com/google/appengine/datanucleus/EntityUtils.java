@@ -467,8 +467,14 @@ public final class EntityUtils {
   }
 
   public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
-    Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
-    return getPrimaryKeyAsKey(primaryKey, op.getExecutionContext(), op.getClassMetaData());
+    if (op.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
+      OID oid = (OID)op.getInternalObjectId();
+      Object keyValue = oid.getKeyValue();
+      return getPrimaryKeyAsKey(keyValue, op.getExecutionContext(), op.getClassMetaData());
+    } else {
+      Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
+      return getPrimaryKeyAsKey(primaryKey, op.getExecutionContext(), op.getClassMetaData());
+    }
   }
 
   private static final Field PROPERTY_MAP_FIELD;
@@ -790,13 +796,20 @@ public final class EntityUtils {
       return null;
     }
 
+    AbstractClassMetaData childCmd = ec.getMetaDataManager().getMetaDataForClass(childObj.getClass(), ec.getClassLoaderResolver());
     if (ec.getApiAdapter().isDetached(childObj)) {
       // Child is detached, so return its id
       Object valueID = ec.getApiAdapter().getIdForObject(childObj);
-      Object valuePK = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueID);
-      Key key = EntityUtils.getPrimaryKeyAsKey(valuePK, ec,
-          ec.getMetaDataManager().getMetaDataForClass(childObj.getClass(), ec.getClassLoaderResolver()));
-      return key;
+      if (childCmd.getIdentityType() == IdentityType.DATASTORE) {
+        OID oid = (OID)valueID;
+        Object keyValue = oid.getKeyValue();
+        return EntityUtils.getPkAsKey(keyValue, childCmd, ec);
+      } else {
+        Object valuePK = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(valueID);
+        Key key = EntityUtils.getPrimaryKeyAsKey(valuePK, ec,
+            ec.getMetaDataManager().getMetaDataForClass(childObj.getClass(), ec.getClassLoaderResolver()));
+        return key;
+      }
     } else if (ec.getApiAdapter().isDeleted(childObj)) {
       // Child is deleted, so return null
       return null;
@@ -809,14 +822,13 @@ public final class EntityUtils {
     }
 
     Key key = null;
-    if (childOP.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
+    if (childCmd.getIdentityType() == IdentityType.DATASTORE) {
       OID oid = (OID)childOP.getInternalObjectId();
       if (oid == null) {
         // Not yet persistent, so return null
         return null;
       }
-      Object keyValue = oid.getKeyValue();
-      key = EntityUtils.getPkAsKey(keyValue, childOP.getClassMetaData(), ec);
+      key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), childOP);
     } else {
       // TODO Cater for composite identity
       Object primaryKey = ec.getApiAdapter().getTargetKeyForSingleFieldIdentity(childOP.getInternalObjectId());
