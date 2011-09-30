@@ -261,6 +261,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         }
       } else if (cmd.getIdentityType() == IdentityType.DATASTORE &&
           cmd.getIdentityMetaData().getValueStrategy() == IdentityStrategy.IDENTITY) {
+        identityStrategyUsed = true;
         pkType = Long.class;
         ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
         if (colmd != null && 

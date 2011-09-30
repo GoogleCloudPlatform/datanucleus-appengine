@@ -21,6 +21,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
+import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InvalidMetaDataException;
 import org.datanucleus.metadata.MetaDataListener;
 import org.datanucleus.metadata.MetaDataManager;
@@ -135,58 +136,60 @@ public class MetaDataValidator implements MetaDataListener {
     // validate inheritance
     // TODO Put checks on supported inheritance here
 
-    // Validate primary-key
-    int[] pkPositions = acmd.getPKMemberPositions();
-    if (pkPositions == null) {
-      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.NoPkFields", acmd.getFullClassName());
-    }
-    if (pkPositions.length != 1) {
-      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getFullClassName());
-    }
-    int pkPos = pkPositions[0];
-    AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
+    if (acmd.getIdentityType() == IdentityType.APPLICATION) {
+      // Validate primary-key
+      int[] pkPositions = acmd.getPKMemberPositions();
+      if (pkPositions == null) {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.NoPkFields", acmd.getFullClassName());
+      }
+      if (pkPositions.length != 1) {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getFullClassName());
+      }
+      int pkPos = pkPositions[0];
+      AbstractMemberMetaData pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
 
-    // TODO Allow long, int, Integer types
-    Class<?> pkType = pkMemberMetaData.getType();
-    boolean noParentAllowed = false;
-    if (pkType.equals(Long.class) || pkType.equals(long.class)) {
-      noParentAllowed = true;
-    } else if (pkType.equals(String.class)) {
-      if (!MetaDataUtils.isEncodedPKField(acmd, pkPos)) {
+      // TODO Allow int, Integer types
+      Class<?> pkType = pkMemberMetaData.getType();
+      boolean noParentAllowed = false;
+      if (pkType.equals(Long.class) || pkType.equals(long.class)) {
         noParentAllowed = true;
-      } else {
-        // encoded string pk
-        if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
-          throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.SequenceInvalidForEncodedStringPK",
-              pkMemberMetaData.getFullFieldName());
+      } else if (pkType.equals(String.class)) {
+        if (!MetaDataUtils.isEncodedPKField(acmd, pkPos)) {
+          noParentAllowed = true;
+        } else {
+          // encoded string pk
+          if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
+            throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.SequenceInvalidForEncodedStringPK",
+                pkMemberMetaData.getFullFieldName());
+          }
         }
+      } else if (pkType.equals(Key.class)) {
+        if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
+          throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.SequenceInvalidForPKType",
+              pkMemberMetaData.getFullFieldName(), Key.class.getName());
+        }
+      } else {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.InvalidPKTypeForField", 
+            pkMemberMetaData.getFullFieldName(), pkType.getName());
       }
-    } else if (pkType.equals(Key.class)) {
-      if (hasIdentityStrategy(IdentityStrategy.SEQUENCE, pkMemberMetaData)) {
-        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.SequenceInvalidForPKType",
-            pkMemberMetaData.getFullFieldName(), Key.class.getName());
-      }
-    } else {
-      throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.InvalidPKTypeForField", 
-          pkMemberMetaData.getFullFieldName(), pkType.getName());
+
+      // Validate fields
+      Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
+      Map<Class<?>, String> nonRepeatableRelationTypes = Utils.newHashMap();
+      Class<?> pkClass = pkMemberMetaData.getType();
+
+      // the constraints that we check across all fields apply to the entire
+      // persistent class hierarchy so we're going to validate every field
+      // at every level of the hierarchy.  As an example, this lets us detect
+      // multiple one-to-many relationships at different levels of the class hierarchy
+      AbstractClassMetaData curCmd = acmd;
+      do {
+        for (AbstractMemberMetaData ammd : curCmd.getManagedMembers()) {
+          validateField(acmd, pkMemberMetaData, noParentAllowed, pkClass, foundOneOrZeroExtensions, nonRepeatableRelationTypes, ammd);
+        }
+        curCmd = curCmd.getSuperAbstractClassMetaData();
+      } while (curCmd != null);
     }
-
-    // Validate fields
-    Set<String> foundOneOrZeroExtensions = Utils.newHashSet();
-    Map<Class<?>, String> nonRepeatableRelationTypes = Utils.newHashMap();
-    Class<?> pkClass = pkMemberMetaData.getType();
-
-    // the constraints that we check across all fields apply to the entire
-    // persistent class hierarchy so we're going to validate every field
-    // at every level of the hierarchy.  As an example, this lets us detect
-    // multiple one-to-many relationships at different levels of the class hierarchy
-    AbstractClassMetaData curCmd = acmd;
-    do {
-      for (AbstractMemberMetaData ammd : curCmd.getManagedMembers()) {
-        validateField(acmd, pkMemberMetaData, noParentAllowed, pkClass, foundOneOrZeroExtensions, nonRepeatableRelationTypes, ammd);
-      }
-      curCmd = curCmd.getSuperAbstractClassMetaData();
-    } while (curCmd != null);
 
     // Look for uniqueness constraints.  Not supported but not necessarily an error
     if (acmd.getUniqueMetaData() != null && acmd.getUniqueMetaData().length > 0) {
