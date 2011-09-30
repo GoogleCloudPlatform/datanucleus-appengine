@@ -142,11 +142,14 @@ public class MetaDataValidator implements MetaDataListener {
     boolean noParentAllowed = false;
 
     if (acmd.getIdentityType() == IdentityType.DATASTORE) {
-      pkType = Long.class;
+      pkType = Key.class;
       ColumnMetaData colmd = acmd.getIdentityMetaData().getColumnMetaData();
-      if (colmd != null && 
-          ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
-        pkType = String.class;
+      if (colmd != null) {
+        if ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType())) {
+          pkType = String.class;
+        } else  if ("integer".equalsIgnoreCase(colmd.getJdbcType()) || "numeric".equalsIgnoreCase(colmd.getJdbcType())) {
+          pkType = Long.class;
+        }
       }
       if (pkType == Long.class) {
         noParentAllowed = true;

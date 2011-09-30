@@ -262,11 +262,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       } else if (cmd.getIdentityType() == IdentityType.DATASTORE &&
           cmd.getIdentityMetaData().getValueStrategy() == IdentityStrategy.IDENTITY) {
         identityStrategyUsed = true;
-        pkType = Long.class;
+        pkType = Key.class;
         ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
-        if (colmd != null && 
-            ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType()))) {
-          pkType = String.class;
+        if (colmd != null) {
+          if ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType())) {
+            pkType = String.class;
+          } else if ("integer".equalsIgnoreCase(colmd.getJdbcType()) || "numeric".equalsIgnoreCase(colmd.getJdbcType())) {
+            pkType = Long.class;
+          }
         }
       }
 
