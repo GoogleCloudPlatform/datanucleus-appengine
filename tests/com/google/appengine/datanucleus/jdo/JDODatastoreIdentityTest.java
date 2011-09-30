@@ -15,9 +15,12 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import java.util.Set;
+
 import javax.jdo.JDOObjectNotFoundException;
 
-import com.google.appengine.datanucleus.test.HasDatastoreIdentityLongJDO;
+import com.google.appengine.datanucleus.test.HasDatastoreIdentityChildJDO;
+import com.google.appengine.datanucleus.test.HasDatastoreIdentityParentJDO;
 
 /**
  * Tests for datastore-identity with JDO.
@@ -25,7 +28,7 @@ import com.google.appengine.datanucleus.test.HasDatastoreIdentityLongJDO;
 public class JDODatastoreIdentityTest extends JDOTestCase {
 
   public void testInsertUpdate_IdGen() {
-    HasDatastoreIdentityLongJDO pojo = new HasDatastoreIdentityLongJDO();
+    HasDatastoreIdentityParentJDO pojo = new HasDatastoreIdentityParentJDO();
     pojo.setName("First Name");
 
     beginTxn();
@@ -35,7 +38,7 @@ public class JDODatastoreIdentityTest extends JDOTestCase {
     pm.evictAll();
 
     beginTxn();
-    HasDatastoreIdentityLongJDO pojo2 = (HasDatastoreIdentityLongJDO)pm.getObjectById(id);
+    HasDatastoreIdentityParentJDO pojo2 = (HasDatastoreIdentityParentJDO)pm.getObjectById(id);
     assertNotNull(pojo2);
     assertEquals("First Name", pojo2.getName());
     pojo2.setName("Second Name");
@@ -43,7 +46,7 @@ public class JDODatastoreIdentityTest extends JDOTestCase {
     pm.evictAll();
 
     beginTxn();
-    pojo2 = (HasDatastoreIdentityLongJDO)pm.getObjectById(id);
+    pojo2 = (HasDatastoreIdentityParentJDO)pm.getObjectById(id);
     assertNotNull(pojo2);
     assertEquals("Second Name", pojo2.getName());
 
@@ -53,11 +56,38 @@ public class JDODatastoreIdentityTest extends JDOTestCase {
 
     beginTxn();
     try {
-      pojo2 = (HasDatastoreIdentityLongJDO)pm.getObjectById(id);
+      pojo2 = (HasDatastoreIdentityParentJDO)pm.getObjectById(id);
       fail("Returned object even though it was deleted");
     } catch (JDOObjectNotFoundException onfe) {
       // expected
     }
     commitTxn();
+  }
+
+  public void testOneToMany() {
+    HasDatastoreIdentityParentJDO pojo = new HasDatastoreIdentityParentJDO();
+    pojo.setName("First Name");
+    HasDatastoreIdentityChildJDO child1 = new HasDatastoreIdentityChildJDO();
+    child1.setName("Child 1");
+    pojo.getChildren().add(child1);
+    HasDatastoreIdentityChildJDO child2 = new HasDatastoreIdentityChildJDO();
+    child2.setName("Child 2");
+    pojo.getChildren().add(child2);
+
+    pm.makePersistent(pojo);
+    Object id = pm.getObjectId(pojo);
+    pm.evictAll();
+
+    HasDatastoreIdentityParentJDO pojo2 = (HasDatastoreIdentityParentJDO)pm.getObjectById(id);
+    assertNotNull(pojo2);
+    assertEquals("First Name", pojo2.getName());
+    Set<HasDatastoreIdentityChildJDO> children = pojo2.getChildren();
+    assertNotNull(children);
+    assertEquals(2, children.size());
+    pm.evictAll();
+
+    pojo2 = (HasDatastoreIdentityParentJDO)pm.getObjectById(id);
+    assertNotNull(pojo2);
+    assertEquals("First Name", pojo2.getName());
   }
 }

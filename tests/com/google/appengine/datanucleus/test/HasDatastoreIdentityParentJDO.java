@@ -15,6 +15,9 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.test;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import javax.jdo.annotations.DatastoreIdentity;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -24,7 +27,9 @@ import javax.jdo.annotations.PersistenceCapable;
  */
 @PersistenceCapable
 @DatastoreIdentity(strategy=IdGeneratorStrategy.IDENTITY)
-public class HasDatastoreIdentityLongJDO {
+public class HasDatastoreIdentityParentJDO {
+  Set<HasDatastoreIdentityChildJDO> children = new HashSet<HasDatastoreIdentityChildJDO>();
+
   private String name;
 
   public String getName() {
@@ -33,5 +38,9 @@ public class HasDatastoreIdentityLongJDO {
 
   public void setName(String name) {
     this.name = name;
+  }
+
+  public Set<HasDatastoreIdentityChildJDO> getChildren() {
+    return children;
   }
 }
