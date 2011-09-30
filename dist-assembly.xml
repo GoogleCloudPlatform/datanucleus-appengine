@@ -1,0 +1,96 @@
+<assembly xmlns="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/plugins/maven-assembly-plugin/assembly/1.1.0 http://maven.apache.org/xsd/assembly-1.1.0.xsd">
+    <id>dist</id>
+    <formats>
+        <format>zip</format>
+    </formats>    
+    <baseDirectory>/</baseDirectory>
+    <dependencySets>
+        <dependencySet>
+            <outputDirectory>lib/tools/orm</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>compile</scope>
+            <excludes>
+                <exclude>log4j:log4j</exclude>
+                <exclude>com.google.appengine:appengine-api-1.0-sdk</exclude>
+                <exclude>com.google.appengine.orm:datanucleus-appengine</exclude>
+            </excludes>
+        </dependencySet>
+        <dependencySet>
+            <outputDirectory>lib/user/orm</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <excludes>
+                <exclude>log4j:log4j</exclude>
+                <exclude>com.google.appengine:appengine-api-1.0-sdk</exclude>
+                <exclude>org.datanucleus:datanucleus-enhancer</exclude>
+                <exclude>asm:asm</exclude>
+            </excludes>
+        </dependencySet>
+    </dependencySets>
+    <fileSets>
+        <fileSet>
+            <directory>dist</directory>
+            <outputDirectory>/</outputDirectory>
+            <includes>
+                <include>README.ORM</include>
+                <include>RELEASE_NOTES.ORM</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory>lib/user/orm</outputDirectory>
+            <includes>
+                <!--This picks up the datanuc/gae plugin jar-->
+                <include>*.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- Source jars -->
+
+        <!-- Source jar for the plugin -->
+        <fileSet>
+            <directory>${project.build.directory}/sources</directory>
+            <outputDirectory>src/orm</outputDirectory>
+        </fileSet>
+        <!-- Source jars for jdo, jpa, and datanucleus -->
+        <fileSet>
+            <directory>${project.build.directory}/dependency</directory>
+            <outputDirectory>src/orm</outputDirectory>
+            <includes>
+                <include>jdo-api-*-sources.jar</include>
+                <include>datanucleus-*-sources.jar</include>
+                <include>geronimo-jpa*-sources.jar</include>
+            </includes>
+        </fileSet>
+
+        <!--Demo apps-->
+        <fileSet>
+            <directory>demos/helloorm</directory>
+            <outputDirectory>demos/helloorm</outputDirectory>
+            <includes>
+                <include>build.xml</include>
+                <include>COPYING</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>demos/helloorm/src</directory>
+            <outputDirectory>demos/helloorm/src</outputDirectory>
+            <includes>
+                <!-- Avoids grabbing WEB-INF and META-INF -->
+                <include>com/**</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>demos/helloorm/src/WEB-INF</directory>
+            <outputDirectory>demos/helloorm/war/WEB-INF</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>demos/helloorm/src/META-INF</directory>
+            <outputDirectory>demos/helloorm/war/WEB-INF/classes/META-INF</outputDirectory>
+        </fileSet>
+    </fileSets>
+</assembly>

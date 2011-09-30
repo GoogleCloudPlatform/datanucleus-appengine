@@ -122,6 +122,7 @@
 
         <plugins>
             <plugin>
+                <version>2.4.1</version>
                 <artifactId>maven-clean-plugin</artifactId>
                 <configuration>
                     <filesets>
@@ -180,11 +181,67 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
+                <version>2.3.2</version>
                 <configuration>
                     <archive>
                         <manifestFile>src/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
                 </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>2.3</version>
+                <executions>
+                    <execution>
+                        <id>src-dependencies</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>copy-dependencies</goal>
+                        </goals>
+                        <configuration>
+                            <classifier>sources</classifier>
+                            <failOnMissingClassifierArtifact>false</failOnMissingClassifierArtifact>
+                            <excludeTransitive>false</excludeTransitive>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Jar up the source for the plugin -->
+            <plugin>
+                <artifactId>maven-source-plugin</artifactId>
+                <version>2.1.2</version>
+                <configuration>
+                    <outputDirectory>${project.build.directory}/sources</outputDirectory>
+                    <attach>false</attach>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-src-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>2.2.1</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>dist-assembly.xml</descriptor>
+                    </descriptors>
+                </configuration>
+                <executions>
+                    <execution>
+                        <id>make-dep-src-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>
