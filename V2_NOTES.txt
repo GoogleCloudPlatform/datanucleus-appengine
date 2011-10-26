@@ -28,3 +28,7 @@ The major change with version 2 is to use DataNucleus v3.x. This brings with it 
 
 * Primary Keys can now also be of type long.
 
+* Unowned relations supported
+
+* Datastore Identity supported
+
