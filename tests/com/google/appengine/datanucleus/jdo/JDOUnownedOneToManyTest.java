@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import java.util.Set;
+
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideB;
@@ -35,8 +37,8 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     a.addOther(b);
 
     pm.makePersistent(a);
-    // TODO Enable this when we default to latest storage version
-    /*Object aId = pm.getObjectId(a);
+
+    Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
 
     pm.evictAll(); // Make sure we go to the datastore
@@ -51,7 +53,7 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     UnownedJDOOneToManyUniSideB b2 = others.iterator().next();
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
-    assertEquals(bId, pm.getObjectId(b2));*/
+    assertEquals(bId, pm.getObjectId(b2));
   }
 
   public void testPersistBiNewBoth() throws EntityNotFoundException {
@@ -64,22 +66,22 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     b.setRelated(a);
 
     pm.makePersistent(a);
-    // TODO Enable this when we default to latest storage version
-    /*Object aId = pm.getObjectId(a);
+
+    Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
 
     pm.evictAll(); // Make sure we go to the datastore
 
     // Retrieve by id and check
-    UnownedJDOOneToManyUniSideA a2 = (UnownedJDOOneToManyUniSideA)pm.getObjectById(aId);
+    UnownedJDOOneToManyBiSideA a2 = (UnownedJDOOneToManyBiSideA)pm.getObjectById(aId);
     assertNotNull(a2);
     assertEquals("Side A", a2.getName());
-    Set<UnownedJDOOneToManyUniSideB> others = a2.getOthers();
+    Set<UnownedJDOOneToManyBiSideB> others = a2.getOthers();
     assertNotNull(others);
     assertEquals(1, others.size());
-    UnownedJDOOneToManyUniSideB b2 = others.iterator().next();
+    UnownedJDOOneToManyBiSideB b2 = others.iterator().next();
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
-    assertEquals(bId, pm.getObjectId(b2));*/
+    assertEquals(bId, pm.getObjectId(b2));
   }
 }

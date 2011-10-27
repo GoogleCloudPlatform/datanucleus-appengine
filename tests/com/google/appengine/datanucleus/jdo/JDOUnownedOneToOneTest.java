@@ -35,8 +35,8 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     a.setOther(b);
 
     pm.makePersistent(a);
-    // TODO Enable this when we default to latest storage version
-    /*Object aId = pm.getObjectId(a);
+
+    Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
 
     pm.evictAll(); // Make sure we go to the datastore
@@ -48,7 +48,7 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     UnownedJDOOneToOneUniSideB b2 = a.getOther();
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
-    assertEquals(bId, pm.getObjectId(b2));*/
+    assertEquals(bId, pm.getObjectId(b2));
   }
 
   public void testPersistBiNewBothFromOwner() throws EntityNotFoundException {
@@ -61,20 +61,20 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     b.setOther(a);
 
     pm.makePersistent(a);
-    // TODO Enable this when we default to latest storage version
-    /*Object aId = pm.getObjectId(a);
+
+    Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
 
     pm.evictAll(); // Make sure we go to the datastore
 
     // Retrieve by id and check
-    UnownedJDOOneToOneUniSideA a2 = (UnownedJDOOneToOneUniSideA)pm.getObjectById(aId);
+    UnownedJDOOneToOneBiSideA a2 = (UnownedJDOOneToOneBiSideA)pm.getObjectById(aId);
     assertNotNull(a2);
     assertEquals("Side A", a2.getName());
-    UnownedJDOOneToOneUniSideB b2 = a.getOther();
+    UnownedJDOOneToOneBiSideB b2 = a2.getOther();
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
-    assertEquals(bId, pm.getObjectId(b2));*/
+    assertEquals(bId, pm.getObjectId(b2));
   }
 
   public void testPersistBiNewBothFromNonowner() throws EntityNotFoundException {
@@ -87,19 +87,19 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     b.setOther(a);
 
     pm.makePersistent(b);
-    // TODO Enable this when we default to latest storage version
-    /*Object aId = pm.getObjectId(a);
+
+    Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
 
     pm.evictAll(); // Make sure we go to the datastore
 
     // Retrieve by id and check
-    UnownedJDOOneToOneUniSideA a2 = (UnownedJDOOneToOneUniSideA)pm.getObjectById(aId);
+    UnownedJDOOneToOneBiSideA a2 = (UnownedJDOOneToOneBiSideA)pm.getObjectById(aId);
     assertNotNull(a2);
     assertEquals("Side A", a2.getName());
-    UnownedJDOOneToOneUniSideB b2 = a.getOther();
+    UnownedJDOOneToOneBiSideB b2 = a2.getOther();
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
-    assertEquals(bId, pm.getObjectId(b2));*/
+    assertEquals(bId, pm.getObjectId(b2));
   }
 }

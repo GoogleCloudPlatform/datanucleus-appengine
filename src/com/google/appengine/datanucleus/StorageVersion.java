@@ -28,7 +28,7 @@ import java.util.Arrays;
 public enum StorageVersion {
 
   /**
-   * This is the original storage version and represents how we stored
+   * This is the original storage version (GAE DataNucleus plugin v1) and represents how we stored
    * owned relationships before we had a concrete notion of storage version.
    * Originally the datastore only supported one write per entity per txn,
    * which meant there was no way to add a child key to a parent inside a txn:
@@ -69,7 +69,7 @@ public enum StorageVersion {
    * The default storage version.  If {@link #STORAGE_VERSION_PROPERTY} is not
    * defined in the config, this is the storage version we use.
    */
-  private static final StorageVersion DEFAULT = PARENTS_DO_NOT_REFER_TO_CHILDREN;
+  private static final StorageVersion DEFAULT = READ_OWNED_CHILD_KEYS_FROM_PARENTS;
 
   static StorageVersion fromStoreManager(StoreManager storeMgr) {
     String val = storeMgr.getStringProperty(STORAGE_VERSION_PROPERTY);

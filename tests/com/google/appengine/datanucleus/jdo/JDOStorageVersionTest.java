@@ -31,7 +31,7 @@ public class JDOStorageVersionTest extends JDOTestCase {
 
   public void testDefaultStorageVersion() {
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
-    assertEquals(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS, storeMgr.getStorageVersion());
+    assertEquals(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS, storeMgr.getStorageVersion());
   }
 
   public void testNonDefaultStorageVersion() {
