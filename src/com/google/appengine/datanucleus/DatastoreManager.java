@@ -70,6 +70,34 @@ import java.util.concurrent.ConcurrentHashMap;
 /**
  * StoreManager for GAE/J with DataNucleus.
  * When the user specifies "datanucleus.ConnectionURL" as "appengine", an instance of this class is created.
+ * <h3>Information stored for each object</h3>
+ * <p>
+ * When an object of a class is stored, we can store the following information as properties of the Entity.
+ * <ul>
+ * <li>Primary key (which includes parentKey where required)</li>
+ * <li>Discriminator (if defined)</li>
+ * <li>Version (if defined)</li>
+ * <li>Each non-null field
+ * <ul>
+ * <li>Unowned relation fields will store the Key(s) of related objects (dependent on StorageVersion)</li>
+ * <li>Owned relation fields at parent side will store the Key(s) of child objects (dependent on StorageVersion)</li>
+ * <li>Owned relation fields at child side will not store anything about the parent</li>
+ * <li>Non-relation fields store the value (as long as supported type).</li>
+ * </ul></li>
+ * <li>Field(s) of embedded object.</li>
+ * </ul>
+ * </p>
+ * <h3>Transaction Restrictions</h3>
+ * <p>
+ * The GAE datastore has some restrictions to be aware of when inspecting the code in this plugin. These
+ * restrictions impact on the design of the plugin.
+ * <ul>
+ * <li>When we PUT an object it must have its parent assigned then (create of Entity), and not later. In particular
+ * see the handling of owned relations in DatastorePersistenceHandler, and the order of PUTs, making sure we have
+ * the parent first before any child is PUT.</li>
+ * <li>All objects have to be in the same entity-group, except when using XG transactions.</li>
+ * </ul>
+ * </p>
  * 
  * @author Max Ross <maxr@google.com>
  */
@@ -300,7 +328,7 @@ public class DatastoreManager extends MappedStoreManager {
     opts.add("TransactionIsolationLevel.read-committed");
     opts.add("BackedSCO");
     opts.add("ApplicationIdentity");
-//    opts.add("DatastoreIdentity"); // TODO Support DatastoreIdentity
+    opts.add("DatastoreIdentity");
     opts.add("OptimisticTransaction");
     opts.add("ORM");
     return opts;

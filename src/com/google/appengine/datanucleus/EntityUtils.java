@@ -862,7 +862,7 @@ public final class EntityUtils {
    * @param entity The entity to convert
    * @param acmd The meta data for the pojo class
    * @param clr The classloader resolver
-   * @param om The object manager
+   * @param ec Execution Context
    * @param ignoreCache Whether or not the cache should be ignored when the PM/EM attempts to find the pojo
    * @param fetchPlan the fetch plan to use
    * @return The pojo that corresponds to the provided entity.

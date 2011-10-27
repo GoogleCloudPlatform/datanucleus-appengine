@@ -129,7 +129,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
   /**
    * Internal method for adding an item to the List.
-   * @param sm The state manager
+   * @param ownerOP Object Provider of the owner of the list
    * @param startAt The start position
    * @param atEnd Whether to add at the end
    * @param elements The Collection of elements to add.
@@ -506,7 +506,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
   /**
    * Internal method to remove an object at a location in the List.
-   * @param sm The state manager.
+   * @param ownerOP ObjectProvider for the owner of the list.
    * @param index The location
    * @param size Current size of list (if known). -1 if not known
    */

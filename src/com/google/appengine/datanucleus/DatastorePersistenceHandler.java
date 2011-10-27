@@ -61,6 +61,63 @@ import java.util.Set;
  * Handler for persistence requests for GAE/J datastore. Lifecycle management processes persists, updates, deletes
  * and field access and hands them off here to interface with the datastore.
  * No method in here should be called from anywhere other than DataNucleus core.
+ * <h3>Persistence Process</h3>
+ * Receive calls to the following from DataNucleus core for persistence events. All persistence events arrive in 
+ * the store plugin in the order they are performed by the user. Optimistic operations are queued until flush().
+ * <p>
+ * <b>PersistenceHandler.insertObject</b><br/>
+ * <ol>
+ * <li>CREATE Entity belonging to the appropriate entity group to represent the object.</li>
+ * 
+ * <li>If the entity is “owned” the entity group must be established before the Entity is initially put(),
+ * there is no way to adjust it after. So when persisting an Entity that is a child of some other Entity, you need to
+ * figure out who its parent is before you can do this first put.
+ * <ol>
+ * <li>Key 'id' can be assigned by datastore (long, Long)</li>
+ * <li>Key 'name' can be assigned by the application (or value-generator) (String)</li>
+ * </ol></li>
+ * 
+ * <li>Create StoreFieldManager, and set properties in Entity for all fields which have values ready.
+ * <ol>
+ * <li>If “identity” not set on this related object, make note of and skip relation fields.</li>
+ * <li>If related object is detached, note its field number</li>
+ * <li>If “identity” set on this related object, and related object not persistent, flush the related object(s) to 
+ * get their Key(s).</li>
+ * </ol></li>
+ * 
+ * <li>PUT the Entity in datastore</li>
+ * <li>Set any generated id back on the Entity</li>
+ * <li>If fields noted in step 3.1
+ * <ol>
+ * <li>Reuse StoreFieldManager from above, and process fields noted earlier.
+ * <ol>
+ * <li>Attach any detached related objects</li>
+ * <li>Persist and flush new related object(s), and add property(s) for relation fields to the Entity</li>
+ * </ol></li>
+ * <li>PUT the updated Entity in datastore</li>
+ * </ol></li>
+ * 
+ * </ol>
+ * </p>
+ * 
+ * <p>
+ * <b>PersistenceHandler.updateObject</b><br/>
+ * <ol>
+ * <li>GET Entity that represents the object</li>
+ * <li>Populate all updated fields that have values ready, forcing the flush of any relation fields that don't have 
+ * their id present, and attach any detached related objects</li>
+ * <li>PUT the updated Entity in datastore</li>
+ * </ol>
+ * </p>
+ *  
+ * <p>
+ * <b>PersistenceHandler.deleteObject</b><br/>
+ * <ol>
+ * <li>GET Entity that represents the object</li>
+ * <li>Handle any cascade deletion</li>
+ * <li>DELETE the Entity from datastore</li>
+ * </ol>
+ * </p>
  * 
  * @author Max Ross <maxr@google.com>
  * @author Andy Jefferson
