@@ -31,50 +31,50 @@ public class JDOTransactionOptionsTest extends JDOTestCase {
   public void testDefault() {
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
     TransactionOptions txnOpts = storeMgr.getDefaultDatastoreTransactionOptions();
-    assertFalse(txnOpts.allowsMultipleEntityGroups());
+    assertFalse(txnOpts.isXG());
   }
 
-  public void testAllowMultiEntityGroupTxns_Props() {
+  public void testIsXG_Props() {
     pm.close();
     pmf.close();
     Map<String, String> props = Utils.newHashMap();
-    props.put("datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions", Boolean.TRUE.toString());
+    props.put("datanucleus.appengine.datastoreEnableXGTransactions", Boolean.TRUE.toString());
     pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
     pm = pmf.getPersistenceManager();
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
     TransactionOptions txnOpts = storeMgr.getDefaultDatastoreTransactionOptions();
-    assertTrue(txnOpts.allowsMultipleEntityGroups());
+    assertTrue(txnOpts.isXG());
   }
 
-  public void testDisallowMultiEntityGroupTxns_Props() {
+  public void testIsNotXG_Props() {
     pm.close();
     pmf.close();
     Map<String, String> props = Utils.newHashMap();
-    props.put("datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions", Boolean.TRUE.toString());
+    props.put("datanucleus.appengine.datastoreEnableXGTransactions", Boolean.FALSE.toString());
     pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
     pm = pmf.getPersistenceManager();
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
     TransactionOptions txnOpts = storeMgr.getDefaultDatastoreTransactionOptions();
-    assertTrue(txnOpts.allowsMultipleEntityGroups());
+    assertFalse(txnOpts.isXG());
   }
 
-  public void testAllowMultiEntityGroupTxns_Config() {
+  public void testIsXG_Config() {
     pm.close();
     pmf.close();
-    pmf = JDOHelper.getPersistenceManagerFactory("allowMultiEgTxns");
+    pmf = JDOHelper.getPersistenceManagerFactory("allowXGTxns");
     pm = pmf.getPersistenceManager();
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
     TransactionOptions txnOpts = storeMgr.getDefaultDatastoreTransactionOptions();
-    assertTrue(txnOpts.allowsMultipleEntityGroups());
+    assertTrue(txnOpts.isXG());
   }
 
-  public void testDisallowMultiEntityGroupTxns_Config() {
+  public void testIsNotXG_Config() {
     pm.close();
     pmf.close();
-    pmf = JDOHelper.getPersistenceManagerFactory("disallowMultiEgTxns");
+    pmf = JDOHelper.getPersistenceManagerFactory("disallowXGTxns");
     pm = pmf.getPersistenceManager();
     DatastoreManager storeMgr = (DatastoreManager) getExecutionContext().getStoreManager();
     TransactionOptions txnOpts = storeMgr.getDefaultDatastoreTransactionOptions();
-    assertFalse(txnOpts.allowsMultipleEntityGroups());
+    assertFalse(txnOpts.isXG());
   }
 }

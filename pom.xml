@@ -11,6 +11,16 @@
     <packaging>jar</packaging>
     <version>2.0.0-beta</version>
 
+    <!--<repositories>-->
+        <!--<repository>-->
+            <!--<id>DataNucleus_2</id>-->
+            <!--<url>http://www.datanucleus.org/downloads/maven2</url>-->
+            <!--<snapshots>-->
+                <!--<enabled>true</enabled>-->
+            <!--</snapshots>-->
+        <!--</repository>-->
+    <!--</repositories>-->
+
     <pluginRepositories>
         <pluginRepository>
             <id>DataNucleus_2</id>
@@ -22,16 +32,27 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-1.0-sdk</artifactId>
-            <version>1.5.4</version>
+            <version>1.5.5</version>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
             <version>(2.9, )</version>
         </dependency>
+        <!--
+             Only needed for building the dist.  Can we pull it in just for the
+             assembly?
+        -->
+        <!--<dependency>-->
+          <!--<groupId>org.datanucleus</groupId>-->
+          <!--<artifactId>datanucleus-enhancer</artifactId>-->
+          <!--<version>(2.9, )</version>-->
+          <!--<scope>compile</scope>-->
+        <!--</dependency>-->
         <dependency>
             <groupId>javax.jdo</groupId>
             <artifactId>jdo-api</artifactId>
+            <!--<version>3.1-SNAPSHOT-20110926</version>-->
             <version>[3.0, 4.0)</version>
         </dependency>
         <dependency>
@@ -74,13 +95,13 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-stubs</artifactId>
-            <version>1.5.4</version>
+            <version>1.5.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-testing</artifactId>
-            <version>1.5.4</version>
+            <version>1.5.5</version>
             <scope>test</scope>
         </dependency>
         <!--dependency>

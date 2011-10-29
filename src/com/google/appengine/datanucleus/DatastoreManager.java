@@ -140,8 +140,8 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String DATASTORE_READ_CONSISTENCY_PROPERTY =
       "datanucleus.appengine.datastoreReadConsistency";
 
-  public static final String DATASTORE_ALLOW_MULTI_EG_TXNS_PROPERTY =
-      "datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions";
+  public static final String DATASTORE_ENABLE_XG_TXNS_PROPERTY =
+      "datanucleus.appengine.datastoreEnableXGTransactions";
 
   /**
    * The name of the extension that indicates the return value of the batch
@@ -641,9 +641,10 @@ public class DatastoreManager extends MappedStoreManager {
 
   private TransactionOptions createDatastoreTransactionOptionsPrototype(
       PersistenceConfiguration persistenceConfig) {
+//    return TransactionOptions.Builder.withXG(
     return TransactionOptions.Builder.allowMultipleEntityGroups(
-        persistenceConfig.getBooleanProperty(DATASTORE_ALLOW_MULTI_EG_TXNS_PROPERTY));
-  }
+        persistenceConfig.getBooleanProperty(DATASTORE_ENABLE_XG_TXNS_PROPERTY));
+    }
 
 
   // For testing
@@ -672,12 +673,10 @@ public class DatastoreManager extends MappedStoreManager {
   static TransactionOptions copyTransactionOptions(TransactionOptions txnOpts) {
     // Maintenance nightmare, use clone() once it's available in the sdk
     TransactionOptions options = TransactionOptions.Builder.withDefaults();
-    if (txnOpts.allowsMultipleEntityGroups() != null) {
-      if (txnOpts.allowsMultipleEntityGroups()) {
-        options.allowsMultipleEntityGroups();
-      } else {
-        options.clearMultipleEntityGroups();
-      }
+    if (txnOpts.isXG()) {
+      options.setXG(txnOpts.isXG());
+    } else {
+      options.clearXG();
     }
     return txnOpts;
   }

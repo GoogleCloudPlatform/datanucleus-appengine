@@ -91,23 +91,23 @@ limitations under the License.
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="allowMultiEgTxns">
+    <persistence-unit name="allowXGTxns">
         <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
-            <property name="datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions" value="true"/>
+            <property name="datanucleus.appengine.datastoreEnableXGTransactions" value="true"/>
         </properties>
     </persistence-unit>
 
-    <persistence-unit name="disallowMultiEgTxns">
+    <persistence-unit name="disallowXGTxns">
         <provider>org.datanucleus.api.jpa.PersistenceProviderImpl</provider>
         <properties>
             <property name="datanucleus.NontransactionalRead" value="true"/>
             <property name="datanucleus.NontransactionalWrite" value="true"/>
             <property name="datanucleus.ConnectionURL" value="appengine"/>
-            <property name="datanucleus.appengine.datastoreAllowMultiEntityGroupTransactions" value="false"/>
+            <property name="datanucleus.appengine.datastoreEnableXGTransactions" value="false"/>
         </properties>
     </persistence-unit>
 
