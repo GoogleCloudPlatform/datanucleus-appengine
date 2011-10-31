@@ -1,12 +1,26 @@
-package com.google.appengine.datanucleus.bugs.jdo;
+/**********************************************************************
+Copyright (c) 2011 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+**********************************************************************/
+package com.google.appengine.datanucleus.jdo;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.bugs.jdo.JDOBugTestCase;
-import com.google.appengine.datanucleus.bugs.test.Issue179Child;
-import com.google.appengine.datanucleus.bugs.test.Issue179Parent;
+import com.google.appengine.datanucleus.test.Issue179Child;
+import com.google.appengine.datanucleus.test.Issue179Parent;
 
-public class Issue179Test extends JDOBugTestCase {
+public class Issue179Test extends JDOTestCase {
 
   public void testListRemoveByIndex() {
     Issue179Parent p = new Issue179Parent();

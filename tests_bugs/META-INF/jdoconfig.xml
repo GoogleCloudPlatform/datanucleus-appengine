@@ -21,7 +21,6 @@ limitations under the License.
         <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
-        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
 		<property name="datanucleus.cache.level2.type" value="None"/>
     </persistence-manager-factory>
 
@@ -34,7 +33,6 @@ limitations under the License.
 		<property name="datanucleus.cache.level2.type" value="None"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
-        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
     </persistence-manager-factory>
 
     <persistence-manager-factory name="datastoreserviceconfigprops">
@@ -62,7 +60,6 @@ limitations under the License.
 		<property name="datanucleus.cache.level2.type" value="None"/>
         <property name="datanucleus.appengine.autoCreateDatastoreTxns" value="false"/>
         <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
-        <property name="datanucleus.appengine.storageVersion" value="WRITE_OWNED_CHILD_KEYS_TO_PARENTS"/>
     </persistence-manager-factory>
 
 </jdoconfig>
