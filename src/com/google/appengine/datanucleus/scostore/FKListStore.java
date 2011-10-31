@@ -947,15 +947,17 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // (embedded fields, overridden column names, etc.)
     List<Query.SortPredicate> sortPredicates = Utils.newArrayList();
     if (indexedList) {
+      // Order by the index column
       String propertyName = getIndexPropertyName();
-      // Order by the ordering column
       Query.SortPredicate sortPredicate =
           new Query.SortPredicate(propertyName, Query.SortDirection.ASCENDING);
       sortPredicates.add(sortPredicate);
     } else {
       for (OrderMetaData.FieldOrder fieldOrder : ownerMemberMetaData.getOrderMetaData().getFieldOrders()) {
-        String propertyName = fieldOrder.getFieldName();
-        boolean isPrimaryKey = isPrimaryKey(propertyName);
+        AbstractMemberMetaData orderMmd = 
+          ((DatastoreTable)elementTable).getClassMetaData().getMetaDataForMember(fieldOrder.getFieldName());
+        String orderPropName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), orderMmd);
+        boolean isPrimaryKey = orderMmd.isPrimaryKey();
         if (isPrimaryKey) {
           if (fieldOrder.isForward() && sortPredicates.isEmpty()) {
             // Don't even bother adding if the first sort is id ASC (this is the
@@ -963,10 +965,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
             break;
           }
           // sorting by id requires us to use a reserved property name
-          propertyName = Entity.KEY_RESERVED_PROPERTY;
+          orderPropName = Entity.KEY_RESERVED_PROPERTY;
         }
         Query.SortPredicate sortPredicate = new Query.SortPredicate(
-            propertyName, fieldOrder.isForward() ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING);
+            orderPropName, fieldOrder.isForward() ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING);
         sortPredicates.add(sortPredicate);
         if (isPrimaryKey) {
           // User wants to sort by pk.  Since pk is guaranteed to be unique, break
