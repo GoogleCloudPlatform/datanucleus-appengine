@@ -15,6 +15,11 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import java.util.Map;
+
+import com.google.appengine.datanucleus.StorageVersion;
+import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.test.UnownedJDOOneToOneUniSideA;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraints;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
@@ -60,6 +65,7 @@ import com.google.appengine.datanucleus.test.IllegalMappingsJDO.SequenceOnEncode
 import com.google.appengine.datanucleus.test.IllegalMappingsJDO.SequenceOnKeyPk;
 
 import javax.jdo.JDOFatalUserException;
+import javax.jdo.JDOHelper;
 import javax.jdo.Query;
 
 import org.datanucleus.metadata.InvalidMetaDataException;
@@ -291,6 +297,20 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     beginTxn();
     pm.makePersistent(new HasTwoOneToOnesWithSharedBaseClass());
     commitTxn();
+  }
+
+  /**
+   * Test that when we have unowned relations we must have storage version high enough.
+   */
+  public void testUnownedRelationWithV1StorageVersion() {
+    pm.close();
+    pmf.close();
+    Map<String, String> props = Utils.newHashMap();
+    props.put(StorageVersion.STORAGE_VERSION_PROPERTY, StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN.name());
+    pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
+    pm = pmf.getPersistenceManager();
+    UnownedJDOOneToOneUniSideA pojo = new UnownedJDOOneToOneUniSideA();
+    assertMetaDataException(pojo);
   }
 
   private void assertMetaDataException(Object pojo) {

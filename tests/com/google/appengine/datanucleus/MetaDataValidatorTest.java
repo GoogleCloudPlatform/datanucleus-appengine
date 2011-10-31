@@ -37,7 +37,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator((DatastoreManager) nucContext.getStoreManager(), mdm, null) {
       @Override
       void warn(String msg) {
         loggedMsg[0] = msg;
@@ -52,8 +52,9 @@ public class MetaDataValidatorTest extends JDOTestCase {
 
   public void testIgnorableMapping_NoneConfig() {
     setIgnorableMetaDataBehavior(MetaDataValidator.IgnorableMetaDataBehavior.NONE.name());
-    MetaDataManager mdm = ((JDOPersistenceManagerFactory)pmf).getNucleusContext().getMetaDataManager();
-    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
+    NucleusContext nucContext = ((JDOPersistenceManagerFactory)pmf).getNucleusContext();
+    MetaDataManager mdm = nucContext.getMetaDataManager();
+    MetaDataValidator mdv = new MetaDataValidator((DatastoreManager) nucContext.getStoreManager(), mdm, null) {
       @Override
       void warn(String msg) {
         fail("shouldn't have been called");
@@ -69,7 +70,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
     final String[] loggedMsg = {null};
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator((DatastoreManager) nucContext.getStoreManager(), mdm, null) {
       @Override
       void warn(String msg) {
         loggedMsg[0] = msg;
@@ -88,7 +89,7 @@ public class MetaDataValidatorTest extends JDOTestCase {
     MetaDataManager mdm = nucContext.getMetaDataManager();
     AbstractClassMetaData acmd =
         mdm.getMetaDataForClass(Flight.class, nucContext.getClassLoaderResolver(getClass().getClassLoader()));
-    MetaDataValidator mdv = new MetaDataValidator(mdm, null) {
+    MetaDataValidator mdv = new MetaDataValidator((DatastoreManager) nucContext.getStoreManager(), mdm, null) {
       @Override
       void warn(String msg) {
         fail("shouldn't have been called");

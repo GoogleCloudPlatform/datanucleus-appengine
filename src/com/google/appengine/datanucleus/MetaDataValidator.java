@@ -108,10 +108,12 @@ public class MetaDataValidator implements MetaDataListener {
   private static final String ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE =
       "datanucleus.appengine.allowMultipleRelationsOfSameType";
 
+  private final DatastoreManager storeMgr;
   private final MetaDataManager metaDataManager;
   private final ClassLoaderResolver clr;
 
-  public MetaDataValidator(MetaDataManager metaDataManager, ClassLoaderResolver clr) {
+  public MetaDataValidator(DatastoreManager storeMgr, MetaDataManager metaDataManager, ClassLoaderResolver clr) {
+    this.storeMgr = storeMgr;
     this.metaDataManager = metaDataManager;
     this.clr = clr;
   }
@@ -301,6 +303,12 @@ public class MetaDataValidator implements MetaDataListener {
       // since we can always fall back to "lazy."
       if (ammd.isDefaultFetchGroup() && !ammd.isEmbedded()) {
         handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
+      }
+
+      // Make sure the storage version is high enough for unowned relations
+      if (!MetaDataUtils.isOwnedRelation(ammd) && !storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.UnownedRelationWithInvalidStorageVersion",
+            ammd.getFullFieldName(), storeMgr.getStorageVersion(), StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS);
       }
 
       if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI) {

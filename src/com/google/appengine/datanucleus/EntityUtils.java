@@ -762,7 +762,7 @@ public final class EntityUtils {
         ((DatastoreManager)ec.getStoreManager()).getDatastoreClass(op.getClassMetaData().getFullClassName(),
           ec.getClassLoaderResolver());
       AbstractMemberMetaData parentField = table.getParentMappingMemberMetaData();
-      if (parentField != null) {
+      if (parentField != null && MetaDataUtils.isOwnedRelation(parentField)) {
         Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
         parentKey = parent == null ? null : EntityUtils.getKeyForObject(parent, ec);
       }
@@ -770,6 +770,7 @@ public final class EntityUtils {
 
     if (parentKey == null) {
       // Mechanism 3, use attach parent info from ExecutionContext
+      // TODO This will need a change to cater for unowned relations. How do we know which field is used?
       ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
       if (ownerOP != null) {
         Object parentPojo = ownerOP.getObject();

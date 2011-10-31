@@ -228,7 +228,7 @@ public class DatastoreManager extends MappedStoreManager {
     storageVersion = StorageVersion.fromStoreManager(this);
 
     // Add listener so we can check all metadata for unsupported features and required schema
-    metadataValidator = new MetaDataValidator(getMetaDataManager(), clr);
+    metadataValidator = new MetaDataValidator(this, getMetaDataManager(), clr);
 
     initialiseAutoStart(clr);
 

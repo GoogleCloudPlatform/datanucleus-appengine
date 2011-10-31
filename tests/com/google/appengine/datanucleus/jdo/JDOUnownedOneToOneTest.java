@@ -51,6 +51,32 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     assertEquals(bId, pm.getObjectId(b2));
   }
 
+  public void testPersistUniNewAExistingB() throws EntityNotFoundException {
+    // Persist B
+    UnownedJDOOneToOneUniSideB b = new UnownedJDOOneToOneUniSideB();
+    b.setName("Side B");
+    pm.makePersistent(b);
+    Object bId = pm.getObjectId(b);
+
+    // Persist A linked to B
+    UnownedJDOOneToOneUniSideA a = new UnownedJDOOneToOneUniSideA();
+    a.setName("Side A");
+    a.setOther(b);
+    pm.makePersistent(a);
+    Object aId = pm.getObjectId(a);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToOneUniSideA a2 = (UnownedJDOOneToOneUniSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    UnownedJDOOneToOneUniSideB b2 = a.getOther();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));
+  }
+
   public void testPersistBiNewBothFromOwner() throws EntityNotFoundException {
     // Persist A-B as unowned
     UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
@@ -64,6 +90,96 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
 
     Object aId = pm.getObjectId(a);
     Object bId = pm.getObjectId(b);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToOneBiSideA a2 = (UnownedJDOOneToOneBiSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    UnownedJDOOneToOneBiSideB b2 = a2.getOther();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testPersistBiNewAExistingB() throws EntityNotFoundException {
+    // Persist B
+    UnownedJDOOneToOneBiSideB b = new UnownedJDOOneToOneBiSideB();
+    b.setName("Side B");
+
+    pm.makePersistent(b);
+    Object bId = pm.getObjectId(b);
+
+    // Persist A-B as unowned
+    UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
+    a.setName("Side A");
+    a.setOther(b);
+    b.setOther(a);
+
+    pm.makePersistent(a);
+    Object aId = pm.getObjectId(a);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToOneBiSideA a2 = (UnownedJDOOneToOneBiSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    UnownedJDOOneToOneBiSideB b2 = a2.getOther();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testPersistBiExistingANewB() throws EntityNotFoundException {
+    // Persist A
+    UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
+    a.setName("Side A");
+
+    pm.makePersistent(a);
+    Object aId = pm.getObjectId(a);
+
+    // Persist A-B as unowned
+    UnownedJDOOneToOneBiSideB b = new UnownedJDOOneToOneBiSideB();
+    b.setName("Side B");
+    b.setOther(a);
+    a.setOther(b);
+
+    pm.makePersistent(b);
+    Object bId = pm.getObjectId(b);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToOneBiSideA a2 = (UnownedJDOOneToOneBiSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    UnownedJDOOneToOneBiSideB b2 = a2.getOther();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testPersistBiExistingAExistingB() throws EntityNotFoundException {
+    // Persist B
+    UnownedJDOOneToOneBiSideB b = new UnownedJDOOneToOneBiSideB();
+    b.setName("Side B");
+    pm.makePersistent(b);
+    Object bId = pm.getObjectId(b);
+
+    // Persist A
+    UnownedJDOOneToOneBiSideA a = new UnownedJDOOneToOneBiSideA();
+    a.setName("Side A");
+    pm.makePersistent(a);
+    Object aId = pm.getObjectId(a);
+
+    // Link A-B as unowned
+    a.setOther(b);
+    b.setOther(a);
+
+    // Force the commit of changes since DN updates not atomic
+    pm.makePersistent(a);
 
     pm.evictAll(); // Make sure we go to the datastore
 
