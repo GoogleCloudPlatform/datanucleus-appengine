@@ -65,6 +65,23 @@ import org.datanucleus.util.StringUtils;
  */
 public final class EntityUtils {
   /**
+   * Method to return the kind name for a class.
+   * @param idFactory IdentifierFactory
+   * @param cmd Metadata for the class
+   * @return The kind name to use in the datastore.
+   */
+  public static String getKindName(IdentifierFactory idFactory, AbstractClassMetaData cmd) {
+    String kindName = null;
+    if (cmd.getTable() != null) {
+      // User specified a table name as part of the mapping so use that as the kind.
+      kindName = cmd.getTable();
+    } else {
+      kindName = idFactory.newDatastoreContainerIdentifier(cmd).getIdentifierName();
+    }
+    return kindName;
+  }
+
+  /**
    * Method to return the property name to use for storing the specified member.
    * @param idFactory IdentifierFactory
    * @param ammd Metadata for the field/property

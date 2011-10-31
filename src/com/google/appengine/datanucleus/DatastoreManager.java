@@ -391,14 +391,8 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   private StoreData buildStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
-    String tableName;
-    if (cmd.getTable() != null) {
-      // User specified a table name as part of the mapping so use that as the kind.
-      tableName = cmd.getTable();
-    } else {
-      tableName = getIdentifierFactory().newDatastoreContainerIdentifier(cmd).getIdentifierName();
-    }
-    DatastoreTable table = new DatastoreTable(tableName, this, cmd, clr, dba);
+    String kindName = EntityUtils.getKindName(getIdentifierFactory(), cmd);
+    DatastoreTable table = new DatastoreTable(kindName, this, cmd, clr, dba);
     StoreData sd = new MappedStoreData(cmd, table, true);
     registerStoreData(sd);
     // needs to be called after we register the store data to avoid stack overflow
@@ -639,6 +633,7 @@ public class DatastoreManager extends MappedStoreManager {
     return datastoreServiceConfig;
   }
 
+  @SuppressWarnings("deprecation")
   private TransactionOptions createDatastoreTransactionOptionsPrototype(
       PersistenceConfiguration persistenceConfig) {
 //    return TransactionOptions.Builder.withXG(
