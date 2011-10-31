@@ -36,6 +36,7 @@ import org.datanucleus.store.scostore.SetStore;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
@@ -230,9 +231,21 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
   public Iterator iterator(ObjectProvider op) {
     ExecutionContext ec = op.getExecutionContext();
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
-      // Get child keys from field in owner Entity
-      return getChildrenFromParentField(op, ec, -1, -1).listIterator();
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      // Get child keys from property in owner Entity if the property exists
+      Entity datastoreEntity = getOwnerEntity(op);
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      if (datastoreEntity.hasProperty(propName)) {
+        return getChildrenFromParentField(op, ec, -1, -1).listIterator();
+      } else {
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
+          NucleusLogger.PERSISTENCE.info("Collection at field " + ownerMemberMetaData.getFullFieldName() + " of " + op +
+              " not yet migrated to latest storage version, so reading elements via the parent key");
+        }
+      }
+    }
+
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Get child keys by doing a query with the owner as the parent Entity
       ApiAdapter apiAdapter = ec.getApiAdapter();
       Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);

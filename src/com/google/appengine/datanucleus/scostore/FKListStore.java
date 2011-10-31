@@ -343,22 +343,27 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   protected ListIterator listIterator(ObjectProvider op, int startIdx, int endIdx) {
     ExecutionContext ec = op.getExecutionContext();
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
-      if (indexedList) {
-        return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
-      } else {
-        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
-          // Get child keys by doing a query with the owner as the parent Entity
-          ApiAdapter apiAdapter = ec.getApiAdapter();
-          Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
-          return getChildrenUsingParentQuery(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
-        } else {
+      // Get child keys from property in owner Entity if the property exists
+      Entity datastoreEntity = getOwnerEntity(op);
+      String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
+      if (datastoreEntity.hasProperty(propName)) {
+        if (indexedList) {
+          return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
+        } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
           throw new NucleusFatalUserException("Dont currently support ordered lists that are unowned");
+        } else {
+          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+            // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
+            NucleusLogger.PERSISTENCE.info("List at field " + ownerMemberMetaData.getFullFieldName() + " of " + op +
+                " not yet migrated to latest storage version, so reading elements via the parent key");
+          }
         }
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    }
+
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
       // Get child keys by doing a query with the owner as the parent Entity
-      ApiAdapter apiAdapter = ec.getApiAdapter();
-      Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);
+      Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op);
       return getChildrenUsingParentQuery(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
     } else {
       return Utils.newArrayList().listIterator();

@@ -1335,11 +1335,8 @@ public class DatastoreTable implements DatastoreClass {
       }
     }
     if (indexColumnName == null) {
-      // No name defined so generate one
-      indexColumnName = idFactory.newForeignKeyFieldIdentifier(
-          fmd, null, null,
-          storeMgr.getNucleusContext().getTypeManager().isDefaultEmbeddedType(indexType),
-          FieldRole.ROLE_INDEX);
+      // No index column name defined so generate one
+      indexColumnName = idFactory.newForeignKeyFieldIdentifier(fmd, null, null, true, FieldRole.ROLE_INDEX);
     }
 
     // if the relationship is in a base class with multiple subclasses, each

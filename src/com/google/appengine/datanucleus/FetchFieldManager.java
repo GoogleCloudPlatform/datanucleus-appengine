@@ -376,6 +376,12 @@ public class FetchFieldManager extends DatastoreFieldManager
             return null;
           }
         }
+      } else {
+        if (MetaDataUtils.isOwnedRelation(ammd)) {
+          // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
+          NucleusLogger.PERSISTENCE.info("Persistable object at field " + ammd.getFullFieldName() + " of " + op +
+          " not yet migrated to latest storage version, so reading the object via its parent key");
+        }
       }
     }
 
