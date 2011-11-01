@@ -477,16 +477,18 @@ public class DatastoreTable implements DatastoreClass {
         MetaDataManager mmgr = storeMgr.getMetaDataManager();
 
         // Manage the field if not already managed (may already exist if overriding a superclass field)
+        JavaTypeMapping mapping = null;
         if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
           boolean isPrimary = true;
           if (fmd.getTable() != null && fmd.getJoinMetaData() == null) {
-            // Field has a table specified and is not a 1-N with join table
-            // so is mapped to a secondary table
+            // Field has a table specified and is not a 1-N with join table so is mapped to a secondary table
             isPrimary = false;
           }
+
           if (isPrimary) {
             // Add the field to this table
-            addFieldMapping(dba.getMappingManager(storeMgr).getMapping(this, fmd, clr, FieldRole.ROLE_FIELD));
+            mapping = dba.getMappingManager(storeMgr).getMapping(this, fmd, clr, FieldRole.ROLE_FIELD);
+            addFieldMapping(mapping);
             embeddedFieldMappingsMap.put(fmd, fieldMappingsMap.get(fmd));
           } else {
             throw new UnsupportedOperationException("No support for secondary tables.");
@@ -517,8 +519,21 @@ public class DatastoreTable implements DatastoreClass {
           }
         } else if (relationType == Relation.MANY_TO_ONE_BI) {
           DatastoreTable dt = storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-          AbstractClassMetaData acmd = mmgr.getMetaDataForClass(fmd.getType(), clr);
-          dt.addOwningClassMetaData(fmd.getColumnMetaData()[0].getName(), acmd);
+          AbstractClassMetaData acmd = null;
+          if (fmd.getType().isInterface()) {
+            // Take first implementation
+            String[] fieldTypeImpls = mmgr.getClassesImplementingInterface(fmd.getTypeName(), clr);
+            acmd = mmgr.getMetaDataForClass(fieldTypeImpls[0], clr);
+          } else {
+            acmd = mmgr.getMetaDataForClass(fmd.getType(), clr);
+          }
+          String propertyName = null;
+          if (fmd.getColumnMetaData() != null && fmd.getColumnMetaData().length == 1) {
+            propertyName = fmd.getColumnMetaData()[0].getName();
+          } else {
+            propertyName = mapping.getDatastoreMapping(0).getDatastoreField().getIdentifier().getIdentifierName();
+          }
+          dt.addOwningClassMetaData(propertyName, acmd);
         }
 
         if (needsFKToContainerOwner) {

@@ -635,10 +635,29 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
           boolean owned = MetaDataUtils.isOwnedRelation(mmd);
-          if (!owned || !table.isParentKeyProvider(mmd)) {
-            if (owned) {
-              EntityUtils.checkParentage(relInfo.value, op);
+          int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
+          if (owned) {
+            // Owned relation
+            boolean owner = false;
+            if (relationType == Relation.ONE_TO_ONE_UNI || relationType == Relation.ONE_TO_MANY_UNI ||
+                relationType == Relation.ONE_TO_MANY_BI) {
+              owner = true;
+            } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null) {
+              owner = true;
             }
+
+            if (!table.isParentKeyProvider(mmd)) {
+              // Make sure the parent key is set properly between parent and child objects
+              if (!owner) {
+                ObjectProvider parentOP = ec.findObjectProvider(relInfo.value);
+                EntityUtils.checkParentage(op.getObject(), parentOP);
+              } else {
+                EntityUtils.checkParentage(relInfo.value, op);
+              }
+              mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
+            }
+          } else {
+            // Unowned relation
             mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
           }
         }
