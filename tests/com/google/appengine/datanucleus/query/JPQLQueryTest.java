@@ -95,6 +95,7 @@ import javax.persistence.NonUniqueResultException;
 import javax.persistence.PersistenceException;
 import javax.persistence.Query;
 import javax.persistence.QueryTimeoutException;
+import javax.persistence.TypedQuery;
 
 import static com.google.appengine.datanucleus.test.Flight.newFlightEntity;
 
@@ -1520,6 +1521,21 @@ public class JPQLQueryTest extends JPATestCase {
 
     q = em.createQuery("select Count(id) from " + Book.class.getName() + " c");
     assertEquals(2, q.getSingleResult());
+  }
+
+  public void testProjectionQueryTyped() {
+    Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
+    Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
+    ds.put(e1);
+    ds.put(e2);
+    TypedQuery<Integer> q = em.createQuery(
+        "select firstPublished from " + Book.class.getName() + " b ORDER BY firstPublished ASC", Integer.class);
+    List<Integer> result = q.getResultList();
+    Iterator<Integer> resultIter = result.iterator();
+    Integer first = resultIter.next();
+    Integer second = resultIter.next();
+    assertEquals(2003, first.intValue());
+    assertEquals(2004, second.intValue());
   }
 
   public void testCountQueryWithFilter() {

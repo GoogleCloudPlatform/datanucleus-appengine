@@ -67,7 +67,7 @@ class ProjectionResultTransformer implements Utils.Function<Entity, Object> {
     this.projectionAliases = projectionAliases;
     this.candidateAlias = candidateAlias;
     this.resultClass = resultClass;
-    if (resultClass != null) {
+    if (resultClass != null && !QueryUtils.resultClassIsSimple(resultClass.getName())) {
       populateDeclaredFieldsForUserType(resultClass, resultClassFieldsByName);
     }
   }
