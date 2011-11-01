@@ -13,7 +13,7 @@ import javax.servlet.http.HttpServletResponse;
 
 public class GetFlights extends HttpServlet {
 
-  private static final String DEFAULT_QUERY = "select from " + Flight.class.getName();
+  private static final String DEFAULT_QUERY = "select f from " + Flight.class.getName() + " as f";
 
   @Override
   protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws IOException {
