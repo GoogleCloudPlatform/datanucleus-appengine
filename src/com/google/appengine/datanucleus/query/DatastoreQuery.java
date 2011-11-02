@@ -881,9 +881,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * Recursively walks the given expression, adding filters to the given
-   * {@link Query} where appropriate.
-   *
+   * Recursively walks the given expression, adding filters to the given {@link Query} where appropriate.
    * @throws UnsupportedDatastoreOperatorException If we encounter an operator that we don't support.
    * @throws UnsupportedDatastoreFeatureException If the query uses a feature that we don't support.
    */
@@ -892,8 +890,7 @@ public class DatastoreQuery implements Serializable {
       return;
     }
     if (UNSUPPORTED_OPERATORS.contains(expr.getOperator())) {
-      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-          expr.getOperator());
+      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), expr.getOperator());
     }
     if (qd.isOrExpression) {
       if (expr.getOperator() != null && !expr.getOperator().equals(Expression.OP_EQ) && 
@@ -933,15 +930,15 @@ public class DatastoreQuery implements Serializable {
       addExpression(expr.getLeft(), qd);
       addExpression(expr.getRight(), qd);
     } else if (expr instanceof InvokeExpression) {
-      InvokeExpression invocation = ((InvokeExpression) expr);
-      if (invocation.getOperation().equals("contains") && invocation.getArguments().size() == 1) {
-        handleContainsOperation(invocation, expr, qd);
-      } else if (invocation.getOperation().equals("startsWith") && invocation.getArguments().size() == 1) {
-        handleStartsWithOperation(invocation, expr, qd);
-      } else if (invocation.getOperation().equals("matches") && invocation.getArguments().size() == 1) {
-        handleMatchesOperation(invocation, expr, qd);
+      InvokeExpression invokeExpr = ((InvokeExpression) expr);
+      if (invokeExpr.getOperation().equals("contains") && invokeExpr.getArguments().size() == 1) {
+        handleContainsOperation(invokeExpr, qd);
+      } else if (invokeExpr.getOperation().equals("startsWith") && invokeExpr.getArguments().size() == 1) {
+        handleStartsWithOperation(invokeExpr, qd);
+      } else if (invokeExpr.getOperation().equals("matches") && invokeExpr.getArguments().size() == 1) {
+        handleMatchesOperation(invokeExpr, qd);
       } else {
-        throw newUnsupportedQueryMethodException(invocation);
+        throw newUnsupportedQueryMethodException(invokeExpr);
       }
     } else if (expr instanceof VariableExpression) {
       // We usually end up with this when there's a field that can't be resolved
@@ -955,22 +952,36 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
-  private void handleMatchesOperation(InvokeExpression invocation, Expression expr,
-                                      QueryData qd) {
-    Expression param = (Expression) invocation.getArguments().get(0);
-    if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
-      String matchesExpr = getPrefixFromMatchesExpression(((Literal) param).getLiteral());
-      addPrefix((PrimaryExpression) expr.getLeft(), new Literal(matchesExpr), matchesExpr, qd);
-    } else if (expr.getLeft() instanceof PrimaryExpression &&
-               param instanceof ParameterExpression) {
-      ParameterExpression parameterExpression = (ParameterExpression) param;
-      Object parameterValue = getParameterValue(qd, parameterExpression);
-      String matchesExpr = getPrefixFromMatchesExpression(parameterValue);
-      addPrefix((PrimaryExpression) expr.getLeft(), new Literal(matchesExpr), matchesExpr, qd);
-    } else {
-      // We don't know what this is.
-      throw newUnsupportedQueryMethodException(invocation);
+  private void handleMatchesOperation(InvokeExpression invokeExpr, QueryData qd) {
+    Expression param = (Expression) invokeExpr.getArguments().get(0);
+    if (invokeExpr.getLeft() instanceof PrimaryExpression) {
+      PrimaryExpression leftExpr = (PrimaryExpression)invokeExpr.getLeft();
+
+      // Make sure that the left expression is a String
+      List<String> tuples = getTuples(leftExpr, qd.compilation.getCandidateAlias());
+      if (tuples.size() == 1) {
+        // Handle case of simple field name
+        AbstractMemberMetaData mmd = qd.acmd.getMetaDataForMember(tuples.get(0));
+        if (mmd != null && !String.class.isAssignableFrom(mmd.getType())) {
+          throw new UnsupportedDatastoreFeatureException("The 'matches' method is only for use with a String expression");
+        }
+      }
+
+      if (param instanceof Literal) {
+        String matchesExpr = getPrefixFromMatchesExpression(((Literal) param).getLiteral());
+        addPrefix(leftExpr, new Literal(matchesExpr), matchesExpr, qd);
+        return;
+      } else if (param instanceof ParameterExpression) {
+        ParameterExpression parameterExpression = (ParameterExpression) param;
+        Object parameterValue = getParameterValue(qd, parameterExpression);
+        String matchesExpr = getPrefixFromMatchesExpression(parameterValue);
+        addPrefix(leftExpr, new Literal(matchesExpr), matchesExpr, qd);
+        return;
+      }
     }
+
+    // We don't know what this is.
+    throw newUnsupportedQueryMethodException(invokeExpr);
   }
 
   private String getPrefixFromMatchesExpression(Object matchesExprObj) {
@@ -1009,39 +1020,61 @@ public class DatastoreQuery implements Serializable {
    * We fulfill startsWith by adding a >= filter for the method argument and a
    * < filter for the method argument translated into an upper limit for the scan.
    */
-  private void handleStartsWithOperation(InvokeExpression invocation, Expression expr,
-                                         QueryData qd) {
-    Expression param = (Expression) invocation.getArguments().get(0);
+  private void handleStartsWithOperation(InvokeExpression invokeExpr, QueryData qd) {
+    Expression param = (Expression) invokeExpr.getArguments().get(0);
     param.bind(getSymbolTable());
-    if (expr.getLeft() instanceof PrimaryExpression && param instanceof Literal) {
-      addPrefix((PrimaryExpression) expr.getLeft(), param, (String) ((Literal) param).getLiteral(), qd);
-    } else if (expr.getLeft() instanceof PrimaryExpression &&
-               param instanceof ParameterExpression) {
-      Object parameterValue = getParameterValue(qd, (ParameterExpression) param);
-      addPrefix((PrimaryExpression) expr.getLeft(), param, (String) parameterValue, qd);
-    } else {
-      // We don't know what this is.
-      throw newUnsupportedQueryMethodException(invocation);
+
+    if (invokeExpr.getLeft() instanceof PrimaryExpression) {
+      PrimaryExpression left = (PrimaryExpression) invokeExpr.getLeft();
+
+      // Make sure that the left expression is a String
+      List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
+      if (tuples.size() == 1) {
+        // Handle case of simple field name
+        AbstractMemberMetaData mmd = qd.acmd.getMetaDataForMember(tuples.get(0));
+        if (mmd != null && !String.class.isAssignableFrom(mmd.getType())) {
+          throw new UnsupportedDatastoreFeatureException("The 'startsWith' method is only for use with a String expression");
+        }
+      }
+
+      if (param instanceof Literal) {
+        addPrefix(left, param, (String) ((Literal) param).getLiteral(), qd);
+        return;
+      } else if (param instanceof ParameterExpression) {
+        Object parameterValue = getParameterValue(qd, (ParameterExpression) param);
+        addPrefix(left, param, (String) parameterValue, qd);
+        return;
+      }
     }
+
+    // Unsupported combination
+    throw newUnsupportedQueryMethodException(invokeExpr);
   }
 
-  private void handleContainsOperation(InvokeExpression invocation, Expression expr, QueryData qd) {
-    Expression param = (Expression) invocation.getArguments().get(0);
+  private void handleContainsOperation(InvokeExpression invokeExpr, QueryData qd) {
+    Expression param = (Expression) invokeExpr.getArguments().get(0);
     param.bind(getSymbolTable());
-    if (expr.getLeft() instanceof PrimaryExpression) {
-      PrimaryExpression left = (PrimaryExpression) expr.getLeft();
-      // treat contains as equality since that's how the low-level api does checks on multi-value properties.
-      // TODO This is simply wrong and needs removing. If wanting to support GQL then provide a GQL converter
-      // through the API. JDOQL is not for "syntax adaptation"
 
-      // TODO(maxr): Validate that the lhs of contains is a Collection of some sort.
+    if (invokeExpr.getLeft() instanceof PrimaryExpression) {
+      PrimaryExpression left = (PrimaryExpression) invokeExpr.getLeft();
+
+      // Make sure that the left expression is a collection
+      List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
+      if (tuples.size() == 1) {
+        // Handle case of simple field name
+        AbstractMemberMetaData mmd = qd.acmd.getMetaDataForMember(tuples.get(0));
+        if (mmd != null && !Collection.class.isAssignableFrom(mmd.getType())) {
+          throw new UnsupportedDatastoreFeatureException("The 'contains' method is only for use with a Collection expression");
+        }
+      }
+
+      // treat contains as equality since that's how the low-level api does checks on multi-value properties.
       addLeftPrimaryExpression(left, Expression.OP_EQ, param, qd);
-    } else if (expr.getLeft() instanceof ParameterExpression &&
-               param instanceof PrimaryExpression) {
-      ParameterExpression pe = (ParameterExpression) expr.getLeft();
+    } else if (invokeExpr.getLeft() instanceof ParameterExpression && param instanceof PrimaryExpression) {
+      ParameterExpression pe = (ParameterExpression) invokeExpr.getLeft();
       addLeftPrimaryExpression((PrimaryExpression) param, Expression.OP_EQ, pe, qd);
     } else {
-      throw newUnsupportedQueryMethodException(invocation);
+      throw newUnsupportedQueryMethodException(invokeExpr);
     }
   }
 

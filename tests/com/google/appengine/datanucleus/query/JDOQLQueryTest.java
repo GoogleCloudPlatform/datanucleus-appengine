@@ -885,6 +885,21 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(2).getId());
   }
 
+  public void testContainsOnlyForCollection() {
+    Entity e = Flight.newFlightEntity("name1", "bos1", "mia1", 23, 24);
+    Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
+    Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
+    ds.put(null, Arrays.asList(e, e2, e3));
+
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.contains(:param)");
+      q.execute("na");
+      fail("Should have thrown an exception when invoking 'contains' on a String");
+    } catch (JDOUserException ue) {
+      // Expected
+    }
+  }
+
   public void testMultipleIn_Params() {
     Entity e = Flight.newFlightEntity("name1", "mia1", "bos1", 23, 24);
     Entity e2 = Flight.newFlightEntity("name2", "mia2", "bos2", 25, 26);
@@ -2753,6 +2768,23 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     List<Flight> flights3 = (List<Flight>) q.execute("za");
     assertTrue(flights3.isEmpty());
+  }
+
+  public void testStartsWithOnlyOnString() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ds.put(null, e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ds.put(null, e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ds.put(null, e3);
+
+    try {
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " where flightNumber.startsWith(\"y\")");
+      q.execute();
+      fail("Should have thrown an exception when invoking 'int.startsWith' but didn't");
+    } catch (JDOUserException ue) {
+      // Expected
+    }
   }
 
   public void testMatches_ImplicitParam() {
