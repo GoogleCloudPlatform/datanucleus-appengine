@@ -121,6 +121,10 @@ public abstract class AbstractFKStore {
       throw new NucleusUserException(LOCALISER.msg("056003", element_class.getName(), ownerMemberMetaData.getFullFieldName()));
     }
     elementTable = this.storeMgr.getDatastoreClass(elementCmd.getFullClassName(), clr);
+    if (elementTable == null) {
+      throw new UnsupportedOperationException("Field " + ownerMemberMetaData.getFullFieldName() + " is collection of elements of type " +
+          elementCmd.getFullClassName() + " but this has no table of its own!");
+    }
 
     // Get the field in the element table (if any)
     String mappedByFieldName = ownerMemberMetaData.getMappedBy();
