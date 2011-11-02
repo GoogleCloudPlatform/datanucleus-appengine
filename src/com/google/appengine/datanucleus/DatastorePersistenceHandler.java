@@ -353,6 +353,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         EntityUtils.putEntityIntoDatastore(putState.op.getExecutionContext(), putState.entity);
       }
 
+      putState.op.replaceAllLoadedSCOFieldsWithWrappers();
+
       if (storeMgr.getRuntimeManager() != null) {
         storeMgr.getRuntimeManager().incrementInsertCount();
       }
@@ -410,6 +412,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // PUT Entity into datastore
     DatastoreTransaction txn = EntityUtils.putEntityIntoDatastore(ec, entity);
     op.setAssociatedValue(txn, entity);
+
+    op.replaceAllLoadedSCOFieldsWithWrappers();
 
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 

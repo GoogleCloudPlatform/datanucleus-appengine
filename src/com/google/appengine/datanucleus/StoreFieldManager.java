@@ -177,20 +177,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     } else if (MetaDataUtils.isPKIdField(getClassMetaData(), fieldNumber)) {
       storePKIdField(fieldNumber, value);
     } else {
-      ClassLoaderResolver clr = getClassLoaderResolver();
-      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      int relationType = ammd.getRelationType(clr);
-
       storeFieldInEntity(fieldNumber, value);
-
-      if (!(value instanceof SCO)) {
-        // TODO Wrap SCO fields, remove the relation check so it applies to all. See Issue 144
-        // This is currently not done since the elements may not be persisted at this point and the test classes
-        // rely on "id" being set for hashCode/equals to work. Fix the persistence process first
-        if (relationType == Relation.NONE) {
-          getObjectProvider().wrapSCOField(fieldNumber, value, false, false, true);
-        }
-      }
     }
   }
 
