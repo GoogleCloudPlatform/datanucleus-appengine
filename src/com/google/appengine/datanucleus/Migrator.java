@@ -78,6 +78,28 @@ public class Migrator {
   }
 
   /**
+   * Method to migrate all entities for the specified classes to having child keys stored in the parent.
+   * @param classNames Name of the classes (fully qualified)
+   */
+  public static void migrateClasses(String[] classNames) {
+
+    if (classNames != null && classNames.length > 0) {
+      NucleusContext nucleusCtx = new NucleusContext("JDO", null);
+      PersistenceConfiguration propConfig = nucleusCtx.getPersistenceConfiguration();
+
+      Properties props = new Properties();
+      props.setProperty("datanucleus.ConnectionURL", "appengine");
+      propConfig.setPersistenceProperties(props);
+
+      for (int i=0;i<classNames.length;i++) {
+        migrateClass(classNames[i], nucleusCtx);
+      }
+
+      nucleusCtx.close();
+    }
+  }
+
+  /**
    * Method to migrate all entities for the specified class to having child keys stored in the parent.
    * @param className Name of the class (fully qualified)
    * @param nucCtx Nucleus Context
