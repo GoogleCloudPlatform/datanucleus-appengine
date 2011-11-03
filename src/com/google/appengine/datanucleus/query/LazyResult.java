@@ -22,6 +22,7 @@ import com.google.appengine.datanucleus.Utils.Function;
 
 import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
@@ -55,17 +56,20 @@ class LazyResult<T> implements Iterable<T> {
    */
   private final ArrayList<T> resolvedPojos = Utils.newArrayList();
 
+  /** List of the Keys of the entities in this result (used when caching the results). */
+  private final List<Object> resultKeys;
+
   /**
-   * Constructs a StreamingQueryResult
-   *
+   * Constructor for a lazy result.
    * @param lazyEntities The result of the query.
-   * @param entityTransformer A function that can convert a {@link Entity}
-   * into a pojo.
+   * @param entityTransformer A function that can convert a {@link Entity} into a pojo.
+   * @param cacheKeys Whether we should cache the Keys of the entities, to be used later caching the query results
    */
   public LazyResult(Iterable<Entity> lazyEntities,
-      Function<Entity, T> entityTransformer) {
+      Function<Entity, T> entityTransformer, boolean cacheKeys) {
     this.lazyEntityIterator = lazyEntities.iterator();
     this.entityTransformer = entityTransformer;
+    this.resultKeys = (cacheKeys ? new ArrayList() : null);
   }
 
   T get(int index) {
@@ -75,23 +79,24 @@ class LazyResult<T> implements Iterable<T> {
     // at the requested index.
     if (index >= resolvedPojos.size() && lazyEntityIterator.hasNext()) {
       // Stop resolving if the iterator doesn't have any more data.
-      // This means we may stop before we get to the requested index, but
-      // that's ok.
+      // This means we may stop before we get to the requested index, but that's ok.
       for (int i = resolvedPojos.size(); i <= index && lazyEntityIterator.hasNext(); i++) {
         resolveNext();
       }
     }
-    // If the index is out of range we'll get an exception, and that's
-    // fine.  This is consistent with the List interface.
+    // If the index is out of range we'll get an exception, and that's fine. Consistent with the List interface.
     return resolvedPojos.get(index);
   }
 
   /**
-   * @throws java.util.NoSuchElementException if there are no more elements
-   * to resolve.
+   * @throws java.util.NoSuchElementException if there are no more elements to resolve.
    */
   void resolveNext() {
-    resolvedPojos.add(entityTransformer.apply(lazyEntityIterator.next()));
+    Entity entity = lazyEntityIterator.next();
+    resolvedPojos.add(entityTransformer.apply(entity));
+    if (resultKeys != null) {
+      resultKeys.add(entity.getKey());
+    }
   }
 
   public Iterator<T> iterator() {
@@ -115,6 +120,15 @@ class LazyResult<T> implements Iterable<T> {
     while (lazyEntityIterator.hasNext()) {
       resolveNext();
     }
+  }
+
+  /**
+   * Accessor for the result keys.
+   * Will be null if you set "cacheKeys" as false on construction.
+   * @return Entity keys
+   */
+  public List getEntityKeys() {
+    return resultKeys;
   }
 
   /**

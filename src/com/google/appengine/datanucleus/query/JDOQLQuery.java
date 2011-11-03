@@ -29,6 +29,8 @@ import org.datanucleus.store.Extent;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.query.AbstractJDOQLQuery;
+import org.datanucleus.store.query.CandidateIdsQueryResult;
+import org.datanucleus.store.query.Query;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
@@ -108,21 +110,29 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
         NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery(), null));
     }
 
+    if (candidateCollection == null && candidateExtent == null && 
+        type == Query.SELECT && resultClass == null && result == null) {
+      // Check for cached query results
+      List<Object> cachedResults = getQueryManager().getDatastoreQueryResult(this, parameters);
+      if (cachedResults != null) {
+        // Query results are cached, so return those
+        return new CandidateIdsQueryResult(this, cachedResults);
+      }
+    }
+
     Object results = null;
     if (evaluateInMemory()) {
         // Evaluating in-memory so build up list of candidates
         List candidates = null;
         if (candidateCollection != null) {
-            candidates = new ArrayList(candidateCollection);
-        }
-        else if (candidateExtent != null) {
+          candidates = new ArrayList(candidateCollection);
+        } else if (candidateExtent != null) {
           candidates = new ArrayList();
           Iterator iter = candidateExtent.iterator();
           while (iter.hasNext()) {
             candidates.add(iter.next());
           }
-        }
-        else {
+        } else {
           Extent ext = getStoreManager().getExtent(ec, candidateClass, subclasses);
           candidates = new ArrayList();
           Iterator iter = ext.iterator();
@@ -139,11 +149,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     else {
       // Evaluate in-datastore
       ManagedConnection mconn = getStoreManager().getConnection(ec);
-      try {
-        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
-      } finally {
-//        mconn.release();
-      }
+      results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {

@@ -40,9 +40,7 @@ import javax.jdo.JDOUserException;
  */
 class StreamingQueryResult extends AbstractQueryResult {
 
-  /**
-   * We'll delegate as much as we can to this.
-   */
+  /** Delegate for lazy loading of results. */
   private final LazyResult<Object> lazyResult;
 
   private boolean loadResultsAtCommit = true;
@@ -61,7 +59,7 @@ class StreamingQueryResult extends AbstractQueryResult {
   public StreamingQueryResult(Query query, Iterable<Entity> lazyEntities,
       Function<Entity, Object> entityToPojoFunc, Cursor endCursor) {
     super(query);
-    this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc);
+    this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc, query.useResultsCaching());
     this.endCursor = endCursor;
   }
 
@@ -84,12 +82,26 @@ class StreamingQueryResult extends AbstractQueryResult {
           NucleusLogger.QUERY.warn("Exception thrown while loading remaining rows of query : " + ue.getMessage());
         }
       }
+
+      // Cache the query results (if required)
+      cacheQueryResults();
     }
   }
 
   @Override
   protected void closeResults() {
-    // Do we need to actually close anything?
+    // Cache the query results (if required)
+    cacheQueryResults();
+  }
+
+  /**
+   * Method to cache the results (List of the Entity keys) if it has been requested. 
+   */
+  protected void cacheQueryResults() {
+    if (query.useResultsCaching()) {
+      lazyResult.resolveAll();
+      query.getQueryManager().addDatastoreQueryResult(query, query.getInputParameters(), lazyResult.getEntityKeys());
+    }
   }
 
   @Override

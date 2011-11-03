@@ -71,8 +71,10 @@ import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
 
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.api.jdo.JDOQuery;
 import org.datanucleus.query.expression.Expression;
+import org.datanucleus.store.query.cache.QueryResultsCache;
 
 import org.easymock.EasyMock;
 
@@ -233,10 +235,49 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(query);
     q.addExtension("datanucleus.query.evaluateInMemory", "true");
     try {
-       List<Flight> results = (List<Flight>) q.execute();
-       Assert.assertEquals("Number of results was wrong", 2, results.size());
+      List<Flight> results = (List<Flight>) q.execute();
+      Assert.assertEquals("Number of results was wrong", 2, results.size());
     } catch (JDOException jdoe) {
       fail("Threw exception when evaluating query in-memory, but should have run");
+    }
+  }
+
+  public void testCacheQueryResults() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 1, 2));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    QueryResultsCache cache = null;
+    try {
+      String query = "SELECT FROM " + Flight.class.getName();
+      Query q = pm.newQuery(query);
+      q.addExtension("datanucleus.query.results.cached", "true");
+      try {
+        List<Flight> results = (List<Flight>) q.execute();
+        Assert.assertEquals("Number of results was wrong", 2, results.size());
+      } catch (JDOException jdoe) {
+        fail("Threw exception when evaluating query and caching results : " + jdoe.getMessage());
+      }
+      q.closeAll();
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+      pm.close();
+      cache = 
+        ((JDOPersistenceManagerFactory)pmf).getNucleusContext().getStoreManager().getQueryManager().getQueryResultsCache();
+      assertEquals("Number of entries in the query results cache is wrong", 1, cache.size());
+
+      pm = pmf.getPersistenceManager();
+      Query q2 = pm.newQuery(query);
+      try {
+        List<Flight> results = (List<Flight>) q2.execute();
+        Assert.assertEquals("Number of results was wrong", 2, results.size());
+      } catch (JDOException jdoe) {
+        fail("Threw exception when evaluating query with cached results : " + jdoe.getMessage());
+      }
+      q2.closeAll();
+    } finally {
+      // Evict the cached results
+      cache.evictAll();
     }
   }
 

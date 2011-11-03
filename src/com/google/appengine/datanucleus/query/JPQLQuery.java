@@ -30,6 +30,7 @@ import org.datanucleus.store.Extent;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.query.AbstractJPQLQuery;
+import org.datanucleus.store.query.CandidateIdsQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.query.QueryInvalidParametersException;
 import org.datanucleus.util.NucleusLogger;
@@ -119,6 +120,16 @@ public class JPQLQuery extends AbstractJPQLQuery {
       throw new NucleusException("JPQL Bulk UPDATE is not yet supported");
     }
 
+    if (candidateCollection == null && candidateExtent == null && 
+        type == Query.SELECT && resultClass == null && result == null) {
+      // Check for cached query results
+      List<Object> cachedResults = getQueryManager().getDatastoreQueryResult(this, parameters);
+      if (cachedResults != null) {
+        // Query results are cached, so return those
+        return new CandidateIdsQueryResult(this, cachedResults);
+      }
+    }
+
     Object results = null;
     if (evaluateInMemory()) {
       // Evaluating in-memory so build up list of candidates
@@ -150,11 +161,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
     else {
       // Evaluate in-datastore
       ManagedConnection mconn = getStoreManager().getConnection(ec);
-      try {
-        results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, false);
-      } finally {
-//        mconn.release();
-      }
+      results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, false);
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {

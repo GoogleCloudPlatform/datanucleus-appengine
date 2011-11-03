@@ -25,26 +25,21 @@ import java.util.ListIterator;
 import java.util.NoSuchElementException;
 
 /**
- * An {@link AbstractList} implementation that streams merge join entity
- * results.
+ * An {@link AbstractList} implementation that streams merge join entity results.
  *
  * @author Max Ross <maxr@google.com>
  */
 class StreamingMergeJoinResult extends AbstractList<Entity> {
 
-
-  /**
-   * We'll delegate to this as much as possible.
-   */
+  /** Delegate for lazy loading of results. */
   private final LazyResult<Entity> lazyResult;
 
   /**
-   * Constructs a StreamingQueryResult
-   *
+   * Constructs a StreamingMergeJoinResult.
    * @param lazyEntities The result of the query.
    */
   public StreamingMergeJoinResult(Iterable<Entity> lazyEntities) {
-    this.lazyResult = new LazyResult<Entity>(lazyEntities, Utils.<Entity>identity());
+    this.lazyResult = new LazyResult<Entity>(lazyEntities, Utils.<Entity>identity(), false);
   }
 
   @Override

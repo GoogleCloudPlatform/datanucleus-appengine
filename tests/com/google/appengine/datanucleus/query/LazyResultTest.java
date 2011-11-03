@@ -31,8 +31,8 @@ import java.util.ListIterator;
 public class LazyResultTest extends DatastoreTestCase {
 
   public void testEquality() {
-    LazyResult lr1 = new LazyResult<Object>(Collections.<Entity>emptyList(), null);
-    LazyResult lr2 = new LazyResult<Object>(Collections.<Entity>emptyList(), null);
+    LazyResult lr1 = new LazyResult<Object>(Collections.<Entity>emptyList(), null, false);
+    LazyResult lr2 = new LazyResult<Object>(Collections.<Entity>emptyList(), null, false);
     assertTrue(lr1.equals(lr1));
     assertFalse(lr1.equals(lr2));
   }
@@ -79,18 +79,18 @@ public class LazyResultTest extends DatastoreTestCase {
 
   public void testSize_FreshIterator() {
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     assertEquals(0, lr.size());
     assertEquals(0, iterable.nextCount);
 
     Entity e = null;
     iterable = new CountingIterable(Utils.newArrayList(e));
-    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     assertEquals(1, lr.size());
     assertEquals(1, iterable.nextCount);
 
     iterable = new CountingIterable(Utils.newArrayList(e, e));
-    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     assertEquals(2, lr.size());
     assertEquals(2, iterable.nextCount);
   }
@@ -98,7 +98,7 @@ public class LazyResultTest extends DatastoreTestCase {
   public void testSize_PartiallyConsumedIterator() {
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e, e));
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     lr.resolveNext();
     assertEquals(1, iterable.nextCount);
     assertEquals(3, lr.size());
@@ -108,7 +108,7 @@ public class LazyResultTest extends DatastoreTestCase {
   public void testSize_ExhaustedIterator() {
     Entity e = null;
     CountingIterable iterable = new CountingIterable(Utils.newArrayList(e, e));
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     lr.resolveNext();
     lr.resolveNext();
     assertEquals(2, iterable.nextCount);
@@ -118,7 +118,7 @@ public class LazyResultTest extends DatastoreTestCase {
 
   public void testGet_FreshIterator() {
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     try {
       lr.get(0);
       fail("expected index out of bounds exception");
@@ -130,7 +130,7 @@ public class LazyResultTest extends DatastoreTestCase {
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     iterable = new CountingIterable(Utils.newArrayList(e1, e2));
-    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     assertEquals(e1, lr.get(0));
     assertEquals(1, iterable.nextCount);
     assertEquals(e2, lr.get(1));
@@ -149,7 +149,7 @@ public class LazyResultTest extends DatastoreTestCase {
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     lr.resolveNext();
     assertEquals(1, iterable.nextCount);
     assertEquals(e1, lr.get(0));
@@ -170,7 +170,7 @@ public class LazyResultTest extends DatastoreTestCase {
     Entity e1 = new Entity("yar");
     Entity e2 = new Entity("yar");
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     lr.resolveNext();
     lr.resolveNext();
     assertEquals(2, iterable.nextCount);
@@ -192,7 +192,7 @@ public class LazyResultTest extends DatastoreTestCase {
   // delegates to listIterator()
   public void testListIterator() {
     CountingIterable iterable = new CountingIterable(Utils.<Entity>newArrayList());
-    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    LazyResult lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     assertFalse(lr.listIterator().hasNext());
 
     Entity e1 = new Entity("yar1");
@@ -200,7 +200,7 @@ public class LazyResultTest extends DatastoreTestCase {
     Entity e3 = new Entity("yar3");
     Entity e4 = new Entity("yar4");
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2, e3, e4));
-    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
 
     ListIterator listIter = lr.listIterator();
     assertTrue(listIter.hasNext());
@@ -267,7 +267,7 @@ public class LazyResultTest extends DatastoreTestCase {
     assertFalse(listIter.hasNext());
 
     iterable = new CountingIterable(Utils.<Entity>newArrayList(e1, e2));
-    lr = new LazyResult<Object>(iterable, NULL_FUNC);
+    lr = new LazyResult<Object>(iterable, NULL_FUNC, false);
     listIter = lr.listIterator();
     assertTrue(listIter.hasNext());
     assertEquals(e1, listIter.next());
