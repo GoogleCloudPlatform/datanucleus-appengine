@@ -1,12 +1,11 @@
-package com.google.appengine.datanucleus.bugs.jdo;
+package com.google.appengine.datanucleus.jdo;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.bugs.jdo.JDOBugTestCase;
-import com.google.appengine.datanucleus.bugs.test.Issue207Child;
-import com.google.appengine.datanucleus.bugs.test.Issue207Parent;
+import com.google.appengine.datanucleus.test.Issue207Child;
+import com.google.appengine.datanucleus.test.Issue207Parent;
 
-public class Issue207Test extends JDOBugTestCase {
+public class Issue207Test extends JDOTestCase {
 
   public void testOneToManyInterface() {
     Issue207Parent parent = new Issue207Parent("The parent");

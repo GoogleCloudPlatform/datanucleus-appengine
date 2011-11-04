@@ -1,4 +1,4 @@
-package com.google.appengine.datanucleus.bugs.test;
+package com.google.appengine.datanucleus.test;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -21,7 +21,7 @@ public class Issue207Parent implements Issue207ParentInterface {
 
   @Persistent(mappedBy="parent") 
   @Extension(vendorName = "datanucleus", key = "implementation-classes", 
-      value = "com.google.appengine.datanucleus.bugs.test.Issue207Child")
+      value = "com.google.appengine.datanucleus.test.Issue207Child")
   private Set<Issue207ChildInterface> children = new HashSet<Issue207ChildInterface>();
 
   public Issue207Parent(String name) {

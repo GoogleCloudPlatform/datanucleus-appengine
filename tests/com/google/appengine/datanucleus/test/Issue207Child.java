@@ -1,4 +1,4 @@
-package com.google.appengine.datanucleus.bugs.test;
+package com.google.appengine.datanucleus.test;
 
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -15,7 +15,7 @@ public class Issue207Child implements Issue207ChildInterface {
 
   String name;
 
-  @Persistent
+  @Persistent(types=Issue207Parent.class)
   Issue207ParentInterface parent;
 
   public Issue207Child(String name) {
