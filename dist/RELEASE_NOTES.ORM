@@ -37,6 +37,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=103
 - Add support for pks of type long
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=109
 
+- Raise exception when lhs of contains is not a collection.
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=118
+
 - If connection was obtained when non-transactional, start of a transaction
 doesn't enlist the connection in the transaction.
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=121
@@ -56,6 +59,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=141
 
 - Cannot delete detached object outside a txn (JPA)
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=142
+
+- makePersistent does not wrap ArrayList with SCO wrapper.
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=144
 
 - datanucleus.DetachAllOnCommit doesn't work properly
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=151
@@ -137,6 +143,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=239
 - Support persistence of URL, URI, UUID, Color, Point, StringBuffer, TimeZone,
 Currency, Locale, BigInteger, BitSet, jodatime, javax.time
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=241
+
+- Support for query result cache
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=252
 
 - Support relationships using a field in the owner containing child keys
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=253
