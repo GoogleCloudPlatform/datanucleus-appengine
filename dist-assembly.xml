@@ -7,6 +7,7 @@
     </formats>    
     <baseDirectory>/</baseDirectory>
     <dependencySets>
+        <!--legacy-->
         <dependencySet>
             <outputDirectory>lib/tools/orm</outputDirectory>
             <useProjectArtifact>true</useProjectArtifact>
@@ -20,6 +21,30 @@
         </dependencySet>
         <dependencySet>
             <outputDirectory>lib/user/orm</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>runtime</scope>
+            <excludes>
+                <exclude>log4j:log4j</exclude>
+                <exclude>com.google.appengine:appengine-api-1.0-sdk</exclude>
+                <exclude>org.datanucleus:datanucleus-enhancer</exclude>
+                <exclude>asm:asm</exclude>
+            </excludes>
+        </dependencySet>
+        <!--new layout-->
+        <dependencySet>
+            <outputDirectory>lib/opt/tools/datanucleus/v2</outputDirectory>
+            <useProjectArtifact>true</useProjectArtifact>
+            <unpack>false</unpack>
+            <scope>compile</scope>
+            <excludes>
+                <exclude>log4j:log4j</exclude>
+                <exclude>com.google.appengine:appengine-api-1.0-sdk</exclude>
+                <exclude>com.google.appengine.orm:datanucleus-appengine</exclude>
+            </excludes>
+        </dependencySet>
+        <dependencySet>
+            <outputDirectory>lib/opt/user/datanucleus/v2</outputDirectory>
             <useProjectArtifact>true</useProjectArtifact>
             <unpack>false</unpack>
             <scope>runtime</scope>
@@ -49,7 +74,7 @@
             </includes>
         </fileSet>
 
-        <!-- Source jars -->
+        <!-- Source jars, legacy -->
 
         <!-- Source jar for the plugin -->
         <fileSet>
@@ -60,6 +85,24 @@
         <fileSet>
             <directory>${project.build.directory}/dependency</directory>
             <outputDirectory>src/orm</outputDirectory>
+            <includes>
+                <include>jdo-api-*-sources.jar</include>
+                <include>datanucleus-*-sources.jar</include>
+                <include>geronimo-jpa*-sources.jar</include>
+            </includes>
+        </fileSet>
+
+        <!-- Source jars, new layout -->
+
+        <!-- Source jar for the plugin -->
+        <fileSet>
+            <directory>${project.build.directory}/sources</directory>
+            <outputDirectory>src/opt/user/datanucleus/v2</outputDirectory>
+        </fileSet>
+        <!-- Source jars for jdo, jpa, and datanucleus -->
+        <fileSet>
+            <directory>${project.build.directory}/dependency</directory>
+            <outputDirectory>src/opt/user/datanucleus/v2</outputDirectory>
             <includes>
                 <include>jdo-api-*-sources.jar</include>
                 <include>datanucleus-*-sources.jar</include>

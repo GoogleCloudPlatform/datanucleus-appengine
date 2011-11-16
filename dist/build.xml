@@ -4,7 +4,7 @@
   <property name="version.major" value="2"/>
   <property name="version.minor" value="0"/>
   <property name="version.point" value="0"/>
-  <property name="version.rc" value="-beta"/>
+  <property name="version.rc" value="-RC1"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="zip.prefix" value="datanucleus-appengine"/>
   <property name="dist.target" value="../target/${zip.prefix}-${version}-dist.zip"/>
