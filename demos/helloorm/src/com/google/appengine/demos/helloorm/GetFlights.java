@@ -52,10 +52,7 @@ public class GetFlights extends HttpServlet {
     PersistenceManager pm = PMF.get().getPersistenceManager();
     try {
       List<Flight> flights = (List<Flight>) pm.newQuery(query).execute();
-      // Force all results to be pulled back before we close the entity manager.
-      // We could have also called pm.detachCopyAll() 
-      flights.size();
-      return flights;
+      return pm.detachCopyAll(flights);
     } finally {
       pm.close();
     }
