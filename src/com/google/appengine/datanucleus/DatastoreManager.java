@@ -340,8 +340,12 @@ public class DatastoreManager extends MappedStoreManager {
     return null;
   }
 
+  /**
+   * This method requires synchronization so that we don't end up registering
+   * the same property more than once.
+   */
   @Override
-  protected StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
+  protected synchronized StoreData newStoreData(ClassMetaData cmd, ClassLoaderResolver clr) {
     InheritanceStrategy strat = cmd.getInheritanceMetaData().getStrategy();
 
     // The overarching rule for supported inheritance strategies is that we
