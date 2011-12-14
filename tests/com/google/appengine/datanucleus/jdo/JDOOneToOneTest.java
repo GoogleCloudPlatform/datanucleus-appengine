@@ -40,8 +40,6 @@ import com.google.appengine.datanucleus.test.HasOneToOneStringPkJDO;
 import com.google.appengine.datanucleus.test.HasOneToOneStringPkParentJDO;
 import com.google.appengine.datanucleus.test.HasOneToOneStringPkParentKeyPkJDO;
 
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.util.NucleusLogger;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
@@ -58,13 +56,11 @@ import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 public class JDOOneToOneTest extends JDOTestCase {
 
   public void testInsert_NewParentAndChild() throws EntityNotFoundException {
-    NucleusLogger.GENERAL.info(">> testInsert START");
     testInsert_NewParentAndChild(TXN_START_END);
-    NucleusLogger.GENERAL.info(">> testInsert END");
   }
   public void testInsert_NewParentAndChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_NewParentAndChild(NEW_PM_START_END);
   }
   private void testInsert_NewParentAndChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -138,7 +134,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testInsert_NewParentExistingChild_Unidirectional_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_NewParentExistingChild_Unidirectional(NEW_PM_START_END);
   }
   private void testInsert_NewParentExistingChild_Unidirectional(StartEnd startEnd) throws EntityNotFoundException {
@@ -190,7 +186,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testInsert_NewParentExistingChild_Bidirectional_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_NewParentExistingChild_Bidirectional(NEW_PM_START_END);
   }
   private void testInsert_NewParentExistingChild_Bidirectional(StartEnd startEnd) throws EntityNotFoundException {
@@ -233,7 +229,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testInsert_ExistingParentNewChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_ExistingParentNewChild(NEW_PM_START_END);
   }
   private void testInsert_ExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -309,7 +305,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void fail_testInsert_ExistingParentNewChild_UpdateDetached_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_ExistingParentNewChild_UpdateDetached(NEW_PM_START_END);
   }
   private void testInsert_ExistingParentNewChild_UpdateDetached(StartEnd startEnd) throws EntityNotFoundException {
@@ -380,7 +376,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testUpdate_UpdateChildWithMerge_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdate_UpdateChildWithMerge(NEW_PM_START_END);
   }
   private void testUpdate_UpdateChildWithMerge(StartEnd startEnd) throws EntityNotFoundException {
@@ -460,7 +456,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testUpdate_UpdateChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdate_UpdateChild(NEW_PM_START_END);
   }
   public void testUpdate_UpdateChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -532,7 +528,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testUpdate_NullOutChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdate_NullOutChild(NEW_PM_START_END);
   }
   private void testUpdate_NullOutChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -617,7 +613,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testFind_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFind(NEW_PM_START_END);
   }
   private void testFind(StartEnd startEnd) throws EntityNotFoundException {
@@ -665,7 +661,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testQuery_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testQuery(NEW_PM_START_END);
   }
   public void testQuery(StartEnd startEnd) {
@@ -771,7 +767,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testDeleteParentDeletesChild_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testDeleteParentDeletesChild(NEW_PM_START_END);
   }
   private void testDeleteParentDeletesChild(StartEnd startEnd) {
@@ -847,7 +843,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   private void testChangeParent(StartEnd startEnd) {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     Flight f1 = newFlight();
 
     HasOneToOneJDO pojo = new HasOneToOneJDO();
@@ -876,7 +872,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testNewParentNewChild_SetNamedKeyOnChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testNewParentNewChild_SetNamedKeyOnChild(NEW_PM_START_END);
   }
   private void testNewParentNewChild_SetNamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -897,7 +893,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testNewParentNewChild_LongKeyOnParent_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testNewParentNewChild_LongKeyOnParent(NEW_PM_START_END);
   }
   private void testNewParentNewChild_LongKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
@@ -967,7 +963,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testNewParentNewChild_StringKeyOnParent_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testNewParentNewChild_StringKeyOnParent(NEW_PM_START_END);
   }
   private void testNewParentNewChild_StringKeyOnParent(StartEnd startEnd) throws EntityNotFoundException {
@@ -1077,7 +1073,7 @@ public class JDOOneToOneTest extends JDOTestCase {
   }
   public void testChildAtMultipleLevels_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     pm.getFetchPlan().setMaxFetchDepth(3);
     testChildAtMultipleLevels(NEW_PM_START_END);
   }

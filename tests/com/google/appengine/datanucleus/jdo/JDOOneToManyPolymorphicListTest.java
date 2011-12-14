@@ -69,10 +69,7 @@ import com.google.appengine.repackaged.com.google.common.collect.Lists;
 
 import junit.framework.Assert;
 
-
 import java.util.Collection;
-
-import org.datanucleus.store.ExecutionContext;
 
 import static com.google.appengine.datanucleus.PolymorphicTestUtils.getEntityKind;
 
@@ -84,7 +81,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   
   public void testInsertNewParentAndChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsertNewParentAndChild(NEW_PM_START_END);
   }
   
@@ -105,7 +102,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testInsertExistingParentNewChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsertExistingParentNewChild(NEW_PM_START_END);
   }
   private void testInsertExistingParentNewChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -125,7 +122,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testSwapAtPosition_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testSwapAtPosition(NEW_PM_START_END);
   }
   private void testSwapAtPosition(StartEnd startEnd) throws EntityNotFoundException {
@@ -148,7 +145,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testRemoveAtPosition_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testRemoveAtPosition(NEW_PM_START_END);
   }
   private void testRemoveAtPosition(StartEnd startEnd) throws EntityNotFoundException {
@@ -169,7 +166,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testAddAtPosition_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testAddAtPosition(NEW_PM_START_END);
   }
   private void testAddAtPosition(StartEnd startEnd) throws EntityNotFoundException {
@@ -189,7 +186,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testUpdateUpdateChildWithMerge_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateUpdateChildWithMerge(NEW_PM_START_END);
   }
   private void testUpdateUpdateChildWithMerge(StartEnd startEnd) throws EntityNotFoundException {
@@ -209,7 +206,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testUpdateUpdateChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateUpdateChild(NEW_PM_START_END);
   }
   private void testUpdateUpdateChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -231,7 +228,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   
   public void testUpdateNullOutChildren_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateNullOutChildren(NEW_PM_DETACH_ON_CLOSE_START_END);
   }
   private void testUpdateNullOutChildren(StartEnd startEnd) throws EntityNotFoundException {
@@ -250,7 +247,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testUpdateClearOutChildren_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateClearOutChildren(NEW_PM_DETACH_ON_CLOSE_START_END);
   }
   private void testUpdateClearOutChildren(StartEnd startEnd) throws EntityNotFoundException {
@@ -269,7 +266,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testFindWithOrderBy_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFindWithOrderBy(NEW_PM_START_END);
   }
   private void testFindWithOrderBy(StartEnd startEnd) throws EntityNotFoundException {
@@ -292,7 +289,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testFind_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFind(NEW_PM_START_END);
   }
   private void testFind(StartEnd startEnd) throws EntityNotFoundException {
@@ -309,7 +306,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testQuery_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testQuery(NEW_PM_START_END);
   }
   private void testQuery(StartEnd startEnd) throws EntityNotFoundException {
@@ -332,7 +329,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testDeleteParentDeletesChild_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testDeleteParentDeletesChild(NEW_PM_START_END);
   }
   private void testDeleteParentDeletesChild(StartEnd startEnd) throws Exception {
@@ -349,7 +346,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testIndexOf_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testIndexOf(NEW_PM_START_END);
   }
   public void testIndexOf(StartEnd startEnd) throws Exception {
@@ -390,7 +387,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testRemoveAll_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testRemoveAll(NEW_PM_START_END);
   }
   private void testRemoveAll(StartEnd startEnd) throws EntityNotFoundException {
@@ -403,7 +400,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testRemoveAll_LongPkOnParent_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testRemoveAll_LongPkOnParent(NEW_PM_DETACH_ON_CLOSE_START_END);
   }
   private void testRemoveAll_LongPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
@@ -417,7 +414,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testRemoveAll_UnencodedStringPkOnParent_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testRemoveAll_UnencodedStringPkOnParent(NEW_PM_START_END);
   }
   private void testRemoveAll_UnencodedStringPkOnParent(StartEnd startEnd) throws EntityNotFoundException {
@@ -433,7 +430,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testChangeParent_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testChangeParent(NEW_PM_START_END);
   }
   private void testChangeParent(StartEnd startEnd) {
@@ -450,7 +447,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testNewParentNewChild_NamedKeyOnChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testNewParentNewChild_NamedKeyOnChild(NEW_PM_START_END);
   }
   private void testNewParentNewChild_NamedKeyOnChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -464,7 +461,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testInsert_NewParentAndChild_LongPk_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_NewParentAndChild_LongPk(NEW_PM_START_END);
   }
   private void testInsert_NewParentAndChild_LongPk(StartEnd startEnd) throws EntityNotFoundException {
@@ -536,7 +533,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testInsert_NewParentAndChild_StringPk_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testInsert_NewParentAndChild_StringPk(NEW_PM_START_END);
   }
   
@@ -627,7 +624,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
 
   public void testLongPkOneToManyBidirChildren_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testLongPkOneToManyBidirChildren(NEW_PM_START_END);
   }
   private void testLongPkOneToManyBidirChildren(StartEnd startEnd) {
@@ -654,7 +651,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testUnencodedStringPkOneToManyBidirChildren_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUnencodedStringPkOneToManyBidirChildren(NEW_PM_START_END);
   }
   private void testUnencodedStringPkOneToManyBidirChildren(StartEnd startEnd) {
@@ -683,7 +680,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testFetchOfOneToManyParentWithKeyPk_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFetchOfOneToManyParentWithKeyPk(NEW_PM_START_END);
   }
   private void testFetchOfOneToManyParentWithKeyPk(StartEnd startEnd) {
@@ -695,7 +692,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testFetchOfOneToManyParentWithLongPk_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFetchOfOneToManyParentWithLongPk(NEW_PM_START_END);
   }
   private void testFetchOfOneToManyParentWithLongPk(StartEnd startEnd) {
@@ -707,7 +704,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testFetchOfOneToManyParentWithUnencodedStringPk_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testFetchOfOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
   }
   private void testFetchOfOneToManyParentWithUnencodedStringPk(StartEnd startEnd) {
@@ -720,7 +717,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testAddChildToOneToManyParentWithLongPk_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testAddChildToOneToManyParentWithLongPk(NEW_PM_START_END);
   }
   private void testAddChildToOneToManyParentWithLongPk(StartEnd startEnd) throws EntityNotFoundException {
@@ -737,7 +734,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testAddChildToOneToManyParentWithUnencodedStringPk_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testAddChildToOneToManyParentWithUnencodedStringPk(NEW_PM_START_END);
   }
   private void testAddChildToOneToManyParentWithUnencodedStringPk(StartEnd startEnd) throws EntityNotFoundException {
@@ -757,7 +754,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testOneToManyChildAtMultipleLevels_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testOneToManyChildAtMultipleLevels(NEW_PM_START_END);
   }
   private void testOneToManyChildAtMultipleLevels(StartEnd startEnd) {
@@ -792,7 +789,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testAddQueriedParentToBidirChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testAddQueriedParentToBidirChild(NEW_PM_START_END);
   }
   private void testAddQueriedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -806,7 +803,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testAddFetchedParentToBidirChild_NoTxn() throws EntityNotFoundException {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testAddFetchedParentToBidirChild(NEW_PM_START_END);
   }
   private void testAddFetchedParentToBidirChild(StartEnd startEnd) throws EntityNotFoundException {
@@ -820,7 +817,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testMultipleBidirChildren_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testMultipleBidirChildren(NEW_PM_START_END);
   }
   private void testMultipleBidirChildren(StartEnd startEnd) {
@@ -861,7 +858,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testReplaceBidirColl_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testReplaceBidirColl(NEW_PM_START_END);
   }
   private void testReplaceBidirColl(StartEnd startEnd) {
@@ -876,7 +873,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testDeleteChildWithSeparateNameField_NoTxn() {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testDeleteChildWithSeparateNameField(NEW_PM_START_END);
   }
   private void testDeleteChildWithSeparateNameField(StartEnd startEnd) {
@@ -904,7 +901,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testOnlyOneParentPutOnParentAndChildUpdate_NoTxn() throws Throwable {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testOnlyOneParentPutOnParentAndChildUpdate(NEW_PM_START_END);
   }
   private void testOnlyOneParentPutOnParentAndChildUpdate(StartEnd startEnd) throws Throwable {
@@ -921,7 +918,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testOnlyOnePutOnChildUpdate_NoTxn() throws Throwable {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testOnlyOnePutOnChildUpdate(NEW_PM_START_END);
   }
   private void testOnlyOnePutOnChildUpdate(StartEnd startEnd) throws Throwable {
@@ -938,7 +935,7 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
   }
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testOnlyOneParentPutOnChildDelete(NEW_PM_START_END);
   }
   private void testOnlyOneParentPutOnChildDelete(StartEnd startEnd) throws Throwable {

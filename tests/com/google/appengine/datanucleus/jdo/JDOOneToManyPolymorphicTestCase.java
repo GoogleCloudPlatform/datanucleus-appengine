@@ -44,7 +44,6 @@ import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJ
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTop;
 import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTopWithIndexColumn;
 
-import org.datanucleus.store.ExecutionContext;
 import org.easymock.EasyMock;
 
 import java.lang.reflect.Method;
@@ -81,7 +80,7 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     public void start() {
       if (pm.isClosed()) {
         pm = pmf.getPersistenceManager();
-        getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+        getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
       }
     }
 

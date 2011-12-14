@@ -40,6 +40,8 @@ import javax.jdo.PersistenceManagerFactory;
  */
 public class JDOTestCase extends DatastoreTestCase {
 
+  public static final String PROP_DETACH_ON_CLOSE = "datanucleus.DetachOnClose";
+
   private static
   ThreadLocal<Map<PersistenceManagerFactoryName, PersistenceManagerFactory>> pmfCache =
       new ThreadLocal<Map<PersistenceManagerFactoryName, PersistenceManagerFactory>>() {

@@ -27,8 +27,6 @@ import javax.jdo.Extent;
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.Query;
 
-import org.datanucleus.store.ExecutionContext;
-
 import java.util.*;
 
 public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
@@ -221,7 +219,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   }
   public void testUpdateDependent_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateDependent(NEW_PM_START_END);
   }
   @SuppressWarnings("unchecked")
@@ -486,7 +484,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   }
   public void testUpdateAndDeleteParentAndChilds_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateAndDeleteParentAndChilds(NEW_PM_START_END);
   }
   private void testUpdateAndDeleteParentAndChilds(StartEnd startEnd) throws Exception {
@@ -534,7 +532,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   }
   public void testCreateIntDiscriminator_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testCreateIntDiscriminator(NEW_PM_START_END);
   }
   private void testCreateIntDiscriminator(StartEnd startEnd) throws Exception {
@@ -590,7 +588,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   }
   public void testQueryIntDiscriminator_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testQueryIntDiscriminator(NEW_PM_START_END);
   }
   @SuppressWarnings("unchecked")
@@ -631,7 +629,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   }
   public void testUpdateIntDiscriminator_NoTxn() throws Exception {
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
-    getExecutionContext().setProperty(ExecutionContext.PROP_DETACH_ON_CLOSE, true);
+    getExecutionContext().setProperty(PROP_DETACH_ON_CLOSE, true);
     testUpdateIntDiscriminator(NEW_PM_START_END);
   }
   public void testUpdateIntDiscriminator(StartEnd startEnd) throws Exception {
