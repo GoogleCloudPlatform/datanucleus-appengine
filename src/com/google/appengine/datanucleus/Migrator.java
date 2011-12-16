@@ -46,7 +46,7 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
  * <pre>
  * NucleusContext nucCtx = ((JDOPersistenceManagerFactory)pmf).getNucleusContext(); // For JDO
  * // NucleusContext nucCtx = ((JPAEntityManagerFactory)emf).getNucleusContext(); // For JPA
- * Migrator migrator = new Migrator(NucleusContext nucCtx);
+ * Migrator migrator = new Migrator(nucCtx);
  * migrator.migrate(entity, MyEntity.class);
  * </pre>
  * The second (alternative) method is for a bulk migration of a Collection of Entities of a type.
