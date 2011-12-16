@@ -18,20 +18,16 @@ package com.google.appengine.datanucleus;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Properties;
 import java.util.Set;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.NucleusContext;
-import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
-import org.datanucleus.util.CommandLine;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
@@ -44,53 +40,56 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 /**
  * Migration tool for moving from GAE v1 StorageVersion (children identified by parent key) to
  * GAE v2 StorageVersion (child keys stored in parents).
+ * There are two ways that this can be used. 
+ * The first (preferred) method will allow you to migrate an Entity at a time and so could be enabled 
+ * using the Mapper API - see http://code.google.com/p/appengine-mapreduce/
+ * <pre>
+ * NucleusContext nucCtx = ((JDOPersistenceManagerFactory)pmf).getNucleusContext(); // For JDO
+ * // NucleusContext nucCtx = ((JPAEntityManagerFactory)emf).getNucleusContext(); // For JPA
+ * Migrator migrator = new Migrator(NucleusContext nucCtx);
+ * migrator.migrate(entity, MyEntity.class);
+ * </pre>
+ * The second (alternative) method is for a bulk migration of a Collection of Entities of a type.
+ * <pre>
+ * NucleusContext nucCtx = ((JDOPersistenceManagerFactory)pmf).getNucleusContext(); // For JDO
+ * // NucleusContext nucCtx = ((JPAEntityManagerFactory)emf).getNucleusContext(); // For JPA
+ * Migrator.migrate(nucCtx, MyEntity.class, entityIter);
+ * </pre>
  */
 public class Migrator {
+  NucleusContext nucCtx;
 
-  public static void main(String[] args) {
-    CommandLine cmd = new CommandLine();
-    cmd.addOption("pu", "persistenceUnit", "<persistence-unit>", 
-      "name of the persistence unit to handle the schema for");
-    cmd.addOption("pmf", "pmfName", "<pmf-name>",
-      "name of the PMF to handle the schema for");
-    cmd.parse(args);
+  public Migrator(NucleusContext nucCtx) {
+    this.nucCtx = nucCtx;
+  }
 
-    // Remaining command line args are filenames (class files, metadata files)
-    String[] filenames = cmd.getDefaultArgs();
+  /**
+   * Method to migrate the provided Entity of the specified class.
+   * @param entity The entity
+   * @param cls The pojo class that this represents
+   */
+  public void migrate(Entity entity, Class cls) {
+    DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
+    ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
+    AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
+    boolean changed = migrateEntity(nucCtx, cls, entity, cmd, clr, storeMgr);
 
-    String persistenceUnitName = null;
-    if (cmd.hasOption("pu"))
-    {
-        persistenceUnitName = cmd.getOptionArg("pu");
+    if (changed) {
+      // PUT the updated entity
+      DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
+      NucleusLogger.DATASTORE_NATIVE.debug("Putting " + entity);
+      datastore.put(entity);
     }
-
-    // Initialise the context for this API
-    NucleusContext nucleusCtx = new NucleusContext("JDO", null);
-    PersistenceConfiguration propConfig = nucleusCtx.getPersistenceConfiguration();
-
-    Properties props = new Properties();
-    props.setProperty("datanucleus.ConnectionURL", "appengine");
-    propConfig.setPersistenceProperties(props);
-
-    System.out.println("GAE Migrator for persistence-unit=" + persistenceUnitName + " migrating the following classes : " +
-        StringUtils.objectArrayToString(filenames));
-    // TODO Identify classes to be migrated and pass through the method below
   }
 
   /**
    * Method to migrate the provided Entities of the specified class.
    * Does a single PUT of all changed Entity objects.
-   * @param cls Class
+   * @param nucCtx NucleusContext
+   * @param cls The pojo class that these Entity objects represent
    * @param iter Iterator for the Entity objects
    */
-  public static void migrate(Class cls, Iterable<Entity> iter) {
-    NucleusContext nucCtx = new NucleusContext("JDO", null);
-    PersistenceConfiguration propConfig = nucCtx.getPersistenceConfiguration();
-
-    Properties props = new Properties();
-    props.setProperty("datanucleus.ConnectionURL", "appengine");
-    propConfig.setPersistenceProperties(props);
-
+  public static void migrate(NucleusContext nucCtx, Class cls, Iterable<Entity> iter) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
@@ -113,8 +112,6 @@ public class Migrator {
       NucleusLogger.DATASTORE_NATIVE.debug("Putting " + changedEntities.size() + " entities of class " + cls.getName());
       datastore.put(changedEntities);
     }
-
-    nucCtx.close();
   }
 
   /**
@@ -126,7 +123,7 @@ public class Migrator {
    * @param cmd Metadata for the class
    * @param clr ClassLoader resolver
    * @param storeMgr Store Manager
-   * @return Whether the entity is updated
+   * @return Whether the entity is updated (ready for PUTting)
    */
   protected static boolean migrateEntity(NucleusContext nucCtx, Class cls, Entity entity,
       AbstractClassMetaData cmd, ClassLoaderResolver clr, DatastoreManager storeMgr) {
@@ -140,7 +137,7 @@ public class Migrator {
     }
 
     // Process any relation owner fields
-    NucleusLogger.GENERAL.info(">> Migrating Entity with key=" + entity.getKey());
+    NucleusLogger.DATASTORE.info(">> Migrating Entity with key=" + entity.getKey());
     for (int i=0;i<relationFieldNumbers.length;i++) {
       AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNumbers[i]);
       if (MetaDataUtils.isOwnedRelation(mmd)) {
@@ -249,64 +246,5 @@ public class Migrator {
       }
     }
     return changed;
-  }
-
-  /**
-   * Method to migrate all entities for the specified classes to having child keys stored in the parent.
-   * @param classNames Name of the classes (fully qualified)
-   */
-  public static void migrate(String[] classNames) {
-
-    if (classNames != null && classNames.length > 0) {
-      NucleusContext nucCtx = new NucleusContext("JDO", null);
-      PersistenceConfiguration propConfig = nucCtx.getPersistenceConfiguration();
-
-      Properties props = new Properties();
-      props.setProperty("datanucleus.ConnectionURL", "appengine");
-      propConfig.setPersistenceProperties(props);
-
-      DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
-      ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
-      DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-
-      for (int i=0;i<classNames.length;i++) {
-        Class cls = clr.classForName(classNames[i]);
-        AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(classNames[i], clr);
-        NucleusLogger.GENERAL.info(">> Migrating Entities for " + classNames[i]);
-
-        Set<Entity> changedEntities = new HashSet<Entity>();
-        int[] relationFieldNumbers = cmd.getRelationMemberPositions(clr, nucCtx.getMetaDataManager());
-        if (relationFieldNumbers != null && relationFieldNumbers.length > 0) {
-
-          // Do a query for the particular kind, restricting it by any discriminator
-          String kindName = EntityUtils.getKindName(storeMgr.getIdentifierFactory(), cmd);
-
-          // Query for all Entities of this class
-          Query q = new Query(kindName);
-          if (cmd.hasDiscriminatorStrategy()) {
-            String discriminatorPropertyName = EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), 
-                cmd.getDiscriminatorMetaDataRoot());
-            Object discrimValue = cmd.getDiscriminatorValue();
-            q.addFilter(discriminatorPropertyName, Query.FilterOperator.EQUAL, discrimValue);
-          }
-
-          PreparedQuery pq = datastore.prepare(q);
-          for (Entity entity : pq.asIterable()) {
-            boolean changed = migrateEntity(nucCtx, cls, entity, cmd, clr, storeMgr);
-            if (changed) {
-              changedEntities.add(entity);
-            }
-          }
-          
-          if (!changedEntities.isEmpty()) {
-            // PUT the updated entities
-            NucleusLogger.DATASTORE_NATIVE.debug("Putting " + changedEntities.size() + " entities of kind " + kindName);
-            datastore.put(changedEntities);
-          }
-        }
-      }
-
-      nucCtx.close();
-    }
   }
 }
