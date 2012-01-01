@@ -36,11 +36,11 @@ import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
-import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.identity.OID;
+import org.datanucleus.identity.OIDFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
@@ -928,8 +928,14 @@ public final class EntityUtils {
     Object id = null;
     Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
     if (acmd.getIdentityType() == IdentityType.DATASTORE) {
-      // TODO Implement support for datastore id
-      throw new NucleusException("Dont currently support use of datastore-identity");
+      Key key = entity.getKey();
+      if (key.getName() != null) {
+        // String based
+        id = OIDFactory.getInstance(ec.getNucleusContext(), key.getName());
+      } else {
+        // Numeric based
+        id = OIDFactory.getInstance(ec.getNucleusContext(), key.getId());
+      }
     } else {
       FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
       id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);

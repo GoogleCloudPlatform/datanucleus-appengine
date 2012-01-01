@@ -18,11 +18,14 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.PreparedQuery;
 import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultList;
 
+import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.api.jdo.JDOPersistenceManager;
+import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 
@@ -82,20 +85,37 @@ public final class JDODatastoreBridge extends PojoDatastoreBridge {
     ExecutionContext ec = ((JDOPersistenceManager)pm).getExecutionContext();
     ObjectProvider op = ec.findObjectProvider(pc);
     if (op != null) {
-      DatastoreTransaction txn = ((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec);
+      DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
+      DatastoreTransaction txn = storeMgr.getDatastoreTransaction(ec);
       if (txn != null) {
         Entity entity = (Entity)op.getAssociatedValue(txn);
         if (entity != null) {
           return entity;
         } else {
-          // TODO Cater for this
+          Key key = EntityUtils.getPkAsKey(op);
+          return EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, key);
         }
       } else {
-        // TODO Cater for this
+        Key key = EntityUtils.getPkAsKey(op);
+        return EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, key);
       }
     } else {
-      // TODO Cater for this
+      // TODO Cater for detached objects
+      throw new UnsupportedOperationException("Not yet supported getting Entity for detached/unmanaged object");
     }
-    return null;
+  }
+
+  /**
+   * Convenience method to return a managed (POJO) object for the provided Entity for the PersistenceManager.
+   * @param entity The entity
+   * @param pm The PersistenceManager
+   * @param cls The POJO class being represented here
+   * @return The POJO
+   */
+  public Object getJDOFromEntity(Entity entity, PersistenceManager pm, Class cls) {
+    ExecutionContext ec = ((JDOPersistenceManager)pm).getExecutionContext();
+    ClassLoaderResolver clr = ec.getClassLoaderResolver();
+    AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(cls, clr);
+    return EntityUtils.entityToPojo(entity, cmd, clr, ec, false, ec.getFetchPlan());
   }
 }

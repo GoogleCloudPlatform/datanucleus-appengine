@@ -43,6 +43,7 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.identity.IdentityUtils;
+import org.datanucleus.identity.OIDFactory;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
@@ -618,7 +619,14 @@ public class DatastoreQuery implements Serializable {
       id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
     }
     else if (acmd.getIdentityType() == IdentityType.DATASTORE) {
-      // TODO Implement this
+      Key key = entity.getKey();
+      if (key.getName() != null) {
+        // String based
+        id = OIDFactory.getInstance(ec.getNucleusContext(), key.getName());
+      } else {
+        // Numeric based
+        id = OIDFactory.getInstance(ec.getNucleusContext(), key.getId());
+      }
     }
 
     return ec.findObject(id, fv, cls, false);
