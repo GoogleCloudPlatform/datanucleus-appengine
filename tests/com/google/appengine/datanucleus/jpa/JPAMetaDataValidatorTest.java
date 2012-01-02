@@ -21,15 +21,9 @@ import com.google.appengine.datanucleus.test.IgnorableMappingsJPA.OneToManyParen
 import com.google.appengine.datanucleus.test.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfAssignableType;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfAssignableTypeSub;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameType;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.Has2CollectionsOfSameTypeChild;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.Has2OneToOnesOfSameType;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasLongPkWithStringAncestor;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasMultiplePkIdFields;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasMultiplePkNameFields;
-import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasOneToOneAndOneToManyOfSameType;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasPkIdSortOnOneToMany;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasPkNameSortOnOneToMany;
 import com.google.appengine.datanucleus.test.IllegalMappingsJPA.HasUnencodedStringPkWithStringAncestor;
@@ -235,14 +229,15 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
     assertMetaDataException(new SequenceOnKeyPk());
   }
 
-  public void testHasMultipleRelationshipFieldsOfSameType() {
+  // Only applicable to earlier storage versions
+  /*public void testHasMultipleRelationshipFieldsOfSameType() {
     assertMetaDataException(new Has2CollectionsOfSameType());
     assertMetaDataException(new Has2OneToOnesOfSameType());
     assertMetaDataException(new HasOneToOneAndOneToManyOfSameType());
     assertMetaDataException(new Has2CollectionsOfSameTypeChild());
     assertMetaDataException(new Has2CollectionsOfAssignableType());
     assertMetaDataException(new Has2CollectionsOfAssignableTypeSub());
-  }
+  }*/
 
   public void testHasKeySubComponentSortOnOneToMany() {
     assertMetaDataException(new HasPkIdSortOnOneToMany());

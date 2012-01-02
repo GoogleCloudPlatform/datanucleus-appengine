@@ -311,14 +311,17 @@ public class MetaDataValidator implements MetaDataListener {
             ammd.getFullFieldName(), storeMgr.getStorageVersion(), StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS);
       }
 
-      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI) {
-        // We don't support many-to-many at all
+      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd)) {
+        // We only support many-to-many for unowned relations
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ManyToManyRelationNotSupported",
             ammd.getFullFieldName());
-      } else if (ammd.getEmbeddedMetaData() == null &&
-                 NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
-                 !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE)) {
-        // TODO Make this conditional on storageVersion being below READ_OWNED_CHILD_KEYS_FROM_PARENT
+      }
+
+      if (ammd.getEmbeddedMetaData() == null &&
+          NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
+          !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE) &&
+          !storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+        // Check on multiple relations of the same type for early storage versions
         Class<?> relationClass;
         if (ammd.getCollection() != null) {
           relationClass = clr.classForName(ammd.getCollection().getElementType());
