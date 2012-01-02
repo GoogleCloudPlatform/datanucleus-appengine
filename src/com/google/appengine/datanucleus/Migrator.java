@@ -24,6 +24,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
+import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
@@ -65,21 +66,38 @@ public class Migrator {
 
   /**
    * Method to migrate the provided Entity of the specified class.
+   * Note that this updates the passed in Entity as required to include keys of related objects.
+   * If it is isn't updated to migrate it then returns false.
+   * Also returns false if the provided Entity doesn't represent an object of the required class.
    * @param entity The entity
    * @param cls The pojo class that this represents
+   * @return Whether the Entity is updated (needs PUTting)
    */
-  public void migrate(Entity entity, Class cls) {
+  public boolean migrate(Entity entity, Class cls) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
-    boolean changed = migrateEntity(nucCtx, cls, entity, cmd, clr, storeMgr);
+    if (cmd.hasDiscriminatorStrategy()) {
+      String disProp = EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), cmd.getDiscriminatorMetaDataForTable());
+      if (disProp != null && entity.hasProperty(disProp)) {
+        // If this Entity is not of the right class then return false
+        DiscriminatorStrategy discStr = cmd.getDiscriminatorStrategyForTable();
+        String discValExpected = cls.getName();
+        if (discStr == DiscriminatorStrategy.VALUE_MAP) {
+          discValExpected = (String) cmd.getDiscriminatorValue();
+        }
 
-    if (changed) {
-      // PUT the updated entity
-      DatastoreService datastore = DatastoreServiceFactory.getDatastoreService();
-      NucleusLogger.DATASTORE_NATIVE.debug("Putting " + entity);
-      datastore.put(entity);
+        String discValActual = (String)entity.getProperty(disProp);
+        if (discValActual != null && discValExpected != null && !discValActual.equals(discValExpected)) {
+          // Entity not of the correct class type
+          NucleusLogger.DATASTORE.info("Attempt to migrate " + entity + " as being of type " + cls.getName() +
+              " but discriminator implies of different type");
+          return false;
+        }
+      }
     }
+
+    return migrateEntity(nucCtx, cls, entity, cmd, clr, storeMgr);
   }
 
   /**
@@ -137,7 +155,7 @@ public class Migrator {
     }
 
     // Process any relation owner fields
-    NucleusLogger.DATASTORE.info(">> Migrating Entity with key=" + entity.getKey());
+    NucleusLogger.DATASTORE.info("Migrating Entity with key=" + entity.getKey() + " for class=" + cls.getName());
     for (int i=0;i<relationFieldNumbers.length;i++) {
       AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNumbers[i]);
       if (MetaDataUtils.isOwnedRelation(mmd)) {
@@ -245,6 +263,8 @@ public class Migrator {
         }
       }
     }
+    NucleusLogger.DATASTORE.info("Migration of Entity with key=" + entity.getKey() + 
+        (changed ? " has been performed" : " didn't need any changes to the Entity"));
     return changed;
   }
 }
