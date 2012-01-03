@@ -75,6 +75,9 @@ public class MigratorMapper extends AppEngineMapper<Key, Entity, NullWritable, N
 }
 ===========================================================
 
+Note that the "migrator.migrate" will only migrate Entities that are of that specific class. If they are of subclasses
+then you need to call passing in the subclass.
+
 Now let’s add this job to mapreduce.xml:
 
 ===========================================================
@@ -103,5 +106,5 @@ Now let’s add this job to mapreduce.xml:
 </configurations>
 ===========================================================
 
-The only thing this doesn't yet cater for is to have multiple classes stored in the same Kind (to do that we likely
-need to write a new "datastoreinputformat".
+
+The only thing to do now is run this for each of your model classes.
