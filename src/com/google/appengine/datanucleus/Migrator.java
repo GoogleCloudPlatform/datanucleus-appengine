@@ -76,6 +76,7 @@ public class Migrator {
   public boolean migrate(Entity entity, Class cls) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
+    storeMgr.addClass(cls.getName(), clr); // Make sure the class is known about
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
     if (cmd.hasDiscriminatorStrategy()) {
       String disProp = EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), cmd.getDiscriminatorMetaDataForTable());
@@ -110,6 +111,7 @@ public class Migrator {
   public static void migrate(NucleusContext nucCtx, Class cls, Iterable<Entity> iter) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
+    storeMgr.addClass(cls.getName(), clr); // Make sure the class is known about
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
 
     Set<Entity> changedEntities = new HashSet<Entity>();
