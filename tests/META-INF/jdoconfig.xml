@@ -17,6 +17,14 @@ limitations under the License.
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:noNamespaceSchemaLocation="http://java.sun.com/xml/ns/jdo/jdoconfig">
 
+    <persistence-manager-factory name="originalStorageVersion">
+        <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
+        <property name="javax.jdo.option.ConnectionURL" value="appengine"/>
+        <property name="datanucleus.appengine.ignorableMetaDataBehavior" value="ERROR"/>
+		<property name="datanucleus.cache.level2.type" value="None"/>
+		<property name="datanucleus.appengine.storageVersion" value="PARENTS_DO_NOT_REFER_TO_CHILDREN"/>
+    </persistence-manager-factory>
+
     <persistence-manager-factory name="transactional">
         <property name="javax.jdo.PersistenceManagerFactoryClass" value="org.datanucleus.api.jdo.JDOPersistenceManagerFactory"/>
         <property name="javax.jdo.option.ConnectionURL" value="appengine"/>

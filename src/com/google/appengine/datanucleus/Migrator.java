@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -76,8 +77,9 @@ public class Migrator {
   public boolean migrate(Entity entity, Class cls) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
-    storeMgr.addClass(cls.getName(), clr); // Make sure the class is known about
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
+    Collection<String> mdClasses = nucCtx.getMetaDataManager().getClassesWithMetaData();
+    storeMgr.addClasses(mdClasses.toArray(new String[mdClasses.size()]), clr); // Make sure all classes are in store
     if (cmd.hasDiscriminatorStrategy()) {
       String disProp = EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), cmd.getDiscriminatorMetaDataForTable());
       if (disProp != null && entity.hasProperty(disProp)) {
@@ -111,8 +113,9 @@ public class Migrator {
   public static void migrate(NucleusContext nucCtx, Class cls, Iterable<Entity> iter) {
     DatastoreManager storeMgr = (DatastoreManager) nucCtx.getStoreManager();
     ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(null);
-    storeMgr.addClass(cls.getName(), clr); // Make sure the class is known about
     AbstractClassMetaData cmd = nucCtx.getMetaDataManager().getMetaDataForClass(cls, clr);
+    Collection<String> mdClasses = nucCtx.getMetaDataManager().getClassesWithMetaData();
+    storeMgr.addClasses(mdClasses.toArray(new String[mdClasses.size()]), clr); // Make sure all classes are in store
 
     Set<Entity> changedEntities = new HashSet<Entity>();
     int[] relationFieldNumbers = cmd.getRelationMemberPositions(clr, nucCtx.getMetaDataManager());
