@@ -181,13 +181,13 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
   public void testQueryParent() {
     Map<String, String> props = new HashMap<String, String>();
     props.put("datanucleus.appengine.getExtentCanReturnSubclasses", Boolean.TRUE.toString());
-    switchDatasource(props, PersistenceManagerFactoryName.transactional);
+    switchDatasource(PersistenceManagerFactoryName.transactional, props);
     testQueryParent(TXN_START_END);
   }
   public void testQueryParent_NoTxn() {
     Map<String, String> props = new HashMap<String, String>();
     props.put("datanucleus.appengine.getExtentCanReturnSubclasses", Boolean.TRUE.toString());
-    switchDatasource(props, PersistenceManagerFactoryName.nontransactional);
+    switchDatasource(PersistenceManagerFactoryName.nontransactional, props);
     testQueryParent(NEW_PM_START_END);
   }
   @SuppressWarnings("unchecked")

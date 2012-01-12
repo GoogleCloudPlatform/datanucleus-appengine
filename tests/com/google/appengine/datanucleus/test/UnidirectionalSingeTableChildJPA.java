@@ -80,7 +80,7 @@ public class UnidirectionalSingeTableChildJPA {
       return "\n\nid: " + id + "\nstr: " + str + "\nname: " + name;
     }
 
-@Override
+    @Override
     public boolean equals(Object o) {
       if (this == o) {
         return true;

@@ -130,8 +130,8 @@
     <property name="sdk.dir" value="${orm.sdk.tmpdist.lib.dir}/.."/>
     <parallel>
       <daemons>
-        <ant antfile="${orm.tmpdist.dir}/demos/helloorm/build.xml" target="runserver"
-           dir="${orm.tmpdist.dir}/demos/helloorm/"/>
+        <ant antfile="${orm.tmpdist.dir}/demos/helloorm2/build.xml" target="runserver"
+           dir="${orm.tmpdist.dir}/demos/helloorm2/"/>
       </daemons>
       <sequential>
         <sleep seconds="10"/>

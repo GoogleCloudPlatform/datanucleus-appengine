@@ -18,6 +18,7 @@ package com.google.appengine.datanucleus;
 //import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
+import com.google.appengine.tools.development.testing.LocalServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.google.apphosting.api.ApiProxy;
 import junit.framework.TestCase;
@@ -34,8 +35,13 @@ import java.util.*;
 public class DatastoreTestCase extends TestCase {
 
   private final LocalServiceTestHelper helper = new LocalServiceTestHelper(
-      new LocalDatastoreServiceTestConfig());
-    // TODO(maxr): Put this back once we have a maven project for cloudcover
+      newLocalDatastoreServiceTestConfig()).setEnvAppId(getAppId());
+
+  protected LocalDatastoreServiceTestConfig newLocalDatastoreServiceTestConfig() {
+    return new LocalDatastoreServiceTestConfig();
+  }
+
+  // TODO(maxr): Put this back once we have a maven project for cloudcover
 //  private final CloudCoverLocalServiceTestHelper helper = new CloudCoverLocalServiceTestHelper(
 //      new LocalDatastoreServiceTestConfig());
 
@@ -68,6 +74,10 @@ public class DatastoreTestCase extends TestCase {
   protected ApiProxy.Delegate getDelegateForThread() {
     return ApiProxy.getDelegate();
 //    return CloudCoverLocalServiceTestHelper.getDelegate();
+  }
+
+  protected String getAppId() {
+    return "DNTest";
   }
 
   /**

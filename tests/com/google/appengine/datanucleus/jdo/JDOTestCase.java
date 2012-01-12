@@ -70,7 +70,7 @@ public class JDOTestCase extends DatastoreTestCase {
     pm = pmf.getPersistenceManager();
   }
 
-  public enum PersistenceManagerFactoryName { transactional, nontransactional }
+  public enum PersistenceManagerFactoryName { originalStorageVersion, transactional, nontransactional }
 
   /**
    * By default we use a datasource that requires txns.
@@ -140,10 +140,10 @@ public class JDOTestCase extends DatastoreTestCase {
   }
 
   protected void switchDatasource(PersistenceManagerFactoryName name) {
-    switchDatasource(null, name);
+    switchDatasource(name, null);
   }
 
-  protected void switchDatasource(Map<String, String> props, PersistenceManagerFactoryName name) {
+  protected void switchDatasource(PersistenceManagerFactoryName name, Map<String, String> props) {
     if (!pm.isClosed()) {
       pm.close();
     }

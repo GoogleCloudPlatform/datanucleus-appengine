@@ -294,20 +294,6 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
     commitTxn();
   }
 
-  /**
-   * Test that when we have unowned relations we must have storage version high enough.
-   */
-  public void testUnownedRelationWithV1StorageVersion() {
-    pm.close();
-    pmf.close();
-    Map<String, String> props = Utils.newHashMap();
-    props.put(StorageVersion.STORAGE_VERSION_PROPERTY, StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN.name());
-    pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
-    pm = pmf.getPersistenceManager();
-    UnownedJDOOneToOneUniSideA pojo = new UnownedJDOOneToOneUniSideA();
-    assertMetaDataException(pojo);
-  }
-
   private void assertMetaDataException(Object pojo) {
     beginTxn();
     try {

@@ -79,7 +79,8 @@ public class JPATestCase extends DatastoreTestCase {
     // nonTransactionalRead and nonTransactionalWrite are true
     nontransactional_ds_non_transactional_ops_allowed,
     // nonTransactionalRead and nonTransactionalWrite are false
-    nontransactional_ds_non_transactional_ops_not_allowed
+    nontransactional_ds_non_transactional_ops_not_allowed,
+    originalStorageVersion,
   }
 
   /**
