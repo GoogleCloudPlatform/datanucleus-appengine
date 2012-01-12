@@ -45,35 +45,14 @@
         debug="on" />
   </target>
 
-  <!--
-       TODO(maxr): Reenable this once we have a version of EnhancerTask in
-       the SDK that works with v2 of the plugin.
-   -->
-  <!--<target name="datanucleusenhance" depends="compile"-->
-      <!--description="Performs enhancement on compiled data classes.">-->
-    <!--<enhance_war war="war" />-->
-  <!--</target>-->
-
-  <path id="enhancer.classpath">
-    <fileset dir="${sdk.dir}/lib/opt/tools/datanucleus/v2">
-        <include name="**/datanucleus-enhancer*.jar"/>
-        <include name="**/asm-*.jar"/>
-    </fileset>
-  </path>
-
-  <target name="datanucleusenhance" depends="compile" description="DataNucleus enhancement">
-    <taskdef name="datanucleusenhancer" classpathref="enhancer.classpath"
-                classname="org.datanucleus.enhancer.tools.EnhancerTask" />
-
-    <datanucleusenhancer failonerror="true">
-        <fileset dir="war/WEB-INF/classes">
-            <include name="**/*.class"/>
-        </fileset>
-        <classpath>
-            <path refid="enhancer.classpath"/>
-            <path refid="project.classpath"/>
-        </classpath>
-    </datanucleusenhancer>
+  <target name="datanucleusenhance" depends="compile"
+      description="Performs enhancement on compiled data classes.">
+      <enhance_war war="war">
+          <args>
+              <arg value="-enhancerVersion"/>
+              <arg value="v2"/>
+          </args>
+      </enhance_war>
   </target>
 
   <target name="runserver" depends="datanucleusenhance"

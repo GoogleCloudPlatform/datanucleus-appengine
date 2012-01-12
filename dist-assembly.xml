@@ -59,28 +59,28 @@
 
         <!--Demo apps-->
         <fileSet>
-            <directory>demos/helloorm</directory>
-            <outputDirectory>demos/helloorm</outputDirectory>
+            <directory>demos/helloorm2</directory>
+            <outputDirectory>demos/helloorm2</outputDirectory>
             <includes>
                 <include>build.xml</include>
                 <include>COPYING</include>
             </includes>
         </fileSet>
         <fileSet>
-            <directory>demos/helloorm/src</directory>
-            <outputDirectory>demos/helloorm/src</outputDirectory>
+            <directory>demos/helloorm2/src</directory>
+            <outputDirectory>demos/helloorm2/src</outputDirectory>
             <includes>
                 <!-- Avoids grabbing WEB-INF and META-INF -->
                 <include>com/**</include>
             </includes>
         </fileSet>
         <fileSet>
-            <directory>demos/helloorm/src/WEB-INF</directory>
-            <outputDirectory>demos/helloorm/war/WEB-INF</outputDirectory>
+            <directory>demos/helloorm2/src/WEB-INF</directory>
+            <outputDirectory>demos/helloorm2/war/WEB-INF</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>demos/helloorm/src/META-INF</directory>
-            <outputDirectory>demos/helloorm/war/WEB-INF/classes/META-INF</outputDirectory>
+            <directory>demos/helloorm2/src/META-INF</directory>
+            <outputDirectory>demos/helloorm2/war/WEB-INF/classes/META-INF</outputDirectory>
         </fileSet>
     </fileSets>
 </assembly>
