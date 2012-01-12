@@ -4,7 +4,7 @@
   <property name="version.major" value="2"/>
   <property name="version.minor" value="0"/>
   <property name="version.point" value="0"/>
-  <property name="version.rc" value="-RC1"/>
+  <property name="version.rc" value="-RC3"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="zip.prefix" value="datanucleus-appengine"/>
   <property name="dist.target" value="../target/${zip.prefix}-${version}-dist.zip"/>
@@ -104,7 +104,7 @@
     <mkdir dir="${orm.sdk.tmpdist.lib.dir}/user"/>
     <copy todir="${orm.sdk.tmpdist.lib.dir}/user">
       <fileset dir="${orm.lib.dir}">
-        <include name="appengine-api.jar"/>
+        <include name="appengine-api-1.0-sdk*.jar"/>
       </fileset>
     </copy>
 
@@ -190,6 +190,7 @@
       <fail unless="libDirExists" message="${appengine.sdk.lib.path} does not exist.  Pass -Dappengine.sdk.path=/path/to/sdk to override the default sdk location."/>
       <copy  todir="../lib" verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.lib.path}" includes="appengine-tools-api.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/user" includes = "appengine-api-1.0-sdk*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/impl" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/impl/agent" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/shared" includes = "appengine*.jar"/>
