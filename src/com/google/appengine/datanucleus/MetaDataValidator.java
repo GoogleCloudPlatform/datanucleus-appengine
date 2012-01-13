@@ -305,12 +305,6 @@ public class MetaDataValidator implements MetaDataListener {
         handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
       }
 
-      // Make sure the storage version is high enough for unowned relations
-      if (!MetaDataUtils.isOwnedRelation(ammd) && !storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
-        throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.UnownedRelationWithInvalidStorageVersion",
-            ammd.getFullFieldName(), storeMgr.getStorageVersion(), StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS);
-      }
-
       if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd)) {
         // We only support many-to-many for unowned relations
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ManyToManyRelationNotSupported",

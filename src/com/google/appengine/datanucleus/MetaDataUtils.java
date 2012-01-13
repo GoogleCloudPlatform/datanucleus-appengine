@@ -116,6 +116,15 @@ public class MetaDataUtils {
   }
 
   /**
+   * Convenience method to return whether or not keys of related objects can be
+   * expected to exist on the parent
+   */
+  public static boolean readRelatedKeysFromParent(DatastoreManager storeMgr, AbstractMemberMetaData mmd) {
+    return !MetaDataUtils.isOwnedRelation(mmd) ||
+        storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS);
+  }
+
+  /**
    * Convenience method to return the metadata for the field/property of this class that stores the 
    * parent PK (in metadata as "gae.parent-pk").
    * @param cmd Metadata for the class

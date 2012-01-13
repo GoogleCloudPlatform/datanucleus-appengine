@@ -60,6 +60,7 @@ import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.query.LazyResult;
 
 /**
  * Backing store for lists stored with a "FK" in the element.
@@ -342,7 +343,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
   protected ListIterator listIterator(ObjectProvider op, int startIdx, int endIdx) {
     ExecutionContext ec = op.getExecutionContext();
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Get child keys from property in owner Entity if the property exists
       Entity datastoreEntity = getOwnerEntity(op);
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
@@ -350,7 +351,8 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         if (indexedList) {
           return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
         } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
-          throw new NucleusFatalUserException("Dont currently support ordered lists that are unowned");
+          List<Key> childKeys = (List<Key>) datastoreEntity.getProperty(propName);
+          return getChildrenByKeys(childKeys, ec);
         } else {
           if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
             // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
@@ -368,6 +370,28 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     } else {
       return Utils.newArrayList().listIterator();
     }
+  }
+
+  ListIterator<?> getChildrenByKeys(List<Key> childKeys, final ExecutionContext ec) {
+    String kindName = elementTable.getIdentifier().getIdentifierName();
+    Query q = new Query(kindName);
+
+    NucleusLogger.PERSISTENCE.debug("Preparing to query for " + childKeys);
+    q.addFilter(Entity.KEY_RESERVED_PROPERTY, Query.FilterOperator.IN, childKeys);
+    for (Query.SortPredicate sp : getSortPredicates()) {
+      q.addSort(sp.getPropertyName(), sp.getDirection());
+    }
+
+    DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+    DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+
+    Utils.Function<Entity, Object> func = new Utils.Function<Entity, java.lang.Object>() {
+      @Override
+      public Object apply(Entity from) {
+        return EntityUtils.entityToPojo(from, elementCmd, clr, ec, false, ec.getFetchPlan());
+      }
+    };
+    return new LazyResult(ds.prepare(q).asIterable(), func, true).listIterator();
   }
 
   @Override
@@ -615,7 +639,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
    * @see org.datanucleus.store.scostore.ListStore#get(org.datanucleus.store.ObjectProvider, int)
    */
   public Object get(ObjectProvider op, int index) {
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Get child keys from field in owner Entity
       ExecutionContext ec = op.getExecutionContext();
       Entity datastoreEntity = getOwnerEntity(op);
@@ -636,7 +660,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           throw new NucleusDataStoreException("Could not determine entity for index=" + index + " with key=" + indexKey, enfe);
         }
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    } else {
       // Earlier storage version, for owned relation, so use parentKey for membership of List
       ListIterator iter = listIterator(op, index, index);
       if (iter == null || !iter.hasNext()) {
@@ -688,7 +712,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return new int[0];
     }
 
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Obtain via field of List<Key> in parent
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
       Entity ownerEntity = getOwnerEntity(op);
@@ -725,7 +749,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
         return indices;
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    } else {
       // Owned relation in earlier storage version so use parentKey to determine membership of list
       List<Key> keys = Utils.newArrayList();
       Set<Key> keySet = Utils.newHashSet();
@@ -791,7 +815,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return -1;
     }
 
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Return the position using the field of List<Key> in the owner
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
       Entity ownerEntity = getOwnerEntity(op);
@@ -803,7 +827,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         List<Key> keys = (List<Key>) value;
         return keys.indexOf(elementKey);
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    } else {
       // Owned relation in earlier storage version so use parentKey to determine membership of list (only present once)
       if (elementKey.getParent() == null) {
         throw new NucleusUserException("Element primary-key does not have a parent.");
@@ -838,7 +862,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       return -1;
     }
 
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Return the position using the field of List<Key> in the owner
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
       Entity ownerEntity = getOwnerEntity(op);
@@ -850,11 +874,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         List<Key> keys = (List<Key>) value;
         return keys.lastIndexOf(elementKey);
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
-      // Owned relation in earlier storage version so use parentKey to determine membership of list (only present once)
-      return indexOf(op, element);
     }
-    return -1;
+    // Owned relation in earlier storage version so use parentKey to determine membership of list (only present once)
+    return indexOf(op, element);
   }
 
   /* (non-Javadoc)

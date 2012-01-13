@@ -15,10 +15,19 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.scostore;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-import java.util.Map;
+import com.google.appengine.api.datastore.DatastoreService;
+import com.google.appengine.api.datastore.DatastoreServiceConfig;
+import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Key;
+import com.google.appengine.api.datastore.PreparedQuery;
+import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.SortPredicate;
+import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
+import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.MetaDataUtils;
+import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusFatalUserException;
@@ -37,20 +46,10 @@ import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceConfig;
-import com.google.appengine.api.datastore.Entity;
-import com.google.appengine.api.datastore.Key;
-import com.google.appengine.api.datastore.PreparedQuery;
-import com.google.appengine.api.datastore.Query;
-import com.google.appengine.api.datastore.Query.FilterPredicate;
-import com.google.appengine.api.datastore.Query.SortPredicate;
-import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
-import com.google.appengine.datanucleus.EntityUtils;
-import com.google.appengine.datanucleus.MetaDataUtils;
-import com.google.appengine.datanucleus.StorageVersion;
-import com.google.appengine.datanucleus.Utils;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
 
 /**
  * Abstract base class for backing stores using a "FK" in the element.
@@ -175,14 +174,13 @@ public abstract class AbstractFKStore {
    * @see org.datanucleus.store.scostore.CollectionStore#size(org.datanucleus.store.ObjectProvider)
    */
   public int size(ObjectProvider op) {
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Child keys are stored in field in owner Entity
       return getSizeUsingChildKeysInParent(op);
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    } else {
       // Get size from child keys by doing a query with the owner as the parent Entity
       return getSizeUsingParentKeyInChildren(op);
     }
-    return 0;
   }
 
   protected int getSizeUsingChildKeysInParent(ObjectProvider op) {
@@ -235,7 +233,7 @@ public abstract class AbstractFKStore {
       return false;
     }
 
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)){
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Check containment using field in parent containing "List<Key>"
       Entity datastoreEntity = getOwnerEntity(op);
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
@@ -250,7 +248,7 @@ public abstract class AbstractFKStore {
       } else {
         return false;
       }
-    } else if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    } else {
       // Check containment using parent key of the element key
       // Child key can be null if element has not yet been persisted
       if (childKey.getParent() == null) {
@@ -259,7 +257,6 @@ public abstract class AbstractFKStore {
       Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op);
       return childKey.getParent().equals(parentKey);
     }
-    return false;
   }
 
   /**
@@ -322,8 +319,8 @@ public abstract class AbstractFKStore {
 
         Entity entity = entitiesByKey.get(key);
         if (entity == null) {
-          throw new NucleusFatalUserException("Field in parent with key=" + datastoreEntity.getKey() + 
-              " refers to child of " + key + " but this doesn't exist! Check your data integrity");
+          throw new NucleusFatalUserException("Field " + ownerMemberMetaData.getFullFieldName() +
+              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
         }
         Object pojo = EntityUtils.entityToPojo(entity, elementCmd, clr, ec, false, ec.getFetchPlan());
         children.add(pojo);

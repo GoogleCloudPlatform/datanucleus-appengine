@@ -356,7 +356,7 @@ public class FetchFieldManager extends DatastoreFieldManager
     ExecutionContext ec = getObjectProvider().getExecutionContext();
     AbstractClassMetaData childCmd = ec.getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(childCmd).getIdentifierName();
-    if (getStoreManager().storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(getStoreManager(), ammd)) {
       // Use the child key stored in the parent (if present)
       String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd);
       if (datastoreEntity.hasProperty(propName)) {
@@ -371,36 +371,37 @@ public class FetchFieldManager extends DatastoreFieldManager
             Entity childEntity = datastoreService.get((Key)value);
             return EntityUtils.entityToPojo(childEntity, childCmd, clr, ec, false, ec.getFetchPlan());
           } catch (EntityNotFoundException enfe) {
+            // TODO: Should this throw a data integrity exception? It seems to for oneToMany.
             NucleusLogger.PERSISTENCE.error("Field " + ammd.getFullFieldName() + " of " + getObjectProvider().getInternalObjectId() +
                 " was pointing to object with key " + value + " but this doesn't exist!");
             return null;
           }
         }
-      } else {
-        if (MetaDataUtils.isOwnedRelation(ammd)) {
+      } else if (MetaDataUtils.isOwnedRelation(ammd)) {
           // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
           NucleusLogger.PERSISTENCE.info("Persistable object at field " + ammd.getFullFieldName() + " of " + op +
           " not yet migrated to latest storage version, so reading the object via its parent key");
-        }
+      } else {
+        // Unowned relation but we don't have the property? That's bad data.
+        throw new NucleusException("Object " + datastoreEntity.getKey() + " has unowned property " + ammd.getFullFieldName() +
+          " but no corresponding property " + propName + " on its datastore entity.");
       }
     }
 
-    if (MetaDataUtils.isOwnedRelation(ammd)) {
-      // Owned 1-1, so find all entities with this as a parent. There ought to be only 1 (limitation of early GAE)
-      Entity parentEntity = datastoreEntity;
-      Query q = new Query(kind, parentEntity.getKey());
-      DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-      DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
-      // We have to pull back all children because the datastore does not let us filter ancestors by 
-      // depth and an indirect child could come back before a direct child.  eg: a/b/c,  a/c
-      for (Entity e : datastoreService.prepare(q).asIterable()) {
-        if (parentEntity.getKey().equals(e.getKey().getParent())) {
-          return EntityUtils.entityToPojo(e, childCmd, clr, ec, false, ec.getFetchPlan());
-          // We are potentially ignoring data errors where there is more than one
-          // direct child for the one to one.  Unfortunately, in order to detect
-          // this we need to read all the way to the end of the Iterable and that
-          // might pull back a lot more data than is really necessary.
-        }
+    // Owned 1-1, so find all entities with this as a parent. There ought to be only 1 (limitation of early GAE)
+    Entity parentEntity = datastoreEntity;
+    Query q = new Query(kind, parentEntity.getKey());
+    DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+    DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
+    // We have to pull back all children because the datastore does not let us filter ancestors by
+    // depth and an indirect child could come back before a direct child.  eg: a/b/c,  a/c
+    for (Entity e : datastoreService.prepare(q).asIterable()) {
+      if (parentEntity.getKey().equals(e.getKey().getParent())) {
+        return EntityUtils.entityToPojo(e, childCmd, clr, ec, false, ec.getFetchPlan());
+        // We are potentially ignoring data errors where there is more than one
+        // direct child for the one to one.  Unfortunately, in order to detect
+        // this we need to read all the way to the end of the Iterable and that
+        // might pull back a lot more data than is really necessary.
       }
     }
     return null;

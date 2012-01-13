@@ -230,7 +230,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
    */
   public Iterator iterator(ObjectProvider op) {
     ExecutionContext ec = op.getExecutionContext();
-    if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+    if (MetaDataUtils.readRelatedKeysFromParent(storeMgr, ownerMemberMetaData)) {
       // Get child keys from property in owner Entity if the property exists
       Entity datastoreEntity = getOwnerEntity(op);
       String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);

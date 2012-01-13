@@ -33,7 +33,7 @@ import java.util.NoSuchElementException;
  *
  * @author Max Ross <maxr@google.com>
  */
-class LazyResult<T> implements Iterable<T> {
+public class LazyResult<T> implements Iterable<T> {
 
   /**
    * A function that translates an {@link Entity} to an instance of type {@code T}.
@@ -103,7 +103,7 @@ class LazyResult<T> implements Iterable<T> {
     return listIterator();
   }
 
-  ListIterator<T> listIterator() {
+  public ListIterator<T> listIterator() {
     if (!lazyEntityIterator.hasNext()) {
       return resolvedPojos.listIterator();
     }
