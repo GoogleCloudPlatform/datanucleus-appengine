@@ -43,7 +43,6 @@ import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.EntityUtils;
 import com.google.appengine.datanucleus.KeyRegistry;
 import com.google.appengine.datanucleus.MetaDataUtils;
-import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 
 /**

@@ -18,12 +18,6 @@ package com.google.appengine.datanucleus.query;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.Book;
 
-import java.util.List;
-
-import javax.persistence.criteria.CriteriaBuilder;
-import javax.persistence.criteria.CriteriaQuery;
-import javax.persistence.criteria.Root;
-
 /**
  * @author Max Ross <max.ross@gmail.com>
  */

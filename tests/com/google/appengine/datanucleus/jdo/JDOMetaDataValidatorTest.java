@@ -15,11 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import java.util.Map;
-
-import com.google.appengine.datanucleus.StorageVersion;
-import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToOneUniSideA;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraint;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.HasUniqueConstraints;
 import com.google.appengine.datanucleus.test.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
@@ -59,7 +54,6 @@ import com.google.appengine.datanucleus.test.IllegalMappingsJDO.SequenceOnEncode
 import com.google.appengine.datanucleus.test.IllegalMappingsJDO.SequenceOnKeyPk;
 
 import javax.jdo.JDOFatalUserException;
-import javax.jdo.JDOHelper;
 import javax.jdo.Query;
 
 import org.datanucleus.metadata.InvalidMetaDataException;

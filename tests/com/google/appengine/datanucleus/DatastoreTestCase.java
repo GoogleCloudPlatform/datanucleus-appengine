@@ -18,7 +18,6 @@ package com.google.appengine.datanucleus;
 //import com.google.appengine.testing.cloudcover.util.CloudCoverLocalServiceTestHelper;
 
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
-import com.google.appengine.tools.development.testing.LocalServiceTestConfig;
 import com.google.appengine.tools.development.testing.LocalServiceTestHelper;
 import com.google.apphosting.api.ApiProxy;
 import junit.framework.TestCase;

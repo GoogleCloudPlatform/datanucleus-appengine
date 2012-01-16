@@ -21,7 +21,6 @@ import com.google.appengine.datanucleus.annotations.Unowned;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.jdo.annotations.Order;
 import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
