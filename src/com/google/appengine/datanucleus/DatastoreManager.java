@@ -326,7 +326,7 @@ public class DatastoreManager extends MappedStoreManager {
   public Collection<String> getSupportedOptions() {
     Set<String> opts = new HashSet<String>();
     opts.add("TransactionIsolationLevel.read-committed");
-    opts.add("BackedSCO");
+    opts.add("BackedSCO"); // TODO Only use this when using original StorageVersion
     opts.add("ApplicationIdentity");
     opts.add("DatastoreIdentity");
     opts.add("OptimisticTransaction");
