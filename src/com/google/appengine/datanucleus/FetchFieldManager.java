@@ -221,7 +221,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       if (ammd.getType().equals(Key.class)) {
         // If this is a pk field, transform the Key into its String representation.
         return datastoreEntity.getKey();
-      } else if(ammd.getType().equals(Long.class)) {
+      } else if(ammd.getType().equals(Long.class) || ammd.getType().equals(long.class)) {
         return datastoreEntity.getKey().getId();
       }
       throw exceptionForUnexpectedKeyType("Primary key", fieldNumber);
