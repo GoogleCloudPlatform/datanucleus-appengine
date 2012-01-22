@@ -1080,7 +1080,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
             }
           }
         }
-        if (Relation.isBidirectional(relationType)) {
+        if (relationType == Relation.ONE_TO_MANY_BI) {
           // TODO This is ManagedRelations - move into RelationshipManager
           // Managed Relations : 1-N bidir, so make sure owner is correct at persist
           Object currentOwner = elementOP.provideField(elementMemberMetaData.getAbsoluteFieldNumber());

@@ -105,7 +105,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           }
         }
 
-        if (Relation.isBidirectional(relationType)) {
+        if (relationType == Relation.ONE_TO_MANY_BI) {
           // TODO Move this into RelationshipManager
           // Managed Relations : 1-N bidir, so make sure owner is correct at persist
           Object currentOwner = esm.provideField(getFieldNumberInElementForBidirectional(esm));
@@ -135,7 +135,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       // Element was already persistent so make sure the FK is in place
       // TODO This is really "ManagedRelationships" so needs to go in RelationshipManager
       ObjectProvider elementOP = ec.findObjectProvider(element);
-      if (Relation.isBidirectional(relationType)) {
+      if (relationType == Relation.ONE_TO_MANY_BI) {
         // Managed Relations : 1-N bidir, so update the owner of the element
         ec.getApiAdapter().isLoaded(elementOP, getFieldNumberInElementForBidirectional(elementOP)); // Ensure is loaded
         Object oldOwner = elementOP.provideField(getFieldNumberInElementForBidirectional(elementOP));
@@ -276,7 +276,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
 
     ObjectProvider elementOP = ec.findObjectProvider(elementToRemove);
     Object oldOwner = null;
-    if (Relation.isBidirectional(relationType)) {
+    if (relationType == Relation.ONE_TO_MANY_BI) {
       if (!ec.getApiAdapter().isDeleted(elementToRemove)) {
         // Find the existing owner if the record hasn't already been deleted
         int elemOwnerFieldNumber = getFieldNumberInElementForBidirectional(elementOP);
@@ -367,7 +367,12 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
    * @return The field number in the element for this relation
    */
   protected int getFieldNumberInElementForBidirectional(ObjectProvider elementOP) {
-    return (relationType == Relation.ONE_TO_MANY_BI ? 
-        elementOP.getClassMetaData().getAbsolutePositionOfMember(ownerMemberMetaData.getMappedBy()) : -1);
+    if (Relation.isBidirectional(relationType)) {
+      AbstractMemberMetaData[] relMmds = ownerMemberMetaData.getRelatedMemberMetaData(clr);
+      if (relMmds != null) {
+        return relMmds[0].getAbsoluteFieldNumber();
+      }
+    }
+    return -1;
   }
 }

@@ -35,6 +35,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
+import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
@@ -135,8 +136,9 @@ public abstract class AbstractFKStore {
             mappedByFieldName, element_class.getName()));
       }
 
-      // Check that the type of the element "mapped-by" field is consistent with the owner type
-      if (!clr.isAssignableFrom(elementMemberMetaData.getType(), ownerMmd.getAbstractClassMetaData().getFullClassName())) {
+      // Check that the type of the element "mapped-by" field is consistent with the owner type when 1-N
+      if ((relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) &&
+          !clr.isAssignableFrom(elementMemberMetaData.getType(), ownerMmd.getAbstractClassMetaData().getFullClassName())) {
         throw new NucleusUserException(LOCALISER.msg("056025", ownerMmd.getFullFieldName(), 
             elementMemberMetaData.getFullFieldName(), elementMemberMetaData.getTypeName(), ownerMmd.getAbstractClassMetaData().getFullClassName()));
       }
