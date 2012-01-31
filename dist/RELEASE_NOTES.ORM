@@ -15,6 +15,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=20
 - Attempt to change parent of child not detected
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=62
 
+- parent PC cannot have more than one field that are of the same child PC
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=73
+
 - Support unindexed properties on Version columns
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=79
 
@@ -77,6 +80,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=165
 
 - Support JDOQL/JPQL setResultClass
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=166
+
+- API for translating JDO-managed objects into low-level entities
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=168
 
 - Requirement to have datanucleus-jpa in CLASSPATH when using JDO?
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=173
@@ -153,6 +159,8 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=253
 - Change default storage version to READ_OWNED_CHILD_KEYS_FROM_PARENTS
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=255
 
+- Provide convenience Maven "pom" artifacts for JDO/JPA usage
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=257
 
 VERSION 1.0.10
 - Support for cross-group (XG) transactions.
