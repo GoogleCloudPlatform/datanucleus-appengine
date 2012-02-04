@@ -2024,6 +2024,19 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertTrue(keyStack.isEmpty());
   }
 
+  public void testNullExtentAndClose() {
+    try {
+    Extent<Flight> ex = pm.getExtent(Flight.class);
+    Iterator<Flight> exIter = ex.iterator();
+    while (exIter.hasNext()) {
+      exIter.next();
+    }
+    ex.closeAll();
+    } catch (Exception e) {
+      fail("Exception thrown on Extent iteration and close");
+    }
+  }
+
   public void testAliasedFilter() {
     Entity flightEntity = newFlightEntity("1", "yam", "bam", 1, 2);
     ds.put(null, flightEntity);
