@@ -83,11 +83,9 @@ import java.util.Set;
  * we need to represent this logically in order to take care of all the nice
  * mapping logic that datanucleus does for us.
  *
- * This code is largely copied from AbstractClassTable, ClassTable, TableImpl,
- * and AbstractTable
+ * This code is largely copied from AbstractClassTable, ClassTable, TableImpl, and AbstractTable
  *
- * TODO(maxr): Refactor the RDBMS classes into the mapped package so we can
- * refactor this.
+ * TODO : Drop the code adding "foreign key" when we drop support for old storage versions
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -497,18 +495,19 @@ public class DatastoreTable implements DatastoreClass {
           throw new NucleusException("Invalid persistence-modifier for field ").setFatal();
         }
 
-        // Calculate if we need a FK adding due to a 1-N (FK) relationship
+        // Calculate if we need a FK adding due to a 1-N relationship TODO Remove this when no longer supporting old storageVersion
+        // Note that we ignore any "join" setting since we don't use join tables
         boolean needsFKToContainerOwner = false;
         int relationType = fmd.getRelationType(clr);
         if (relationType == Relation.ONE_TO_MANY_BI) {
-          AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
-          if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {
+          /*AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
+          if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {*/
             needsFKToContainerOwner = true;
-          }
+          /*}*/
         } else if (relationType == Relation.ONE_TO_MANY_UNI) {
-          if (fmd.getJoinMetaData() == null) {
+          /*if (fmd.getJoinMetaData() == null) {*/
             needsFKToContainerOwner = true;
-          }
+          /*}*/
         } else if (relationType == Relation.ONE_TO_ONE_BI) {
           if (fmd.getMappedBy() != null) {
             // This element type has a many-to-one pointing back.
@@ -1171,8 +1170,8 @@ public class DatastoreTable implements DatastoreClass {
     for (Object aC : c) {
       CallBack callback = (CallBack) aC;
 
-      if (callback.fmd.getJoinMetaData() == null) {
-        // 1-N FK relationship
+   /* if (callback.fmd.getJoinMetaData() == null) {*/
+        // 1-N relationship
         AbstractMemberMetaData ownerFmd = callback.fmd;
         if (ownerFmd.getMappedBy() != null) {
           // Bidirectional (element has a PC mapping to the owner)
@@ -1273,7 +1272,7 @@ public class DatastoreTable implements DatastoreClass {
           addOrderMapping(ownerFmd, orderMapping);
         }
       }
-    }
+    /*}*/
   }
 
   private JavaTypeMapping addOrderMapping(AbstractMemberMetaData fmd, JavaTypeMapping orderMapping) {
