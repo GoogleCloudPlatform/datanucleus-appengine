@@ -164,12 +164,14 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           return false;
         }
         else {
-          // fk is already set and sets are unindexed so there's nothing else to do
-          // Keys (and therefore parents) are immutable so we don't need to ever
-          // actually update the parent FK, but we do need to check to make sure
-          // someone isn't trying to modify the parent FK
-          EntityUtils.checkParentage(element, op);
-          return true;
+          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+            // fk is already set and sets are unindexed so there's nothing else to do
+            // Keys (and therefore parents) are immutable so we don't need to ever
+            // actually update the parent FK, but we do need to check to make sure
+            // someone isn't trying to modify the parent FK
+            EntityUtils.checkParentage(element, op);
+            return true;
+          }
         }
       }
     }

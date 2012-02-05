@@ -551,11 +551,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       dependent = true;
     }
 
-    if (!dependent && ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
+    // TODO Don't go through this if using latest storage version since we store child keys in owner
+
+    if (!dependent && ownerMapping != null && ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
       NucleusLogger.DATASTORE.debug(LOCALISER.msg("056043"));
       nullify = true;
-    }
-    else {
+    } else {
       NucleusLogger.DATASTORE.debug(LOCALISER.msg("056042"));
     }
 
@@ -565,7 +566,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
     if (nullify) {
       // we don't support unowned relationships yet
-      throw new UnsupportedOperationException("Non-owned relationships are not currently supported.");
     } else {
       // first we need to delete the element
       ExecutionContext ec = ownerOP.getExecutionContext();
