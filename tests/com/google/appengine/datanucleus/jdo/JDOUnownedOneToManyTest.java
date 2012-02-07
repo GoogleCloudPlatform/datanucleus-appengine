@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import java.util.List;
 import java.util.Set;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
@@ -83,5 +84,36 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
     assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testDeleteOwnerNotDependent() {
+    UnownedJDOOneToManyUniSideA a = new UnownedJDOOneToManyUniSideA();
+    a.setName("Side A");
+    UnownedJDOOneToManyUniSideB b1 = new UnownedJDOOneToManyUniSideB();
+    b1.setName("First B");
+    UnownedJDOOneToManyUniSideB b2 = new UnownedJDOOneToManyUniSideB();
+    b2.setName("Second B");
+    a.addOther(b1);
+    a.addOther(b2);
+    pm.makePersistent(a);
+    pm.close();
+
+    pm = pmf.getPersistenceManager();
+    List<UnownedJDOOneToManyUniSideA> as = (List<UnownedJDOOneToManyUniSideA>) 
+        pm.newQuery("select from " + UnownedJDOOneToManyUniSideA.class.getName()).execute();
+    assertEquals(1, as.size());
+    assertEquals(2, as.get(0).getOthers().size());
+
+    List<UnownedJDOOneToManyUniSideB> bs = (List<UnownedJDOOneToManyUniSideB>) 
+        pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, bs.size());
+
+    pm.deletePersistent(as.get(0));
+
+    as = (List<UnownedJDOOneToManyUniSideA>)pm.newQuery("select from " + UnownedJDOOneToManyUniSideA.class.getName()).execute();
+    assertEquals(0, as.size());
+
+    bs = (List<UnownedJDOOneToManyUniSideB>) pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, bs.size());
   }
 }

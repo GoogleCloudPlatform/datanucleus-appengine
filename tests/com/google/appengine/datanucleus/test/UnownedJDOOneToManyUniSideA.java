@@ -36,7 +36,7 @@ public class UnownedJDOOneToManyUniSideA {
 
   @Persistent
   @Unowned
-  Set<UnownedJDOOneToManyUniSideB> others;
+  Set<UnownedJDOOneToManyUniSideB> others = new HashSet<UnownedJDOOneToManyUniSideB>();
 
   String name;
 
@@ -53,9 +53,6 @@ public class UnownedJDOOneToManyUniSideA {
   }
 
   public void addOther(UnownedJDOOneToManyUniSideB other) {
-    if (this.others == null) {
-      this.others = new HashSet<UnownedJDOOneToManyUniSideB>();
-    }
     this.others.add(other);
   }
 
