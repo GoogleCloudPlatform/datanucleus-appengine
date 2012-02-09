@@ -298,9 +298,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         deleteElements = false;
       }
       else {
-        // Field is not dependent, and not nullable so we just delete the elements
-        NucleusLogger.DATASTORE.debug(LOCALISER.msg("056035"));
-        deleteElements = true;
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          // Field is not dependent, and not nullable so we just delete the elements
+          NucleusLogger.DATASTORE.debug(LOCALISER.msg("056035"));
+          deleteElements = true;
+        }
       }
     }
 
@@ -321,9 +323,6 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           }
         }
       }
-    }
-    else {
-      throw new UnsupportedOperationException("Non-owned relationships are not currently supported");
     }
   }
 

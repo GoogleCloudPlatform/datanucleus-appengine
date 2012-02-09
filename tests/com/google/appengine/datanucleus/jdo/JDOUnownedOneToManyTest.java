@@ -21,6 +21,7 @@ import java.util.Set;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideB;
+import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniListSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniSideB;
 
@@ -29,7 +30,7 @@ import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniSideB;
  */
 public class JDOUnownedOneToManyTest extends JDOTestCase {
 
-  public void testPersistUniNewBoth() throws EntityNotFoundException {
+  public void testSetPersistUniNewBoth() throws EntityNotFoundException {
     // Persist A-B as unowned
     UnownedJDOOneToManyUniSideA a = new UnownedJDOOneToManyUniSideA();
     a.setName("Side A");
@@ -57,7 +58,35 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     assertEquals(bId, pm.getObjectId(b2));
   }
 
-  public void testPersistBiNewBoth() throws EntityNotFoundException {
+  public void testListPersistUniNewBoth() throws EntityNotFoundException {
+    // Persist A-B as unowned
+    UnownedJDOOneToManyUniListSideA a = new UnownedJDOOneToManyUniListSideA();
+    a.setName("Side A");
+    UnownedJDOOneToManyUniSideB b = new UnownedJDOOneToManyUniSideB();
+    b.setName("Side B");
+    a.addOther(b);
+
+    pm.makePersistent(a);
+
+    Object aId = pm.getObjectId(a);
+    Object bId = pm.getObjectId(b);
+
+    pm.evictAll(); // Make sure we go to the datastore
+
+    // Retrieve by id and check
+    UnownedJDOOneToManyUniListSideA a2 = (UnownedJDOOneToManyUniListSideA)pm.getObjectById(aId);
+    assertNotNull(a2);
+    assertEquals("Side A", a2.getName());
+    List<UnownedJDOOneToManyUniSideB> others = a2.getOthers();
+    assertNotNull(others);
+    assertEquals(1, others.size());
+    UnownedJDOOneToManyUniSideB b2 = others.iterator().next();
+    assertNotNull(b2);
+    assertNotNull("Side B", b2.getName());
+    assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testSetPersistBiNewBoth() throws EntityNotFoundException {
     // Persist A-B as unowned
     UnownedJDOOneToManyBiSideA a = new UnownedJDOOneToManyBiSideA();
     a.setName("Side A");
@@ -86,7 +115,7 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     assertEquals(bId, pm.getObjectId(b2));
   }
 
-  public void testDeleteOwnerNotDependent() {
+  public void testSetDeleteOwnerNotDependent() {
     UnownedJDOOneToManyUniSideA a = new UnownedJDOOneToManyUniSideA();
     a.setName("Side A");
     UnownedJDOOneToManyUniSideB b1 = new UnownedJDOOneToManyUniSideB();
@@ -111,6 +140,37 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
     pm.deletePersistent(as.get(0));
 
     as = (List<UnownedJDOOneToManyUniSideA>)pm.newQuery("select from " + UnownedJDOOneToManyUniSideA.class.getName()).execute();
+    assertEquals(0, as.size());
+
+    bs = (List<UnownedJDOOneToManyUniSideB>) pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, bs.size());
+  }
+
+  public void testListDeleteOwnerNotDependent() {
+    UnownedJDOOneToManyUniListSideA a = new UnownedJDOOneToManyUniListSideA();
+    a.setName("Side A");
+    UnownedJDOOneToManyUniSideB b1 = new UnownedJDOOneToManyUniSideB();
+    b1.setName("First B");
+    UnownedJDOOneToManyUniSideB b2 = new UnownedJDOOneToManyUniSideB();
+    b2.setName("Second B");
+    a.addOther(b1);
+    a.addOther(b2);
+    pm.makePersistent(a);
+    pm.close();
+
+    pm = pmf.getPersistenceManager();
+    List<UnownedJDOOneToManyUniListSideA> as = (List<UnownedJDOOneToManyUniListSideA>) 
+        pm.newQuery("select from " + UnownedJDOOneToManyUniListSideA.class.getName()).execute();
+    assertEquals(1, as.size());
+    assertEquals(2, as.get(0).getOthers().size());
+
+    List<UnownedJDOOneToManyUniSideB> bs = (List<UnownedJDOOneToManyUniSideB>) 
+        pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, bs.size());
+
+    pm.deletePersistent(as.get(0));
+
+    as = (List<UnownedJDOOneToManyUniListSideA>)pm.newQuery("select from " + UnownedJDOOneToManyUniListSideA.class.getName()).execute();
     assertEquals(0, as.size());
 
     bs = (List<UnownedJDOOneToManyUniSideB>) pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
