@@ -4,9 +4,9 @@ Created-By: 1.6.0_26-b03-384-10M3425 (Apple Inc.)
 Bundle-ManifestVersion: 2
 Bundle-Name: DataNucleus AppEngine
 Bundle-SymbolicName: com.google.appengine.datanucleus;singleton:=true
-Bundle-Version: 2.0.0.beta
+Bundle-Version: 2.0.1
 Bundle-Vendor: Google
-Require-Bundle: org.datanucleus;bundle-version="(2.9, 4.0)"
+Require-Bundle: org.datanucleus;bundle-version="[3.0, 3.1)"
 Import-Package: javax.jdo, javax.jdo.annotations, javax.jdo.datastore,
   javax.jdo.identity, javax.jdo.listener, javax.persistence, javax.per
  sistence.spi
