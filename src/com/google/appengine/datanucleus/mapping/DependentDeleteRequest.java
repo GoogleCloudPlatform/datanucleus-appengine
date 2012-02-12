@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.mapping;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.ClassLoaderResolver;
@@ -27,12 +28,14 @@ import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 
+import java.lang.reflect.Array;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -75,11 +78,31 @@ public class DependentDeleteRequest {
     // b). Null any non-dependent objects with FK at other side
     ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
     for (MappingCallbacks callback : callbacks) {
-      callback.preDelete(op);
-
       JavaTypeMapping mapping = (JavaTypeMapping) callback;
       AbstractMemberMetaData mmd = mapping.getMemberMetaData();
       int relationType = mmd.getRelationType(clr);
+      if (callback instanceof ArrayMapping) {
+        // Handle dependent field delete
+        if (Relation.isRelationMultiValued(relationType)) {
+          // Field of type PC[], make sure it is loaded and handle dependent-element
+          ExecutionContext ec = op.getExecutionContext();
+          op.loadField(mmd.getAbsoluteFieldNumber());
+          Object arr = op.provideField(mmd.getAbsoluteFieldNumber());
+          if (mmd.getArray().isDependentElement() || MetaDataUtils.isOwnedRelation(mmd)) {
+            if (arr != null) {
+              for (int i=0;i<Array.getLength(arr); i++) {
+                Object elem = Array.get(arr, i);
+                if (ec.getApiAdapter().isPersistent(elem)) {
+                  ec.deleteObjectInternal(elem);
+                }
+              }
+            }
+          }
+        }
+      } else {
+        callback.preDelete(op);
+      }
+
       if (mmd.isDependent() && (relationType == Relation.ONE_TO_ONE_UNI ||
           (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null))) {
         // Make sure the field is loaded

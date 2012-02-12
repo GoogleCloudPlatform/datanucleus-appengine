@@ -459,11 +459,13 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   protected ListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    // TODO Delete this when we drop old storage version
     return new FKListStore(ammd, this, clr);
   }
 
   @Override
   protected SetStore newFKSetStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
+    // TODO Delete this when we drop old storage version
     return new FKSetStore(ammd, this, clr);
   }
 

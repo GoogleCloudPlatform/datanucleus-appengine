@@ -37,7 +37,6 @@ import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.store.types.sco.SCOUtils;
 import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
@@ -331,7 +330,6 @@ public class FetchFieldManager extends DatastoreFieldManager
             // Retrieve all Entities in one call
             DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
             DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
-            NucleusLogger.GENERAL.info(">> FetchFM keys=" + StringUtils.collectionToString(keys));
             Map<Key, Entity> entitiesByKey = ds.get(keys);
 
             AbstractClassMetaData elemCmd = ammd.getCollection().getElementClassMetaData(clr, getExecutionContext().getMetaDataManager());
@@ -351,7 +349,7 @@ public class FetchFieldManager extends DatastoreFieldManager
           // Fields of type PC[]
           Object propValue = datastoreEntity.getProperty(propName);
           List<Key> keys = (List<Key>)propValue;
-          if (propValue == null) {
+          if (propValue != null) {
             value = Array.newInstance(ammd.getType().getComponentType(), keys.size());
 
             // Retrieve all Entities in one call

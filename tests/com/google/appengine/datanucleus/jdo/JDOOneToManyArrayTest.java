@@ -39,14 +39,12 @@ public class JDOOneToManyArrayTest extends JDOOneToManyTestCase {
     testInsert_NewParentAndChild(parent, bidirChild, startEnd);
   }
 
-  // TODO(maxr) This doesn't work for rdbms either.  Find out why.
-  public void xxxtestInsertExistingParentNewChild() throws EntityNotFoundException {
+  public void testInsertExistingParentNewChild() throws EntityNotFoundException {
     HasOneToManyArrayJDO parent = new HasOneToManyArrayJDO();
     BidirectionalChildArrayJDO bidirChild = new BidirectionalChildArrayJDO();
     testInsert_ExistingParentNewChild(parent, bidirChild, TXN_START_END);
   }
 
-  // TODO(maxr): Doesn't work for RDBMS either.  Submit bug to Andy.
   public void xxxtestSwapAtPosition_Array() throws EntityNotFoundException {
     HasOneToManyArrayJDO parent = new HasOneToManyArrayJDO();
     BidirectionalChildArrayJDO bidirChild = new BidirectionalChildArrayJDO();
@@ -63,8 +61,7 @@ public class JDOOneToManyArrayTest extends JDOOneToManyTestCase {
     testRemoveAtPosition(parent, bidirChild, bidirChild2, bidirChild3, TXN_START_END);
   }
 
-  // TODO(maxr): Doesn't work for RDBMS either.  Submit bug to Andy.
-  public void xxxtestAddAtPosition_Array() throws EntityNotFoundException {
+  public void testAddAtPosition_Array() throws EntityNotFoundException {
     HasOneToManyArrayJDO parent = new HasOneToManyArrayJDO();
     BidirectionalChildArrayJDO bidirChild = new BidirectionalChildArrayJDO();
     BidirectionalChildArrayJDO bidirChild2 = new BidirectionalChildArrayJDO();

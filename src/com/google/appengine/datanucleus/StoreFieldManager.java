@@ -36,6 +36,7 @@ import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
+import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -242,22 +243,25 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
-    if (value != null ) {
-      // TODO Support mmd.typeConversionName
-      // Perform any conversions from the field type to the stored-type
-      TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
-      value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
-    }
-
     if (relationType == Relation.NONE) {
       // Basic field
       if (value == null) {
         checkSettingToNullValue(ammd, value);
+      } else {
+        if (ammd.getTypeConverterName() != null) {
+          // TODO Support mmd.typeConversionName
+        } else {
+          // Perform any conversions from the field type to the stored-type
+          TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+          value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
+        }
+
+        if (value instanceof SCO) {
+          // Use the unwrapped value so the datastore doesn't fail on unknown types
+          value = ((SCO)value).getValue();
+        }
       }
-      if (value instanceof SCO) {
-        // Use the unwrapped value so the datastore doesn't fail on unknown types
-        value = ((SCO)value).getValue();
-      }
+
       EntityUtils.setEntityProperty(datastoreEntity, ammd, 
           EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
       return;
@@ -311,20 +315,22 @@ public class StoreFieldManager extends DatastoreFieldManager {
           }
           value = keys;
         } else if (ammd.hasArray()) {
-          List<Key> keys = Utils.newArrayList();
-          for (int i=0;i<Array.getLength(value); i++) {
-            Object obj = Array.get(value, i);
-            Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
-            if (key != null) {
-              keys.add(key);
-              if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
-                // Detect attempt to add an object with its key set (and hence parent set) on owned field
-                throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                    key, datastoreEntity.getKey()));
+          if (value != null) {
+            List<Key> keys = Utils.newArrayList();
+            for (int i=0;i<Array.getLength(value); i++) {
+              Object obj = Array.get(value, i);
+              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
+              if (key != null) {
+                keys.add(key);
+                if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
+                  // Detect attempt to add an object with its key set (and hence parent set) on owned field
+                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                      key, datastoreEntity.getKey()));
+                }
               }
             }
+            value = keys;
           }
-          value = keys;
         } else if (ammd.hasMap()) {
           // TODO Support maps
         }
@@ -363,6 +369,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     if (childOP == null) {
       // Not yet persistent, so persist it
       childPC = ec.persistObjectInternal(childPC, null, -1, ObjectProvider.PC);
+      childOP = ec.findObjectProvider(childPC);
     }
 
     if (mmd.getAbstractClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
@@ -697,7 +704,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
     for (RelationStoreInformation relInfo : relationStoreInfos) {
       try {
         JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(relInfo.mmd);
-        if (mapping instanceof MappingCallbacks) {
+        if (mapping instanceof ArrayMapping) {
+          // Ignore postInsert/update for arrays since only storing key in owner object (below)
+        } else if (mapping instanceof MappingCallbacks) {
           if (operation == StoreFieldManager.Operation.INSERT) {
             ((MappingCallbacks)mapping).postInsert(op);
           } else {
