@@ -15,6 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
+import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -86,6 +87,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   protected boolean keyAlreadySet = false;
 
+  /** Cache of relation information for processing later in "storeRelations". */
   private final List<RelationStoreInformation> relationStoreInfos = Utils.newArrayList();
 
   /**
@@ -193,26 +195,40 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
-    if (ammd.getEmbeddedMetaData() != null) {
-      // Embedded field handling
-      ObjectProvider embeddedOP = getEmbeddedObjectProvider(ammd, fieldNumber, value);
-      // TODO Create own FieldManager instead of reusing this one
-      // We need to build a mapping consumer for the embedded class so that we get correct
-      // fieldIndex --> metadata mappings for the class in the proper embedded context
-      // TODO(maxr) Consider caching this
-      InsertMappingConsumer mc = buildMappingConsumer(
-          embeddedOP.getClassMetaData(), getClassLoaderResolver(),
-          embeddedOP.getClassMetaData().getAllMemberPositions(),
-          ammd.getEmbeddedMetaData());
-      fieldManagerStateStack.addFirst(
-          new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
-      embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
-      fieldManagerStateStack.removeFirst();
-      return;
-    }
-
     ExecutionContext ec = getExecutionContext();
     ClassLoaderResolver clr = getClassLoaderResolver();
+    int relationType = ammd.getRelationType(clr);
+
+    if (ammd.getEmbeddedMetaData() != null) {
+      // Embedded field handling
+      if (Relation.isRelationSingleValued(relationType)) {
+        // Embedded persistable object
+        ObjectProvider embeddedOP = getEmbeddedObjectProvider(ammd, fieldNumber, value);
+        // TODO Create own FieldManager instead of reusing this one
+        // We need to build a mapping consumer for the embedded class so that we get correct
+        // fieldIndex --> metadata mappings for the class in the proper embedded context
+        // TODO(maxr) Consider caching this
+        InsertMappingConsumer mc = buildMappingConsumer(
+            embeddedOP.getClassMetaData(), getClassLoaderResolver(),
+            embeddedOP.getClassMetaData().getAllMemberPositions(),
+            ammd.getEmbeddedMetaData());
+        fieldManagerStateStack.addFirst(
+            new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
+        embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+        fieldManagerStateStack.removeFirst();
+        return;
+      } else if (Relation.isRelationMultiValued(relationType)) {
+        if (ammd.hasCollection()) {
+          // TODO Support embedded collections
+        } else if (ammd.hasMap()) {
+          // TODO Support embedded maps
+        } else if (ammd.hasArray()) {
+          // TODO Support embedded arrays
+        }
+        throw new NucleusUserException("Don't currently support embedded multi-valued fields");
+      }
+    }
+
     if (ammd.isSerialized()) {
       if (value != null) {
         // Serialize the field (producing a Blob)
@@ -227,12 +243,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     if (value != null ) {
+      // TODO Support mmd.typeConversionName
       // Perform any conversions from the field type to the stored-type
       TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
       value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
     }
 
-    int relationType = ammd.getRelationType(clr);
     if (relationType == Relation.NONE) {
       // Basic field
       if (value == null) {
@@ -294,6 +310,23 @@ public class StoreFieldManager extends DatastoreFieldManager {
             }
           }
           value = keys;
+        } else if (ammd.hasArray()) {
+          List<Key> keys = Utils.newArrayList();
+          for (int i=0;i<Array.getLength(value); i++) {
+            Object obj = Array.get(value, i);
+            Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
+            if (key != null) {
+              keys.add(key);
+              if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
+                // Detect attempt to add an object with its key set (and hence parent set) on owned field
+                throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                    key, datastoreEntity.getKey()));
+              }
+            }
+          }
+          value = keys;
+        } else if (ammd.hasMap()) {
+          // TODO Support maps
         }
 
         if (value instanceof SCO) {
@@ -409,9 +442,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
       try {
         key = KeyFactory.stringToKey(value);
       } catch (IllegalArgumentException iae) {
-        throw new NucleusFatalUserException(
-            "Attempt was made to set parent to " + value
-            + " but this cannot be converted into a Key.");
+        throw new NucleusFatalUserException("Attempt was made to set parent to " + value +
+            " but this cannot be converted into a Key.");
       }
     }
     storeParentKeyPK(key);
@@ -576,7 +608,15 @@ public class StoreFieldManager extends DatastoreFieldManager {
                 childValue = Arrays.asList((Object[]) childValue);
               }
 
-              String expectedType = getExpectedChildType(mmd);
+              String expectedType = mmd.getTypeName();
+              if (mmd.getCollection() != null) {
+                CollectionMetaData cmd = mmd.getCollection();
+                expectedType = cmd.getElementType();
+              } else if (mmd.getArray() != null) {
+                ArrayMetaData amd = mmd.getArray();
+                expectedType = amd.getElementType();
+              }
+
               if (childValue instanceof Iterable) {
                 // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
                 for (Object element : (Iterable) childValue) {
@@ -755,26 +795,44 @@ public class StoreFieldManager extends DatastoreFieldManager {
             modifiedEntity = true;
             EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
           }
+        } else if (mmd.hasArray()) {
+          List<Key> keys = Utils.newArrayList();
+          for (int i=0;i<Array.getLength(value);i++) {
+            Object obj = Array.get(value, i);
+            // TODO Should process SCO before we get here so we have no deleted objects
+            if (!ec.getApiAdapter().isDeleted(obj)) {
+              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
+              if (key != null) {
+                keys.add(key);
+              } else {
+                Object childPC = processPersistable(mmd, obj);
+                key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
+                keys.add(key);
+              }
+
+              if (owned) {
+                // Check that we aren't assigning an owned child with different parent
+                if (!datastoreEntity.getKey().equals(key.getParent())) {
+                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                      key, datastoreEntity.getKey()));
+                }
+              }
+            }
+          }
+          value = keys;
+          if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
+            modifiedEntity = true;
+            EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
+          }
+        } else if (mmd.hasMap()) {
+          // TODO Cater for PC maps
         }
-        // TODO Cater for PC array, maps
       }
     }
 
     relationStoreInfos.clear();
 
     return modifiedEntity;
-  }
-
-  // Nonsense about registering parent key
-  private String getExpectedChildType(AbstractMemberMetaData dependent) {
-    if (dependent.getCollection() != null) {
-      CollectionMetaData cmd = dependent.getCollection();
-      return cmd.getElementType();
-    } else if (dependent.getArray() != null) {
-      ArrayMetaData amd = dependent.getArray();
-      return amd.getElementType();
-    }
-    return dependent.getTypeName();
   }
 
   // Nonsense about registering parent key
@@ -807,6 +865,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
   /**
    * Method to make sure that the Entity has its parentKey assigned.
+   * Will update the Entity of this StoreFieldManager as necessary for the parent key.
    * Returns the assigned parent PK (when we have a "gae.parent-pk" field/property in this class).
    * @return The parent key if the pojo class has a parent property. Note that a return value of {@code null} 
    *   does not mean that an entity group was not established, it just means the pojo doesn't have a distinct

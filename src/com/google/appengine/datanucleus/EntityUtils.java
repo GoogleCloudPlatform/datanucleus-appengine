@@ -934,7 +934,7 @@ public final class EntityUtils {
         id = OIDFactory.getInstance(ec.getNucleusContext(), key.getName());
       } else {
         // Numeric based
-        id = OIDFactory.getInstance(ec.getNucleusContext(), key.getId());
+        id = OIDFactory.getInstance(ec.getNucleusContext(), cls.getName(), key.getId());
       }
     } else {
       FieldManager fm = new QueryEntityPKFetchFieldManager(acmd, entity);
