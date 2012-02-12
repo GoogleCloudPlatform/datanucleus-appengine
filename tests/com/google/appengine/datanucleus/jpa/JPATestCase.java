@@ -21,6 +21,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.StorageVersion;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.NucleusContext;
@@ -115,6 +116,14 @@ public class JPATestCase extends DatastoreTestCase {
     } finally {
       super.tearDown();
     }
+  }
+
+  protected DatastoreManager getDatastoreManagerForEM(EntityManager em) {
+    return (DatastoreManager) ((JPAEntityManager)em).getExecutionContext().getStoreManager();
+  }
+
+  protected StorageVersion getStorageVersion(EntityManager em) {
+    return getDatastoreManagerForEM(em).getStorageVersion();
   }
 
   protected void beginTxn() {

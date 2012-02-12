@@ -26,6 +26,7 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.BidirectionalChildJDO;
 import com.google.appengine.datanucleus.test.BidirectionalChildLongPkJDO;
@@ -100,7 +101,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -111,7 +112,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("jimmy", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
     assertKeyParentEquals(parent.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -120,7 +121,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(parent.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -186,7 +187,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -197,7 +198,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("jimmy", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
     assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -206,7 +207,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -299,7 +300,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -310,7 +311,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another name", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f2.getId()), flightEntity.getKey());
     assertKeyParentEquals(pojo.getId(), flightEntity, f2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -319,7 +320,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -422,7 +423,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -431,7 +432,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yet another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir3.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(1L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -442,7 +443,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another name", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f2.getId()), flightEntity.getKey());
     assertKeyParentEquals(pojo.getId(), flightEntity, f2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -453,7 +454,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yet another name", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f3.getId()), flightEntity.getKey());
     assertKeyParentEquals(pojo.getId(), flightEntity, f2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(1L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -462,7 +463,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -471,7 +472,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yet another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk3.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(1L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -558,7 +559,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -569,7 +570,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another name", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f2.getId()), flightEntity.getKey());
     assertKeyParentEquals(pojo.getId(), flightEntity, f2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -578,7 +579,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertEquals("another str", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk2.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk2.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -629,7 +630,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
     assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -637,7 +638,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -645,7 +646,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(bidirEntity);
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -682,7 +683,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(flightEntity);
     assertEquals("yam", flightEntity.getProperty("origin"));
     assertKeyParentEquals(pojo.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -690,7 +691,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(hasKeyPkEntity);
     assertEquals("yar", hasKeyPkEntity.getProperty("str"));
     assertKeyParentEquals(pojo.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 
@@ -698,7 +699,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     assertNotNull(bidirEntity);
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, bidirEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -1111,7 +1112,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
     Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
@@ -1179,7 +1180,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
     Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_longpk"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_longpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
@@ -1249,7 +1250,7 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     Entity flightEntity3 = ds.get(KeyFactory.stringToKey(f3.getId()));
     Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
-    if (isIndexed()) {
+    if (isIndexed() && getStorageVersion(pm) == StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN) {
       assertEquals(0L, flightEntity1.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
       assertEquals(1L, flightEntity3.getProperty("flights_INTEGER_IDX_unencodedstringpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));

@@ -20,12 +20,12 @@ import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.EntityUtils;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.api.jdo.JDOPersistenceManager;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.util.NucleusLogger;
 
 import java.util.Map;
 
@@ -106,6 +106,13 @@ public class JDOTestCase extends DatastoreTestCase {
     }
   }
 
+  protected DatastoreManager getDatastoreManagerForPM(PersistenceManager pm) {
+    return (DatastoreManager) ((JDOPersistenceManager)pm).getExecutionContext().getStoreManager();
+  }
+
+  protected StorageVersion getStorageVersion(PersistenceManager pm) {
+    return getDatastoreManagerForPM(pm).getStorageVersion();
+  }
 
   protected void beginTxn() {
     pm.currentTransaction().begin();
@@ -121,18 +128,13 @@ public class JDOTestCase extends DatastoreTestCase {
 
   protected <T> T makePersistentInTxn(T obj, StartEnd startEnd) {
     boolean success = false;
-    NucleusLogger.GENERAL.info(">> JDOTestCase.makePersistentInTxn");
-    NucleusLogger.GENERAL.info(">> test START");
     startEnd.start();
     try {
-        NucleusLogger.GENERAL.info(">> test makePersistent");
       pm.makePersistent(obj);
-      NucleusLogger.GENERAL.info(">> test END");
       startEnd.end();
       success = true;
     } finally {
       if (!success && pm.currentTransaction().isActive()) {
-          NucleusLogger.GENERAL.info(">> test ROLLBACK");
         rollbackTxn();
       }
     }
