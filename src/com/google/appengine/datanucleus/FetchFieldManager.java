@@ -16,7 +16,9 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import java.lang.reflect.Array;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
@@ -312,68 +314,13 @@ public class FetchFieldManager extends DatastoreFieldManager
       if (datastoreEntity.hasProperty(propName)) {
         if (ammd.hasCollection()) {
           // Fields of type Collection<PC>
-          Collection<Object> coll;
-          try
-          {
-              Class instanceType = SCOUtils.getContainerInstanceType(ammd.getType(), ammd.getOrderMetaData() != null);
-              coll = (Collection<Object>) instanceType.newInstance();
-          }
-          catch (Exception e)
-          {
-              throw new NucleusDataStoreException(e.getMessage(), e);
-          }
-
-          Object propValue = datastoreEntity.getProperty(propName);
-          if (propValue != null) {
-            List<Key> keys = (List<Key>)propValue;
-
-            // Retrieve all Entities in one call
-            DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-            DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
-            Map<Key, Entity> entitiesByKey = ds.get(keys);
-
-            AbstractClassMetaData elemCmd = ammd.getCollection().getElementClassMetaData(clr, getExecutionContext().getMetaDataManager());
-            for (Key key : keys) {
-              Entity entity = entitiesByKey.get(key);
-              if (entity == null) {
-                throw new NucleusFatalUserException("Field " + ammd.getFullFieldName() +
-                    " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
-              }
-              Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, getExecutionContext(), false,
-                  getExecutionContext().getFetchPlan());
-              coll.add(pojo);
-            }
-            value = coll;
-          }
+          value = getCollectionFromDatastoreObject(ammd, getExecutionContext(), clr, propName);
         } else if (ammd.hasArray()) {
           // Fields of type PC[]
-          Object propValue = datastoreEntity.getProperty(propName);
-          List<Key> keys = (List<Key>)propValue;
-          if (propValue != null) {
-            value = Array.newInstance(ammd.getType().getComponentType(), keys.size());
-
-            // Retrieve all Entities in one call
-            DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
-            DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
-            Map<Key, Entity> entitiesByKey = ds.get(keys);
-
-            AbstractClassMetaData elemCmd = ammd.getArray().getElementClassMetaData(clr, getExecutionContext().getMetaDataManager());
-            int i = 0;
-            for (Key key : keys) {
-              Entity entity = entitiesByKey.get(key);
-              if (entity == null) {
-                throw new NucleusFatalUserException("Field " + ammd.getFullFieldName() +
-                    " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
-              }
-              Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, getExecutionContext(), false,
-                  getExecutionContext().getFetchPlan());
-              Array.set(value, i, pojo);
-              i++;
-            }
-          }
+          value = getArrayFromDatastoreObject(ammd, getExecutionContext(), clr, propName);
         } else if (ammd.hasMap()) {
           // Fields of type Map<PC, NonPC>, Map<NonPC, PC>, Map<PC, PC>
-          // TODO Load up map field
+          value = getMapFromDatastoreObject(ammd, getExecutionContext(), clr, propName);
         }
       }
 
@@ -589,6 +536,169 @@ public class FetchFieldManager extends DatastoreFieldManager
         // TODO Support embedded arrays
       }
       throw new NucleusUserException("Don't currently support embedded multi-value objects at " + ammd.getFullFieldName());
+    }
+    return null;
+  }
+
+  /**
+   * Convenience method to convert a datastore value to a Collection.
+   * Converts the datastore List into a collection.
+   * @param mmd Metadata for the collection field
+   * @param ec Execution Context
+   * @param clr ClassLoader resolver
+   * @param propName Property name in the Entity storing this value
+   * @return The datastore object
+   */
+  protected Collection getCollectionFromDatastoreObject(AbstractMemberMetaData mmd, 
+      ExecutionContext ec, ClassLoaderResolver clr, String propName) {
+
+    // Fields of type Collection<PC>
+    Object propValue = datastoreEntity.getProperty(propName);
+    if (propValue != null) {
+      Collection<Object> coll;
+      try
+      {
+          Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+          coll = (Collection<Object>) instanceType.newInstance();
+      }
+      catch (Exception e)
+      {
+          throw new NucleusDataStoreException(e.getMessage(), e);
+      }
+
+      List<Key> keys = (List<Key>)propValue;
+
+      // Retrieve all Entities in one call
+      DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+      DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      Map<Key, Entity> entitiesByKey = ds.get(keys);
+
+      AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+      for (Key key : keys) {
+        Entity entity = entitiesByKey.get(key);
+        if (entity == null) {
+          throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
+              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+        }
+        Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, ec, false, ec.getFetchPlan());
+        coll.add(pojo);
+      }
+      return coll;
+    }
+
+    return null;
+  }
+
+  /**
+   * Convenience method to convert a datastore value to an array.
+   * Converts the datastore List into an array.
+   * @param mmd Metadata for the array field
+   * @param ec Execution Context
+   * @param clr ClassLoader resolver
+   * @param propName Property name in the Entity storing this value
+   * @return The datastore object
+   */
+  protected Object getArrayFromDatastoreObject(AbstractMemberMetaData mmd,
+      ExecutionContext ec, ClassLoaderResolver clr, String propName) {
+
+    // Note this is stored as a List with elements elem1,elem2,elem3, etc.
+    Object propValue = datastoreEntity.getProperty(propName);
+    if (propValue != null) {
+      List<Key> keys = (List<Key>)propValue;
+      Object value = Array.newInstance(mmd.getType().getComponentType(), keys.size());
+
+      // Retrieve all Entities in one call
+      DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+      DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      Map<Key, Entity> entitiesByKey = ds.get(keys);
+
+      AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+      int i = 0;
+      for (Key key : keys) {
+        Entity entity = entitiesByKey.get(key);
+        if (entity == null) {
+          throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
+              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+        }
+        Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, ec, false, ec.getFetchPlan());
+        Array.set(value, i, pojo);
+        i++;
+      }
+      return value;
+    }
+    return null;
+  }
+
+  /**
+   * Convenience method to convert a datastore value to a Map.
+   * Converts the datastore List into a Map.
+   * @param mmd Metadata for the map field
+   * @param ec Execution Context
+   * @param clr ClassLoader resolver
+   * @param propName Property name in the Entity storing this value
+   * @return The datastore object
+   */
+  protected Map getMapFromDatastoreObject(AbstractMemberMetaData mmd,
+      ExecutionContext ec, ClassLoaderResolver clr, String propName) {
+    // Note this is stored as a List with elements key1,val1,key2,val2, etc.
+    Object propValue = datastoreEntity.getProperty(propName);
+    List keysValues = (List)propValue;
+    if (propValue != null) {
+      Map map = null;
+      try {
+        Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), null);
+        map = (Map) instanceType.newInstance();
+      } catch (Exception e) {
+        throw new NucleusDataStoreException(e.getMessage(), e);
+      }
+
+      // Find all use of Key and retrieve all Entities in one call
+      AbstractClassMetaData keyCmd = mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager());
+      AbstractClassMetaData valCmd = mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager());
+      Iterator keyValIter = keysValues.iterator();
+      List<Key> keysToRetrieve = new ArrayList<Key>();
+      while (keyValIter.hasNext()) {
+        Object key = keyValIter.next();
+        if (keyCmd != null) {
+          keysToRetrieve.add((Key)key);
+        }
+
+        Object val = keyValIter.next();
+        if (valCmd != null) {
+          keysToRetrieve.add((Key)val);
+        }
+      }
+      DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
+      DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      Map<Key, Entity> entitiesByKey = ds.get(keysToRetrieve);
+
+      keyValIter = keysValues.iterator();
+      while (keyValIter.hasNext()) {
+        Object key = keyValIter.next();
+        if (keyCmd != null) {
+          // Persistable key
+          Entity entity = entitiesByKey.get(key);
+          if (entity == null) {
+            throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
+                " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+          }
+          key = EntityUtils.entityToPojo(entity, keyCmd, clr, ec, false, ec.getFetchPlan());
+        } // TODO Make use of TypeConversionUtils for non-PC types
+
+        Object val = keyValIter.next();
+        if (valCmd != null) {
+          // Persistable value
+          Entity entity = entitiesByKey.get(val);
+          if (entity == null) {
+            throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
+                " in parent " + datastoreEntity.getKey() + " refers to child " + val + " but this doesn't exist! Check your data integrity");
+          }
+          val = EntityUtils.entityToPojo(entity, valCmd, clr, ec, false, ec.getFetchPlan());
+        } // TODO Make use of TypeConversionUtils for non-PC types
+
+        map.put(key, val);
+      }
+      return map;
     }
     return null;
   }

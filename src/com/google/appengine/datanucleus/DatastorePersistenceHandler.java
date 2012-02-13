@@ -45,6 +45,7 @@ import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -573,7 +574,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     dc.provideDatastoreIdMappings(consumer);
     dc.providePrimaryKeyMappings(consumer);
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
-      if (!(callback instanceof ArrayMapping)) {
+      // Arrays and Maps don't use backing stores
+      if (!(callback instanceof ArrayMapping) && !(callback instanceof MapMapping)) {
         callback.postFetch(op);
       }
     }

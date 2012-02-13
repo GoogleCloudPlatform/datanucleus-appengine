@@ -19,12 +19,14 @@ import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Text;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.store.types.ObjectLongConverter;
 import org.datanucleus.store.types.ObjectStringConverter;
 import org.datanucleus.store.types.TypeManager;
+import org.datanucleus.store.types.sco.SCOUtils;
 
 import com.google.appengine.datanucleus.Utils.Function;
 
@@ -345,6 +347,8 @@ class TypeConversionUtils {
       value = datastoreValueToPojoArray(value, ammd);
     } else if (ammd.hasCollection()) {
       value = datastoreValueToPojoCollection(clr, value, ammd);
+    } else if (ammd.hasMap()) {
+      value = datastoreValueToPojoMap(clr, value, ammd);
     } else {
       if (value != null) {
         if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
@@ -457,6 +461,50 @@ class TypeConversionUtils {
       value = convertDatastoreListToPojoArray(datastoreList, memberType);
     }
     return value;
+  }
+
+  /**
+   * Convert a datastore value back into a Map.
+   * @param value The value we're converting to a map. Can be null
+   * @param ammd The meta data for the field
+   * @return The datastore value converted to an array (potentially a primitive
+   * array, which is why we return Object and not Object[]).  Can be null.
+   */
+  private Object datastoreValueToPojoMap(ClassLoaderResolver clr, Object value, AbstractMemberMetaData ammd) {
+    if (value == null || !(value instanceof List)) {
+      return value;
+    }
+
+    Map map = null;
+    try {
+      Class instanceType = SCOUtils.getContainerInstanceType(ammd.getType(), null);
+      map = (Map) instanceType.newInstance();
+    } catch (Exception e) {
+      throw new NucleusDataStoreException(e.getMessage(), e);
+    }
+
+    Class keyType = clr.classForName(ammd.getMap().getKeyType());
+    Class valType = clr.classForName(ammd.getMap().getValueType());
+    Iterator iter = ((List)value).iterator();
+    while (iter.hasNext()) {
+      Object listKey = iter.next();
+      Object key = listKey;
+      Function funcKey = DATASTORE_TO_POJO_TYPE_FUNC.get(keyType);
+      if (funcKey != null) {
+        key = funcKey.apply(listKey);
+      }
+
+      Object listVal = iter.next();
+      Object val = listVal;
+      Function funcVal = DATASTORE_TO_POJO_TYPE_FUNC.get(valType);
+      if (funcVal != null) {
+        val = funcVal.apply(listVal);
+      }
+
+      map.put(key, val);
+    }
+
+    return map;
   }
 
   /**
@@ -664,6 +712,8 @@ class TypeConversionUtils {
       value = convertPojoArrayToDatastoreValue(ammd, value);
     } else if (ammd.hasCollection()) {
       value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
+    } else if (ammd.hasMap()) {
+      value = convertPojoMapToDatastoreValue(clr, ammd, (Map)value);
     } else {
       if (value != null) {
         if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
@@ -759,6 +809,37 @@ class TypeConversionUtils {
         result = Utils.transform(value, IDENTITY);
       }
     }
+    return result;
+  }
+
+  private Object convertPojoMapToDatastoreValue(
+      ClassLoaderResolver clr, AbstractMemberMetaData ammd, Map value) {
+    if (value == null) {
+      return null;
+    }
+    List result = Utils.newArrayList();
+    Iterator entryIter = value.entrySet().iterator();
+    Class keyType = clr.classForName(ammd.getMap().getKeyType());
+    Class valType = clr.classForName(ammd.getMap().getValueType());
+    while (entryIter.hasNext()) {
+      Map.Entry entry = (Map.Entry)entryIter.next();
+      Object key = entry.getKey();
+      Function keyFunc = POJO_TO_DATASTORE_TYPE_FUNC.get(keyType);
+      if (keyFunc != null) {
+        result.add(keyFunc.apply(key));
+      } else {
+        result.add(key);
+      }
+      
+      Object val = entry.getValue();
+      Function valFunc = POJO_TO_DATASTORE_TYPE_FUNC.get(valType);
+      if (valFunc != null) {
+        result.add(valFunc.apply(val));
+      } else {
+        result.add(val);
+      }
+    }
+
     return result;
   }
 

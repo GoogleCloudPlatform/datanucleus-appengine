@@ -30,6 +30,7 @@ import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
@@ -37,7 +38,9 @@ import org.datanucleus.store.mapped.mapping.ReferenceMapping;
 
 import java.lang.reflect.Array;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -99,7 +102,35 @@ public class DependentDeleteRequest {
             }
           }
         }
+      } else if (callback instanceof MapMapping) {
+        if (Relation.isRelationMultiValued(relationType)) {
+          // Field of type Map<PC,PC> or Map<NonPC,PC> or Map<PC,NonPC>, make sure it is loaded and handle dependent-key/value
+          ExecutionContext ec = op.getExecutionContext();
+          op.loadField(mmd.getAbsoluteFieldNumber());
+          Map map = (Map)op.provideField(mmd.getAbsoluteFieldNumber());
+          if (map != null) {
+            if (mmd.getMap().isDependentKey() || MetaDataUtils.isOwnedRelation(mmd)) {
+              Iterator keyIter = map.keySet().iterator();
+              while (keyIter.hasNext()) {
+                Object key = keyIter.next();
+                if (ec.getApiAdapter().isPersistent(key)) {
+                  ec.deleteObjectInternal(key);
+                }
+              }
+            }
+            if (mmd.getMap().isDependentValue() || MetaDataUtils.isOwnedRelation(mmd)) {
+              Iterator valIter = map.values().iterator();
+              while (valIter.hasNext()) {
+                Object val = valIter.next();
+                if (ec.getApiAdapter().isPersistent(val)) {
+                  ec.deleteObjectInternal(val);
+                }
+              }
+            }
+          }
+        }
       } else {
+        // Perform delete-dependent using backing store
         callback.preDelete(op);
       }
 

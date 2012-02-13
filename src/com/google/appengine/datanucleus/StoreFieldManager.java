@@ -18,7 +18,9 @@ package com.google.appengine.datanucleus;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.exceptions.NucleusDataStoreException;
@@ -40,6 +42,7 @@ import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
 import org.datanucleus.store.mapped.mapping.InterfaceMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
@@ -249,6 +252,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         checkSettingToNullValue(ammd, value);
       } else {
         if (ammd.getTypeConverterName() != null) {
+          throw new NucleusUserException("Type Converters are not yet supported by GAE. Please remove this");
           // TODO Support mmd.typeConversionName
         } else {
           // Perform any conversions from the field type to the stored-type
@@ -300,39 +304,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
         value = key;
       } else if (Relation.isRelationMultiValued(relationType)) {
         if (ammd.hasCollection()) {
-          Collection coll = (Collection) value;
-          List<Key> keys = Utils.newArrayList();
-          for (Object obj : coll) {
-            Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
-            if (key != null) {
-              keys.add(key);
-              if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
-                // Detect attempt to add an object with its key set (and hence parent set) on owned field
-                throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                    key, datastoreEntity.getKey()));
-              }
-            }
+          if (value != null) {
+            value = getDatastoreObjectForCollection(ammd, (Collection)value, ec, owned, false);
           }
-          value = keys;
         } else if (ammd.hasArray()) {
           if (value != null) {
-            List<Key> keys = Utils.newArrayList();
-            for (int i=0;i<Array.getLength(value); i++) {
-              Object obj = Array.get(value, i);
-              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
-              if (key != null) {
-                keys.add(key);
-                if (owned && !datastoreEntity.getKey().equals(key.getParent())) {
-                  // Detect attempt to add an object with its key set (and hence parent set) on owned field
-                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                      key, datastoreEntity.getKey()));
-                }
-              }
-            }
-            value = keys;
+            value = getDatastoreObjectForArray(ammd, value, ec, owned, false);
           }
         } else if (ammd.hasMap()) {
-          // TODO Support maps
+          if (value != null) {
+            value = getDatastoreObjectForMap(ammd, (Map)value, ec, clr, owned, false);
+          }
         }
 
         if (value instanceof SCO) {
@@ -629,6 +611,23 @@ public class StoreFieldManager extends DatastoreFieldManager {
                 for (Object element : (Iterable) childValue) {
                   addToParentKeyMap(keyRegistry, element, key, op.getExecutionContext(), expectedType, true);
                 }
+              } else if (childValue.getClass().isArray()) {
+                for (int j=0;j<Array.getLength(childValue);i++) {
+                  addToParentKeyMap(keyRegistry, Array.get(childValue, i), key, op.getExecutionContext(), expectedType, true);
+                }
+              } else if (childValue instanceof Map) {
+                boolean persistableKey = (mmd.getMap().getKeyClassMetaData(ec.getClassLoaderResolver(), ec.getMetaDataManager()) != null);
+                boolean persistableVal = (mmd.getMap().getValueClassMetaData(ec.getClassLoaderResolver(), ec.getMetaDataManager()) != null);
+                Iterator entryIter = ((Map)childValue).entrySet().iterator();
+                while (entryIter.hasNext()) {
+                  Map.Entry entry = (Map.Entry)entryIter.next();
+                  if (persistableKey) {
+                    addToParentKeyMap(keyRegistry, entry.getKey(), key, op.getExecutionContext(), expectedType, true);
+                  }
+                  if (persistableVal) {
+                    addToParentKeyMap(keyRegistry, entry.getValue(), key, op.getExecutionContext(), expectedType, true);
+                  }
+                }
               } else {
                 addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), expectedType, 
                     !table.isParentKeyProvider(mmd));
@@ -704,8 +703,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
     for (RelationStoreInformation relInfo : relationStoreInfos) {
       try {
         JavaTypeMapping mapping = table.getMemberMappingInDatastoreClass(relInfo.mmd);
-        if (mapping instanceof ArrayMapping) {
-          // Ignore postInsert/update for arrays since only storing key in owner object (below)
+        if (mapping instanceof ArrayMapping || mapping instanceof MapMapping) {
+          // Ignore postInsert/update for arrays/maps since don't support backing stores
         } else if (mapping instanceof MappingCallbacks) {
           if (operation == StoreFieldManager.Operation.INSERT) {
             ((MappingCallbacks)mapping).postInsert(op);
@@ -776,65 +775,23 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       } else if (Relation.isRelationMultiValued(relationType)) {
         if (mmd.hasCollection()) {
-          Collection coll = (Collection) value;
-          List<Key> keys = Utils.newArrayList();
-          for (Object obj : coll) {
-            // TODO Should process SCO before we get here so we have no deleted objects
-            if (!ec.getApiAdapter().isDeleted(obj)) {
-              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
-              if (key != null) {
-                keys.add(key);
-              } else {
-                Object childPC = processPersistable(mmd, obj);
-                key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
-                keys.add(key);
-              }
-
-              if (owned) {
-                // Check that we aren't assigning an owned child with different parent
-                if (!datastoreEntity.getKey().equals(key.getParent())) {
-                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                      key, datastoreEntity.getKey()));
-                }
-              }
-            }
-          }
-          value = keys;
+          value = getDatastoreObjectForCollection(mmd, (Collection)value, ec, owned, true);
           if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
             modifiedEntity = true;
             EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
           }
         } else if (mmd.hasArray()) {
-          List<Key> keys = Utils.newArrayList();
-          for (int i=0;i<Array.getLength(value);i++) {
-            Object obj = Array.get(value, i);
-            // TODO Should process SCO before we get here so we have no deleted objects
-            if (!ec.getApiAdapter().isDeleted(obj)) {
-              Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
-              if (key != null) {
-                keys.add(key);
-              } else {
-                Object childPC = processPersistable(mmd, obj);
-                key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
-                keys.add(key);
-              }
-
-              if (owned) {
-                // Check that we aren't assigning an owned child with different parent
-                if (!datastoreEntity.getKey().equals(key.getParent())) {
-                  throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
-                      key, datastoreEntity.getKey()));
-                }
-              }
-            }
-          }
-          value = keys;
+          value = getDatastoreObjectForArray(mmd, value, ec, owned, true);
           if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
             modifiedEntity = true;
             EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
           }
         } else if (mmd.hasMap()) {
-          // TODO Cater for PC maps
+          value = getDatastoreObjectForMap(mmd, (Map)value, ec, ec.getClassLoaderResolver(), owned, true);
+          if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
+            modifiedEntity = true;
+            EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
+          }
         }
       }
     }
@@ -899,5 +856,140 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return parentPkMmd.getType().equals(Key.class) ? parentKey : KeyFactory.keyToString(parentKey);
     }
     return null;
+  }
+
+  /**
+   * Convenience method to convert a collection field into a form suitable for the datastore.
+   * Converts the collection into a List, and any persistable elements become just the Key for that object.
+   * @param mmd Metadata for the map field
+   * @param map The map value
+   * @param ec Execution Context
+   * @param owned Whether the field is owned
+   * @param cascadePersist Whether to cascade persist any persistable keys/values in the collection that arent yet persistent
+   * @return The datastore object
+   */
+  protected Object getDatastoreObjectForCollection(AbstractMemberMetaData mmd, Collection coll,
+      ExecutionContext ec, boolean owned, boolean cascadePersist) {
+    List<Key> keys = Utils.newArrayList();
+    for (Object obj : coll) {
+      if (!ec.getApiAdapter().isDeleted(obj)) {
+        Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
+        if (key != null) {
+          keys.add(key);
+        } else if (cascadePersist) {
+          Object childPC = processPersistable(mmd, obj);
+          key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
+          keys.add(key);
+        } else {
+          keys.add(null);
+        }
+
+        if (owned) {
+          // Check that we aren't assigning an owned child with different parent
+          if (key != null && !datastoreEntity.getKey().equals(key.getParent())) {
+            throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                key, datastoreEntity.getKey()));
+          }
+        }
+      }
+    }
+    return keys;
+  }
+
+  /**
+   * Convenience method to convert an array field into a form suitable for the datastore.
+   * Converts the array into a List, and any persistable elements become just the Key for that object.
+   * @param mmd Metadata for the map field
+   * @param map The map value
+   * @param ec Execution Context
+   * @param owned Whether the field is owned
+   * @param cascadePersist Whether to cascade persist any persistable keys/values in the array that arent yet persistent
+   * @return The datastore object
+   */
+  protected List getDatastoreObjectForArray(AbstractMemberMetaData mmd, Object arr,
+      ExecutionContext ec, boolean owned, boolean cascadePersist) {
+    List keys = Utils.newArrayList();
+    for (int i=0;i<Array.getLength(arr);i++) {
+      Object obj = Array.get(arr, i);
+      if (!ec.getApiAdapter().isDeleted(obj)) {
+        Key key = EntityUtils.extractChildKey(obj, ec, owned ? datastoreEntity : null);
+        if (key != null) {
+          keys.add(key);
+        } else if (cascadePersist) {
+          Object childPC = processPersistable(mmd, obj);
+          key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
+          keys.add(key);
+        } else {
+          keys.add(null);
+        }
+
+        if (owned) {
+          // Check that we aren't assigning an owned child with different parent
+          if (key != null && !datastoreEntity.getKey().equals(key.getParent())) {
+            throw new NucleusFatalUserException(GAE_LOCALISER.msg("AppEngine.OwnedChildCannotChangeParent",
+                key, datastoreEntity.getKey()));
+          }
+        }
+      }
+    }
+    return keys;
+  }
+
+  /**
+   * Convenience method to convert a Map field into a form suitable for the datastore.
+   * Converts the Map into a List, and any persistable keys/values become just the Key for that object.
+   * @param mmd Metadata for the map field
+   * @param map The map value
+   * @param ec Execution Context
+   * @param clr ClassLoader resolver
+   * @param owned Whether the field is owned
+   * @param cascadePersist Whether to cascade persist any persistable keys/values in the map that arent yet persistent
+   * @return The datastore object
+   */
+  protected List getDatastoreObjectForMap(AbstractMemberMetaData mmd, Map map,
+      ExecutionContext ec, ClassLoaderResolver clr, boolean owned, boolean cascadePersist) {
+    if (map == null) {
+      return null;
+    }
+
+    boolean persistableKey = (mmd.getMap().getKeyClassMetaData(clr, ec.getMetaDataManager()) != null);
+    boolean persistableVal = (mmd.getMap().getValueClassMetaData(clr, ec.getMetaDataManager()) != null);
+    List keysValues = Utils.newArrayList();
+    Iterator<Map.Entry> entryIter = map.entrySet().iterator();
+    while (entryIter.hasNext()) {
+      Map.Entry entry = entryIter.next();
+      if (persistableKey) {
+        Key key = EntityUtils.extractChildKey(entry.getKey(), ec, owned ? datastoreEntity : null);
+        if (key != null) {
+          keysValues.add(key);
+        } else if (cascadePersist) {
+          Object childPC = processPersistable(mmd, entry.getKey());
+          key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
+          keysValues.add(key);
+        } else {
+          keysValues.add(null);
+        }
+      } else {
+        // TODO Make use of TypeConversionUtils
+        keysValues.add(entry.getKey());
+      }
+
+      if (persistableVal) {
+        Key key = EntityUtils.extractChildKey(entry.getValue(), ec, owned ? datastoreEntity : null);
+        if (key != null) {
+          keysValues.add(key);
+        } else if (cascadePersist) {
+          Object childPC = processPersistable(mmd, entry.getValue());
+          key = EntityUtils.extractChildKey(childPC, ec, owned ? datastoreEntity : null);
+          keysValues.add(key);
+        } else {
+          keysValues.add(null);
+        }
+      } else {
+        // TODO Make use of TypeConversionUtils
+        keysValues.add(entry.getValue());
+      }
+    }
+    return keysValues;
   }
 }
