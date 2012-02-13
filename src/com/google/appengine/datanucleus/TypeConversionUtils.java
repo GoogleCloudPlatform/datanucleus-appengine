@@ -381,12 +381,14 @@ class TypeConversionUtils {
               ammd.getTypeName().startsWith("com.google.appengine.api")) {
             value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
           } else if (value instanceof String) {
+            // TODO Migrate this to TypeConverter when we move to DN 3.1+
             ObjectStringConverter conv = typeMgr.getStringConverter(ammd.getType());
             if (conv != null) {
               // Persisted as String, so convert back
               value = conv.toObject((String)value);
             }
           } else if (value instanceof Long) {
+            // TODO Migrate this to TypeConverter when we move to DN 3.1+
             ObjectLongConverter conv = typeMgr.getLongConverter(ammd.getType());
             if (conv != null) {
               // Persisted as Long, so convert back

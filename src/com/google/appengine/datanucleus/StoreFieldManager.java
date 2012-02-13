@@ -48,6 +48,7 @@ import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
+import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.Localiser;
 
@@ -160,12 +161,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // could be a JPA "lob" field, in which case we want to store it as Text.
       // DataNucleus sets a cmd with a jdbc type of CLOB if this is the case.
       Object valueToStore = value;
-      AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-      if (ammd.getColumnMetaData() != null &&
-          ammd.getColumnMetaData().length == 1) {
-        if ("CLOB".equals(ammd.getColumnMetaData()[0].getJdbcType())) {
+      AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+      if (mmd.getColumnMetaData() != null &&
+          mmd.getColumnMetaData().length == 1) {
+        if ("CLOB".equals(mmd.getColumnMetaData()[0].getJdbcType())) {
           valueToStore = new Text(value);
-        }/* else if (ammd.getColumnMetaData()[0].getLength() > 500) {
+        }/* else if (mmd.getColumnMetaData()[0].getLength() > 500) {
           // Can only store up to 500 characters in String, so use Text
           valueToStore = new Text(value);
         }*/
@@ -193,21 +194,21 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * @param value Value to store (or rather to manipulate into a suitable form for the datastore).
    */
   private void storeFieldInEntity(int fieldNumber, Object value) {
-    AbstractMemberMetaData ammd = getMetaData(fieldNumber);
-    if (!(operation == Operation.INSERT && ammd.isInsertable()) &&
-        !(operation == Operation.UPDATE && ammd.isUpdateable())) {
+    AbstractMemberMetaData mmd = getMetaData(fieldNumber);
+    if (!(operation == Operation.INSERT && mmd.isInsertable()) &&
+        !(operation == Operation.UPDATE && mmd.isUpdateable())) {
       return;
     }
 
     ExecutionContext ec = getExecutionContext();
     ClassLoaderResolver clr = getClassLoaderResolver();
-    int relationType = ammd.getRelationType(clr);
+    int relationType = mmd.getRelationType(clr);
 
-    if (ammd.getEmbeddedMetaData() != null) {
+    if (mmd.getEmbeddedMetaData() != null) {
       // Embedded field handling
       if (Relation.isRelationSingleValued(relationType)) {
         // Embedded persistable object
-        ObjectProvider embeddedOP = getEmbeddedObjectProvider(ammd, fieldNumber, value);
+        ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd, fieldNumber, value);
         // TODO Create own FieldManager instead of reusing this one
         // We need to build a mapping consumer for the embedded class so that we get correct
         // fieldIndex --> metadata mappings for the class in the proper embedded context
@@ -215,49 +216,50 @@ public class StoreFieldManager extends DatastoreFieldManager {
         InsertMappingConsumer mc = buildMappingConsumer(
             embeddedOP.getClassMetaData(), getClassLoaderResolver(),
             embeddedOP.getClassMetaData().getAllMemberPositions(),
-            ammd.getEmbeddedMetaData());
+            mmd.getEmbeddedMetaData());
         fieldManagerStateStack.addFirst(
             new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
         embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
         fieldManagerStateStack.removeFirst();
         return;
       } else if (Relation.isRelationMultiValued(relationType)) {
-        if (ammd.hasCollection()) {
+        if (mmd.hasCollection()) {
           // TODO Support embedded collections
-        } else if (ammd.hasMap()) {
+        } else if (mmd.hasMap()) {
           // TODO Support embedded maps
-        } else if (ammd.hasArray()) {
+        } else if (mmd.hasArray()) {
           // TODO Support embedded arrays
         }
         throw new NucleusUserException("Don't currently support embedded multi-valued fields");
       }
     }
 
-    if (ammd.isSerialized()) {
+    if (mmd.isSerialized()) {
       if (value != null) {
         // Serialize the field (producing a Blob)
-        value = getStoreManager().getSerializationManager().serialize(clr, ammd, value);
+        value = getStoreManager().getSerializationManager().serialize(clr, mmd, value);
       } else {
         // Make sure we can have a null property for this field
-        checkSettingToNullValue(ammd, value);
+        checkSettingToNullValue(mmd, value);
       }
-      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
       return;
     }
 
     if (relationType == Relation.NONE) {
       // Basic field
       if (value == null) {
-        checkSettingToNullValue(ammd, value);
+        checkSettingToNullValue(mmd, value);
       } else {
-        if (ammd.getTypeConverterName() != null) {
-          throw new NucleusUserException("Type Converters are not yet supported by GAE. Please remove this");
-          // TODO Support mmd.typeConversionName
+        if (mmd.getTypeConverterName() != null) {
+          // User-defined type-converter
+          TypeConverter conv = getExecutionContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
+          value = conv.toDatastoreType(value);
         } else {
           // Perform any conversions from the field type to the stored-type
           TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
-          value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, ammd);
+          value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
         }
 
         if (value instanceof SCO) {
@@ -266,15 +268,15 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
 
-      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
       return;
     }
 
     // Register this relation field for later update
-    relationStoreInfos.add(new RelationStoreInformation(ammd, value));
+    relationStoreInfos.add(new RelationStoreInformation(mmd, value));
 
-    boolean owned = MetaDataUtils.isOwnedRelation(ammd);
+    boolean owned = MetaDataUtils.isOwnedRelation(mmd);
     if (owned) {
       // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
       if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
@@ -284,7 +286,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (relationType == Relation.MANY_TO_ONE_BI) {
         // We don't store any "FK" of the parent TODO We ought to but Google don't want to
         return;
-      } else if (relationType == Relation.ONE_TO_ONE_BI && ammd.getMappedBy() != null) {
+      } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
         // We don't store any "FK" of the other side TODO We ought to but Google don't want to
         return;
       }
@@ -293,7 +295,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     if (operation == Operation.INSERT) {
       if (value == null) {
         // Nothing to extract
-        checkSettingToNullValue(ammd, value);
+        checkSettingToNullValue(mmd, value);
       } else if (Relation.isRelationSingleValued(relationType)) {
         Key key = EntityUtils.extractChildKey(value, ec, owned ? datastoreEntity : null);
         if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
@@ -303,17 +305,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
         value = key;
       } else if (Relation.isRelationMultiValued(relationType)) {
-        if (ammd.hasCollection()) {
+        if (mmd.hasCollection()) {
           if (value != null) {
-            value = getDatastoreObjectForCollection(ammd, (Collection)value, ec, owned, false);
+            value = getDatastoreObjectForCollection(mmd, (Collection)value, ec, owned, false);
           }
-        } else if (ammd.hasArray()) {
+        } else if (mmd.hasArray()) {
           if (value != null) {
-            value = getDatastoreObjectForArray(ammd, value, ec, owned, false);
+            value = getDatastoreObjectForArray(mmd, value, ec, owned, false);
           }
-        } else if (ammd.hasMap()) {
+        } else if (mmd.hasMap()) {
           if (value != null) {
-            value = getDatastoreObjectForMap(ammd, (Map)value, ec, clr, owned, false);
+            value = getDatastoreObjectForMap(mmd, (Map)value, ec, clr, owned, false);
           }
         }
 
@@ -323,8 +325,8 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
 
-      EntityUtils.setEntityProperty(datastoreEntity, ammd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), ammd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
+          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
     }
   }
 
@@ -546,19 +548,19 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
-  private void checkSettingToNullValue(AbstractMemberMetaData ammd, Object value) {
+  private void checkSettingToNullValue(AbstractMemberMetaData mmd, Object value) {
     if (value == null) {
-      if (ammd.getNullValue() == NullValue.EXCEPTION) {
+      if (mmd.getNullValue() == NullValue.EXCEPTION) {
         // JDO spec 18.15, throw XXXUserException when trying to store null and have handler set to EXCEPTION
-        throw new NucleusUserException("Field/Property " + ammd.getFullFieldName() +
+        throw new NucleusUserException("Field/Property " + mmd.getFullFieldName() +
           " is null, but is mandatory as it's described in the jdo metadata");
       }
 
-      ColumnMetaData[] colmds = ammd.getColumnMetaData();
+      ColumnMetaData[] colmds = mmd.getColumnMetaData();
       if (colmds != null && colmds.length > 0) {
         if (colmds[0].getAllowsNull() == Boolean.FALSE) {
           // Column specifically marked as not-nullable
-          throw new NucleusDataStoreException("Field/Property " + ammd.getFullFieldName() +
+          throw new NucleusDataStoreException("Field/Property " + mmd.getFullFieldName() +
             " is null, but the column is specified as not-nullable");
         }
       }
