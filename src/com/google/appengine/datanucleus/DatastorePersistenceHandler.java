@@ -24,6 +24,7 @@ import com.google.appengine.datanucleus.mapping.DependentDeleteRequest;
 import com.google.appengine.datanucleus.mapping.FetchMappingConsumer;
 
 import org.datanucleus.ClassLoaderResolver;
+import org.datanucleus.PropertyNames;
 import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusOptimisticException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -47,6 +48,7 @@ import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
+import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
@@ -263,6 +265,17 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         EntityUtils.setEntityProperty(entity, dismd, 
             EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), dismd), 
             op.getClassMetaData().getDiscriminatorValue());
+      }
+
+      // Add Multi-tenancy discriminator if applicable
+      if (storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
+          if ("true".equalsIgnoreCase(cmd.getValueForExtension("multitenancy-disable"))) {
+              // Don't bother with multitenancy for this class
+          }
+          else {
+            String name = storeMgr.getNamingFactory().getColumnName(cmd, ColumnType.MULTITENANCY_COLUMN);
+            EntityUtils.setEntityProperty(entity, cmd, name, storeMgr.getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
+          }
       }
 
       // Update parent PK field on pojo

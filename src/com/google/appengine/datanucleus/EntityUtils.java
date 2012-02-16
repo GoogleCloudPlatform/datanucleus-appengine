@@ -31,12 +31,14 @@ import com.google.appengine.datanucleus.query.QueryEntityPKFetchFieldManager;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
+import org.datanucleus.PropertyNames;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
+import org.datanucleus.exceptions.NucleusObjectNotFoundException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.identity.IdentityUtils;
 import org.datanucleus.identity.OID;
@@ -55,6 +57,7 @@ import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.MappedStoreManager;
+import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
@@ -625,6 +628,25 @@ public final class EntityUtils {
     }
 
     if (op != null) {
+      if (op.getExecutionContext().getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
+        if ("true".equalsIgnoreCase(op.getClassMetaData().getValueForExtension("multitenancy-disable"))) {
+        } else {
+          // Check that is for this tenant
+          String name = op.getExecutionContext().getStoreManager().getNamingFactory().getColumnName(op.getClassMetaData(),
+              ColumnType.MULTITENANCY_COLUMN);
+          if (!entity.hasProperty(name)) {
+            throw new NucleusObjectNotFoundException(
+                "Could not retrieve entity of kind " + key.getKind() + " with key " + key);
+          } else {
+            String tenantVal = (String)entity.getProperty(name);
+            if (!op.getExecutionContext().getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID).equals(tenantVal)) {
+              throw new NucleusObjectNotFoundException(
+                  "Could not retrieve entity of kind " + key.getKind() + " with key " + key + " : was for different tenant " + tenantVal);
+            }
+          }
+        }
+      }
+
       op.setAssociatedValue(txn, entity);
     }
 

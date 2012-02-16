@@ -35,6 +35,7 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
+import org.datanucleus.PropertyNames;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.store.fieldmanager.FieldManager;
@@ -82,6 +83,7 @@ import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
+import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
@@ -245,6 +247,17 @@ public class DatastoreQuery implements Serializable {
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
+
+    if (getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
+      if ("true".equalsIgnoreCase(acmd.getValueForExtension("multitenancy-disable"))) {
+      } else {
+        // Restrict to the current tenant
+        String multitenantPropName = getStoreManager().getNamingFactory().getColumnName(acmd, ColumnType.MULTITENANCY_COLUMN);
+        qd.primaryDatastoreQuery.addFilter(multitenantPropName, Query.FilterOperator.EQUAL, 
+            getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
+      }
+    }
+
     processInFilters(qd);
 
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
