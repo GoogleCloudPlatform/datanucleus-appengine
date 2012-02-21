@@ -30,8 +30,6 @@ import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.api.datastore.ReadPolicy;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Transaction;
-import com.google.appengine.api.datastore.Query.FilterPredicate;
-import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
@@ -84,7 +82,6 @@ import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.query.AbstractJavaQuery;
 import org.datanucleus.store.schema.naming.ColumnType;
-import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
@@ -114,7 +111,6 @@ import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartC
  * check flags for unsupported features and evaluate the rest in-memory.
  *
  * TODO(maxr): More logging
- * TODO(maxr): Localized logging
  * TODO(maxr): Localized exception messages.
  *
  * @author Erick Armbrust <earmbrust@google.com>
@@ -123,16 +119,13 @@ import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartC
 public class DatastoreQuery implements Serializable {
 
   // Exposed for testing
-  static final Expression.Operator GROUP_BY_OP = new Expression.Operator(
-      "GROUP BY", Integer.MAX_VALUE);
+  static final Expression.Operator GROUP_BY_OP = new Expression.Operator("GROUP BY", Integer.MAX_VALUE);
 
   // Exposed for testing
-  static final Expression.Operator HAVING_OP = new Expression.Operator(
-      "HAVING", Integer.MAX_VALUE);
+  static final Expression.Operator HAVING_OP = new Expression.Operator("HAVING", Integer.MAX_VALUE);
 
   // Exposed for testing
-  static final Expression.Operator JOIN_OP = new Expression.Operator(
-      "JOIN", Integer.MAX_VALUE);
+  static final Expression.Operator JOIN_OP = new Expression.Operator("JOIN", Integer.MAX_VALUE);
 
   static final Set<Expression.Operator> UNSUPPORTED_OPERATORS =
       Utils.newHashSet((Expression.Operator) Expression.OP_ADD,
@@ -162,11 +155,11 @@ public class DatastoreQuery implements Serializable {
     return map;
   }
 
-  /** The invoking query object */
+  /** DataNucleus query that this is attempting to evaluate. */
   final AbstractJavaQuery query;
 
-  /** The current datastore query. */
-  private transient Query latestDatastoreQuery;
+  /** Whether the filter clause is completely evaluatable in the datastore. */
+  boolean filterComplete = true;
 
   /** The different types of datastore query results that we support. */
   enum ResultType {
@@ -177,50 +170,25 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * Constructs a new Datastore query based on a Datanucleus query.
-   * @param query The Datanucleus query to be translated into a Datastore query.
+   * Constructs a new GAE query based on a DataNucleus query.
+   * @param query The DataNucleus query to be translated into a GAE query.
    */
   public DatastoreQuery(AbstractJavaQuery query) {
     this.query = query;
   }
 
-  private ExecutionContext getExecutionContext() {
-    return query.getExecutionContext();
-  }
-
-  private MetaDataManager getMetaDataManager() {
-    return getExecutionContext().getMetaDataManager();
-  }
-
-  private ClassLoaderResolver getClassLoaderResolver() {
-    return getExecutionContext().getClassLoaderResolver();
-  }
-
-  IdentifierFactory getIdentifierFactory() {
-    return getStoreManager().getIdentifierFactory();
-  }
-
-  private DatastoreManager getStoreManager() {
-    return (DatastoreManager) getExecutionContext().getStoreManager();
-  }
-
-  private SymbolTable getSymbolTable() {
-    return query.getCompilation().getSymbolTable();
+  public boolean isFilterComplete() {
+      return filterComplete;
   }
 
   /**
-   * We'd like to return {@link Iterable} instead but
-   * {@link javax.persistence.Query#getResultList()} returns {@link List}.
-   *
-   * @param localiser The localiser to use.
+   * Method to compile the query into a GAE Query.
    * @param compilation The compiled query.
    * @param parameters Parameter values for the query.
    * @param isJDO {@code true} if this is a JDO query.
-   *
-   * @return The result of executing the query.
+   * @return QueryData
    */
-  public Object performExecute(ManagedConnection mconn, Localiser localiser, QueryCompilation compilation,
-      Map<String, ?> parameters, boolean isJDO) {
+  public QueryData compile(QueryCompilation compilation, Map<String, ?> parameters, boolean isJDO) {
 
     if (query.getCandidateClass() == null) {
       throw new NucleusFatalUserException(
@@ -233,45 +201,33 @@ public class DatastoreQuery implements Serializable {
       throw new NucleusFatalUserException("No meta data for " + query.getCandidateClass().getName()
           + ".  Perhaps you need to run the enhancer on this class?");
     }
-
     storeMgr.validateMetaDataForClass(acmd);
 
-    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), clr);
-    QueryData qd = validate(compilation, parameters, acmd, table, clr, isJDO);
-
-    if (NucleusLogger.QUERY.isDebugEnabled()) {
-      NucleusLogger.QUERY.debug(localiser.msg("021046", "DATASTORE", query.getSingleStringQuery(), null));
-    }
-
     // Compile the query, populating the QueryData
+    QueryData qd = validate(compilation, parameters, acmd, clr, isJDO);
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
-
-    if (getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
-      if ("true".equalsIgnoreCase(acmd.getValueForExtension("multitenancy-disable"))) {
-      } else {
-        // Restrict to the current tenant
-        String multitenantPropName = getStoreManager().getNamingFactory().getColumnName(acmd, ColumnType.MULTITENANCY_COLUMN);
-        qd.primaryDatastoreQuery.addFilter(multitenantPropName, Query.FilterOperator.EQUAL, 
-            getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
-      }
-    }
-
+    addMultitenancyDiscriminator(qd);
     processInFilters(qd);
 
+    return qd;
+  }
+
+  /**
+   * Method to execute the query implied by specified QueryData object.
+   * @param mconn Managed Connection to use for the datastore
+   * @param qd QueryData to be executed
+   * @return The result of executing the query.
+   */
+  public Object performExecute(ManagedConnection mconn, QueryData qd) {
+
+    // Obtain DatastoreService
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
     if (query.getDatastoreReadTimeoutMillis() > 0) {
       // config wants the timeout in seconds
       config.deadline(query.getDatastoreReadTimeoutMillis() / 1000);
     }
-
-    if (NucleusLogger.QUERY.isDebugEnabled()) {
-      // Log the query
-      NucleusLogger.QUERY.debug("Query compiled as : " + getDatastoreQueryAsString(qd));
-    }
-
-    // Obtain DatastoreService to execute the query, and execute the relevant type of query
     Map extensions = query.getExtensions();
     if (extensions != null && extensions.get(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY) != null) {
       config.readPolicy(new ReadPolicy(
@@ -292,76 +248,6 @@ public class DatastoreQuery implements Serializable {
     } else {
       // Normal Query
       return executeNormalQuery(ds, qd, mconn);
-    }
-  }
-
-  /**
-   * Convenience method to return the datastore query to be invoked in String form (for logging).
-   * @param qd QueryData
-   * @return The string form
-   */
-  private String getDatastoreQueryAsString(QueryData qd) {
-    StringBuilder str = new StringBuilder();
-    str.append("Kind=" + StringUtils.collectionToString(qd.tableMap.values()));
-    List<FilterPredicate> filterPreds = qd.primaryDatastoreQuery.getFilterPredicates();
-    if (filterPreds.size() > 0) {
-      str.append(" Filter : ");
-      Iterator<FilterPredicate> filterIter = filterPreds.iterator();
-      while (filterIter.hasNext()) {
-        FilterPredicate pred = filterIter.next();
-        str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
-        if (filterIter.hasNext()) {
-          if (qd.isOrExpression) {
-            str.append(" OR ");
-          } else {
-            str.append(" AND ");
-          }
-        }
-      }
-    }
-
-    List<SortPredicate> sortPreds = qd.primaryDatastoreQuery.getSortPredicates();
-    if (sortPreds.size() > 0) {
-      str.append(" Order : ");
-      Iterator<SortPredicate> sortIter = sortPreds.iterator();
-      while (sortIter.hasNext()) {
-        SortPredicate pred = sortIter.next();
-        str.append(pred.getPropertyName() + " " + pred.getDirection());
-        if (sortIter.hasNext()) {
-          str.append(",");
-        }
-      }
-    }
-    return str.toString();
-  }
-
-  private void processInFilters(QueryData qd) {
-    if (qd.inFilters.isEmpty()) {
-      return;
-    }
-
-    boolean onlyKeyFilters = true;
-    Set<Key> batchGetKeys = Utils.newLinkedHashSet();
-    for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
-      if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
-        onlyKeyFilters = false;
-      } else {
-        for (Object obj : entry.getValue()) {
-          // Add to our list of batch get keys in case all the in filters
-          // end up being on the primary key
-          batchGetKeys.add(internalPkToKey(qd.acmd, obj));
-        }
-      }
-      qd.primaryDatastoreQuery.addFilter(entry.getKey(), Query.FilterOperator.IN, entry.getValue());
-    }
-
-    if (onlyKeyFilters) {
-      // All the in filters were on key so convert this to a batch get
-      if (qd.batchGetKeys == null) {
-        qd.batchGetKeys = batchGetKeys;
-      } else {
-        qd.batchGetKeys.addAll(batchGetKeys);
-      }
     }
   }
 
@@ -646,8 +532,8 @@ public class DatastoreQuery implements Serializable {
   }
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
-                             final AbstractClassMetaData acmd, DatastoreTable table,
-                             final ClassLoaderResolver clr, boolean isJDO) {
+                             final AbstractClassMetaData acmd, final ClassLoaderResolver clr, boolean isJDO) {
+    
     if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
       throw new NucleusFatalUserException("Only select and delete statements are supported.");
     }
@@ -671,6 +557,7 @@ public class DatastoreQuery implements Serializable {
     final List<String> projectionFields = Utils.newArrayList();
     final List<String> projectionAliases = Utils.newArrayList();
     ResultType resultType = validateResultExpression(compilation, acmd, projectionFields, projectionAliases);
+    DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
     String kind = table.getIdentifier().getIdentifierName();
     Function<Entity, Object> resultTransformer;
     if (resultType == ResultType.KEYS_ONLY) {
@@ -785,7 +672,7 @@ public class DatastoreQuery implements Serializable {
 
   // TODO(maxr) Split this out into a more generic utility if we start
   // handling other operators explicitly
-  private boolean isCountOperation(String operation) {
+  private static boolean isCountOperation(String operation) {
     return operation.toLowerCase().equals("count");
   }
 
@@ -795,6 +682,36 @@ public class DatastoreQuery implements Serializable {
     // same restriction so I feel ok about this
     return new UnsupportedDatastoreFeatureException(
         "Cannot combine an aggregate results with row results.");
+  }
+
+  private void processInFilters(QueryData qd) {
+    if (qd.inFilters.isEmpty()) {
+      return;
+    }
+
+    boolean onlyKeyFilters = true;
+    Set<Key> batchGetKeys = Utils.newLinkedHashSet();
+    for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
+      if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
+        onlyKeyFilters = false;
+      } else {
+        for (Object obj : entry.getValue()) {
+          // Add to our list of batch get keys in case all the in filters
+          // end up being on the primary key
+          batchGetKeys.add(internalPkToKey(qd.acmd, obj));
+        }
+      }
+      qd.primaryDatastoreQuery.addFilter(entry.getKey(), Query.FilterOperator.IN, entry.getValue());
+    }
+
+    if (onlyKeyFilters) {
+      // All the in filters were on key so convert this to a batch get
+      if (qd.batchGetKeys == null) {
+        qd.batchGetKeys = batchGetKeys;
+      } else {
+        qd.batchGetKeys.addAll(batchGetKeys);
+      }
+    }
   }
 
   private void processFromExpression(QueryData qd, Expression expr) {
@@ -828,7 +745,7 @@ public class DatastoreQuery implements Serializable {
       qd.primaryDatastoreQuery.addSort(sortProp, dir);
     }
   }
-  
+
   private void addDiscriminator(QueryData qd) {
     if (qd.acmd.hasDiscriminatorStrategy()) {
       String className = qd.acmd.getFullClassName();
@@ -850,6 +767,18 @@ public class DatastoreQuery implements Serializable {
       }
 
       qd.primaryDatastoreQuery.addFilter(discriminatorPropertyName, Query.FilterOperator.IN, discriminatorValues);
+    }
+  }
+
+  private void addMultitenancyDiscriminator(QueryData qd) {
+    if (getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
+      if ("true".equalsIgnoreCase(qd.acmd.getValueForExtension("multitenancy-disable"))) {
+      } else {
+        // Restrict to the current tenant
+        String multitenantPropName = getStoreManager().getNamingFactory().getColumnName(qd.acmd, ColumnType.MULTITENANCY_COLUMN);
+        qd.primaryDatastoreQuery.addFilter(multitenantPropName, Query.FilterOperator.EQUAL, 
+            getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
+      }
     }
   }
 
@@ -1638,8 +1567,35 @@ public class DatastoreQuery implements Serializable {
     }
   };
 
+  // Keep track of last query for tests
+  private transient Query latestDatastoreQuery;
+
   // Exposed for tests
   Query getLatestDatastoreQuery() {
     return latestDatastoreQuery;
+  }
+
+  private ExecutionContext getExecutionContext() {
+    return query.getExecutionContext();
+  }
+
+  private MetaDataManager getMetaDataManager() {
+    return getExecutionContext().getMetaDataManager();
+  }
+
+  private ClassLoaderResolver getClassLoaderResolver() {
+    return getExecutionContext().getClassLoaderResolver();
+  }
+
+  private IdentifierFactory getIdentifierFactory() {
+    return getStoreManager().getIdentifierFactory();
+  }
+
+  private DatastoreManager getStoreManager() {
+    return (DatastoreManager) query.getStoreManager();
+  }
+
+  private SymbolTable getSymbolTable() {
+    return query.getCompilation().getSymbolTable();
   }
 }

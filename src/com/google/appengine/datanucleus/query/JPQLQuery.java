@@ -160,8 +160,21 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
     else {
       // Evaluate in-datastore
+      QueryData qd = datastoreQuery.compile(compilation, parameters, false);
+      if (NucleusLogger.QUERY.isDebugEnabled()) {
+        // Log the query
+        NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
+      }
+
+      if (NucleusLogger.QUERY.isDebugEnabled()) {
+        NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JPQL", getSingleStringQuery()));
+      }
+
       ManagedConnection mconn = getStoreManager().getConnection(ec);
-      results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, false);
+      results = datastoreQuery.performExecute(mconn, qd);
+
+      // Evaluate remainder in-memory
+      // TODO Invoke in-memory if required
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {

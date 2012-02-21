@@ -18,15 +18,19 @@ package com.google.appengine.datanucleus.query;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.Query;
+import com.google.appengine.api.datastore.Query.FilterPredicate;
+import com.google.appengine.api.datastore.Query.SortPredicate;
 
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.query.expression.VariableExpression;
+import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
 
+import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -68,6 +72,45 @@ final class QueryData {
     this.resultType = resultType;
     this.resultTransformer = resultTransformer;
     this.isJDO = isJDO;
+  }
+
+  /**
+   * Convenience method to return the datastore query to be invoked in String form (for logging).
+   * @return The string form
+   */
+  public String getDatastoreQueryAsString() {
+    StringBuilder str = new StringBuilder();
+    str.append("Kind=" + StringUtils.collectionToString(tableMap.values()));
+    List<FilterPredicate> filterPreds = primaryDatastoreQuery.getFilterPredicates();
+    if (filterPreds.size() > 0) {
+      str.append(" Filter : ");
+      Iterator<FilterPredicate> filterIter = filterPreds.iterator();
+      while (filterIter.hasNext()) {
+        FilterPredicate pred = filterIter.next();
+        str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
+        if (filterIter.hasNext()) {
+          if (isOrExpression) {
+            str.append(" OR ");
+          } else {
+            str.append(" AND ");
+          }
+        }
+      }
+    }
+
+    List<SortPredicate> sortPreds = primaryDatastoreQuery.getSortPredicates();
+    if (sortPreds.size() > 0) {
+      str.append(" Order : ");
+      Iterator<SortPredicate> sortIter = sortPreds.iterator();
+      while (sortIter.hasNext()) {
+        SortPredicate pred = sortIter.next();
+        str.append(pred.getPropertyName() + " " + pred.getDirection());
+        if (sortIter.hasNext()) {
+          str.append(",");
+        }
+      }
+    }
+    return str.toString();
   }
 }
 

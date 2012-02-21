@@ -148,8 +148,21 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     }
     else {
       // Evaluate in-datastore
+      QueryData qd = datastoreQuery.compile(compilation, parameters, true);
+      if (NucleusLogger.QUERY.isDebugEnabled()) {
+        // Log the query
+        NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
+      }
+
+      if (NucleusLogger.QUERY.isDebugEnabled()) {
+        NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery()));
+      }
+
       ManagedConnection mconn = getStoreManager().getConnection(ec);
-      results = datastoreQuery.performExecute(mconn, LOCALISER, compilation, parameters, true);
+      results = datastoreQuery.performExecute(mconn, qd);
+
+      // Evaluate remainder in-memory
+      // TODO Check what hasn't been evaluated
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {
