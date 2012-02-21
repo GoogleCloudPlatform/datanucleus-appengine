@@ -1514,13 +1514,13 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
     ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
-    assertEquals(2, q.getSingleResult());
+    assertEquals(2l, q.getSingleResult());
 
     q = em.createQuery("select COUNT(id) from " + Book.class.getName() + " c");
-    assertEquals(2, q.getSingleResult());
+    assertEquals(2l, q.getSingleResult());
 
     q = em.createQuery("select Count(id) from " + Book.class.getName() + " c");
-    assertEquals(2, q.getSingleResult());
+    assertEquals(2l, q.getSingleResult());
   }
 
   public void testProjectionQueryTyped() {
@@ -1545,7 +1545,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e2);
     Query q = em.createQuery(
             "select count(id) from " + Book.class.getName() + " c" + " where firstPublished = 2003");
-    assertEquals(1, q.getSingleResult());
+    assertEquals(1l, q.getSingleResult());
   }
 
   public void testCountQueryWithUnknownCountProp() {
@@ -1569,7 +1569,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setFirstResult(1);
-    assertEquals(1, q.getSingleResult());
+    assertEquals(1l, q.getSingleResult());
   }
 
   public void testCountQueryWithLimit() {
@@ -1579,7 +1579,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e2);
     Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setMaxResults(1);
-    assertEquals(1, q.getSingleResult());
+    assertEquals(1l, q.getSingleResult());
   }
 
   public void testCountQueryWithOffsetAndLimit() {
@@ -1592,7 +1592,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     q.setFirstResult(1);
     q.setMaxResults(1);
-    assertEquals(1, q.getSingleResult());
+    assertEquals(1l, q.getSingleResult());
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
@@ -1938,8 +1938,8 @@ public class JPQLQueryTest extends JPATestCase {
       Key key = KeyFactory.createKey("yar", "does not exist");
       Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id = :ids");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-      int count = (Integer) q.getSingleResult();
-      assertEquals(2, count);
+      long count = (Long) q.getSingleResult();
+      assertEquals(2l, count);
     } finally {
       nqd.uninstall();
     }
@@ -1959,15 +1959,15 @@ public class JPQLQueryTest extends JPATestCase {
       Key key = KeyFactory.createKey("yar", "does not exist");
       Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id IN (:ids)");
       q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-      int count = (Integer) q.getSingleResult();
-      assertEquals(2, count);
+      long count = (Long) q.getSingleResult();
+      assertEquals(2l, count);
 
       q = em.createQuery("select count(id) from " + Book.class.getName() + " c" + " where id IN (:id1, :id2, :id3)");
       q.setParameter("id1", key);
       q.setParameter("id2", e1.getKey());
       q.setParameter("id3", e2.getKey());
-      count = (Integer) q.getSingleResult();
-      assertEquals(2, count);
+      count = (Long) q.getSingleResult();
+      assertEquals(2l, count);
     } finally {
       nqd.uninstall();
     }

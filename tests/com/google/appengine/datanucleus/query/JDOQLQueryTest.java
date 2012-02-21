@@ -1850,7 +1850,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
     Query q = pm.newQuery(Flight.class);
     q.setResult("count(id)");
-    assertEquals(2, q.execute());
+    Object val = q.execute();
+    assertEquals(2l, val);
   }
 
   public void testCountQuery_SingleString() {
@@ -1859,10 +1860,10 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e1);
     ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
-    assertEquals(2, q.execute());
+    assertEquals(2l, q.execute());
 
     q = pm.newQuery("select COUNT(id) from " + Flight.class.getName());
-    assertEquals(2, q.execute());
+    assertEquals(2l, q.execute());
   }
 
   public void testCountQueryWithFilter_SingleString() {
@@ -1871,7 +1872,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e1);
     ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where you == 23");
-    assertEquals(1, q.execute());
+    assertEquals(1l, q.execute());
   }
 
   public void testCountQueryWithUnknownCountProp_SingleString() {
@@ -1883,7 +1884,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     // we may want to circle back and lock this down but for now it's really
     // not a big deal
     Query q = pm.newQuery("select count(doesnotexist) from " + Flight.class.getName());
-    assertEquals(2, q.execute());
+    assertEquals(2l, q.execute());
   }
 
   public void testCountQueryWithOffset() {
@@ -1893,7 +1894,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     q.setRange(1, Long.MAX_VALUE);
-    assertEquals(1, q.execute());
+    assertEquals(1l, q.execute());
   }
 
   public void testCountQueryWithLimit() {
@@ -1903,7 +1904,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     q.setRange(0, 1);
-    assertEquals(1, q.execute());
+    assertEquals(1l, q.execute());
   }
 
   public void testCountQueryWithOffsetAndLimit() {
@@ -1915,7 +1916,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e3);
     Query q = pm.newQuery("select count(id) from " + Flight.class.getName());
     q.setRange(1, 2);
-    assertEquals(1, q.execute());
+    assertEquals(1l, q.execute());
   }
 
   public void testFilterByEnum_ProvideStringExplicitly() {
@@ -2374,8 +2375,8 @@ public class JDOQLQueryTest extends JDOTestCase {
     NoQueryDelegate nqd = new NoQueryDelegate().install();
     try {
       Query q = pm.newQuery("select count(id) from " + Flight.class.getName() + " where id == :ids");
-      int count = (Integer) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
-      assertEquals(2, count);
+      long count = (Long) q.execute(Utils.newArrayList(key, e1.getKey(), e2.getKey()));
+      assertEquals(2l, count);
     } finally {
       nqd.uninstall();
     }

@@ -110,6 +110,10 @@ public class JPQLQuery extends AbstractJPQLQuery {
    */
   @Override
   protected Object performExecute(Map parameters) {
+    if (type == org.datanucleus.store.query.Query.BULK_UPDATE) {
+      throw new NucleusFatalUserException("Bulk Update statements are not supported.");
+    }
+
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
       NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JPQL", getSingleStringQuery(), null));

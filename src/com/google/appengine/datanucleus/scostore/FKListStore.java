@@ -261,7 +261,9 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    EntityUtils.checkParentage(element, op);
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      EntityUtils.checkParentage(element, op);
+    }
 
     if (orderMapping == null) {
       return false;

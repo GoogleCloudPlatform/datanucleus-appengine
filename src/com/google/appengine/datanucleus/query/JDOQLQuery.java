@@ -105,6 +105,10 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    */
   @Override
   protected Object performExecute(Map parameters) {
+    if (type == org.datanucleus.store.query.Query.BULK_UPDATE) {
+      throw new NucleusFatalUserException("Bulk Update statements are not supported.");
+    }
+
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.QUERY.isDebugEnabled()) {
         NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery(), null));
@@ -162,7 +166,17 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       results = datastoreQuery.performExecute(mconn, qd);
 
       // Evaluate remainder in-memory
-      // TODO Check what hasn't been evaluated
+      boolean resultInMemory = false;
+      if (result != null || grouping != null || having != null) {
+        resultInMemory = true;
+      }
+
+      if (!datastoreQuery.isFilterComplete() || resultInMemory) {
+        // TODO Evaluate required parts in-memory
+/*        JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
+            parameters, ec.getClassLoaderResolver());
+        results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, resultInMemory, resultClass != null, false);*/
+      }
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {

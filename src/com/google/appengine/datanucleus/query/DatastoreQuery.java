@@ -235,6 +235,7 @@ public class DatastoreQuery implements Serializable {
     }
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
 
+    // Execute the most appropriate type of query
     if (qd.batchGetKeys != null &&
         qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
         qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
@@ -269,7 +270,8 @@ public class DatastoreQuery implements Serializable {
       if (opts == null) {
         opts = withDefaults();
       }
-      return Collections.singletonList(preparedQuery.countEntities(opts));
+      // COUNT returns Long
+      return Collections.singletonList(new Long(preparedQuery.countEntities(opts)));
     } else {
       if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
         qd.primaryDatastoreQuery.setKeysOnly();
@@ -334,7 +336,8 @@ public class DatastoreQuery implements Serializable {
         }
       }
       if (qd.resultType == ResultType.COUNT) {
-        return Collections.singletonList(entities.size());
+        // COUNT returns Long
+        return Collections.singletonList(new Long(entities.size()));
       }
       return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
     }
@@ -533,10 +536,6 @@ public class DatastoreQuery implements Serializable {
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, final ClassLoaderResolver clr, boolean isJDO) {
-    
-    if (query.getType() == org.datanucleus.store.query.Query.BULK_UPDATE) {
-      throw new NucleusFatalUserException("Only select and delete statements are supported.");
-    }
 
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
