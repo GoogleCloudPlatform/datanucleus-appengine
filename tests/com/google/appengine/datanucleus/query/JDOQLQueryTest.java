@@ -906,11 +906,21 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e2 = Flight.newFlightEntity("name2", "bos2", null, 25, 26);
     Entity e3 = Flight.newFlightEntity("name3", "bos3", "mia2", 27, 28);
     ds.put(null, Arrays.asList(e, e2, e3));
+
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name)");
     List<Flight> flights = (List<Flight>) q.execute(Arrays.asList("name1", "name3"));
     assertEquals(2, flights.size());
     assertEquals(KeyFactory.keyToString(e.getKey()), flights.get(0).getId());
     assertEquals(KeyFactory.keyToString(e3.getKey()), flights.get(1).getId());
+
+    // Same but using executeWithMap
+    Query q2 = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(name)");
+    Map params = new HashMap();
+    params.put("p1", Arrays.asList("name1", "name3"));
+    List<Flight> flights2 = (List<Flight>) q2.executeWithMap(params);
+    assertEquals(2, flights2.size());
+    assertEquals(KeyFactory.keyToString(e.getKey()), flights2.get(0).getId());
+    assertEquals(KeyFactory.keyToString(e3.getKey()), flights2.get(1).getId());
 
     q = pm.newQuery("select from " + Flight.class.getName() + " where :p1.contains(dest)");
     flights = (List<Flight>) q.execute(Arrays.asList(null, "mia1"));

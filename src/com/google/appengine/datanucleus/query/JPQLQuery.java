@@ -164,7 +164,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
     else {
       // Evaluate in-datastore
-      QueryData qd = datastoreQuery.compile(compilation, parameters, false);
+      QueryData qd = datastoreQuery.compile(compilation, parameters);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());

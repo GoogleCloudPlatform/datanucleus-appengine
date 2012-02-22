@@ -185,10 +185,9 @@ public class DatastoreQuery implements Serializable {
    * Method to compile the query into a GAE Query.
    * @param compilation The compiled query.
    * @param parameters Parameter values for the query.
-   * @param isJDO {@code true} if this is a JDO query.
    * @return QueryData
    */
-  public QueryData compile(QueryCompilation compilation, Map<String, ?> parameters, boolean isJDO) {
+  public QueryData compile(QueryCompilation compilation, Map<String, ?> parameters) {
 
     if (query.getCandidateClass() == null) {
       throw new NucleusFatalUserException(
@@ -204,7 +203,7 @@ public class DatastoreQuery implements Serializable {
     storeMgr.validateMetaDataForClass(acmd);
 
     // Compile the query, populating the QueryData
-    QueryData qd = validate(compilation, parameters, acmd, clr, isJDO);
+    QueryData qd = validate(compilation, parameters, acmd, clr);
     addFilters(qd);
     addSorts(qd);
     addDiscriminator(qd);
@@ -535,7 +534,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
-                             final AbstractClassMetaData acmd, final ClassLoaderResolver clr, boolean isJDO) {
+                             final AbstractClassMetaData acmd, final ClassLoaderResolver clr) {
 
     // We don't support in-memory query fulfillment, so if the query contains
     // a grouping or a having it's automatically an error.
@@ -589,7 +588,7 @@ public class DatastoreQuery implements Serializable {
     }
 
     QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 
-        resultTransformer, isJDO);
+        resultTransformer);
 
     if (compilation.getExprFrom() != null) {
       for (Expression fromExpr : compilation.getExprFrom()) {
@@ -600,12 +599,13 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
+   * Process the result expression and return the result type needed for that.
    * @param compilation The compiled query
    * @param acmd The meta data for the class we're querying
    * @param projectionFields Out param that will contain the names
    * of any fields that have been explicitly selected in the result
    * expression.  Field names will be of the form "a.b.c".
-   *
+   * @param projectionAliases Aliases for projection
    * @return The ResultType
    */
   private ResultType validateResultExpression(
@@ -613,7 +613,7 @@ public class DatastoreQuery implements Serializable {
       List<String> projectionAliases) {
     ResultType resultType = null;
     if (compilation.getExprResult() != null) {
-      // the only expression results we support are count() and PrimaryExpression
+      // TODO Anything other than count() and PrimaryExpression can be evaluated in-memory
       for (Expression resultExpr : compilation.getExprResult()) {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
@@ -1050,24 +1050,22 @@ public class DatastoreQuery implements Serializable {
   }
 
   private Object getParameterValue(QueryData qd, ParameterExpression pe) {
-    if (pe.getPosition() != -1) {
-      // implicit param
-      // If this is JDO then the parameter is keyed by position.
-      // If this is JPA then the parameter is keyed by id.
-      // TODO Understand what that comment means. JDOQL support named or positional params
-      Object paramValue = null;
+    if (qd.parameters.containsKey(pe.getId())) {
+      return qd.parameters.get(pe.getId());
+    } else {
+      Object key = null;
       try {
-        paramValue = qd.isJDO ?
-            qd.parameters.get(pe.getPosition()) :
-            qd.parameters.get(Integer.parseInt(pe.getId()));
+        Integer intVal = Integer.valueOf(pe.getId());
+        if (qd.parameters.containsKey(intVal)) {
+          key = intVal;
+        }
       } catch (NumberFormatException nfe) {
-        // that's fine, it just means this isn't a positional param
       }
-      if (paramValue != null) {
-        return paramValue;
+      if (key == null) {
+        key = pe.getPosition();
       }
+      return qd.parameters.get(key);
     }
-    return qd.parameters.get(pe.getId());
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,

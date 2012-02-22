@@ -37,7 +37,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * Struct used to represent info about the query we need to fulfill.
+ * Struct used to represent info about the query we need to fulfil.
  *
  * @author Max Ross <maxr@google.com>
  */
@@ -50,8 +50,8 @@ final class QueryData {
   final DatastoreQuery.ResultType resultType;
   final Utils.Function<Entity, Object> resultTransformer;
   final LinkedHashMap<String, List<Object>> inFilters = new LinkedHashMap<String, List<Object>>();
-  final boolean isJDO;
   Set<Key> batchGetKeys;
+
   // only used by JDO when there is an explicit variable
   VariableExpression joinVariableExpression;
   OrderExpression joinOrderExpression;
@@ -63,7 +63,7 @@ final class QueryData {
       Map parameters, AbstractClassMetaData acmd, DatastoreTable table,
       QueryCompilation compilation, Query primaryDatastoreQuery,
       DatastoreQuery.ResultType resultType,
-      Utils.Function<Entity, Object> resultTransformer, boolean isJDO) {
+      Utils.Function<Entity, Object> resultTransformer) {
     this.parameters = parameters;
     this.acmd = acmd;
     this.tableMap.put(acmd.getFullClassName(), table);
@@ -71,7 +71,6 @@ final class QueryData {
     this.primaryDatastoreQuery = primaryDatastoreQuery;
     this.resultType = resultType;
     this.resultTransformer = resultTransformer;
-    this.isJDO = isJDO;
   }
 
   /**
