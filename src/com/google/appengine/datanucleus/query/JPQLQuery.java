@@ -164,7 +164,8 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
     else {
       // Evaluate in-datastore
-      QueryData qd = datastoreQuery.compile(compilation, parameters);
+      boolean inmemoryWhenUnsupported = getBooleanExtensionProperty("gae.inmemory-when-unsupported", true);
+      QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
@@ -177,8 +178,21 @@ public class JPQLQuery extends AbstractJPQLQuery {
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       results = datastoreQuery.performExecute(mconn, qd);
 
-      // Evaluate remainder in-memory
-      // TODO Invoke in-memory if required
+      if (inmemoryWhenUnsupported) {
+        // Evaluate remainder in-memory
+        boolean resultInMemory = false;
+        if (result != null || grouping != null || having != null) {
+          resultInMemory = true;
+        }
+
+        if (!datastoreQuery.isFilterComplete() || resultInMemory) {
+          // TODO Evaluate required parts in-memory
+          JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
+              parameters, ec.getClassLoaderResolver());
+          results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, 
+              resultInMemory, resultClass != null, false);
+        }
+      }
     }
 
     if (NucleusLogger.QUERY.isDebugEnabled()) {

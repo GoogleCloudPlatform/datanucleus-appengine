@@ -3296,6 +3296,7 @@ public class JPQLQueryTest extends JPATestCase {
   private void assertQueryUnsupportedByOrm(String query,
                                            Expression.Operator unsupportedOp) {
     Query q = em.createQuery(query);
+    q.setHint("gae.inmemory-when-unsupported", "false"); // Dont allow in-memory for unsupported syntax
     try {
       q.getResultList();
       fail("expected PersistenceException->UnsupportedOperationException for query <" + query + ">");

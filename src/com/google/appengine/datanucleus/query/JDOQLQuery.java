@@ -152,7 +152,8 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     }
     else {
       // Evaluate in-datastore
-      QueryData qd = datastoreQuery.compile(compilation, parameters);
+      boolean inmemoryWhenUnsupported = getBooleanExtensionProperty("gae.inmemory-when-unsupported", true);
+      QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
@@ -165,17 +166,20 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       results = datastoreQuery.performExecute(mconn, qd);
 
-      // Evaluate remainder in-memory
-      boolean resultInMemory = false;
-      if (result != null || grouping != null || having != null) {
-        resultInMemory = true;
-      }
+      if (inmemoryWhenUnsupported) {
+        // Evaluate remainder in-memory
+        boolean resultInMemory = false;
+        if (result != null || grouping != null || having != null) {
+          resultInMemory = true;
+        }
 
-      if (!datastoreQuery.isFilterComplete() || resultInMemory) {
-        // TODO Evaluate required parts in-memory
-/*        JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
-            parameters, ec.getClassLoaderResolver());
-        results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, resultInMemory, resultClass != null, false);*/
+        if (!datastoreQuery.isFilterComplete() || resultInMemory) {
+          // TODO Evaluate required parts in-memory
+          JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
+              parameters, ec.getClassLoaderResolver());
+          results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, 
+              resultInMemory, resultClass != null, false);
+        }
       }
     }
 

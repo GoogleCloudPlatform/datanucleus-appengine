@@ -155,10 +155,13 @@ public class DatastoreQuery implements Serializable {
     return map;
   }
 
+  /** Whether the caller will be evaluating any unsupported components in-memory when the datastore doesnt support. */
+  boolean inmemoryWhenUnsupported = true;
+
   /** DataNucleus query that this is attempting to evaluate. */
   final AbstractJavaQuery query;
 
-  /** Whether the filter clause is completely evaluatable in the datastore. */
+  /** Whether the filter clause is completely evaluatable in the datastore. TODO Set this when something is unsupported. */
   boolean filterComplete = true;
 
   /** The different types of datastore query results that we support. */
@@ -185,9 +188,11 @@ public class DatastoreQuery implements Serializable {
    * Method to compile the query into a GAE Query.
    * @param compilation The compiled query.
    * @param parameters Parameter values for the query.
-   * @return QueryData
+   * @param inmemoryWhenUnsupported Whether we will be evaluating in-memory when not supported in the datastore
+   * @return The QueryData 'compilation' for this query
    */
-  public QueryData compile(QueryCompilation compilation, Map<String, ?> parameters) {
+  public QueryData compile(QueryCompilation compilation, Map<String, ?> parameters, boolean inmemoryWhenUnsupported) {
+    this.inmemoryWhenUnsupported = inmemoryWhenUnsupported;
 
     if (query.getCandidateClass() == null) {
       throw new NucleusFatalUserException(
@@ -265,12 +270,12 @@ public class DatastoreQuery implements Serializable {
 
     PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
     FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-    if (qd.resultType == ResultType.COUNT) {
+    if (!inmemoryWhenUnsupported && qd.resultType == ResultType.COUNT) {
+      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
       if (opts == null) {
         opts = withDefaults();
       }
-      // COUNT returns Long
-      return Collections.singletonList(new Long(preparedQuery.countEntities(opts)));
+      return Collections.singletonList(new Long(preparedQuery.countEntities(opts))); // COUNT returns Long
     } else {
       if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
         qd.primaryDatastoreQuery.setKeysOnly();
@@ -334,10 +339,12 @@ public class DatastoreQuery implements Serializable {
           entities.add(entity);
         }
       }
-      if (qd.resultType == ResultType.COUNT) {
-        // COUNT returns Long
-        return Collections.singletonList(new Long(entities.size()));
+
+      if (!inmemoryWhenUnsupported && qd.resultType == ResultType.COUNT) {
+        // Need to handle projection direct from the Entity results since not allowing in-memory massaging
+        return Collections.singletonList(new Long(entities.size())); // COUNT returns Long
       }
+
       return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
     }
   }
@@ -535,17 +542,18 @@ public class DatastoreQuery implements Serializable {
 
   private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
                              final AbstractClassMetaData acmd, final ClassLoaderResolver clr) {
+    if (!inmemoryWhenUnsupported) {
+      // We don't support in-memory query fulfillment, so if the query contains
+      // a grouping or a having it's automatically an error.
+      if (query.getGrouping() != null) {
+        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
+            GROUP_BY_OP);
+      }
 
-    // We don't support in-memory query fulfillment, so if the query contains
-    // a grouping or a having it's automatically an error.
-    if (query.getGrouping() != null) {
-      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-          GROUP_BY_OP);
-    }
-
-    if (query.getHaving() != null) {
-      throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-          HAVING_OP);
+      if (query.getHaving() != null) {
+        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
+            HAVING_OP);
+      }
     }
 
     if (compilation.getSubqueryAliases() != null && compilation.getSubqueryAliases().length > 0) {
@@ -579,12 +587,15 @@ public class DatastoreQuery implements Serializable {
       };
     }
 
-    if (!projectionFields.isEmpty() || query.getResultClass() != null && 
-        query.getResultClass() != query.getCandidateClass()) {
-      // Wrap the existing transformer with a transformer that will apply the
-      // appropriate projection to each Entity in the result set.
-      resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
-          compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
+    if (!inmemoryWhenUnsupported) {
+      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
+      if (!projectionFields.isEmpty() || (query.getResultClass() != null && 
+          query.getResultClass() != query.getCandidateClass())) {
+        // Wrap the existing transformer with a transformer that will apply the
+        // appropriate projection to each Entity in the result set.
+        resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
+            compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
+      }
     }
 
     QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 

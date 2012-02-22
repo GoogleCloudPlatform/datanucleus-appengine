@@ -3344,6 +3344,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void assertQueryUnsupportedByOrm(String query, Expression.Operator unsupportedOp) {
     Query q = pm.newQuery(query);
+    q.addExtension("gae.inmemory-when-unsupported", "false"); // Dont allow in-memory for unsupported syntax
     try {
       q.execute();
       fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");
