@@ -26,6 +26,7 @@ import com.google.appengine.api.datastore.Query.SortDirection;
 import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
+import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
@@ -1257,8 +1258,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSortBySubObject_UnknownField() {
     try {
-      em.createQuery(
-          "select from " + Book.class.getName() + " c order by author.first").getResultList();
+      Query q = em.createQuery("select from " + Book.class.getName() + " c order by author.first");
+      q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -1267,9 +1269,10 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSortBySubObject_NotEmbeddable() {
     try {
-      em.createQuery(
-          "select from " + HasOneToOneJPA.class.getName() + " c order by book.author")
-          .getResultList();
+      Query q = em.createQuery(
+          "select from " + HasOneToOneJPA.class.getName() + " c order by book.author");
+      q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -1430,7 +1433,9 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testSortByUnknownProperty() {
     try {
-      em.createQuery("select from " + Book.class.getName() + " c order by dne").getResultList();
+      Query q = em.createQuery("select from " + Book.class.getName() + " c order by dne");
+      q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.getResultList();
       fail("expected exception");
     } catch (PersistenceException e) {
       // good
@@ -2294,7 +2299,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e1);
 
     Query q = em.createQuery("select count(id), isbn from " + Book.class.getName() + " c");
-    q.setHint("gae.inmemory-when-unsupported", "false");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2308,7 +2313,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
 
     q = em.createQuery("select isbn, count(id) from " + Book.class.getName() + " c");
-    q.setHint("gae.inmemory-when-unsupported", "false");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -3286,6 +3291,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void assertQueryUnsupportedByDatastore(String query, Class<?> expectedCauseClass) {
     Query q = em.createQuery(query);
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList().iterator();
       fail("expected PersistenceException for query <" + query + ">");
@@ -3299,7 +3305,7 @@ public class JPQLQueryTest extends JPATestCase {
   private void assertQueryUnsupportedByOrm(String query,
                                            Expression.Operator unsupportedOp) {
     Query q = em.createQuery(query);
-    q.setHint("gae.inmemory-when-unsupported", "false"); // Dont allow in-memory for unsupported syntax
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false"); // Dont allow in-memory for unsupported syntax
     try {
       q.getResultList();
       fail("expected PersistenceException->UnsupportedOperationException for query <" + query + ">");

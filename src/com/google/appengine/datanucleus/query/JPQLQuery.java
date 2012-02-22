@@ -23,7 +23,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.MetaDataUtils;
 
-import org.datanucleus.query.evaluator.JDOQLEvaluator;
+import org.datanucleus.query.evaluator.JPQLEvaluator;
 import org.datanucleus.query.evaluator.JavaQueryEvaluator;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
@@ -158,21 +158,18 @@ public class JPQLQuery extends AbstractJPQLQuery {
       }
 
       // Evaluate in-memory over the candidate instances
-      JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, candidates, compilation,
+      JavaQueryEvaluator resultMapper = new JPQLEvaluator(this, candidates, compilation,
           parameters, ec.getClassLoaderResolver());
       results = resultMapper.execute(true, true, true, true, true);
     }
     else {
       // Evaluate in-datastore
-      boolean inmemoryWhenUnsupported = getBooleanExtensionProperty("gae.inmemory-when-unsupported", true);
+      boolean inmemoryWhenUnsupported =
+        getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, true);
       QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
-      }
-
-      if (NucleusLogger.QUERY.isDebugEnabled()) {
-        NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JPQL", getSingleStringQuery()));
       }
 
       ManagedConnection mconn = getStoreManager().getConnection(ec);
@@ -180,16 +177,26 @@ public class JPQLQuery extends AbstractJPQLQuery {
 
       if (inmemoryWhenUnsupported) {
         // Evaluate remainder in-memory
+        boolean filterInMemory = !datastoreQuery.isFilterComplete();
         boolean resultInMemory = false;
         if (result != null || grouping != null || having != null) {
           resultInMemory = true;
         }
+        boolean orderInMemory = false;
+        if (ordering != null) {
+          if (filterInMemory) {
+            orderInMemory = true;
+          } else {
+            if (!datastoreQuery.isOrderComplete()) {
+              orderInMemory = true;
+            }
+          }
+        }
 
-        if (!datastoreQuery.isFilterComplete() || resultInMemory) {
-          // TODO Evaluate required parts in-memory
-          JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
+        if (filterInMemory || resultInMemory || orderInMemory) {
+          JavaQueryEvaluator resultMapper = new JPQLEvaluator(this, (List)results, compilation,
               parameters, ec.getClassLoaderResolver());
-          results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, 
+          results = resultMapper.execute(filterInMemory, orderInMemory, 
               resultInMemory, resultClass != null, false);
         }
       }

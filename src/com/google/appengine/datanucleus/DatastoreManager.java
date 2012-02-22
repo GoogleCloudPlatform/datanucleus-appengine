@@ -28,6 +28,7 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.PersistenceConfiguration;
+import org.datanucleus.PropertyNames;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
@@ -122,26 +123,14 @@ public class DatastoreManager extends MappedStoreManager {
   /** The name of the metadata extension that marks a field as unindexed. */
   public static final String UNINDEXED_PROPERTY = EXTENSION_PREFIX + "unindexed";
 
-  /** The name of the metadata extension that indicates the query should be excluded from the current transaction. */
-  public static final String EXCLUDE_QUERY_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
-
-  /**
-   * If the user sets javax.jdo.option.DatastoreReadTimeoutMillis or javax.persistence.query,timeout it will be
-   * available via a config property with this name.
-   */
-  public static final String READ_TIMEOUT_PROPERTY = "datanucleus.datastoreReadTimeout";
-
-  /**
-   * If the user sets javax.jdo.option.DatastoreWriteTimeoutMillis it will be
-   * available via a config property with this name.
-   */
-  public static final String WRITE_TIMEOUT_PROPERTY = "datanucleus.datastoreWriteTimeout";
-
   public static final String DATASTORE_READ_CONSISTENCY_PROPERTY =
       "datanucleus.appengine.datastoreReadConsistency";
 
   public static final String DATASTORE_ENABLE_XG_TXNS_PROPERTY =
       "datanucleus.appengine.datastoreEnableXGTransactions";
+
+  public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
+      "datanucleus.appengine.getExtentCanReturnSubclasses";
 
   /**
    * The name of the extension that indicates the return value of the batch
@@ -157,11 +146,14 @@ public class DatastoreManager extends MappedStoreManager {
    * we'll just execute a batch delete directly and use the number of entities
    * we were asked to delete as the return value.
    */
-  public static final String SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY =
+  public static final String QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE =
       EXTENSION_PREFIX + "slow-but-more-accurate-jpql-delete-query";
 
-  public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
-      "datanucleus.appengine.getExtentCanReturnSubclasses";
+  /** Query extension that indicates the query should be excluded from the current transaction. */
+  public static final String QUERYEXT_EXCLUDE_FROM_TXN = EXTENSION_PREFIX + "exclude-query-from-txn";
+
+  /** Query extension to enable/disable use of in-memory evaluation when some syntax is unsupported in datastore. */
+  public static final String QUERYEXT_INMEMORY_WHEN_UNSUPPORTED = EXTENSION_PREFIX + "inmemory-when-unsupported";
 
   /**
    * Classes whose metadata we've validated.  This set gets hit on every
@@ -607,12 +599,12 @@ public class DatastoreManager extends MappedStoreManager {
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForReads(
       PersistenceConfiguration persistenceConfig) {
-    return createDatastoreServiceConfigPrototype(persistenceConfig, READ_TIMEOUT_PROPERTY);
+    return createDatastoreServiceConfigPrototype(persistenceConfig, PropertyNames.PROPERTY_DATASTORE_READ_TIMEOUT);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototypeForWrites(
       PersistenceConfiguration persistenceConfig) {
-    return createDatastoreServiceConfigPrototype(persistenceConfig, WRITE_TIMEOUT_PROPERTY);
+    return createDatastoreServiceConfigPrototype(persistenceConfig, PropertyNames.PROPERTY_DATASTORE_WRITE_TIMEOUT);
   }
 
   private DatastoreServiceConfig createDatastoreServiceConfigPrototype(

@@ -152,15 +152,12 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     }
     else {
       // Evaluate in-datastore
-      boolean inmemoryWhenUnsupported = getBooleanExtensionProperty("gae.inmemory-when-unsupported", true);
+      boolean inmemoryWhenUnsupported =
+        getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, true);
       QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
-      }
-
-      if (NucleusLogger.QUERY.isDebugEnabled()) {
-        NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery()));
       }
 
       ManagedConnection mconn = getStoreManager().getConnection(ec);
@@ -168,16 +165,26 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
 
       if (inmemoryWhenUnsupported) {
         // Evaluate remainder in-memory
+        boolean filterInMemory = !datastoreQuery.isFilterComplete();
         boolean resultInMemory = false;
         if (result != null || grouping != null || having != null) {
           resultInMemory = true;
         }
+        boolean orderInMemory = false;
+        if (ordering != null) {
+          if (filterInMemory) {
+            orderInMemory = true;
+          } else {
+            if (!datastoreQuery.isOrderComplete()) {
+              orderInMemory = true;
+            }
+          }
+        }
 
-        if (!datastoreQuery.isFilterComplete() || resultInMemory) {
-          // TODO Evaluate required parts in-memory
+        if (filterInMemory || resultInMemory || orderInMemory) {
           JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
               parameters, ec.getClassLoaderResolver());
-          results = resultMapper.execute(!datastoreQuery.isFilterComplete(), false, 
+          results = resultMapper.execute(filterInMemory, orderInMemory, 
               resultInMemory, resultClass != null, false);
         }
       }

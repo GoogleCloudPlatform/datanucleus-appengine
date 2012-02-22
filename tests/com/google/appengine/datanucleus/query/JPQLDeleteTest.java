@@ -151,7 +151,7 @@ public class JPQLDeleteTest extends JPATestCase {
 
     Key key = KeyFactory.createKey("yar", "does not exist");
     Query q = em.createQuery("delete from " + Book.class.getName() + " b where id = :ids");
-    q.setHint(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY, true);
+    q.setHint(DatastoreManager.QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE, true);
     q.setParameter("ids", Utils.newArrayList(key, e1.getKey(), e2.getKey()));
     assertEquals(2, q.executeUpdate());
     assertEquals(1, countForClass(Book.class));

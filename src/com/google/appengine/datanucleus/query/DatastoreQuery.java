@@ -164,6 +164,9 @@ public class DatastoreQuery implements Serializable {
   /** Whether the filter clause is completely evaluatable in the datastore. TODO Set this when something is unsupported. */
   boolean filterComplete = true;
 
+  /** Whether the order clause is completely evaluatable in the datastore. */
+  boolean orderComplete = true;
+
   /** The different types of datastore query results that we support. */
   enum ResultType {
     ENTITY, // return entities
@@ -182,6 +185,10 @@ public class DatastoreQuery implements Serializable {
 
   public boolean isFilterComplete() {
       return filterComplete;
+  }
+
+  public boolean isOrderComplete() {
+      return orderComplete;
   }
 
   /**
@@ -262,8 +269,8 @@ public class DatastoreQuery implements Serializable {
     // give users a chance to opt-out of having their query execute in a txn
     Map extensions = query.getExtensions();
     if (extensions == null ||
-        !extensions.containsKey(DatastoreManager.EXCLUDE_QUERY_FROM_TXN) ||
-        !(Boolean)extensions.get(DatastoreManager.EXCLUDE_QUERY_FROM_TXN)) {
+        !extensions.containsKey(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN) ||
+        !(Boolean)extensions.get(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN)) {
       // If this is an ancestor query, execute it in the current transaction
       txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
     }
@@ -310,8 +317,8 @@ public class DatastoreQuery implements Serializable {
       Set<Key> keysToDelete = qd.batchGetKeys;
       Map extensions = query.getExtensions();
       if (extensions != null &&
-          extensions.containsKey(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY) &&
-          (Boolean) extensions.get(DatastoreManager.SLOW_BUT_MORE_ACCURATE_JPQL_DELETE_QUERY)) {
+          extensions.containsKey(DatastoreManager.QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE) &&
+          (Boolean) extensions.get(DatastoreManager.QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE)) {
         Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
         keysToDelete = getResult.keySet();
       }
@@ -628,7 +635,7 @@ public class DatastoreQuery implements Serializable {
 
     ResultType resultType = null;
     if (!inmemoryWhenUnsupported) {
-      // Evaluating the result here, so only allow COUNT and PrimaryExpression
+      // Evaluating the result directly, so only allow COUNT and PrimaryExpression
       for (Expression resultExpr : compilation.getExprResult()) {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
@@ -650,7 +657,7 @@ public class DatastoreQuery implements Serializable {
           PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
           if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
             AbstractMemberMetaData ammd =
-              getMemberMetaData(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
+              getMemberMetaDataForTuples(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
             if (ammd == null) {
               throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
             }
@@ -753,11 +760,62 @@ public class DatastoreQuery implements Serializable {
     if (orderBys == null) {
       return;
     }
-    for (Expression expr : orderBys) {
-      Query.SortDirection dir = getSortDirection((OrderExpression) expr);
-      String sortProp = getSortProperty(qd, expr);
-      qd.primaryDatastoreQuery.addSort(sortProp, dir);
+
+    try {
+      for (Expression expr : orderBys) {
+        OrderExpression orderExpr = (OrderExpression) expr;
+        Query.SortDirection dir = getSortDirection(orderExpr);
+        String sortProp = getSortProperty(qd, orderExpr);
+        qd.primaryDatastoreQuery.addSort(sortProp, dir);
+      }
+    } catch (NucleusException ne) {
+      if (inmemoryWhenUnsupported) {
+        orderComplete = false;
+      } else {
+        throw ne;
+      }
     }
+  }
+
+  private static Query.SortDirection getSortDirection(OrderExpression oe) {
+    return oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
+            ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
+  }
+
+  /**
+   * @param qd The QueryData
+   * @param orderExpr The OrderExpression
+   * @return The name of the sort property that was added to the primary datastore query.
+   */
+  String getSortProperty(QueryData qd, OrderExpression orderExpr) {
+    PrimaryExpression left = (PrimaryExpression) orderExpr.getLeft();
+    AbstractClassMetaData acmd = qd.acmd;
+    List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
+    if (isJoin(left.getLeft(), tuples)) {
+      // Change the class meta data to the meta-data for the joined class
+      acmd = getJoinClassMetaData(left.getLeft(), tuples, qd);
+    }
+
+    AbstractMemberMetaData ammd = getMemberMetaDataForTuples(acmd, tuples);
+    if (ammd == null) {
+      throw noMetaDataException(left.getId(), acmd.getFullClassName());
+    }
+    if (MetaDataUtils.isParentPKField(ammd)) {
+      throw new UnsupportedDatastoreFeatureException("Cannot sort by parent.");
+    } else {
+      String sortProp;
+      if (ammd.isPrimaryKey()) {
+        sortProp = Entity.KEY_RESERVED_PROPERTY;
+      } else {
+        sortProp = determinePropertyName(ammd);
+      }
+      return sortProp;
+    }
+  }
+
+  private boolean isJoin(Expression expr, List<String> tuples) {
+    return expr instanceof VariableExpression ||
+        (tuples.size() > 1 && getSymbolTable().hasSymbol(tuples.get(0)));
   }
 
   private void addDiscriminator(QueryData qd) {
@@ -793,47 +851,6 @@ public class DatastoreQuery implements Serializable {
         qd.primaryDatastoreQuery.addFilter(multitenantPropName, Query.FilterOperator.EQUAL, 
             getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID));
       }
-    }
-  }
-
-  static Query.SortDirection getSortDirection(OrderExpression oe) {
-    return oe.getSortOrder() == null || oe.getSortOrder().equals("ascending")
-            ? Query.SortDirection.ASCENDING : Query.SortDirection.DESCENDING;
-  }
-
-  private boolean isJoin(Expression expr, List<String> tuples) {
-    return expr instanceof VariableExpression ||
-        (tuples.size() > 1 && getSymbolTable().hasSymbol(tuples.get(0)));
-  }
-
-  /**
-   * @return The name of the sort property that was added to the primary
-   * datastore query.
-   */
-  String getSortProperty(QueryData qd, Expression expr) {
-    OrderExpression oe = (OrderExpression) expr;
-    PrimaryExpression left = (PrimaryExpression) oe.getLeft();
-    AbstractClassMetaData acmd = qd.acmd;
-    List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
-    if (isJoin(left.getLeft(), tuples)) {
-      // Change the class meta data to the meta-data for the joined class
-      acmd = getJoinClassMetaData(left.getLeft(), tuples, qd);
-    }
-
-    AbstractMemberMetaData ammd = getMemberMetaData(acmd, tuples);
-    if (ammd == null) {
-      throw noMetaDataException(left.getId(), acmd.getFullClassName());
-    }
-    if (MetaDataUtils.isParentPKField(ammd)) {
-      throw new UnsupportedDatastoreFeatureException("Cannot sort by parent.");
-    } else {
-      String sortProp;
-      if (ammd.isPrimaryKey()) {
-        sortProp = Entity.KEY_RESERVED_PROPERTY;
-      } else {
-        sortProp = determinePropertyName(ammd);
-      }
-      return sortProp;
     }
   }
 
@@ -936,7 +953,7 @@ public class DatastoreQuery implements Serializable {
         return;
       } else if (param instanceof ParameterExpression) {
         ParameterExpression parameterExpression = (ParameterExpression) param;
-        Object parameterValue = getParameterValue(qd, parameterExpression);
+        Object parameterValue = getParameterValue(qd.parameters, parameterExpression);
         String matchesExpr = getPrefixFromMatchesExpression(parameterValue);
         addPrefix(leftExpr, new Literal(matchesExpr), matchesExpr, qd);
         return;
@@ -1004,7 +1021,7 @@ public class DatastoreQuery implements Serializable {
         addPrefix(left, param, (String) ((Literal) param).getLiteral(), qd);
         return;
       } else if (param instanceof ParameterExpression) {
-        Object parameterValue = getParameterValue(qd, (ParameterExpression) param);
+        Object parameterValue = getParameterValue(qd.parameters, (ParameterExpression) param);
         addPrefix(left, param, (String) parameterValue, qd);
         return;
       }
@@ -1063,23 +1080,29 @@ public class DatastoreQuery implements Serializable {
         "Unsupported method <" + invocation.getOperation() + "> while parsing expression: " + invocation);
   }
 
-  private Object getParameterValue(QueryData qd, ParameterExpression pe) {
-    if (qd.parameters.containsKey(pe.getId())) {
-      return qd.parameters.get(pe.getId());
+  /**
+   * Accessor for parameter value for the provided parameter expression.
+   * @param qd QueryData
+   * @param pe Expression for the parameter
+   * @return The value of this parameter
+   */
+  private static Object getParameterValue(Map paramValues, ParameterExpression pe) {
+    Object key = null;
+    if (paramValues.containsKey(pe.getId())) {
+      key = pe.getId();
     } else {
-      Object key = null;
       try {
         Integer intVal = Integer.valueOf(pe.getId());
-        if (qd.parameters.containsKey(intVal)) {
+        if (paramValues.containsKey(intVal)) {
           key = intVal;
         }
-      } catch (NumberFormatException nfe) {
-      }
+      } catch (NumberFormatException nfe) {}
+
       if (key == null) {
         key = pe.getPosition();
       }
-      return qd.parameters.get(key);
     }
+    return paramValues.get(key);
   }
 
   private void addLeftPrimaryExpression(PrimaryExpression left,
@@ -1095,7 +1118,7 @@ public class DatastoreQuery implements Serializable {
     } else if (right instanceof Literal) {
       value = ((Literal) right).getLiteral();
     } else if (right instanceof ParameterExpression) {
-      value = getParameterValue(qd, (ParameterExpression) right);
+      value = getParameterValue(qd.parameters, (ParameterExpression) right);
     } else if (right instanceof DyadicExpression) {
       value = getValueFromDyadicExpression(right);
     } else if (right instanceof InvokeExpression) {
@@ -1106,8 +1129,7 @@ public class DatastoreQuery implements Serializable {
           invoke.getOperation().equals("CURRENT_DATE")) {
         value = NOW_PROVIDER.now();
       } else {
-        // We don't support any other InvokeExpressions right now but we can at least
-        // give a better error.
+        // We don't support any other InvokeExpressions right now but we can at least give a better error.
         throw newUnsupportedQueryMethodException((InvokeExpression) right);
       }
     } else if (right instanceof VariableExpression) {
@@ -1117,6 +1139,7 @@ public class DatastoreQuery implements Serializable {
             + "used as part of the join condition.  Use 'contains' if joining on a Collection field "
             + "and equality if joining on a single-value field.");
       }
+
       // add an ordering on the column that we'll add in later.
       qd.joinVariableExpression = (VariableExpression) right;
       qd.joinOrderExpression = createJoinOrderExpression(left);
@@ -1140,13 +1163,13 @@ public class DatastoreQuery implements Serializable {
         qd.joinQuery = datastoreQuery;
       }
     }
-    AbstractMemberMetaData ammd = getMemberMetaData(acmd, tuples);
+    AbstractMemberMetaData ammd = getMemberMetaDataForTuples(acmd, tuples);
     if (ammd == null) {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
     JavaTypeMapping mapping = getMappingForFieldWithName(tuples, qd, acmd);
     if (mapping instanceof PersistableMapping) {
-      processPersistenceCapableMapping(qd, op, ammd, value);
+      processPersistableMember(qd, op, ammd, value);
     } else if (MetaDataUtils.isParentPKField(ammd)) {
       addParentFilter(op, internalPkToKey(acmd, value), qd.primaryDatastoreQuery);
     } else {
@@ -1348,8 +1371,7 @@ public class DatastoreQuery implements Serializable {
     return mapping;
   }
 
-  private AbstractMemberMetaData getMemberMetaData(
-      AbstractClassMetaData acmd, List<String> tuples) {
+  private AbstractMemberMetaData getMemberMetaDataForTuples(AbstractClassMetaData acmd, List<String> tuples) {
     AbstractMemberMetaData ammd = acmd.getMetaDataForMember(tuples.get(0));
     if (ammd == null || tuples.size() == 1) {
       return ammd;
@@ -1390,8 +1412,8 @@ public class DatastoreQuery implements Serializable {
     return null;
   }
 
-  private void processPersistenceCapableMapping(
-      QueryData qd, Query.FilterOperator op, AbstractMemberMetaData ammd, Object value) {
+  private void processPersistableMember(QueryData qd, Query.FilterOperator op, AbstractMemberMetaData ammd, 
+      Object value) {
     ClassLoaderResolver clr = getClassLoaderResolver();
     AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(ammd.getType(), clr);
     Object jdoPrimaryKey;
@@ -1406,8 +1428,7 @@ public class DatastoreQuery implements Serializable {
       jdoPrimaryKey = null;
     } else {
       ApiAdapter apiAdapter = getExecutionContext().getApiAdapter();
-      jdoPrimaryKey =
-          apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
+      jdoPrimaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(apiAdapter.getIdForObject(value));
       if (jdoPrimaryKey == null) {
         // JDO couldn't find a primary key value on the object, but that doesn't mean
         // the object doesn't have the PK field(s) set, so access it via IdentityUtils
@@ -1418,6 +1439,7 @@ public class DatastoreQuery implements Serializable {
         throw new NucleusFatalUserException(query.getSingleStringQuery() + ": Parameter value " + value + " does not have an id.");
       }
     }
+
     Key valueKey = null;
     if (jdoPrimaryKey != null) {
       valueKey = internalPkToKey(acmd, jdoPrimaryKey);

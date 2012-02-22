@@ -27,6 +27,7 @@ import com.google.appengine.api.datastore.Query.SortPredicate;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.dev.LocalDatastoreService;
 import com.google.appengine.api.users.User;
+import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
@@ -831,6 +832,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasStringAncestorStringPkJDO.class.getName()
             + " where ancestorId == ancId parameters String ancId order by ancestorId ASC");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
@@ -1564,7 +1566,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testSortBySubObject_UnknownField() {
     try {
-      pm.newQuery("select from " + Flight.class.getName() + " order by origin.first").execute();
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " order by origin.first");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -1573,7 +1577,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testSortBySubObject_NotEmbeddable() {
     try {
-      pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " order by flight.origin").execute();
+      Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " order by flight.origin");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -1751,7 +1757,9 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testSortByUnknownProperty() {
     try {
-      pm.newQuery("select from " + Flight.class.getName() + " order by dne").execute();
+      Query q = pm.newQuery("select from " + Flight.class.getName() + " order by dne");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -2466,7 +2474,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_UnknownField() {
     Query q = pm.newQuery("select dne from " + Flight.class.getName());
-    q.addExtension("gae.inmemory-when-unsupported", "false");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -2693,7 +2701,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e1);
 
     Query q = pm.newQuery("select count(id), origin from " + Flight.class.getName());
-    q.addExtension("gae.inmemory-when-unsupported", "false");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -2707,7 +2715,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
 
     q = pm.newQuery("select origin, count(id) from " + Flight.class.getName());
-    q.addExtension("gae.inmemory-when-unsupported", "false");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -3348,6 +3356,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void assertQueryUnsupportedByDatastore(String query) {
     Query q = pm.newQuery(query);
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception for query <" + query + ">");
@@ -3358,7 +3367,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void assertQueryUnsupportedByOrm(String query, Expression.Operator unsupportedOp) {
     Query q = pm.newQuery(query);
-    q.addExtension("gae.inmemory-when-unsupported", "false"); // Dont allow in-memory for unsupported syntax
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false"); // Dont allow in-memory for unsupported syntax
     try {
       q.execute();
       fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");
