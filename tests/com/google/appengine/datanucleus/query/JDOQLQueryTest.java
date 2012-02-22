@@ -1876,6 +1876,16 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals(2l, q.execute());
   }
 
+  public void testMaxQuery_SingleString() {
+    Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
+    Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
+    ds.put(null, e1);
+    ds.put(null, e2);
+
+    Query q = pm.newQuery("select max(me) from " + Flight.class.getName());
+    assertEquals(34, q.execute());
+  }
+
   public void testCountQueryWithFilter_SingleString() {
     Entity e1 = newFlightEntity("harold", "bos", "mia", 23, 24, 25);
     Entity e2 = newFlightEntity("harold", "bos", "mia", 33, 34, 35);
@@ -2456,6 +2466,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testRestrictFetchedFields_UnknownField() {
     Query q = pm.newQuery("select dne from " + Flight.class.getName());
+    q.addExtension("gae.inmemory-when-unsupported", "false");
     try {
       q.execute();
       fail("expected exception");
@@ -2680,7 +2691,9 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testRestrictFetchedFieldsAndCount() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ds.put(null, e1);
+
     Query q = pm.newQuery("select count(id), origin from " + Flight.class.getName());
+    q.addExtension("gae.inmemory-when-unsupported", "false");
     try {
       q.execute();
       fail("expected exception");
@@ -2694,6 +2707,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
 
     q = pm.newQuery("select origin, count(id) from " + Flight.class.getName());
+    q.addExtension("gae.inmemory-when-unsupported", "false");
     try {
       q.execute();
       fail("expected exception");

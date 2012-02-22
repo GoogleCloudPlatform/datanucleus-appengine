@@ -622,9 +622,13 @@ public class DatastoreQuery implements Serializable {
   private ResultType validateResultExpression(
       QueryCompilation compilation, AbstractClassMetaData acmd, List<String> projectionFields,
       List<String> projectionAliases) {
+    if (compilation.getExprResult() == null) {
+      return ResultType.ENTITY;
+    }
+NucleusLogger.GENERAL.info(">> validateResult " + compilation.getExprResult());
     ResultType resultType = null;
-    if (compilation.getExprResult() != null) {
-      // TODO Anything other than count() and PrimaryExpression can be evaluated in-memory
+    if (!inmemoryWhenUnsupported) {
+      // Evaluating the result here, so only allow COUNT and PrimaryExpression
       for (Expression resultExpr : compilation.getExprResult()) {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
@@ -646,7 +650,7 @@ public class DatastoreQuery implements Serializable {
           PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
           if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
             AbstractMemberMetaData ammd =
-                getMemberMetaData(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
+              getMemberMetaData(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
             if (ammd == null) {
               throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
             }
@@ -665,13 +669,13 @@ public class DatastoreQuery implements Serializable {
         } else {
           // We don't support any other result expressions
           Expression.Operator operator =
-              new Expression.Operator(resultExpr.getClass().getName(), 0);
+            new Expression.Operator(resultExpr.getClass().getName(), 0);
           throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
         }
       }
-    }
-    if (query.getResultClass() != null && query.getResultClass() != query.getCandidateClass()) {
-      resultType = ResultType.ENTITY_PROJECTION;
+      if (query.getResultClass() != null && query.getResultClass() != query.getCandidateClass()) {
+        resultType = ResultType.ENTITY_PROJECTION;
+      }
     }
 
     if (resultType == null) {

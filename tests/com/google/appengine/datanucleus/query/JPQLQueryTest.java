@@ -2292,7 +2292,9 @@ public class JPQLQueryTest extends JPATestCase {
   public void testRestrictFetchedFieldsAndCount() {
     Entity e1 = Book.newBookEntity("author", "12345", "the title");
     ds.put(e1);
+
     Query q = em.createQuery("select count(id), isbn from " + Book.class.getName() + " c");
+    q.setHint("gae.inmemory-when-unsupported", "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2306,6 +2308,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
 
     q = em.createQuery("select isbn, count(id) from " + Book.class.getName() + " c");
+    q.setHint("gae.inmemory-when-unsupported", "false");
     try {
       q.getResultList();
       fail("expected exception");
