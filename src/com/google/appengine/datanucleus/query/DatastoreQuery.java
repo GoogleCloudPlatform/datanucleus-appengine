@@ -625,7 +625,7 @@ public class DatastoreQuery implements Serializable {
     if (compilation.getExprResult() == null) {
       return ResultType.ENTITY;
     }
-NucleusLogger.GENERAL.info(">> validateResult " + compilation.getExprResult());
+
     ResultType resultType = null;
     if (!inmemoryWhenUnsupported) {
       // Evaluating the result here, so only allow COUNT and PrimaryExpression
@@ -905,11 +905,10 @@ NucleusLogger.GENERAL.info(">> validateResult " + compilation.getExprResult());
         throw newUnsupportedQueryMethodException(invokeExpr);
       }
     } else if (expr instanceof VariableExpression) {
-      // We usually end up with this when there's a field that can't be resolved
+      // We don't support variables
       VariableExpression varExpr = (VariableExpression) expr;
       throw new NucleusFatalUserException(
-          "Unexpected expression type while parsing query.  Are you certain that a field named " +
-          varExpr.getId() + " exists on your object?");
+          "Unexpected expression type while parsing query. Variables not supported by GAE (" + varExpr.getId() + ")");
     } else {
       throw new UnsupportedDatastoreFeatureException(
           "Unexpected expression type while parsing query: "+ expr.getClass().getName());
