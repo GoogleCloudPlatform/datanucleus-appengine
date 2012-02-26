@@ -25,7 +25,7 @@ import com.google.appengine.datanucleus.annotations.Unowned;
 /**
  * "Non-owner" of a 1-1 bidirectional relation in JDO, using unowned relations.
  */
-@PersistenceCapable
+@PersistenceCapable(detachable="true")
 public class UnownedJDOOneToOneBiSideB {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

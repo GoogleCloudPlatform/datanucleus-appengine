@@ -28,7 +28,7 @@ import com.google.appengine.datanucleus.annotations.Unowned;
 /**
  * "Owner" of a 1-N bidirectional relation in JDO, using unowned relations.
  */
-@PersistenceCapable
+@PersistenceCapable(detachable="true")
 public class UnownedJDOOneToManyBiSideA {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

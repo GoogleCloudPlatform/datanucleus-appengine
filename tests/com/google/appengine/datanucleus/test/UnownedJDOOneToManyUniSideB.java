@@ -23,7 +23,7 @@ import javax.jdo.annotations.PrimaryKey;
 /**
  * "Non-owner" of a 1-N unidirectional relation in JDO, using unowned relations.
  */
-@PersistenceCapable
+@PersistenceCapable(detachable="true")
 public class UnownedJDOOneToManyUniSideB {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)

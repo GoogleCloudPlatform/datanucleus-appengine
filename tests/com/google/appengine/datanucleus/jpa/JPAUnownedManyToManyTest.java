@@ -23,24 +23,24 @@ import javax.persistence.Query;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.HasManyToManyAJPA;
-import com.google.appengine.datanucleus.test.HasManyToManyBJPA;
+import com.google.appengine.datanucleus.test.UnownedJPAManyToManySideA;
+import com.google.appengine.datanucleus.test.UnownedJPAManyToManySideB;
 
 /**
  * Tests for unowned M-N relations
  */
-public class JPAManyToManyTest extends JPATestCase {
+public class JPAUnownedManyToManyTest extends JPATestCase {
 
   public void testPersistBThenRelation() throws Exception {
     EntityManager em = emf.createEntityManager();
     try {
       // Persist Side B
-      HasManyToManyBJPA b = new HasManyToManyBJPA();
+      UnownedJPAManyToManySideB b = new UnownedJPAManyToManySideB();
       em.persist(b);
 
       // Create and persist Side A with another Side B, plus the existing Side B
-      HasManyToManyAJPA a = new HasManyToManyAJPA();
-      HasManyToManyBJPA b2 = new HasManyToManyBJPA();
+      UnownedJPAManyToManySideA a = new UnownedJPAManyToManySideA();
+      UnownedJPAManyToManySideB b2 = new UnownedJPAManyToManySideB();
       b2.getAs().add(a);
       a.getBs().add(b2);
       a.getBs().add(b);
@@ -63,17 +63,17 @@ public class JPAManyToManyTest extends JPATestCase {
 
     em = emf.createEntityManager();
     try {
-      Query qa = em.createQuery("SELECT a FROM HasManyToManyAJPA a");
-      List<HasManyToManyAJPA> results1 = qa.getResultList();
+      Query qa = em.createQuery("SELECT a FROM UnownedJPAManyToManySideA a");
+      List<UnownedJPAManyToManySideA> results1 = qa.getResultList();
       assertNotNull(results1);
       assertEquals("Incorrect number of side A", 1, results1.size());
-      HasManyToManyAJPA a = results1.iterator().next();
-      Set<HasManyToManyBJPA> bs = a.getBs();
+      UnownedJPAManyToManySideA a = results1.iterator().next();
+      Set<UnownedJPAManyToManySideB> bs = a.getBs();
       assertNotNull(bs);
       assertEquals("Incorrect number of side B for A", 2, bs.size());
 
-      Query qb = em.createQuery("SELECT b FROM HasManyToManyBJPA b");
-      List<HasManyToManyBJPA> results2 = qb.getResultList();
+      Query qb = em.createQuery("SELECT b FROM UnownedJPAManyToManySideB b");
+      List<UnownedJPAManyToManySideB> results2 = qb.getResultList();
       assertNotNull(results2);
       assertEquals("Incorrect number of side B", 2, results2.size());
     } catch (Exception e) {
@@ -92,16 +92,16 @@ public class JPAManyToManyTest extends JPATestCase {
     EntityManager em = emf.createEntityManager();
     try {
       // Persist Side A
-      HasManyToManyAJPA a = new HasManyToManyAJPA();
+      UnownedJPAManyToManySideA a = new UnownedJPAManyToManySideA();
       em.persist(a);
 
       // Create and persist Side B with Side A, plus another Side B
-      HasManyToManyBJPA b = new HasManyToManyBJPA();
+      UnownedJPAManyToManySideB b = new UnownedJPAManyToManySideB();
       b.getAs().add(a);
       a.getBs().add(b);
       em.persist(b);
 
-      HasManyToManyBJPA b2 = new HasManyToManyBJPA();
+      UnownedJPAManyToManySideB b2 = new UnownedJPAManyToManySideB();
       b2.getAs().add(a);
       a.getBs().add(b2);
       em.persist(b2);
@@ -121,17 +121,17 @@ public class JPAManyToManyTest extends JPATestCase {
 
     em = emf.createEntityManager();
     try {
-      Query qa = em.createQuery("SELECT a FROM HasManyToManyAJPA a");
-      List<HasManyToManyAJPA> results1 = qa.getResultList();
+      Query qa = em.createQuery("SELECT a FROM UnownedJPAManyToManySideA a");
+      List<UnownedJPAManyToManySideA> results1 = qa.getResultList();
       assertNotNull(results1);
       assertEquals("Incorrect number of side A", 1, results1.size());
-      HasManyToManyAJPA a = results1.iterator().next();
-      Set<HasManyToManyBJPA> bs = a.getBs();
+      UnownedJPAManyToManySideA a = results1.iterator().next();
+      Set<UnownedJPAManyToManySideB> bs = a.getBs();
       assertNotNull(bs);
       assertEquals("Incorrect number of side B for A", 2, bs.size());
 
-      Query qb = em.createQuery("SELECT b FROM HasManyToManyBJPA b");
-      List<HasManyToManyBJPA> results2 = qb.getResultList();
+      Query qb = em.createQuery("SELECT b FROM UnownedJPAManyToManySideB b");
+      List<UnownedJPAManyToManySideB> results2 = qb.getResultList();
       assertNotNull(results2);
       assertEquals("Incorrect number of side B", 2, results2.size());
     } catch (Exception e) {
@@ -150,9 +150,9 @@ public class JPAManyToManyTest extends JPATestCase {
     EntityManager em = emf.createEntityManager();
     try {
       // Persist Side A
-      HasManyToManyBJPA b = new HasManyToManyBJPA();
-      HasManyToManyAJPA a = new HasManyToManyAJPA();
-      HasManyToManyBJPA b2 = new HasManyToManyBJPA();
+      UnownedJPAManyToManySideB b = new UnownedJPAManyToManySideB();
+      UnownedJPAManyToManySideA a = new UnownedJPAManyToManySideA();
+      UnownedJPAManyToManySideB b2 = new UnownedJPAManyToManySideB();
       b2.getAs().add(a);
       a.getBs().add(b2);
       a.getBs().add(b);
@@ -175,17 +175,17 @@ public class JPAManyToManyTest extends JPATestCase {
 
     em = emf.createEntityManager();
     try {
-      Query qa = em.createQuery("SELECT a FROM HasManyToManyAJPA a");
-      List<HasManyToManyAJPA> results1 = qa.getResultList();
+      Query qa = em.createQuery("SELECT a FROM UnownedJPAManyToManySideA a");
+      List<UnownedJPAManyToManySideA> results1 = qa.getResultList();
       assertNotNull(results1);
       assertEquals("Incorrect number of side A", 1, results1.size());
-      HasManyToManyAJPA a = results1.iterator().next();
-      Set<HasManyToManyBJPA> bs = a.getBs();
+      UnownedJPAManyToManySideA a = results1.iterator().next();
+      Set<UnownedJPAManyToManySideB> bs = a.getBs();
       assertNotNull(bs);
       assertEquals("Incorrect number of side B for A", 2, bs.size());
 
-      Query qb = em.createQuery("SELECT b FROM HasManyToManyBJPA b");
-      List<HasManyToManyBJPA> results2 = qb.getResultList();
+      Query qb = em.createQuery("SELECT b FROM UnownedJPAManyToManySideB b");
+      List<UnownedJPAManyToManySideB> results2 = qb.getResultList();
       assertNotNull(results2);
       assertEquals("Incorrect number of side B", 2, results2.size());
     } catch (Exception e) {

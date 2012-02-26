@@ -29,20 +29,20 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.datanucleus.annotations.Unowned;
 
 @Entity
-public class HasManyToManyAJPA {
+public class UnownedJPAManyToManySideA {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY) 
   private Key key;
 
   @Unowned
   @ManyToMany(mappedBy="as", cascade=CascadeType.ALL)
-  private Set<HasManyToManyBJPA> bs = new HashSet<HasManyToManyBJPA>();
+  private Set<UnownedJPAManyToManySideB> bs = new HashSet<UnownedJPAManyToManySideB>();
 
   public Key getKey() {
     return key;
   }
 
-  public Set<HasManyToManyBJPA> getBs() {
+  public Set<UnownedJPAManyToManySideB> getBs() {
     return bs;
   }
 }

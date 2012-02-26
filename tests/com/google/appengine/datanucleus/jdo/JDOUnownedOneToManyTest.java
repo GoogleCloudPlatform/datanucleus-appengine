@@ -18,6 +18,9 @@ package com.google.appengine.datanucleus.jdo;
 import java.util.List;
 import java.util.Set;
 
+import javax.jdo.FetchPlan;
+import javax.jdo.JDOHelper;
+
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideB;
@@ -175,5 +178,77 @@ public class JDOUnownedOneToManyTest extends JDOTestCase {
 
     bs = (List<UnownedJDOOneToManyUniSideB>) pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
     assertEquals(2, bs.size());
+  }
+
+  public void testUnownedDelete() {
+    UnownedJDOOneToManyUniListSideA p = new UnownedJDOOneToManyUniListSideA();
+    UnownedJDOOneToManyUniSideB c1 = new UnownedJDOOneToManyUniSideB();
+    p.addOther(c1);
+    UnownedJDOOneToManyUniSideB c2 = new UnownedJDOOneToManyUniSideB();
+    p.addOther(c2);
+
+    pm.makePersistent(p);
+    pm.close();
+
+    pm = pmf.getPersistenceManager();
+
+    List<UnownedJDOOneToManyUniListSideA> parents = (List<UnownedJDOOneToManyUniListSideA>) 
+      pm.newQuery( "select from " + UnownedJDOOneToManyUniListSideA.class.getName() ).execute();
+
+    assertEquals(1, parents.size());
+    assertEquals(2, parents.get(0).getOthers().size());
+
+    List<UnownedJDOOneToManyUniSideB> children = (List<UnownedJDOOneToManyUniSideB>)
+      pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, children.size() );
+
+    pm.deletePersistent(parents.get(0));
+
+    parents = (List<UnownedJDOOneToManyUniListSideA>) 
+      pm.newQuery("select from " + UnownedJDOOneToManyUniListSideA.class.getName()).execute();
+    assertEquals(0, parents.size());
+
+    children = (List<UnownedJDOOneToManyUniSideB>)
+      pm.newQuery("select from " + UnownedJDOOneToManyUniSideB.class.getName()).execute();
+    assertEquals(2, children.size());
+  }
+
+  public void testUnownedList() {
+
+    // creat children first, persist
+    UnownedJDOOneToManyUniSideB c1 = new UnownedJDOOneToManyUniSideB();
+    UnownedJDOOneToManyUniSideB c2 = new UnownedJDOOneToManyUniSideB();
+    pm.makePersistent(c1);
+    pm.makePersistent(c2);
+    pm.evictAll();
+
+    // verify children
+    List<UnownedJDOOneToManyUniSideB> children = (List<UnownedJDOOneToManyUniSideB>)
+      pm.newQuery( "select from " + UnownedJDOOneToManyUniSideB.class.getName() ).execute();
+    assertEquals(2, children.size());
+
+    // create parent without children, store, detach
+    UnownedJDOOneToManyUniListSideA p = new UnownedJDOOneToManyUniListSideA();
+    p = pm.makePersistent(p);
+    pm.getFetchPlan().setGroup(FetchPlan.ALL);
+    UnownedJDOOneToManyUniListSideA pDetached = pm.detachCopy(p);
+    assertTrue(JDOHelper.isDetached(pDetached));
+
+    // add already persistent children
+    pDetached.getOthers().add(pm.detachCopy(c1));
+    pDetached.getOthers().add(pm.detachCopy(c2));
+
+    // update parent
+    pm.makePersistent(pDetached);
+    pm.close();
+
+    // get new pm
+    pm = pmf.getPersistenceManager();
+
+    List<UnownedJDOOneToManyUniListSideA> parents = (List<UnownedJDOOneToManyUniListSideA>)
+      pm.newQuery( "select from " + UnownedJDOOneToManyUniListSideA.class.getName() ).execute();
+
+    assertEquals( 1, parents.size() );
+    assertEquals( 2, parents.get( 0 ).getOthers().size() );
   }
 }

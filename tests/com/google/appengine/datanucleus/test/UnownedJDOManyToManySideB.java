@@ -25,20 +25,20 @@ import javax.jdo.annotations.Persistent;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.datanucleus.annotations.Unowned;
 
-@PersistenceCapable
-public class HasManyToManyBJDO {
+@PersistenceCapable(detachable="true")
+public class UnownedJDOManyToManySideB {
   @Persistent(valueStrategy=IdGeneratorStrategy.IDENTITY, primaryKey="true")
   private Key key;
 
   @Unowned
   @Persistent
-  private Set<HasManyToManyAJDO> as = new HashSet<HasManyToManyAJDO>();
+  private Set<UnownedJDOManyToManySideA> as = new HashSet<UnownedJDOManyToManySideA>();
 
   public Key getKey() {
     return key;
   }
 
-  public Set<HasManyToManyAJDO> getAs() {
+  public Set<UnownedJDOManyToManySideA> getAs() {
     return as;
   }
 }

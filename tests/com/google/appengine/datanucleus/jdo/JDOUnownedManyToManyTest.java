@@ -23,24 +23,24 @@ import javax.jdo.Query;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.HasManyToManyAJDO;
-import com.google.appengine.datanucleus.test.HasManyToManyBJDO;
+import com.google.appengine.datanucleus.test.UnownedJDOManyToManySideA;
+import com.google.appengine.datanucleus.test.UnownedJDOManyToManySideB;
 
 /**
  * Tests for unowned M-N relations
  */
-public class JDOManyToManyTest extends JDOTestCase {
+public class JDOUnownedManyToManyTest extends JDOTestCase {
 
   public void testPersist() throws Exception {
     PersistenceManager pm = pmf.getPersistenceManager();
     try {
       // Persist Side A
-      HasManyToManyBJDO b = new HasManyToManyBJDO();
+      UnownedJDOManyToManySideB b = new UnownedJDOManyToManySideB();
       pm.makePersistent(b);
 
       // Create and persist Side B with another Side A, plus the existing Side A
-      HasManyToManyAJDO a = new HasManyToManyAJDO();
-      HasManyToManyBJDO b2 = new HasManyToManyBJDO();
+      UnownedJDOManyToManySideA a = new UnownedJDOManyToManySideA();
+      UnownedJDOManyToManySideB b2 = new UnownedJDOManyToManySideB();
       b2.getAs().add(a);
       a.getBs().add(b2);
       a.getBs().add(b);
@@ -61,17 +61,17 @@ public class JDOManyToManyTest extends JDOTestCase {
 
     pm = pmf.getPersistenceManager();
     try {
-      Query qa = pm.newQuery(HasManyToManyAJDO.class);
-      List<HasManyToManyAJDO> results1 = (List<HasManyToManyAJDO>) qa.execute();
+      Query qa = pm.newQuery(UnownedJDOManyToManySideA.class);
+      List<UnownedJDOManyToManySideA> results1 = (List<UnownedJDOManyToManySideA>) qa.execute();
       assertNotNull(results1);
       assertEquals("Incorrect number of side A", 1, results1.size());
-      HasManyToManyAJDO a = results1.iterator().next();
-      Set<HasManyToManyBJDO> bs = a.getBs();
+      UnownedJDOManyToManySideA a = results1.iterator().next();
+      Set<UnownedJDOManyToManySideB> bs = a.getBs();
       assertNotNull(bs);
       assertEquals("Incorrect number of side B for A", 2, bs.size());
 
-      Query qb = pm.newQuery(HasManyToManyBJDO.class);
-      List<HasManyToManyBJDO> results2 = (List<HasManyToManyBJDO>) qb.execute();
+      Query qb = pm.newQuery(UnownedJDOManyToManySideB.class);
+      List<UnownedJDOManyToManySideB> results2 = (List<UnownedJDOManyToManySideB>) qb.execute();
       assertNotNull(results2);
       assertEquals("Incorrect number of side B", 2, results2.size());
     } catch (Exception e) {
