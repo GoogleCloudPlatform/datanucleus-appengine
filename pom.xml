@@ -36,7 +36,7 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
-            <!--version>3.0.5</version-->
+            <!--version>3.0.9</version-->
             <version>[3.0, 3.1)</version>
         </dependency>
 
@@ -200,7 +200,6 @@
                     <forkMode>always</forkMode>
                     <excludes>
                         <exclude>**/*TestCase.java</exclude>
-                        <exclude>**/JDOOneToManyArrayTest.java</exclude>
                     </excludes>
                     <skipTests>false</skipTests>
                 </configuration>
