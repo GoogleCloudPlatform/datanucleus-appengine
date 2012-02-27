@@ -88,18 +88,14 @@ final class QueryData {
         FilterPredicate pred = filterIter.next();
         str.append(pred.getPropertyName() + pred.getOperator() + pred.getValue());
         if (filterIter.hasNext()) {
-          if (isOrExpression) {
-            str.append(" OR ");
-          } else {
-            str.append(" AND ");
-          }
+          str.append(" AND ");
         }
       }
     }
 
     List<SortPredicate> sortPreds = primaryDatastoreQuery.getSortPredicates();
     if (sortPreds.size() > 0) {
-      str.append(" Order : ");
+      str.append(" Sort : ");
       Iterator<SortPredicate> sortIter = sortPreds.iterator();
       while (sortIter.hasNext()) {
         SortPredicate pred = sortIter.next();

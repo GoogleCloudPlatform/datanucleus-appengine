@@ -214,6 +214,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   private void assertQueryRequiresUnsupportedDatastoreFeature(String query) {
     Query q = pm.newQuery(query);
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected JDOUserException->UnsupportedDatastoreFeatureException for query <" + query + ">");
@@ -793,6 +794,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasStringAncestorStringPkJDO.class.getName()
             + " where ancestorId > ancId parameters String ancId");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(KeyFactory.keyToString(flightEntity.getKey()));
       fail ("expected udfe");
@@ -895,6 +897,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(null);
       fail("expected exception");
@@ -946,6 +949,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     try {
       Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.contains(:param)");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
       q.execute("na");
       fail("Should have thrown an exception when invoking 'contains' on a String");
     } catch (JDOUserException ue) {
@@ -1080,6 +1084,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = new Entity(HasOneToOneJDO.class.getSimpleName());
     ds.put(null, e);
     Query q = pm.newQuery("select from " + HasOneToOneJDO.class.getName() + " where flight == null");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected");
@@ -1095,6 +1100,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e);
     Query q = pm.newQuery(
         "select from " + HasOneToOneParentJDO.class.getName() + " where parent == null");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected");
@@ -1139,6 +1145,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight > f parameters " + Flight.class.getName() + " f");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(flight);
       fail("expected udfe");
@@ -1169,6 +1176,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(flight);
       fail("expected JDOException");
@@ -1191,6 +1199,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(parentEntity.getKey());
       fail("expected JDOException");
@@ -1219,6 +1228,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     Query q = pm.newQuery(
         "select from " + HasOneToOneJDO.class.getName()
         + " where flight == f parameters " + Flight.class.getName() + " f");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(flight);
       fail("expected JDOException");
@@ -1466,8 +1476,10 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterBySubObject_UnknownField() {
     try {
-      pm.newQuery(
-          "select from " + Flight.class.getName() + " where origin.doesnotexist == \"max\"").execute();
+      Query q = pm.newQuery(
+          "select from " + Flight.class.getName() + " where origin.doesnotexist == \"max\"");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -1476,8 +1488,10 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testFilterBySubObject_NotEmbeddable() {
     try {
-      pm.newQuery(
-          "select from " + HasOneToOneJDO.class.getName() + " where flight.origin == \"max\"").execute();
+      Query q = pm.newQuery(
+          "select from " + HasOneToOneJDO.class.getName() + " where flight.origin == \"max\"");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
+      q.execute();
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
@@ -2436,34 +2450,43 @@ public class JDOQLQueryTest extends JDOTestCase {
     commitTxn();
     switchDatasource(PersistenceManagerFactoryName.nontransactional);
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :ids");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(Utils.newArrayList());
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
     }
+
     q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids && origin == :origin");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(Utils.newArrayList(), "bos");
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
     }
+
     q = pm.newQuery("select from " + Flight.class.getName() + " where origin == :origin && id == :ids");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute("bos", Utils.newArrayList());
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
     }
+
     q = pm.newQuery("select from " + Flight.class.getName() + " where id > :ids");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(Utils.newArrayList());
       fail("expected exception");
     } catch (JDOFatalUserException e) {
       // good
     }
+
     q = pm.newQuery("select from " + Flight.class.getName() + " where id == :ids order by id");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(Utils.newArrayList());
       fail("expected exception");
@@ -2745,6 +2768,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testAggregateInFilterFails() {
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where you == max(you)");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -2818,6 +2842,30 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertTrue(flights3.isEmpty());
   }
 
+  public void testEndsWith_Literal() {
+    Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
+    ds.put(null, e1);
+    Entity e2 = Flight.newFlightEntity("yam", "bos", "mia", 24, 25);
+    ds.put(null, e2);
+    Entity e3 = Flight.newFlightEntity("z", "bos", "mia", 24, 25);
+    ds.put(null, e3);
+
+    Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"y\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights = (List<Flight>) q.execute();
+    assertEquals(1, flights.size());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"am\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights2 = (List<Flight>) q.execute();
+    assertEquals(1, flights2.size());
+
+    q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"za\")");
+    @SuppressWarnings("unchecked")
+    List<Flight> flights3 = (List<Flight>) q.execute();
+    assertTrue(flights3.isEmpty());
+  }
+
   public void testStartsWith_Param() {
     Entity e1 = Flight.newFlightEntity("y", "bos", "mia", 24, 25);
     ds.put(null, e1);
@@ -2867,6 +2915,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
     try {
       Query q = pm.newQuery("select from " + Flight.class.getName() + " where flightNumber.startsWith(\"y\")");
+      q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
       q.execute();
       fail("Should have thrown an exception when invoking 'int.startsWith' but didn't");
     } catch (JDOUserException ue) {
@@ -2895,6 +2944,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testMatchesQuery_InvalidLiteral() {
     Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('.*y')");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
@@ -2908,6 +2958,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*y')");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
@@ -2921,6 +2972,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y')");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
@@ -2934,6 +2986,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
 
     q = pm.newQuery("select from " + Book.class.getName() + " where title.matches('y.*') && author.matches('z.*')");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute()).isEmpty();
       fail("expected exception");
@@ -2945,6 +2998,7 @@ public class JDOQLQueryTest extends JDOTestCase {
 
   public void testMatchesQuery_InvalidParameter() {
     Query q = pm.newQuery("select from " + Book.class.getName() + " where title.matches(:p)");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       ((List<?>) q.execute(".*y")).isEmpty();
       fail("expected exception");
@@ -3030,6 +3084,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   public void testNullAncestorParam() {
     Query q = pm.newQuery(HasKeyAncestorStringPkJDO.class);
     q.setFilter("ancestorKey == :p");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute(null);
       fail("expected exception");
@@ -3338,6 +3393,7 @@ public class JDOQLQueryTest extends JDOTestCase {
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
     Query q = pm.newQuery(clazz, query);
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");

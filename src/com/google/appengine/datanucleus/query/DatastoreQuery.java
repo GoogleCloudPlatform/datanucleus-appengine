@@ -205,22 +205,79 @@ public class DatastoreQuery implements Serializable {
       throw new NucleusFatalUserException(
           "Candidate class could not be found: " + query.getSingleStringQuery());
     }
-    DatastoreManager storeMgr = getStoreManager();
-    ClassLoaderResolver clr = getClassLoaderResolver();
-    AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
+
+    final ClassLoaderResolver clr = getClassLoaderResolver();
+    final AbstractClassMetaData acmd = getMetaDataManager().getMetaDataForClass(query.getCandidateClass(), clr);
     if (acmd == null) {
       throw new NucleusFatalUserException("No meta data for " + query.getCandidateClass().getName()
           + ".  Perhaps you need to run the enhancer on this class?");
     }
-    storeMgr.validateMetaDataForClass(acmd);
+    getStoreManager().validateMetaDataForClass(acmd);
 
-    // Compile the query, populating the QueryData
-    QueryData qd = validate(compilation, parameters, acmd, clr);
+    if (!inmemoryWhenUnsupported) {
+      // We need all to be evaluated in the datastore yet don't support grouping/having restrictions
+      if (query.getGrouping() != null) {
+        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), GROUP_BY_OP);
+      } else if (query.getHaving() != null) {
+        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), HAVING_OP);
+      }
+    }
+
+    if (compilation.getSubqueryAliases() != null && compilation.getSubqueryAliases().length > 0) {
+      throw new NucleusUserException("Subqueries not supported by datastore. Try evaluating them in-memory");
+    }
+
+    // Create QueryData object to use as the datastore compilation
+    final List<String> projectionFields = Utils.newArrayList();
+    final List<String> projectionAliases = Utils.newArrayList();
+    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields, projectionAliases);
+    Function<Entity, Object> resultTransformer;
+    if (resultType == ResultType.KEYS_ONLY) {
+      resultTransformer = new Function<Entity, Object>() {
+        public Object apply(Entity from) {
+          return entityToPojoPrimaryKey(from, acmd, clr, getExecutionContext());
+        }
+      };
+    } else {
+      resultTransformer = new Function<Entity, Object>() {
+        public Object apply(Entity from) {
+          FetchPlan fp = query.getFetchPlan();
+          if (!projectionFields.isEmpty()) {
+            // If this is a projection, ignore the fetch plan and just fetch everything.
+            // We do this because we're returning individual fields, not an entire entity.
+            fp = null;
+          }
+          return EntityUtils.entityToPojo(from, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
+        }
+      };
+    }
+    if (!inmemoryWhenUnsupported) {
+      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
+      if (!projectionFields.isEmpty() || (query.getResultClass() != null && 
+          query.getResultClass() != query.getCandidateClass())) {
+        // Wrap the existing transformer with a transformer that will apply the
+        // appropriate projection to each Entity in the result set.
+        resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
+            compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
+      }
+    }
+
+    DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
+    String kind = table.getIdentifier().getIdentifierName();
+    QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 
+        resultTransformer);
+
+    if (compilation.getExprFrom() != null) {
+      // Process FROM expression, adding pseudo joins
+      for (Expression fromExpr : compilation.getExprFrom()) {
+        processFromExpression(qd, fromExpr);
+      }
+    }
+
+    addDiscriminator(qd, clr);
+    addMultitenancyDiscriminator(qd);
     addFilters(qd);
     addSorts(qd);
-    addDiscriminator(qd);
-    addMultitenancyDiscriminator(qd);
-    processInFilters(qd);
 
     return qd;
   }
@@ -547,75 +604,6 @@ public class DatastoreQuery implements Serializable {
     return ec.findObject(id, fv, cls, false);
   }
 
-  private QueryData validate(QueryCompilation compilation, Map<String, ?> parameters,
-                             final AbstractClassMetaData acmd, final ClassLoaderResolver clr) {
-    if (!inmemoryWhenUnsupported) {
-      // We don't support in-memory query fulfillment, so if the query contains
-      // a grouping or a having it's automatically an error.
-      if (query.getGrouping() != null) {
-        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-            GROUP_BY_OP);
-      }
-
-      if (query.getHaving() != null) {
-        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-            HAVING_OP);
-      }
-    }
-
-    if (compilation.getSubqueryAliases() != null && compilation.getSubqueryAliases().length > 0) {
-      throw new NucleusUserException("Subqueries not supported by datastore. Try evaluating them in-memory");
-    }
-
-    final List<String> projectionFields = Utils.newArrayList();
-    final List<String> projectionAliases = Utils.newArrayList();
-    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields, projectionAliases);
-    DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
-    String kind = table.getIdentifier().getIdentifierName();
-    Function<Entity, Object> resultTransformer;
-    if (resultType == ResultType.KEYS_ONLY) {
-      resultTransformer = new Function<Entity, Object>() {
-        public Object apply(Entity from) {
-          return entityToPojoPrimaryKey(from, acmd, clr, getExecutionContext());
-        }
-      };
-    } else {
-      resultTransformer = new Function<Entity, Object>() {
-        public Object apply(Entity from) {
-          FetchPlan fp = query.getFetchPlan();
-          if (!projectionFields.isEmpty()) {
-            // If this is a projection, ignore the fetch plan and just fetch everything.
-            // We do this because we're returning individual fields, not an entire
-            // entity.
-            fp = null;
-          }
-          return EntityUtils.entityToPojo(from, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
-        }
-      };
-    }
-
-    if (!inmemoryWhenUnsupported) {
-      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
-      if (!projectionFields.isEmpty() || (query.getResultClass() != null && 
-          query.getResultClass() != query.getCandidateClass())) {
-        // Wrap the existing transformer with a transformer that will apply the
-        // appropriate projection to each Entity in the result set.
-        resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
-            compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
-      }
-    }
-
-    QueryData qd = new QueryData(parameters, acmd, table, compilation, new Query(kind), resultType, 
-        resultTransformer);
-
-    if (compilation.getExprFrom() != null) {
-      for (Expression fromExpr : compilation.getExprFrom()) {
-        processFromExpression(qd, fromExpr);
-      }
-    }
-    return qd;
-  }
-
   /**
    * Process the result expression and return the result type needed for that.
    * @param compilation The compiled query
@@ -639,10 +627,12 @@ public class DatastoreQuery implements Serializable {
       for (Expression resultExpr : compilation.getExprResult()) {
         if (resultExpr instanceof InvokeExpression) {
           InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
-          if (!isCountOperation(invokeExpr.getOperation())) {
-            Expression.Operator operator = new Expression.Operator(invokeExpr.getOperation(), 0);
-            throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+          if (!invokeExpr.getOperation().toLowerCase().equals("count")) {
+            // Don't support in-datastore query of a method that is not "count"
+            throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
+                new Expression.Operator(invokeExpr.getOperation(), 0));
           } else if (!projectionFields.isEmpty()) {
+            // Don't support in-datastore query of count+projection
             throw newAggregateAndRowResultsException();
           } else {
             resultType = ResultType.COUNT;
@@ -689,12 +679,6 @@ public class DatastoreQuery implements Serializable {
       resultType = ResultType.ENTITY;
     }
     return resultType;
-  }
-
-  // TODO(maxr) Split this out into a more generic utility if we start
-  // handling other operators explicitly
-  private static boolean isCountOperation(String operation) {
-    return operation.toLowerCase().equals("count");
   }
 
   private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {
@@ -818,7 +802,12 @@ public class DatastoreQuery implements Serializable {
         (tuples.size() > 1 && getSymbolTable().hasSymbol(tuples.get(0)));
   }
 
-  private void addDiscriminator(QueryData qd) {
+  /**
+   * Method to add a filter to restrict any discriminator property to valid values.
+   * @param qd QueryData
+   * @param clr ClassLoader resolver
+   */
+  private void addDiscriminator(QueryData qd, ClassLoaderResolver clr) {
     if (qd.acmd.hasDiscriminatorStrategy()) {
       String className = qd.acmd.getFullClassName();
       boolean includeSubclasses = query.isSubclasses();
@@ -829,7 +818,6 @@ public class DatastoreQuery implements Serializable {
       // Note : we always restrict the discriminator since the user may at some later point add other classes
       // to be persisted here, or have others that have data but aren't currently active in the persistence process
       List<Object> discriminatorValues = new ArrayList<Object>();
-      ClassLoaderResolver clr = getClassLoaderResolver();
       discriminatorValues.add(qd.acmd.getDiscriminatorValue());
       if (includeSubclasses) {
         for (String subClassName : storeMgr.getSubClassesForClass(className, true, clr)) {
@@ -842,6 +830,10 @@ public class DatastoreQuery implements Serializable {
     }
   }
 
+  /**
+   * Method to add a filter to restrict any multitenancy discriminator to a valid value.
+   * @param qd QueryData
+   */
   private void addMultitenancyDiscriminator(QueryData qd) {
     if (getStoreManager().getStringProperty(PropertyNames.PROPERTY_TENANT_ID) != null) {
       if ("true".equalsIgnoreCase(qd.acmd.getValueForExtension("multitenancy-disable"))) {
@@ -858,7 +850,19 @@ public class DatastoreQuery implements Serializable {
    * Adds filters to the given {@link Query} by examining the compiled filter expression.
    */
   private void addFilters(QueryData qd) {
-    addExpression(qd.compilation.getExprFilter(), qd);
+    try {
+      addExpression(qd.compilation.getExprFilter(), qd);
+
+      processInFilters(qd);
+    } catch (NucleusException ne) {
+      if (!inmemoryWhenUnsupported || qd.isOrExpression) { // TODO Handle OR expressions in block below and get all candidates
+        throw ne;
+      }
+      if (qd.isOrExpression) {
+        // TODO We can't process something and an OR is involved, so just remove all filters
+      }
+      filterComplete = false;
+    }
   }
 
   /**
@@ -916,7 +920,7 @@ public class DatastoreQuery implements Serializable {
         handleContainsOperation(invokeExpr, qd);
       } else if (invokeExpr.getOperation().equals("startsWith") && invokeExpr.getArguments().size() == 1) {
         handleStartsWithOperation(invokeExpr, qd);
-      } else if (invokeExpr.getOperation().equals("matches") && invokeExpr.getArguments().size() == 1) {
+      } else if (invokeExpr.getOperation().equals("matches")) {
         handleMatchesOperation(invokeExpr, qd);
       } else {
         throw newUnsupportedQueryMethodException(invokeExpr);
@@ -934,6 +938,13 @@ public class DatastoreQuery implements Serializable {
 
   private void handleMatchesOperation(InvokeExpression invokeExpr, QueryData qd) {
     Expression param = (Expression) invokeExpr.getArguments().get(0);
+    Expression escapeParam = null;
+    if (invokeExpr.getArguments().size() == 2) {
+      escapeParam = invokeExpr.getArguments().get(1);
+      // TODO Support escape syntax
+      throw new UnsupportedDatastoreFeatureException("GAE doesn't currently support ESCAPE syntax (" + escapeParam + ")");
+    }
+
     if (invokeExpr.getLeft() instanceof PrimaryExpression) {
       PrimaryExpression leftExpr = (PrimaryExpression)invokeExpr.getLeft();
 
@@ -1290,6 +1301,7 @@ public class DatastoreQuery implements Serializable {
       Number negateMe = (Number) ((Literal) dyadic.getLeft()).getLiteral();
       return negateNumber(negateMe);
     }
+
     throw new UnsupportedDatastoreFeatureException(
         "Right side of expression is composed of unsupported components.  "
         + "Left: " + dyadic.getLeft().getClass().getName()
@@ -1340,8 +1352,7 @@ public class DatastoreQuery implements Serializable {
 
   private Object negateNumber(Number negateMe) {
     if (negateMe instanceof BigDecimal) {
-      // datastore doesn't support filtering by BigDecimal to convert to
-      // double.
+      // datastore doesn't support filtering by BigDecimal to convert to double.
       return ((BigDecimal) negateMe).negate().doubleValue();
     } else if (negateMe instanceof Float) {
       return -((Float) negateMe);

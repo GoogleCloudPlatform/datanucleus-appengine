@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.query;
 
 
+import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
 import com.google.appengine.datanucleus.test.OwnedJoinsJDO.Course;
 import com.google.appengine.datanucleus.test.OwnedJoinsJDO.Major;
@@ -142,6 +143,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses > c && c.department == 'Biology' && "
         + "grade == 10");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -160,6 +162,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses.contains(c) && c.department == 'Biology' && "
         + "grade > 10");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -178,6 +181,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses.contains(c) && c.department > 'Biology' && "
         + "grade == 10");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -196,6 +200,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses.contains(c) && c.department == 'Biology' && "
         + "grade == 10 order by grade");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -214,6 +219,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses.contains(c) && c.department == 'Biology' && "
         + "grade == 10 order by courses desc");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");
@@ -232,6 +238,7 @@ public class JDOQLQueryOwnedJoinTest extends JDOTestCase {
         + "courses.contains(c) && c.department == 'Biology' && "
         + "grade == 10 order by c.department");
     q.declareVariables(Course.class.getName() + " c");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected exception");

@@ -153,10 +153,6 @@ final class JoinHelper {
     return new StreamingMergeJoinResult(new MergeJoinIterable(joinProperty, parents, childIter));
   }
 
-  Set<Key> getMaterializedChildKeys() {
-    return materializedChildKeys;
-  }
-
   private class MergeJoinIterable implements Iterable<Entity> {
 
     /**
@@ -247,4 +243,8 @@ final class JoinHelper {
     return false;
   }
 
+  // For testing
+  Set<Key> getMaterializedChildKeys() {
+    return materializedChildKeys;
+  }
 }

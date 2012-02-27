@@ -650,6 +650,7 @@ public class JPQLQueryTest extends JPATestCase {
         "select from " + HasStringAncestorStringPkJPA.class.getName() + " b"
         + " where ancestorId > :ancId");
     q.setParameter("ancId", KeyFactory.keyToString(bookEntity.getKey()));
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected udfe");
@@ -759,6 +760,7 @@ public class JPQLQueryTest extends JPATestCase {
     Book book = bp.getBook(bookEntity.getKey());
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " c where book > :b");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     q.setParameter("b", book);
     try {
       q.getResultList();
@@ -788,6 +790,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", book);
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected JPAException");
@@ -808,6 +811,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", parentEntity.getKey());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected JPAException");
@@ -837,6 +841,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " c where book = :b");
     q.setParameter("b", book);
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected JPAException");
@@ -2037,6 +2042,7 @@ public class JPQLQueryTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Query q = em.createQuery("select from " + Flight.class.getName() + " c" + " where origin = :ids");
     q.setParameter("ids", Utils.newArrayList());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2047,6 +2053,7 @@ public class JPQLQueryTest extends JPATestCase {
         "select from " + Flight.class.getName() + " c" + " where id = :ids and origin = :origin");
     q.setParameter("ids", Utils.newArrayList());
     q.setParameter("origin", "bos");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2057,6 +2064,7 @@ public class JPQLQueryTest extends JPATestCase {
         "select from " + Flight.class.getName() + " c" + " where origin = :origin and id = :ids");
     q.setParameter("origin", "bos");
     q.setParameter("ids", Utils.newArrayList());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2065,6 +2073,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
     q = em.createQuery("select from " + Flight.class.getName() + " c" + " where id > :ids");
     q.setParameter("ids", Utils.newArrayList());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2073,6 +2082,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
     q = em.createQuery("select from " + Flight.class.getName() + " c" + " where id = :ids order by id");
     q.setParameter("ids", Utils.newArrayList());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2092,6 +2102,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testRestrictFetchedFields_UnknownField() {
     Query q = em.createQuery("select dne from " + Book.class.getName());
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2605,6 +2616,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
     Query q = em.createQuery(
         "select from " + HasOneToOneJPA.class.getName() + " c" + " where book is null");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected");
@@ -2620,6 +2632,7 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e);
     Query q = em.createQuery(
         "select from " + HasOneToOneParentJPA.class.getName() + " c" + " where parent is null");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected");
@@ -2846,6 +2859,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   public void testLikeQuery_InvalidLiteral() {
     Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE '%y'");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2859,6 +2873,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
 
     q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y%y'");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2872,6 +2887,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
 
     q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y'");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -2885,6 +2901,7 @@ public class JPQLQueryTest extends JPATestCase {
     }
 
     q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE 'y%' and author LIKE 'z%'");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList().iterator();
       fail("expected exception");
@@ -2896,6 +2913,7 @@ public class JPQLQueryTest extends JPATestCase {
   public void testLikeQuery_InvalidParameter() {
     Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE :p");
     q.setParameter("p", "%y");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList().iterator();
       fail("expected exception");
@@ -2964,14 +2982,14 @@ public class JPQLQueryTest extends JPATestCase {
     ds.put(e4);
 
     Query q = em.createQuery("select from " + Book.class.getName() + " c" + " where title LIKE '%^' ESCAPE '^'");
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
-      fail("DataNucleus must now be parsing 'ESCAPE'.  Hooray!");
+      fail("Expected exception but query executed!");
     } catch (PersistenceException pe) {
         if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
-            // Not good, but correct because DataNuc doesn't handle ESCAPE yet.
-        }
-        else {
+          // We don't support ESCAPE yet
+        } else {
           throw pe;
         }
     } catch (DatastoreQuery.UnsupportedDatastoreFeatureException uefe) {
@@ -3001,6 +3019,7 @@ public class JPQLQueryTest extends JPATestCase {
     Query q = em.createQuery(
         "select from " + HasKeyAncestorStringPkJPA.class.getName() + " c" + " where ancestorKey = :p");
     q.setParameter("p", null);
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected exception");
@@ -3331,6 +3350,7 @@ public class JPQLQueryTest extends JPATestCase {
 
   private void assertQueryRequiresUnsupportedDatastoreFeature(String query) {
     Query q = em.createQuery(query);
+    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.getResultList();
       fail("expected UnsupportedDatastoreFeatureException for query <" + query + ">");

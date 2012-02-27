@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
+import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.test.SuperclassTableInheritanceJDO.*;
 
 import junit.framework.Assert;
@@ -321,6 +322,7 @@ public class JDOSuperclassTableInheritanceTest extends JDOTestCase {
     
     startEnd.start();
     q = pm.newQuery("select from " + Child11.class.getName() + " where child12Int > 0");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
     try {
       q.execute();
       fail("expected JDOFatalUserException");
