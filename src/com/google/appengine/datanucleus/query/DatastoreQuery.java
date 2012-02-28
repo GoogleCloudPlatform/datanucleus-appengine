@@ -90,7 +90,6 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -99,7 +98,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withChunkSize;
-import static com.google.appengine.api.datastore.FetchOptions.Builder.withDefaults;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withLimit;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withOffset;
 import static com.google.appengine.api.datastore.FetchOptions.Builder.withStartCursor;
@@ -161,7 +159,7 @@ public class DatastoreQuery implements Serializable {
   /** DataNucleus query that this is attempting to evaluate. */
   final AbstractJavaQuery query;
 
-  /** Whether the filter clause is completely evaluatable in the datastore. TODO Set this when something is unsupported. */
+  /** Whether the filter clause is completely evaluatable in the datastore. */
   boolean filterComplete = true;
 
   /** Whether the order clause is completely evaluatable in the datastore. */
@@ -170,8 +168,6 @@ public class DatastoreQuery implements Serializable {
   /** The different types of datastore query results that we support. */
   enum ResultType {
     ENTITY, // return entities
-    ENTITY_PROJECTION, // return specific fields of an entity
-    COUNT,  // return the count
     KEYS_ONLY // return just the keys
   }
 
@@ -214,23 +210,12 @@ public class DatastoreQuery implements Serializable {
     }
     getStoreManager().validateMetaDataForClass(acmd);
 
-    if (!inmemoryWhenUnsupported) {
-      // We need all to be evaluated in the datastore yet don't support grouping/having restrictions
-      if (query.getGrouping() != null) {
-        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), GROUP_BY_OP);
-      } else if (query.getHaving() != null) {
-        throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), HAVING_OP);
-      }
-    }
-
     if (compilation.getSubqueryAliases() != null && compilation.getSubqueryAliases().length > 0) {
       throw new NucleusUserException("Subqueries not supported by datastore. Try evaluating them in-memory");
     }
 
     // Create QueryData object to use as the datastore compilation
-    final List<String> projectionFields = Utils.newArrayList();
-    final List<String> projectionAliases = Utils.newArrayList();
-    ResultType resultType = validateResultExpression(compilation, acmd, projectionFields, projectionAliases);
+    ResultType resultType = validateResultExpression(compilation, acmd);
     Function<Entity, Object> resultTransformer;
     if (resultType == ResultType.KEYS_ONLY) {
       resultTransformer = new Function<Entity, Object>() {
@@ -242,24 +227,9 @@ public class DatastoreQuery implements Serializable {
       resultTransformer = new Function<Entity, Object>() {
         public Object apply(Entity from) {
           FetchPlan fp = query.getFetchPlan();
-          if (!projectionFields.isEmpty()) {
-            // If this is a projection, ignore the fetch plan and just fetch everything.
-            // We do this because we're returning individual fields, not an entire entity.
-            fp = null;
-          }
           return EntityUtils.entityToPojo(from, acmd, clr, getExecutionContext(), query.getIgnoreCache(), fp);
         }
       };
-    }
-    if (!inmemoryWhenUnsupported) {
-      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
-      if (!projectionFields.isEmpty() || (query.getResultClass() != null && 
-          query.getResultClass() != query.getCandidateClass())) {
-        // Wrap the existing transformer with a transformer that will apply the
-        // appropriate projection to each Entity in the result set.
-        resultTransformer = new ProjectionResultTransformer(resultTransformer, getExecutionContext(),
-            compilation.getCandidateAlias(), query.getResultClass(), projectionFields, projectionAliases);
-      }
     }
 
     DatastoreTable table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
@@ -334,37 +304,30 @@ public class DatastoreQuery implements Serializable {
 
     PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
     FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-    if (!inmemoryWhenUnsupported && qd.resultType == ResultType.COUNT) {
-      // Need to handle projection direct from the Entity results since not allowing in-memory massaging
-      if (opts == null) {
-        opts = withDefaults();
-      }
-      return Collections.singletonList(new Long(preparedQuery.countEntities(opts))); // COUNT returns Long
-    } else {
-      if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-        qd.primaryDatastoreQuery.setKeysOnly();
-      }
 
-      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-        NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
-      }
-
-      Iterable<Entity> entityIterable;
-      Cursor endCursor = null;
-      if (opts != null) {
-        if (opts.getLimit() != null) {
-          QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
-          endCursor = entities.getCursor();
-          entityIterable = entities;
-        } else {
-          entityIterable = preparedQuery.asQueryResultIterable(opts);
-        }
-      } else {
-        entityIterable = preparedQuery.asQueryResultIterable();
-      }
-
-      return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, mconn, endCursor);
+    if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
+      qd.primaryDatastoreQuery.setKeysOnly();
     }
+
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
+    }
+
+    Iterable<Entity> entityIterable;
+    Cursor endCursor = null;
+    if (opts != null) {
+      if (opts.getLimit() != null) {
+        QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
+        endCursor = entities.getCursor();
+        entityIterable = entities;
+      } else {
+        entityIterable = preparedQuery.asQueryResultIterable(opts);
+      }
+    } else {
+      entityIterable = preparedQuery.asQueryResultIterable();
+    }
+
+    return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, mconn, endCursor);
   }
 
   private Object executeBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
@@ -402,11 +365,6 @@ public class DatastoreQuery implements Serializable {
         if (entity != null) {
           entities.add(entity);
         }
-      }
-
-      if (!inmemoryWhenUnsupported && qd.resultType == ResultType.COUNT) {
-        // Need to handle projection direct from the Entity results since not allowing in-memory massaging
-        return Collections.singletonList(new Long(entities.size())); // COUNT returns Long
       }
 
       return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
@@ -608,115 +566,43 @@ public class DatastoreQuery implements Serializable {
    * Process the result expression and return the result type needed for that.
    * @param compilation The compiled query
    * @param acmd The meta data for the class we're querying
-   * @param projectionFields Out param that will contain the names
-   * of any fields that have been explicitly selected in the result
-   * expression.  Field names will be of the form "a.b.c".
-   * @param projectionAliases Aliases for projection
    * @return The ResultType
    */
-  private ResultType validateResultExpression(
-      QueryCompilation compilation, AbstractClassMetaData acmd, List<String> projectionFields,
-      List<String> projectionAliases) {
+  private ResultType validateResultExpression(QueryCompilation compilation, AbstractClassMetaData acmd) {
+
     if (compilation.getExprResult() == null) {
       return ResultType.ENTITY;
     }
 
-    ResultType resultType = null;
-    if (!inmemoryWhenUnsupported) {
-      // Evaluating the result directly, so only allow COUNT and PrimaryExpression
-      for (Expression resultExpr : compilation.getExprResult()) {
-        if (resultExpr instanceof InvokeExpression) {
-          InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
-          if (!invokeExpr.getOperation().toLowerCase().equals("count")) {
-            // Don't support in-datastore query of a method that is not "count"
-            throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(),
-                new Expression.Operator(invokeExpr.getOperation(), 0));
-          } else if (!projectionFields.isEmpty()) {
-            // Don't support in-datastore query of count+projection
-            throw newAggregateAndRowResultsException();
-          } else {
-            resultType = ResultType.COUNT;
-          }
-        } else if (resultExpr instanceof PrimaryExpression) {
-          if (resultType == ResultType.COUNT) {
-            throw newAggregateAndRowResultsException();
-          }
-          if (resultType == null) {
-            resultType = ResultType.KEYS_ONLY;
-          }
-          PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
-          if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
-            AbstractMemberMetaData ammd =
-              getMemberMetaDataForTuples(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
-            if (ammd == null) {
-              throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
-            }
-
-            if (resultExpr.getAlias() != null) {
-              projectionAliases.add(resultExpr.getAlias());
-            } else {
-              projectionAliases.add(ammd.getName());
-            }
-            projectionFields.add(primaryExpr.getId());
-            if (ammd.getParent() instanceof EmbeddedMetaData || !ammd.isPrimaryKey()) {
-              // A single non-pk field locks the result type on entity projection
-              resultType = ResultType.ENTITY_PROJECTION;
-            }
-          }
+    boolean keysOnly = true;
+    for (Expression resultExpr : compilation.getExprResult()) {
+      if (resultExpr instanceof InvokeExpression) {
+        InvokeExpression invokeExpr = (InvokeExpression) resultExpr;
+        if (invokeExpr.getOperation().toLowerCase().equals("count")) {
+          // Only need key for this
         } else {
-          // We don't support any other result expressions
-          Expression.Operator operator =
-            new Expression.Operator(resultExpr.getClass().getName(), 0);
-          throw new UnsupportedDatastoreOperatorException(query.getSingleStringQuery(), operator);
+          // May need non-key for this
+          keysOnly = false;
         }
-      }
-      if (query.getResultClass() != null && query.getResultClass() != query.getCandidateClass()) {
-        resultType = ResultType.ENTITY_PROJECTION;
-      }
-    }
-
-    if (resultType == null) {
-      resultType = ResultType.ENTITY;
-    }
-    return resultType;
-  }
-
-  private UnsupportedDatastoreFeatureException newAggregateAndRowResultsException() {
-    // We don't let you combine aggregate functions with requests
-    // for specific fields in the result expression.  hsqldb has the
-    // same restriction so I feel ok about this
-    return new UnsupportedDatastoreFeatureException(
-        "Cannot combine an aggregate results with row results.");
-  }
-
-  private void processInFilters(QueryData qd) {
-    if (qd.inFilters.isEmpty()) {
-      return;
-    }
-
-    boolean onlyKeyFilters = true;
-    Set<Key> batchGetKeys = Utils.newLinkedHashSet();
-    for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
-      if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
-        onlyKeyFilters = false;
-      } else {
-        for (Object obj : entry.getValue()) {
-          // Add to our list of batch get keys in case all the in filters
-          // end up being on the primary key
-          batchGetKeys.add(internalPkToKey(qd.acmd, obj));
+      } else if (resultExpr instanceof PrimaryExpression) {
+        PrimaryExpression primaryExpr = (PrimaryExpression) resultExpr;
+        if (!primaryExpr.getId().equals(compilation.getCandidateAlias())) {
+          AbstractMemberMetaData ammd =
+            getMemberMetaDataForTuples(acmd, getTuples(primaryExpr, compilation.getCandidateAlias()));
+          if (ammd == null) {
+            throw noMetaDataException(primaryExpr.getId(), acmd.getFullClassName());
+          }
+          if (!ammd.isPrimaryKey()) {
+            keysOnly = false;
+          }
         }
+      } else {
+        // May need non-key fields
+        keysOnly = false;
       }
-      qd.primaryDatastoreQuery.addFilter(entry.getKey(), Query.FilterOperator.IN, entry.getValue());
     }
 
-    if (onlyKeyFilters) {
-      // All the in filters were on key so convert this to a batch get
-      if (qd.batchGetKeys == null) {
-        qd.batchGetKeys = batchGetKeys;
-      } else {
-        qd.batchGetKeys.addAll(batchGetKeys);
-      }
-    }
+    return (keysOnly ? ResultType.KEYS_ONLY : ResultType.ENTITY);
   }
 
   private void processFromExpression(QueryData qd, Expression expr) {
@@ -853,7 +739,31 @@ public class DatastoreQuery implements Serializable {
     try {
       addExpression(qd.compilation.getExprFilter(), qd);
 
-      processInFilters(qd);
+      if (!qd.inFilters.isEmpty()) {
+        boolean onlyKeyFilters = true;
+        Set<Key> batchGetKeys = Utils.newLinkedHashSet();
+        for (Map.Entry<String, List<Object>> entry : qd.inFilters.entrySet()) {
+          if (!entry.getKey().equals(Entity.KEY_RESERVED_PROPERTY)) {
+            onlyKeyFilters = false;
+          } else {
+            for (Object obj : entry.getValue()) {
+              // Add to our list of batch get keys in case all the in filters
+              // end up being on the primary key
+              batchGetKeys.add(internalPkToKey(qd.acmd, obj));
+            }
+          }
+          qd.primaryDatastoreQuery.addFilter(entry.getKey(), Query.FilterOperator.IN, entry.getValue());
+        }
+
+        if (onlyKeyFilters) {
+          // All the in filters were on key so convert this to a batch get
+          if (qd.batchGetKeys == null) {
+            qd.batchGetKeys = batchGetKeys;
+          } else {
+            qd.batchGetKeys.addAll(batchGetKeys);
+          }
+        }
+      }
     } catch (NucleusException ne) {
       if (!inmemoryWhenUnsupported || qd.isOrExpression) { // TODO Handle OR expressions in block below and get all candidates
         throw ne;

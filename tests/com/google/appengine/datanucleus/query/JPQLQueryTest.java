@@ -166,15 +166,6 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   private void testUnsupportedFilters(String baseQuery) {
-    assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author", DatastoreQuery.GROUP_BY_OP);
-    // Can't actually test having because the parser doesn't recognize it unless there is a
-    // group by, and the group by gets seen first.
-    assertQueryUnsupportedByOrm(baseQuery + "GROUP BY author HAVING title = 'foo'",
-                                DatastoreQuery.GROUP_BY_OP);
-    assertQueryUnsupportedByOrm(
-        "select avg(firstPublished) from " + Book.class.getName() + " b ",
-        new Expression.Operator("avg", 0));
-
     Set<Expression.Operator> unsupportedOps =
         new HashSet<Expression.Operator>(DatastoreQuery.UNSUPPORTED_OPERATORS);
     baseQuery += "WHERE ";
@@ -2303,39 +2294,6 @@ public class JPQLQueryTest extends JPATestCase {
     List<String> isbns = (List<String>) q.getResultList();
     assertEquals(1, isbns.size());
     assertEquals("12345", isbns.get(0));
-  }
-
-  public void testRestrictFetchedFieldsAndCount() {
-    Entity e1 = Book.newBookEntity("author", "12345", "the title");
-    ds.put(e1);
-
-    Query q = em.createQuery("select count(id), isbn from " + Book.class.getName() + " c");
-    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
-    try {
-      q.getResultList();
-      fail("expected exception");
-    } catch (PersistenceException pe) {
-        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
-            // good
-        }
-        else {
-          throw pe;
-        }
-    }
-
-    q = em.createQuery("select isbn, count(id) from " + Book.class.getName() + " c");
-    q.setHint(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
-    try {
-      q.getResultList();
-      fail("expected exception");
-    } catch (PersistenceException pe) {
-        if (pe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
-            // good
-        }
-        else {
-          throw pe;
-        }
-    }
   }
 
   public void testRestrictFetchedFields_EmbeddedField() {

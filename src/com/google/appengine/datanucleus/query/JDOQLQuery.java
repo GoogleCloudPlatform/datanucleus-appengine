@@ -153,7 +153,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
     else {
       // Evaluate in-datastore
       boolean inmemoryWhenUnsupported =
-        getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, true);
+        getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, false);
       QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
@@ -163,14 +163,13 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
       ManagedConnection mconn = getStoreManager().getConnection(ec);
       results = datastoreQuery.performExecute(mconn, qd);
 
+      boolean filterInMemory = false;
+      boolean orderInMemory = false;
+      boolean resultInMemory = (result != null || grouping != null || having != null || resultClass != null);
       if (inmemoryWhenUnsupported) {
-        // Evaluate remainder in-memory
-        boolean filterInMemory = !datastoreQuery.isFilterComplete();
-        boolean resultInMemory = false;
-        if (result != null || grouping != null || having != null) {
-          resultInMemory = true;
-        }
-        boolean orderInMemory = false;
+        // Set filter/order flags according to what the query can manage in-datastore
+        filterInMemory = !datastoreQuery.isFilterComplete();
+
         if (ordering != null) {
           if (filterInMemory) {
             orderInMemory = true;
@@ -180,13 +179,14 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
             }
           }
         }
+      }
 
-        if (filterInMemory || resultInMemory || orderInMemory) {
-          JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
-              parameters, ec.getClassLoaderResolver());
-          results = resultMapper.execute(filterInMemory, orderInMemory, 
-              resultInMemory, resultClass != null, false);
-        }
+      // Evaluate any remaining parts in-memory
+      if (filterInMemory || resultInMemory || orderInMemory) {
+        JavaQueryEvaluator resultMapper = new JDOQLEvaluator(this, (List)results, compilation,
+            parameters, ec.getClassLoaderResolver());
+        results = resultMapper.execute(filterInMemory, orderInMemory, 
+            resultInMemory, resultClass != null, false);
       }
     }
 

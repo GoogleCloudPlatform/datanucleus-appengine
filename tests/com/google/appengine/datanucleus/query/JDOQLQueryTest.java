@@ -165,14 +165,7 @@ public class JDOQLQueryTest extends JDOTestCase {
   }
 
   public void testUnsupportedFilters() {
-    assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
-        + " where origin == 2 group by dest", DatastoreQuery.GROUP_BY_OP);
-    // can't actually test having because the parser doesn't recognize it unless there is a
-    // group by, and the group by gets seen first
-    assertQueryUnsupportedByOrm("select from " + Flight.class.getName()
-        + " where origin == 2 group by dest having dest == 2", DatastoreQuery.GROUP_BY_OP);
-    assertQueryUnsupportedByOrm(
-        "select avg(you) from " + Flight.class.getName(), new Expression.Operator("avg", 0));
+
     Set<Expression.Operator> unsupportedOps = Utils.newHashSet(DatastoreQuery.UNSUPPORTED_OPERATORS);
     assertQueryUnsupportedByOrm(Flight.class, "!origin", Expression.OP_NOT, unsupportedOps);
     assertQueryUnsupportedByOrm(Flight.class, "(origin + dest) == 4", Expression.OP_ADD, unsupportedOps);
@@ -1905,6 +1898,7 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e2);
 
     Query q = pm.newQuery("select max(me) from " + Flight.class.getName());
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "true");
     assertEquals(34, q.execute());
   }
 
@@ -2495,17 +2489,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
-  public void testRestrictFetchedFields_UnknownField() {
-    Query q = pm.newQuery("select dne from " + Flight.class.getName());
-    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (JDOUserException e) {
-      // good
-    }
-  }
-
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ds.put(null, e1);
@@ -2719,39 +2702,6 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("bos", origins.get(0));
   }
 
-  public void testRestrictFetchedFieldsAndCount() {
-    Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
-    ds.put(null, e1);
-
-    Query q = pm.newQuery("select count(id), origin from " + Flight.class.getName());
-    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (JDOUserException jdoe) {
-        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
-          // good
-        }
-        else {
-          throw jdoe;
-        }
-    }
-
-    q = pm.newQuery("select origin, count(id) from " + Flight.class.getName());
-    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false");
-    try {
-      q.execute();
-      fail("expected exception");
-    } catch (JDOUserException jdoe) {
-        if (jdoe.getCause() instanceof DatastoreQuery.UnsupportedDatastoreFeatureException) {
-          // good
-        }
-        else {
-          throw jdoe;
-        }
-    }
-  }
-
   public void testRestrictFetchedFields_EmbeddedField() {
     Entity entity = new Entity(Person.class.getSimpleName());
     entity.setProperty("first", "max");
@@ -2851,16 +2801,19 @@ public class JDOQLQueryTest extends JDOTestCase {
     ds.put(null, e3);
 
     Query q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"y\")");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "true");
     @SuppressWarnings("unchecked")
     List<Flight> flights = (List<Flight>) q.execute();
     assertEquals(1, flights.size());
 
     q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"am\")");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "true");
     @SuppressWarnings("unchecked")
     List<Flight> flights2 = (List<Flight>) q.execute();
     assertEquals(1, flights2.size());
 
     q = pm.newQuery("select from " + Flight.class.getName() + " where name.endsWith(\"za\")");
+    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "true");
     @SuppressWarnings("unchecked")
     List<Flight> flights3 = (List<Flight>) q.execute();
     assertTrue(flights3.isEmpty());
@@ -3418,25 +3371,6 @@ public class JDOQLQueryTest extends JDOTestCase {
       fail("expected exception for query <" + query + ">");
     } catch (JDOFatalUserException e) {
       // good
-    }
-  }
-
-  private void assertQueryUnsupportedByOrm(String query, Expression.Operator unsupportedOp) {
-    Query q = pm.newQuery(query);
-    q.addExtension(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, "false"); // Dont allow in-memory for unsupported syntax
-    try {
-      q.execute();
-      fail("expected JDOUserException->UnsupportedOperationException for query <" + query + ">");
-    } catch (JDOUserException jdoe) {
-      Throwable cause = jdoe.getCause();
-      if (cause instanceof DatastoreQuery.UnsupportedDatastoreOperatorException) {
-        // good. Expression.Operator doesn't override equals
-        // so we just compare the string representation.
-        assertEquals(unsupportedOp.toString(), ((DatastoreQuery.UnsupportedDatastoreOperatorException)cause).getOperation().toString());
-      }
-      else {
-        throw jdoe;
-      }
     }
   }
 
