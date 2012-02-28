@@ -1539,6 +1539,26 @@ public class JPQLQueryTest extends JPATestCase {
     assertEquals(2004, second.intValue());
   }
 
+  public void testProjectionWithCreator() {
+    Entity e1 = Book.newBookEntity("jimmy", "12345", "the title 1", 2003);
+    Entity e2 = Book.newBookEntity("bobby", "12346", "the title 2", 2004);
+    ds.put(e1);
+    ds.put(e2);
+
+    TypedQuery<BookSummary> q = em.createQuery(
+        "SELECT NEW " + BookSummary.class.getName() + "(author, title) FROM " + Book.class.getName() + " b" +
+        " ORDER BY firstPublished ASC", BookSummary.class);
+    List<BookSummary> result = q.getResultList();
+    assertEquals("Number of results is wrong", 2, result.size());
+    Iterator<BookSummary> resultIter = result.iterator();
+    BookSummary first = resultIter.next();
+    BookSummary second = resultIter.next();
+    assertEquals("jimmy", first.getAuthor());
+    assertEquals("bobby", second.getAuthor());
+    assertEquals("the title 1", first.getTitle());
+    assertEquals("the title 2", second.getTitle());
+  }
+
   public void testCountQueryWithFilter() {
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);

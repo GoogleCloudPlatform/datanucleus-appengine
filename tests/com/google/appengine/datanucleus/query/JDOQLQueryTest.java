@@ -3342,6 +3342,26 @@ public class JDOQLQueryTest extends JDOTestCase {
     assertEquals("Dest field is wrong", "bam", row.getDest());
   }
 
+  /**
+   * Test of projection "SELECT NEW ResultClass(start,end) INTO ResultClass FROM candidate WHERE ...".
+   */
+  public void testProjectionWithCreatorAndResultClass2() {
+    ds.put(null, newFlightEntity("1", "yar", "bam", 3, 4));
+    ds.put(null, newFlightEntity("1", "yam", null, 1, 2));
+
+    String query = "SELECT new " + FlightStartEnd2.class.getName() + "(origin, dest)" + 
+        " INTO " + FlightStartEnd2.class.getName() + " FROM " + Flight.class.getName() +
+        " WHERE you == 3";
+    Query q = pm.newQuery(query);
+    List results = (List) q.execute();
+    assertEquals("Number of results is wrong", 1, results.size());
+    Object obj = results.iterator().next();
+    assertTrue("Result row is of invalid type : " + obj, obj instanceof FlightStartEnd2);
+    FlightStartEnd2 row = (FlightStartEnd2)obj;
+    assertEquals("Origin field is wrong", "yar", row.getOrigin());
+    assertEquals("Dest field is wrong", "bam", row.getDest());
+  }
+
   private void assertQueryUnsupportedByOrm(
       Class<?> clazz, String query, Expression.Operator unsupportedOp,
       Set<Expression.Operator> unsupportedOps) {
