@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import java.util.List;
+
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToOneBiSideA;
 import com.google.appengine.datanucleus.test.UnownedJDOOneToOneBiSideB;
@@ -217,5 +219,24 @@ public class JDOUnownedOneToOneTest extends JDOTestCase {
     assertNotNull(b2);
     assertNotNull("Side B", b2.getName());
     assertEquals(bId, pm.getObjectId(b2));
+  }
+
+  public void testUnownedQuery() {
+
+    // create parent without children, store, detach
+    UnownedJDOOneToOneUniSideA a = new UnownedJDOOneToOneUniSideA();
+    UnownedJDOOneToOneUniSideB b = new UnownedJDOOneToOneUniSideB();
+    a.setOther(b);
+
+    pm.makePersistent(a);
+    UnownedJDOOneToOneUniSideB detachedB = pm.detachCopy(b);
+    pm.close();
+
+    pm = pmf.getPersistenceManager();
+
+    javax.jdo.Query q = pm.newQuery("SELECT FROM " + UnownedJDOOneToOneUniSideA.class.getName() + 
+        " where this.other == :uf");
+    List<UnownedJDOOneToOneUniSideA> parents = (List<UnownedJDOOneToOneUniSideA>) q.execute(detachedB);
+    assertEquals(1, parents.size());
   }
 }

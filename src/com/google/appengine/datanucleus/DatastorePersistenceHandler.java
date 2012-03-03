@@ -603,6 +603,25 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   }
 
   /**
+   * Method to locate the specified managed objects in the datastore.
+   * @param ops ObjectProviders for the managed objects
+   * @throws NucleusObjectNotFoundException if any of the objects aren't found in the datastore
+   */
+  public void locateObjects(ObjectProvider[] ops) {
+    if (ops == null) {
+      return;
+    }
+
+    List<Key> keysToLocate = Utils.newArrayList();
+    for (int i=0;i<ops.length;i++) {
+      Key key = EntityUtils.getPkAsKey(ops[i]);
+      keysToLocate.add(key);
+    }
+    EntityUtils.getEntitiesFromDatastore(storeMgr.getDatastoreServiceForReads(ops[0].getExecutionContext()),
+        keysToLocate, ops[0].getExecutionContext());
+  }
+
+  /**
    * Method to locate the specified managed object in the datastore.
    * @param op ObjectProvider for the managed object
    * @throws NucleusObjectNotFoundException if the object isn't found in the datastore

@@ -34,8 +34,6 @@ import com.google.appengine.api.datastore.Transaction;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.PropertyNames;
-import org.datanucleus.store.connection.ManagedConnection;
-import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusException;
@@ -254,11 +252,10 @@ public class DatastoreQuery implements Serializable {
 
   /**
    * Method to execute the query implied by specified QueryData object.
-   * @param mconn Managed Connection to use for the datastore
    * @param qd QueryData to be executed
    * @return The result of executing the query.
    */
-  public Object performExecute(ManagedConnection mconn, QueryData qd) {
+  public Object performExecute(QueryData qd) {
 
     // Obtain DatastoreService
     DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
@@ -278,19 +275,18 @@ public class DatastoreQuery implements Serializable {
         qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
         qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
       // Batch Get Query - only execute a batch get if there aren't any other filters or sorts
-      return executeBatchGetQuery(ds, qd, mconn);
+      return executeBatchGetQuery(ds, qd);
     } else if (qd.joinQuery != null) {
       // Join Query
       FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-      return wrapEntityQueryResult(new JoinHelper().executeJoinQuery(qd, this, ds, opts),
-            qd.resultTransformer, ds, mconn, null);
+      return wrapEntityQueryResult(new JoinHelper().executeJoinQuery(qd, this, ds, opts), qd.resultTransformer, ds, null);
     } else {
       // Normal Query
-      return executeNormalQuery(ds, qd, mconn);
+      return executeNormalQuery(ds, qd);
     }
   }
 
-  private Object executeNormalQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
+  private Object executeNormalQuery(DatastoreService ds, QueryData qd) {
     latestDatastoreQuery = qd.primaryDatastoreQuery;
     Transaction txn = null;
     // give users a chance to opt-out of having their query execute in a txn
@@ -327,10 +323,10 @@ public class DatastoreQuery implements Serializable {
       entityIterable = preparedQuery.asQueryResultIterable();
     }
 
-    return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, mconn, endCursor);
+    return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, endCursor);
   }
 
-  private Object executeBatchGetQuery(DatastoreService ds, QueryData qd, ManagedConnection mconn) {
+  private Object executeBatchGetQuery(DatastoreService ds, QueryData qd) {
     DatastoreTransaction txn = getStoreManager().getDatastoreTransaction(getExecutionContext());
     Transaction innerTxn = txn == null ? null : txn.getInnerTxn();
     if (isBulkDelete()) {
@@ -367,16 +363,16 @@ public class DatastoreQuery implements Serializable {
         }
       }
 
-      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, mconn, null);
+      return newStreamingQueryResultForEntities(entities, qd.resultTransformer, null, query);
     }
   }
 
   private Object wrapEntityQueryResult(Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
-      DatastoreService ds, ManagedConnection mconn, Cursor endCursor) {
+      DatastoreService ds, Cursor endCursor) {
     if (isBulkDelete()) {
       return deleteEntityQueryResult(entities, ds);
     }
-    return newStreamingQueryResultForEntities(entities, resultTransformer, mconn, endCursor);
+    return newStreamingQueryResultForEntities(entities, resultTransformer, endCursor, query);
   }
 
   private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds) {
@@ -393,16 +389,9 @@ public class DatastoreQuery implements Serializable {
     return (long) keysToDelete.size();
   }
 
-  private List<?> newStreamingQueryResultForEntities(
-      Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
-      ManagedConnection mconn, Cursor endCursor) {
-    return newStreamingQueryResultForEntities(
-        entities, resultTransformer, mconn, endCursor, query);
-  }
-
   public static List<?> newStreamingQueryResultForEntities(
       Iterable<Entity> entities, final Function<Entity, Object> resultTransformer,
-      final ManagedConnection mconn, Cursor endCursor, AbstractJavaQuery query) {
+      Cursor endCursor, AbstractJavaQuery query) {
     final RuntimeExceptionWrappingIterable iterable;
     final ApiAdapter api = query.getExecutionContext().getApiAdapter();
     if (entities instanceof QueryResultIterable) {
@@ -417,33 +406,8 @@ public class DatastoreQuery implements Serializable {
     } else {
       iterable = new RuntimeExceptionWrappingIterable(api, entities);
     }
-    final StreamingQueryResult qr = new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
 
-    // Add a listener to the connection so we can get a callback when the connection is flushed.
-    ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
-      public void managedConnectionPreClose() {
-        qr.setHasError(iterable.hasError());
-        // Disconnect the query from this ManagedConnection (read in unread rows etc)
-        qr.disconnect();
-      }
-
-      public void managedConnectionPostClose() {}
-
-      public void resourcePostClose() {
-        mconn.removeListener(this);
-      }
-
-      public void transactionFlushed() {}
-
-      public void transactionPreClose() {
-        qr.setHasError(iterable.hasError());
-        // Disconnect the query from this ManagedConnection (read in unread rows etc)
-        qr.disconnect();
-      }
-    };
-    mconn.addListener(listener);
-    qr.addConnectionListener(listener);
-    return qr;
+    return new StreamingQueryResult(query, iterable, resultTransformer, endCursor);
   }
 
   /**
@@ -825,10 +789,11 @@ public class DatastoreQuery implements Serializable {
       addExpression(expr.getLeft(), qd);
       addExpression(expr.getRight(), qd);
     } else if (expr instanceof InvokeExpression) {
+      // InvokeExpression that return boolean
       InvokeExpression invokeExpr = ((InvokeExpression) expr);
       if (invokeExpr.getOperation().equals("contains") && invokeExpr.getArguments().size() == 1) {
         handleContainsOperation(invokeExpr, qd);
-      } else if (invokeExpr.getOperation().equals("startsWith") && invokeExpr.getArguments().size() == 1) {
+      }else if (invokeExpr.getOperation().equals("startsWith") && invokeExpr.getArguments().size() == 1) {
         handleStartsWithOperation(invokeExpr, qd);
       } else if (invokeExpr.getOperation().equals("matches")) {
         handleMatchesOperation(invokeExpr, qd);
@@ -1366,6 +1331,13 @@ public class DatastoreQuery implements Serializable {
       valueKey = internalPkToKey(acmd, jdoPrimaryKey);
       verifyRelatedKeyIsOfProperType(ammd, valueKey, acmd);
     }
+
+    if (!MetaDataUtils.isOwnedRelation(ammd)) {
+      // Add filter on 1-1 relation field
+      qd.primaryDatastoreQuery.addFilter(determinePropertyName(ammd), Query.FilterOperator.EQUAL, valueKey);
+      return;
+    }
+
     if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
       // Looks like a join.  If it can be satisfied by just extracting the
       // parent key from the provided key, fulfill it.

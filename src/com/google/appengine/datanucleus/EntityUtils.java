@@ -601,6 +601,40 @@ public final class EntityUtils {
     }
   }
 
+  public static List<Entity> getEntitiesFromDatastore(DatastoreService ds, List<Key> keys, ExecutionContext ec) {
+    DatastoreTransaction txn = 
+      ((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec);
+
+    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+      NucleusLogger.DATASTORE_NATIVE.debug("Getting entities for keys " + StringUtils.collectionToString(keys));
+    }
+
+    Map<Key, Entity> entityMap;
+    if (txn == null) {
+      entityMap = ds.get(keys);
+    } else {
+      entityMap = ds.get(txn.getInnerTxn(), keys);
+    }
+
+    if (entityMap.size() != keys.size()) {
+      NucleusObjectNotFoundException[] excs = new NucleusObjectNotFoundException[keys.size()-entityMap.size()];
+      int excNum = 0;
+      for (Key key : keys) {
+        if (!entityMap.containsKey(key)) {
+          excs[excNum++] = new NucleusObjectNotFoundException("Entity with key not found", key);
+          excNum++;
+        }
+      }
+      throw new NucleusObjectNotFoundException("Some entities could not be found", excs);
+    }
+
+    List<Entity> entities = Utils.newArrayList();
+    for (Key key : keys) {
+      entities.add(entityMap.get(key));
+    }
+    return entities;
+  }
+
   /**
    * Method to retrieve the Entity with the specified key from the datastore.
    * @param ds DatastoreService to use

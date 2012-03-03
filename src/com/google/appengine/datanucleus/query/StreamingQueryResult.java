@@ -49,6 +49,8 @@ class StreamingQueryResult extends AbstractQueryResult {
 
   private boolean hasError;
 
+  private RuntimeExceptionWrappingIterable inputIterable;
+
   /**
    * Constructs a StreamingQueryResult.
    * @param query The query which yields the results.
@@ -59,8 +61,21 @@ class StreamingQueryResult extends AbstractQueryResult {
   public StreamingQueryResult(Query query, Iterable<Entity> lazyEntities,
       Function<Entity, Object> entityToPojoFunc, Cursor endCursor) {
     super(query);
+    if (lazyEntities instanceof RuntimeExceptionWrappingIterable) {
+      this.inputIterable = (RuntimeExceptionWrappingIterable) lazyEntities;
+    }
     this.lazyResult = new LazyResult<Object>(lazyEntities, entityToPojoFunc, query.useResultsCaching());
     this.endCursor = endCursor;
+  }
+
+  @Override
+  public void disconnect() {
+    if (inputIterable != null) {
+      // Relay the iterable error out
+      this.hasError = inputIterable.hasError();
+    }
+
+    super.disconnect();
   }
 
   @Override
@@ -138,9 +153,5 @@ class StreamingQueryResult extends AbstractQueryResult {
 
   Cursor getEndCursor() {
     return endCursor;
-  }
-
-  void setHasError(boolean hasError) {
-    this.hasError = hasError;
   }
 }

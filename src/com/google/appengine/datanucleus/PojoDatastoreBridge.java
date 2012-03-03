@@ -22,11 +22,13 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.metadata.AbstractClassMetaData;
 
 import com.google.appengine.datanucleus.query.DatastoreQuery;
 
 import org.datanucleus.store.query.AbstractJavaQuery;
+import org.datanucleus.store.query.AbstractQueryResult;
 
 import java.util.List;
 import java.util.Map;
@@ -46,11 +48,35 @@ class PojoDatastoreBridge {
         return EntityUtils.entityToPojo(from, acmd, clr, ec, true, ec.getFetchPlan().getCopy());
       }
     };
+
     AbstractJavaQuery query = new DummyQuery(ec.getStoreManager(), ec);
-    ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
+    final ManagedConnection mconn = ec.getStoreManager().getConnection(ec);
     try {
-      return (List<T>) DatastoreQuery.newStreamingQueryResultForEntities(
-          queryResultIterable, func, mconn, endCursor, query);
+      List<T> results = (List<T>) DatastoreQuery.newStreamingQueryResultForEntities(
+          queryResultIterable, func, endCursor, query);
+
+      if (results instanceof AbstractQueryResult) {
+        // Lazy loading results : add listener to the connection so we can get a callback when the connection is flushed.
+        final AbstractQueryResult qr = (AbstractQueryResult)results;
+        ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
+          public void managedConnectionPreClose() {
+            // Disconnect the query from this ManagedConnection (read in unread rows etc)
+            qr.disconnect();
+          }
+          public void managedConnectionPostClose() {}
+          public void resourcePostClose() {
+            mconn.removeListener(this);
+          }
+          public void transactionFlushed() {}
+          public void transactionPreClose() {
+            // Disconnect the query from this ManagedConnection (read in unread rows etc)
+            qr.disconnect();
+          }
+        };
+        mconn.addListener(listener);
+        qr.addConnectionListener(listener);
+      }
+      return results;
     } finally {
       mconn.release();
     }

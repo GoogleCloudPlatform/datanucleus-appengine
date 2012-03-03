@@ -29,7 +29,9 @@ import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
+import org.datanucleus.store.connection.ManagedConnectionResourceListener;
 import org.datanucleus.store.query.AbstractJPQLQuery;
+import org.datanucleus.store.query.AbstractQueryResult;
 import org.datanucleus.store.query.CandidateIdsQueryResult;
 import org.datanucleus.store.query.Query;
 import org.datanucleus.store.query.QueryInvalidParametersException;
@@ -172,8 +174,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
         NucleusLogger.QUERY.debug("Query compiled as : " + qd.getDatastoreQueryAsString());
       }
 
-      ManagedConnection mconn = getStoreManager().getConnection(ec);
-      results = datastoreQuery.performExecute(mconn, qd);
+      results = datastoreQuery.performExecute(qd);
 
       boolean filterInMemory = false;
       boolean orderInMemory = false;
@@ -199,6 +200,29 @@ public class JPQLQuery extends AbstractJPQLQuery {
             parameters, ec.getClassLoaderResolver());
         results = resultMapper.execute(filterInMemory, orderInMemory, 
             resultInMemory, resultClass != null, false);
+      }
+
+      if (results instanceof AbstractQueryResult) {
+        // Lazy loading results : add listener to the connection so we can get a callback when the connection is flushed.
+        final AbstractQueryResult qr = (AbstractQueryResult)results;
+        final ManagedConnection mconn = getStoreManager().getConnection(ec);
+        ManagedConnectionResourceListener listener = new ManagedConnectionResourceListener() {
+          public void managedConnectionPreClose() {
+            // Disconnect the query from this ManagedConnection (read in unread rows etc)
+            qr.disconnect();
+          }
+          public void managedConnectionPostClose() {}
+          public void resourcePostClose() {
+            mconn.removeListener(this);
+          }
+          public void transactionFlushed() {}
+          public void transactionPreClose() {
+            // Disconnect the query from this ManagedConnection (read in unread rows etc)
+            qr.disconnect();
+          }
+        };
+        mconn.addListener(listener);
+        qr.addConnectionListener(listener);
       }
     }
 

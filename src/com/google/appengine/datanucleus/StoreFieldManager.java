@@ -518,7 +518,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   private void storeKeyPK(Key key) {
     if (key != null && !datastoreEntity.getKind().equals(key.getKind())) {
       throw new NucleusFatalUserException(
-          "Attempt was made to set the primray key of an entity with kind "
+          "Attempt was made to set the primary key of an entity with kind "
           + datastoreEntity.getKind() + " to a key with kind " + key.getKind());
     }
     if (datastoreEntity.getKey().isComplete()) {
