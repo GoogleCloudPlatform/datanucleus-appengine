@@ -183,6 +183,10 @@ public class DatastoreTable implements DatastoreClass {
     return true;
   }
 
+  public DatastoreClass getBaseDatastoreClass() {
+    return this;
+  }
+
   public DatastoreClass getBaseDatastoreClassWithMember(AbstractMemberMetaData fmd) {
     if (fieldMappingsMap.get(fmd) != null) {
       return this;
