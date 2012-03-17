@@ -143,37 +143,39 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       success = true;
     }
     else {
-      // Check what we have persistent already
-      int currentListSize = 0;
-      if (currentSize < 0) {
-        // Get the current size from the datastore
-        currentListSize = size(ownerOP);
-      }
-      else {
-        currentListSize = currentSize;
-      }
-
-      boolean shiftingElements = true;
-      if (atEnd || startAt == currentListSize) {
-        shiftingElements = false;
-        startAt = currentListSize; // Not shifting so we insert from the end
-      }
-
-      if (shiftingElements)
-      {
-        // We need to shift existing elements before positioning the new ones
-        try {
-          // Calculate the amount we need to shift any existing elements by
-          // This is used where inserting between existing elements and have to shift down all elements after the start point
-          int shift = elements.size();
-          // shift up existing elements after start position by "shift"
-          for (int i=currentListSize-1; i>=startAt; i--) {
-            internalShift(ownerOP, false, i, shift);
-          }
+      if (!storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+        // Check what we have persistent already
+        int currentListSize = 0;
+        if (currentSize < 0) {
+          // Get the current size from the datastore
+          currentListSize = size(ownerOP);
         }
-        catch (MappedDatastoreException e) {
-          // An error was encountered during the shift process so abort here
-          throw new NucleusDataStoreException(LOCALISER.msg("056009", e.getMessage()), e.getCause());
+        else {
+          currentListSize = currentSize;
+        }
+
+        boolean shiftingElements = true;
+        if (atEnd || startAt == currentListSize) {
+          shiftingElements = false;
+          startAt = currentListSize; // Not shifting so we insert from the end
+        }
+
+        if (shiftingElements)
+        {
+          // We need to shift existing elements before positioning the new ones
+          try {
+            // Calculate the amount we need to shift any existing elements by
+            // This is used where inserting between existing elements and have to shift down all elements after the start point
+            int shift = elements.size();
+            // shift up existing elements after start position by "shift"
+            for (int i=currentListSize-1; i>=startAt; i--) {
+              internalShift(ownerOP, false, i, shift);
+            }
+          }
+          catch (MappedDatastoreException e) {
+            // An error was encountered during the shift process so abort here
+            throw new NucleusDataStoreException(LOCALISER.msg("056009", e.getMessage()), e.getCause());
+          }
         }
       }
 
@@ -192,8 +194,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         // Persist any non-persistent objects at their final list position (persistence-by-reachability)
         boolean inserted = validateElementForWriting(ownerOP, element, position);
         if (!inserted) {
-          // This element wasn't positioned in the validate so we need to set the positions later
-          elementsNeedPositioning = true;
+          if (!storeMgr.storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
+            // This element wasn't positioned in the validate so we need to set the positions later
+            elementsNeedPositioning = true;
+          }
         }
         position++;
       }
@@ -896,12 +900,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Make sure the element going to this position is persisted (and give it its index)
     validateElementForWriting(op, element, index);
 
-    ExecutionContext ec = op.getExecutionContext();
-
     // TODO Allow for a user setting position x as element1 and then setting element2 (that used to be there) to position y
     // At the moment we just delete the previous element
     if (ownerMemberMetaData.getCollection().isDependentElement() && allowCascadeDelete && obj != null) {
-      ec.deleteObjectInternal(obj);
+      op.getExecutionContext().deleteObjectInternal(obj);
     }
 
     return obj;

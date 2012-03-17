@@ -30,7 +30,6 @@ import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.exceptions.NucleusFatalUserException;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
@@ -321,9 +320,12 @@ public abstract class AbstractFKStore {
 
         Entity entity = entitiesByKey.get(key);
         if (entity == null) {
-          throw new NucleusFatalUserException("Field " + ownerMemberMetaData.getFullFieldName() +
-              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+          // User must have deleted it? Ignore the entry
+          NucleusLogger.DATASTORE_RETRIEVE.info("Field " + ownerMemberMetaData.getFullFieldName() + " of " + datastoreEntity.getKey() +
+              " was marked as having child " + key + " but doesn't exist, so must have been deleted. Ignoring");
+          continue;
         }
+
         Object pojo = EntityUtils.entityToPojo(entity, elementCmd, clr, ec, false, ec.getFetchPlan());
         children.add(pojo);
         i++;

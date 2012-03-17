@@ -166,8 +166,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
     else {
       // Evaluate in-datastore
-      boolean inmemoryWhenUnsupported =
-        getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, false);
+      boolean inmemoryWhenUnsupported = getEvaluateInMemoryWhenUnsupported();
       QueryData qd = datastoreQuery.compile(compilation, parameters, inmemoryWhenUnsupported);
       if (NucleusLogger.QUERY.isDebugEnabled()) {
         // Log the query
@@ -232,6 +231,12 @@ public class JPQLQuery extends AbstractJPQLQuery {
     }
 
     return results;
+  }
+
+  boolean getEvaluateInMemoryWhenUnsupported() {
+    // Use StoreManager setting and allow override in query extensions
+    boolean inmemory = storeMgr.getBooleanProperty("datanucleus.appengine.query.inMemoryWhenUnsupported");
+    return getBooleanExtensionProperty(DatastoreManager.QUERYEXT_INMEMORY_WHEN_UNSUPPORTED, inmemory);
   }
 
   // Exposed for tests.

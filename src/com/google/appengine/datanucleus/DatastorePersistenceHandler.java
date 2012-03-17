@@ -44,11 +44,13 @@ import org.datanucleus.store.VersionHelper;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.mapping.ArrayMapping;
+import org.datanucleus.store.mapped.mapping.CollectionMapping;
 import org.datanucleus.store.mapped.mapping.IndexMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingCallbacks;
 import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
@@ -239,22 +241,24 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Object assignedParentPk = fieldMgr.establishEntityGroup();
       Entity entity = fieldMgr.getEntity();
 
-      // Set any order mapping(s)
-      DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
-          ec.getClassLoaderResolver());
-      Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
-      for (JavaTypeMapping orderMapping : orderMappings) {
-        if (orderMapping instanceof IndexMapping) {
-          Object orderValue = op.getAssociatedValue(orderMapping);
-          if (orderValue != null) {
-            // Set order index on the entity
-            DatastoreField indexProp = orderMapping.getDatastoreMapping(0).getDatastoreField();
-            entity.setProperty(indexProp.getIdentifier().toString(), orderValue); // Is this indexed in the datastore?
-          } else {
-            // Element has been persisted and has the owner set, but not positioned, so leave til user does it
+/*      if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {*/
+        // Set any order mapping(s)
+        DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
+            ec.getClassLoaderResolver());
+        Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
+        for (JavaTypeMapping orderMapping : orderMappings) {
+          if (orderMapping instanceof IndexMapping) {
+            Object orderValue = op.getAssociatedValue(orderMapping);
+            if (orderValue != null) {
+              // Set order index on the entity
+              DatastoreField indexProp = orderMapping.getDatastoreMapping(0).getDatastoreField();
+              entity.setProperty(indexProp.getIdentifier().toString(), orderValue); // Is this indexed in the datastore?
+            } else {
+              // Element has been persisted and has the owner set, but not positioned, so leave til user does it
+            }
           }
         }
-      }
+      /*}*/
 
       // Set version
       handleVersioningBeforeWrite(op, entity, true, "inserting");
@@ -588,7 +592,16 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     dc.providePrimaryKeyMappings(consumer);
     for (MappingCallbacks callback : consumer.getMappingCallbacks()) {
       // Arrays and Maps don't use backing stores
-      if (!(callback instanceof ArrayMapping) && !(callback instanceof MapMapping)) {
+      if (callback instanceof ArrayMapping || callback instanceof MapMapping) {
+        // Do nothing since arrays and maps are stored in the parent property and loaded above using FetchFieldManager
+      } else if (callback instanceof CollectionMapping) {
+        CollectionMapping m = (CollectionMapping)callback;
+        Object val = op.provideField(m.getMemberMetaData().getAbsoluteFieldNumber());
+        if (val == null || !(val instanceof SCO)) {
+          // Not yet wrapped, so make sure we wrap it
+          callback.postFetch(op);
+        }
+      } else {
         callback.postFetch(op);
       }
     }

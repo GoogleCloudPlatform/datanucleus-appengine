@@ -321,18 +321,16 @@ public class FetchFieldManager extends DatastoreFieldManager
       if (datastoreEntity.hasProperty(propName)) {
         if (mmd.hasCollection()) {
           // Fields of type Collection<PC>
-          value = getCollectionFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getCollectionFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
         } else if (mmd.hasArray()) {
           // Fields of type PC[]
-          value = getArrayFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getArrayFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
         } else if (mmd.hasMap()) {
           // Fields of type Map<PC, NonPC>, Map<NonPC, PC>, Map<PC, PC>
-          value = getMapFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getMapFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
         }
       }
-
-      // Return the field value (as a wrapper if wrappable)
-      return getObjectProvider().wrapSCOField(mmd.getAbsoluteFieldNumber(), value, false, false, false);
+      return null;
     } else if (Relation.isRelationSingleValued(relationType)) {
       DatastoreTable dt = getDatastoreTable();
       JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(mmd);
@@ -549,7 +547,7 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   /**
    * Convenience method to convert a datastore value to a Collection.
-   * Converts the datastore List into a collection.
+   * Converts the datastore List<Key> into a collection.
    * @param mmd Metadata for the collection field
    * @param ec Execution Context
    * @param clr ClassLoader resolver
@@ -563,32 +561,46 @@ public class FetchFieldManager extends DatastoreFieldManager
     Object propValue = datastoreEntity.getProperty(propName);
     if (propValue != null) {
       Collection<Object> coll;
-      try
-      {
-          Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
-          coll = (Collection<Object>) instanceType.newInstance();
+      try {
+        Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+        coll = (Collection<Object>) instanceType.newInstance();
+      } catch (Exception e) {
+        throw new NucleusDataStoreException(e.getMessage(), e);
       }
-      catch (Exception e)
-      {
-          throw new NucleusDataStoreException(e.getMessage(), e);
-      }
-
-      List<Key> keys = (List<Key>)propValue;
 
       // Retrieve all Entities in one call
       DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
       DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      List<Key> keys = (List<Key>)propValue;
       Map<Key, Entity> entitiesByKey = ds.get(keys);
 
+      boolean changeDetected = false;
       AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
       for (Key key : keys) {
         Entity entity = entitiesByKey.get(key);
         if (entity == null) {
-          throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
-              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+          // User must have deleted it? Ignore the entry
+          changeDetected = true;
+          NucleusLogger.DATASTORE_RETRIEVE.info("Field " + mmd.getFullFieldName() + " of " + datastoreEntity.getKey() +
+              " was marked as having child " + key + " but doesn't exist, so must have been deleted. Ignoring");
+          continue;
         }
+
         Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, ec, false, ec.getFetchPlan());
         coll.add(pojo);
+      }
+
+      if (mmd.getOrderMetaData() != null && mmd.getOrderMetaData().getOrdering() != null &&
+          !mmd.getOrderMetaData().getOrdering().equals("#PK")) {
+        // Reorder the collection as per the ordering clause
+        return null;
+        // TODO Enable this when using DN 3.0.10+
+//        coll = QueryUtils.orderCandidates((List)coll, mmd.getType(), mmd.getOrderMetaData().getOrdering(), ec, clr);
+      }
+
+      coll = (Collection)getObjectProvider().wrapSCOField(mmd.getAbsoluteFieldNumber(), coll, false, false, false);
+      if (changeDetected) {
+        getObjectProvider().makeDirty(mmd.getAbsoluteFieldNumber());
       }
       return coll;
     }
@@ -621,15 +633,23 @@ public class FetchFieldManager extends DatastoreFieldManager
 
       AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
       int i = 0;
+      boolean changeDetected = false;
       for (Key key : keys) {
         Entity entity = entitiesByKey.get(key);
         if (entity == null) {
-          throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
-              " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+          // User must have deleted it? Ignore the entry
+          changeDetected = true;
+          NucleusLogger.DATASTORE_RETRIEVE.info("Field " + mmd.getFullFieldName() + " of " + datastoreEntity.getKey() +
+              " was marked as having child " + key + " but doesn't exist, so must have been deleted. Ignoring");
+          continue;
         }
+
         Object pojo = EntityUtils.entityToPojo(entity, elemCmd, clr, ec, false, ec.getFetchPlan());
         Array.set(value, i, pojo);
         i++;
+      }
+      if (changeDetected) {
+        getObjectProvider().makeDirty(mmd.getAbsoluteFieldNumber());
       }
       return value;
     }
@@ -680,14 +700,18 @@ public class FetchFieldManager extends DatastoreFieldManager
       Map<Key, Entity> entitiesByKey = ds.get(keysToRetrieve);
 
       keyValIter = keysValues.iterator();
+      boolean changeDetected = false;
       while (keyValIter.hasNext()) {
         Object key = keyValIter.next();
         if (keyCmd != null) {
           // Persistable key
           Entity entity = entitiesByKey.get(key);
           if (entity == null) {
-            throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
-                " in parent " + datastoreEntity.getKey() + " refers to child " + key + " but this doesn't exist! Check your data integrity");
+            // User must have deleted it? Ignore the entry
+            changeDetected = true;
+            NucleusLogger.DATASTORE_RETRIEVE.info("Field " + mmd.getFullFieldName() + " of " + datastoreEntity.getKey() +
+                " has a map referring to key=" + key + " but doesn't exist, so must have been deleted. Ignoring");
+            continue;
           }
           key = EntityUtils.entityToPojo(entity, keyCmd, clr, ec, false, ec.getFetchPlan());
         } // TODO Make use of TypeConversionUtils for non-PC types
@@ -697,13 +721,21 @@ public class FetchFieldManager extends DatastoreFieldManager
           // Persistable value
           Entity entity = entitiesByKey.get(val);
           if (entity == null) {
-            throw new NucleusFatalUserException("Field " + mmd.getFullFieldName() +
-                " in parent " + datastoreEntity.getKey() + " refers to child " + val + " but this doesn't exist! Check your data integrity");
+            // User must have deleted it? Ignore the entry
+            changeDetected = true;
+            NucleusLogger.DATASTORE_RETRIEVE.info("Field " + mmd.getFullFieldName() + " of " + datastoreEntity.getKey() +
+                " has a map referring to value=" + val + " but doesn't exist, so must have been deleted. Ignoring");
+            continue;
           }
           val = EntityUtils.entityToPojo(entity, valCmd, clr, ec, false, ec.getFetchPlan());
         } // TODO Make use of TypeConversionUtils for non-PC types
 
         map.put(key, val);
+      }
+
+      map = (Map)getObjectProvider().wrapSCOField(mmd.getAbsoluteFieldNumber(), map, false, changeDetected, false);
+      if (changeDetected) {
+        getObjectProvider().makeDirty(mmd.getAbsoluteFieldNumber());
       }
       return map;
     }
