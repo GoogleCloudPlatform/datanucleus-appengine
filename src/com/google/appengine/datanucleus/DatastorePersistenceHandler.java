@@ -226,9 +226,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * children followed by a repersist to link to the children) then this is done one-by-one.
    */
   void insertObjectsInternal(List<ObjectProvider> opsToInsert) {
+    if (opsToInsert == null || opsToInsert.isEmpty()) {
+      return;
+    }
+
+    // All must be in same ExecutionContext
+    ExecutionContext ec = opsToInsert.get(0).getExecutionContext();
     List<PutState> putStateList = Utils.newArrayList();
     for (ObjectProvider op : opsToInsert) {
-      ExecutionContext ec = op.getExecutionContext();
       AbstractClassMetaData cmd = op.getClassMetaData();
 
       // Create the Entity, and populate all fields that can be populated (this will omit any owned child objects 
@@ -296,15 +301,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // PUT all entities in single call
     if (!putStateList.isEmpty()) {
       DatastoreTransaction txn = null;
-      ExecutionContext ec = null;
       AbstractClassMetaData acmd = null;
       List<Entity> entityList = Utils.newArrayList();
       for (PutState putState : putStateList) {
         if (txn == null) {
-          txn = storeMgr.getDatastoreTransaction(putState.op.getExecutionContext());
-        }
-        if (ec == null) {
-          ec = putState.op.getExecutionContext();
+          txn = storeMgr.getDatastoreTransaction(ec);
         }
         if (acmd == null) {
           acmd = putState.op.getClassMetaData();
@@ -367,16 +368,16 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       }
 
       // Update relation fields (including cascade-persist etc)
-      if (putState.fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(putState.op.getExecutionContext()))) {
+      if (putState.fieldMgr.storeRelations(KeyRegistry.getKeyRegistry(ec))) {
         // PUT Entity into datastore with these changes
-        EntityUtils.putEntityIntoDatastore(putState.op.getExecutionContext(), putState.entity);
+        EntityUtils.putEntityIntoDatastore(ec, putState.entity);
       }
 
       putState.op.replaceAllLoadedSCOFieldsWithWrappers();
 
-      if (storeMgr.getRuntimeManager() != null) {
-        storeMgr.getRuntimeManager().incrementInsertCount();
-      }
+      /*if (ec.getStatistics() != null) {
+        ec.getStatistics().incrementInsertCount();
+      }*/
     }
   }
 
@@ -438,9 +439,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
         (System.currentTimeMillis() - startTime)));
     }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementUpdateCount();
-    }
+    /*if (ec.getStatistics() != null) {
+      ec.getStatistics().incrementUpdateCount();
+    }*/
   }
 
   /**
@@ -495,9 +496,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           ec.deleteObjectInternal(relatedObject);
         }
       }
-      if (storeMgr.getRuntimeManager() != null) {
-        storeMgr.getRuntimeManager().incrementDeleteCount();
-      }
+      /*if (ec.getStatistics() != null) {
+        ec.getStatistics().incrementDeleteCount();
+      }*/
 
       return;
     }
@@ -513,9 +514,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         ec.deleteObjectInternal(relatedObject);
       }
     }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementDeleteCount();
-    }
+    /*if (ec.getStatistics() != null) {
+      ec.getStatistics().incrementDeleteCount();
+    }*/
 
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
@@ -610,9 +611,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
             (System.currentTimeMillis() - startTime)));
     }
-    if (storeMgr.getRuntimeManager() != null) {
-      storeMgr.getRuntimeManager().incrementFetchCount();
-    }
+    /*if (ec.getStatistics() != null) {
+      ec.getStatistics().incrementFetchCount();
+    }*/
   }
 
   /**
@@ -666,6 +667,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     AbstractClassMetaData cmd = op.getClassMetaData();
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
+      ExecutionContext ec = op.getExecutionContext();
       String versionPropertyName = EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd);
       Object curVersion = op.getExecutionContext().getApiAdapter().getVersion(op);
       if (curVersion != null) {
@@ -677,6 +679,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         }
         Entity refreshedEntity;
         try {
+          /*if (ec.getStatistics() != null) {
+            ec.getStatistics().incrementNumReads();
+          }*/
           refreshedEntity = storeMgr.getDatastoreServiceForReads(op.getExecutionContext()).get(entity.getKey());
         } catch (EntityNotFoundException e) {
           // someone deleted out from under us

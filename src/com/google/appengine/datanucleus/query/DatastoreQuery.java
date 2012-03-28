@@ -308,6 +308,9 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
     }
+    /*if (getExecutionContext().getStatistics() != null) {
+      getExecutionContext().getStatistics().incrementNumReads();
+    }*/
 
     Iterable<Entity> entityIterable;
     Cursor endCursor = null;
@@ -349,6 +352,9 @@ public class DatastoreQuery implements Serializable {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
         NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
       }
+      /*if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumWrites();
+      }*/
       ds.delete(innerTxn, keysToDelete);
 
       return (long) keysToDelete.size();
@@ -384,6 +390,9 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
     }
+    /*if (getExecutionContext().getStatistics() != null) {
+      getExecutionContext().getStatistics().incrementNumWrites();
+    }*/
     ds.delete(ds.getCurrentTransaction(null), keysToDelete);
 
     return (long) keysToDelete.size();

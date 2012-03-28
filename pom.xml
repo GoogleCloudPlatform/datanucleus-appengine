@@ -37,7 +37,7 @@
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
             <!--version>3.0.9</version-->
-            <version>[3.0, 3.1)</version>
+            <version>[3.0, 3.0.99)</version>
         </dependency>
 
         <!-- Only needed for building the dist.  Can we pull it in just for the assembly? -->
@@ -173,7 +173,7 @@
             <plugin>
                 <groupId>org.datanucleus</groupId>
                 <artifactId>maven-datanucleus-plugin</artifactId>
-                <version>3.0.0-release</version>
+                <version>3.0.2</version>
                 <configuration>
                     <metadataDirectory>${project.build.testOutputDirectory}</metadataDirectory>
                     <metadataIncludes>**/test/*.class</metadataIncludes>
