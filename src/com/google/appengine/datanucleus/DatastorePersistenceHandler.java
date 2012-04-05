@@ -667,7 +667,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     AbstractClassMetaData cmd = op.getClassMetaData();
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
-      ExecutionContext ec = op.getExecutionContext();
+//      ExecutionContext ec = op.getExecutionContext();
       String versionPropertyName = EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd);
       Object curVersion = op.getExecutionContext().getApiAdapter().getVersion(op);
       if (curVersion != null) {
