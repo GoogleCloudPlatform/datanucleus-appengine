@@ -338,6 +338,12 @@ public class DatastoreQuery implements Serializable {
       if (extensions != null &&
           extensions.containsKey(DatastoreManager.QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE) &&
           (Boolean) extensions.get(DatastoreManager.QUERYEXT_SLOW_BUT_MORE_ACCURATE_JPQL_DELETE)) {
+        if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+          NucleusLogger.DATASTORE_NATIVE.debug("Performing batch get for keys " + StringUtils.collectionToString(qd.batchGetKeys));
+        }
+        /*if (getExecutionContext().getStatistics() != null) {
+          getExecutionContext().getStatistics().incrementNumRead();
+        }*/
         Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
         keysToDelete = getResult.keySet();
       }
@@ -359,6 +365,12 @@ public class DatastoreQuery implements Serializable {
 
       return (long) keysToDelete.size();
     } else {
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Performing batch get for keys " + StringUtils.collectionToString(qd.batchGetKeys));
+      }
+      /*if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumRead();
+      }*/
       Map<Key, Entity> entityMap = ds.get(innerTxn, qd.batchGetKeys);
       // return the entities in the order in which the keys were provided
       Collection<Entity> entities = new ArrayList<Entity>();
@@ -376,26 +388,22 @@ public class DatastoreQuery implements Serializable {
   private Object wrapEntityQueryResult(Iterable<Entity> entities, Function<Entity, Object> resultTransformer,
       DatastoreService ds, Cursor endCursor) {
     if (isBulkDelete()) {
-      return deleteEntityQueryResult(entities, ds);
+      List<Key> keysToDelete = Utils.newArrayList();
+      for (Entity e : entities) {
+        keysToDelete.add(e.getKey());
+      }
+
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
+      }
+      /*if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumWrites();
+      }*/
+      ds.delete(ds.getCurrentTransaction(null), keysToDelete);
+
+      return (long) keysToDelete.size();
     }
     return newStreamingQueryResultForEntities(entities, resultTransformer, endCursor, query);
-  }
-
-  private long deleteEntityQueryResult(Iterable<Entity> entities, DatastoreService ds) {
-    List<Key> keysToDelete = Utils.newArrayList();
-    for (Entity e : entities) {
-      keysToDelete.add(e.getKey());
-    }
-
-    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
-    }
-    /*if (getExecutionContext().getStatistics() != null) {
-      getExecutionContext().getStatistics().incrementNumWrites();
-    }*/
-    ds.delete(ds.getCurrentTransaction(null), keysToDelete);
-
-    return (long) keysToDelete.size();
   }
 
   public static List<?> newStreamingQueryResultForEntities(
