@@ -39,7 +39,6 @@ class RuntimeExceptionWrappingQueryResultIterator extends RuntimeExceptionWrappi
     return ((QueryResultIterator<Entity>) inner).getCursor();
   }
 
-  @Override
   public List<Index> getIndexList() {
     throw new UnsupportedOperationException("This method is not supported");
   }
