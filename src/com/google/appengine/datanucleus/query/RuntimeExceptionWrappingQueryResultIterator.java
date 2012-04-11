@@ -15,10 +15,13 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
+import java.util.List;
+
 import org.datanucleus.api.ApiAdapter;
 
 import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.api.datastore.Index;
 import com.google.appengine.api.datastore.QueryResultIterator;
 
 /**
@@ -34,5 +37,10 @@ class RuntimeExceptionWrappingQueryResultIterator extends RuntimeExceptionWrappi
 
   public Cursor getCursor() {
     return ((QueryResultIterator<Entity>) inner).getCursor();
+  }
+
+  @Override
+  public List<Index> getIndexList() {
+    throw new UnsupportedOperationException("This method is not supported");
   }
 }
