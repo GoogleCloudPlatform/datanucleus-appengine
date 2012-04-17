@@ -23,9 +23,8 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
-import org.datanucleus.store.types.ObjectLongConverter;
-import org.datanucleus.store.types.ObjectStringConverter;
 import org.datanucleus.store.types.TypeManager;
+import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCOUtils;
 
 import com.google.appengine.datanucleus.Utils.Function;
@@ -381,18 +380,16 @@ class TypeConversionUtils {
               ammd.getTypeName().startsWith("com.google.appengine.api")) {
             value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
           } else if (value instanceof String) {
-            // TODO Migrate this to TypeConverter when we move to DN 3.1+
-            ObjectStringConverter conv = typeMgr.getStringConverter(ammd.getType());
+            TypeConverter conv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
             if (conv != null) {
               // Persisted as String, so convert back
-              value = conv.toObject((String)value);
+              value = conv.toMemberType((String)value);
             }
           } else if (value instanceof Long) {
-            // TODO Migrate this to TypeConverter when we move to DN 3.1+
-            ObjectLongConverter conv = typeMgr.getLongConverter(ammd.getType());
+            TypeConverter conv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
             if (conv != null) {
               // Persisted as Long, so convert back
-              value = conv.toObject((Long)value);
+              value = conv.toMemberType((Long)value);
             }
           } else {
             // Unsupported type on GAE/J ?
@@ -770,15 +767,15 @@ class TypeConversionUtils {
               ammd.getTypeName().startsWith("com.google.appengine.api")) {
             value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
           } else {
-            ObjectStringConverter strConv = typeMgr.getStringConverter(ammd.getType());
+            TypeConverter strConv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
             if (strConv != null) {
               // Persist as String
-              value = strConv.toString(value);
+              value = strConv.toDatastoreType(value);
             } else {
-              ObjectLongConverter longConv = typeMgr.getLongConverter(ammd.getType());
+              TypeConverter longConv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
               if (longConv != null) {
                 // Persist as Long
-                value = longConv.toLong(value);
+                value = longConv.toDatastoreType(value);
               } else {
                 // Unsupported type on GAE/J ?
                 value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);

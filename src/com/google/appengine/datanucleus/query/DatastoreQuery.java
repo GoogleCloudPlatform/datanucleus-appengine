@@ -308,9 +308,9 @@ public class DatastoreQuery implements Serializable {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
     }
-    /*if (getExecutionContext().getStatistics() != null) {
+    if (getExecutionContext().getStatistics() != null) {
       getExecutionContext().getStatistics().incrementNumReads();
-    }*/
+    }
 
     Iterable<Entity> entityIterable;
     Cursor endCursor = null;
@@ -341,9 +341,9 @@ public class DatastoreQuery implements Serializable {
         if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
           NucleusLogger.DATASTORE_NATIVE.debug("Performing batch get for keys " + StringUtils.collectionToString(qd.batchGetKeys));
         }
-        /*if (getExecutionContext().getStatistics() != null) {
-          getExecutionContext().getStatistics().incrementNumRead();
-        }*/
+        if (getExecutionContext().getStatistics() != null) {
+          getExecutionContext().getStatistics().incrementNumReads();
+        }
         Map<Key, Entity> getResult = ds.get(innerTxn, qd.batchGetKeys);
         keysToDelete = getResult.keySet();
       }
@@ -358,9 +358,9 @@ public class DatastoreQuery implements Serializable {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
         NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
       }
-      /*if (getExecutionContext().getStatistics() != null) {
+      if (getExecutionContext().getStatistics() != null) {
         getExecutionContext().getStatistics().incrementNumWrites();
-      }*/
+      }
       ds.delete(innerTxn, keysToDelete);
 
       return (long) keysToDelete.size();
@@ -368,9 +368,9 @@ public class DatastoreQuery implements Serializable {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
         NucleusLogger.DATASTORE_NATIVE.debug("Performing batch get for keys " + StringUtils.collectionToString(qd.batchGetKeys));
       }
-      /*if (getExecutionContext().getStatistics() != null) {
-        getExecutionContext().getStatistics().incrementNumRead();
-      }*/
+      if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumReads();
+      }
       Map<Key, Entity> entityMap = ds.get(innerTxn, qd.batchGetKeys);
       // return the entities in the order in which the keys were provided
       Collection<Entity> entities = new ArrayList<Entity>();
@@ -396,9 +396,9 @@ public class DatastoreQuery implements Serializable {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
         NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keysToDelete));
       }
-      /*if (getExecutionContext().getStatistics() != null) {
+      if (getExecutionContext().getStatistics() != null) {
         getExecutionContext().getStatistics().incrementNumWrites();
-      }*/
+      }
       ds.delete(ds.getCurrentTransaction(null), keysToDelete);
 
       return (long) keysToDelete.size();

@@ -608,9 +608,9 @@ public final class EntityUtils {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Getting entities for keys " + StringUtils.collectionToString(keys));
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementNumReads();
-    }*/
+    }
 
     Map<Key, Entity> entityMap;
     if (txn == null) {
@@ -653,9 +653,9 @@ public final class EntityUtils {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Getting entity of kind " + key.getKind() + " with key " + key);
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementNumReads();
-    }*/
+    }
 
     Entity entity;
     try {
@@ -701,6 +701,7 @@ public final class EntityUtils {
    * @return The DatastoreTransaction
    */
   public static DatastoreTransaction putEntityIntoDatastore(ExecutionContext ec, Entity entity) {
+    NucleusLogger.GENERAL.info(">> EntityUtils.putEntity " + entity + " called from ", new Exception());
     return putEntitiesIntoDatastore(ec, Collections.singletonList(entity));
   }
 
@@ -749,9 +750,9 @@ public final class EntityUtils {
       }
     }
     if (!putMe.isEmpty()) {
-      /*if (ec.getStatistics() != null) {
+      if (ec.getStatistics() != null) {
         ec.getStatistics().incrementNumWrites();
-      }*/
+      }
       if (txn == null) {
         if (putMe.size() == 1) {
           ds.put(putMe.get(0));
@@ -782,9 +783,9 @@ public final class EntityUtils {
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Deleting entities with keys " + StringUtils.collectionToString(keys));
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementNumWrites();
-    }*/
+    }
 
     DatastoreTransaction txn = ((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec);
     if (txn == null) {

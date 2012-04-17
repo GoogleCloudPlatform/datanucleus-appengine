@@ -375,9 +375,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
       putState.op.replaceAllLoadedSCOFieldsWithWrappers();
 
-      /*if (ec.getStatistics() != null) {
+      if (ec.getStatistics() != null) {
         ec.getStatistics().incrementInsertCount();
-      }*/
+      }
     }
   }
 
@@ -439,9 +439,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
         (System.currentTimeMillis() - startTime)));
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementUpdateCount();
-    }*/
+    }
   }
 
   /**
@@ -496,9 +496,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           ec.deleteObjectInternal(relatedObject);
         }
       }
-      /*if (ec.getStatistics() != null) {
+      if (ec.getStatistics() != null) {
         ec.getStatistics().incrementDeleteCount();
-      }*/
+      }
 
       return;
     }
@@ -514,9 +514,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         ec.deleteObjectInternal(relatedObject);
       }
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementDeleteCount();
-    }*/
+    }
 
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
       NucleusLogger.DATASTORE_PERSIST.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime", 
@@ -611,9 +611,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       NucleusLogger.DATASTORE_RETRIEVE.debug(GAE_LOCALISER.msg("AppEngine.ExecutionTime",
             (System.currentTimeMillis() - startTime)));
     }
-    /*if (ec.getStatistics() != null) {
+    if (ec.getStatistics() != null) {
       ec.getStatistics().incrementFetchCount();
-    }*/
+    }
   }
 
   /**
@@ -667,7 +667,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     AbstractClassMetaData cmd = op.getClassMetaData();
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
-//      ExecutionContext ec = op.getExecutionContext();
+      ExecutionContext ec = op.getExecutionContext();
       String versionPropertyName = EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd);
       Object curVersion = op.getExecutionContext().getApiAdapter().getVersion(op);
       if (curVersion != null) {
@@ -679,9 +679,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
         }
         Entity refreshedEntity;
         try {
-          /*if (ec.getStatistics() != null) {
+          if (ec.getStatistics() != null) {
             ec.getStatistics().incrementNumReads();
-          }*/
+          }
           refreshedEntity = storeMgr.getDatastoreServiceForReads(op.getExecutionContext()).get(entity.getKey());
         } catch (EntityNotFoundException e) {
           // someone deleted out from under us
