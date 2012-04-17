@@ -540,7 +540,7 @@ public class DatastoreQuery implements Serializable {
       }
     }
 
-    return ec.findObject(id, fv, cls, false);
+    return ec.findObject(id, fv, cls, false, false);
   }
 
   /**

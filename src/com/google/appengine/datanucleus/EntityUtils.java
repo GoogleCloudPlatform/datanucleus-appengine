@@ -1011,7 +1011,7 @@ public final class EntityUtils {
       id = IdentityUtils.getApplicationIdentityForResultSetRow(ec, acmd, cls, true, fm);
     }
 
-    Object pojo = ec.findObject(id, fv, cls, ignoreCache);
+    Object pojo = ec.findObject(id, fv, cls, ignoreCache, false);
     ObjectProvider op = ec.findObjectProvider(pojo);
 
     // TODO(maxr): Seems like we should be able to refactor the handler
