@@ -25,6 +25,8 @@ import java.util.ConcurrentModificationException;
 
 import javax.jdo.JDODataStoreException;
 
+import org.datanucleus.exceptions.NucleusDataStoreException;
+
 /**
  * @author Max Ross <maxr@google.com>
  */
@@ -304,13 +306,15 @@ public class JDOConcurrentModificationTest extends JDOTestCase {
     setDelegateForThread(dd);
 
     try {
-      Flight f = pm.getObjectById(Flight.class, e.getKey());
-      f.setYou(12);
       try {
+        Flight f = pm.getObjectById(Flight.class, e.getKey());
+        f.setYou(12);
         pm.close();
         fail("expected exception");
       } catch (JDODataStoreException ex) {
         // good
+        assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      } catch (NucleusDataStoreException ex) {
         assertTrue(ex.getCause() instanceof ConcurrentModificationException);
       }
     } finally {

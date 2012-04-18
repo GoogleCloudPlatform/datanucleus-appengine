@@ -133,11 +133,11 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     setDelegateForThread(dd);
 
     try {
-      // update detached object
-      book.setFirstPublished(1988);
-      beginTxn();
-
       try {
+        // update detached object TODO The object here is not "detached" at all. It is HOLLOW
+        book.setFirstPublished(1988);
+        beginTxn();
+
         // reattach
         em.merge(book);
         commitTxn();
@@ -146,6 +146,8 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         // good
         assertTrue(ex.getCause() instanceof PersistenceException);
         assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      } catch (NucleusDataStoreException nde) {
+        assertTrue(nde.getCause() instanceof ConcurrentModificationException);
       }
       assertFalse(em.getTransaction().isActive());
       // now verify that the new value is still in the detached version.
@@ -179,11 +181,11 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     setDelegateForThread(dd);
 
     try {
-      // update detached object
-      book.setFirstPublished(1988);
-      beginTxn();
-
       try {
+        // update detached object TODO The object here is not "detached" at all. It is HOLLOW
+        book.setFirstPublished(1988);
+        beginTxn();
+
         // reattach
         em.merge(book);
         commitTxn();
@@ -192,14 +194,18 @@ public class JPAConcurrentModificationTest extends JPATestCase {
         // good
         assertTrue(ex.getCause() instanceof PersistenceException);
         assertTrue(ex.getCause().getCause() instanceof ConcurrentModificationException);
+      } catch (NucleusDataStoreException nde) {
+        assertTrue(nde.getCause() instanceof ConcurrentModificationException);
       }
+
       assertFalse(em.getTransaction().isActive());
       beginTxn();
+      book.setFirstPublished(1989);
       em.merge(book);
       commitTxn();
       beginTxn();
       book = em.find(Book.class, e.getKey());
-      assertEquals(book, "harold", "1234", 1988, "the title");
+      assertEquals(book, "harold", "1234", 1989, "the title");
       commitTxn();
     } finally {
       setDelegateForThread(dd.getInner());
@@ -229,7 +235,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
     try {
       try {
-        // update attached object
+        // update attached object TODO The object here is not "detached" at all. It is HOLLOW
         b.setFirstPublished(1988);
         commitTxn();
         fail("expected exception");
@@ -311,12 +317,14 @@ public class JPAConcurrentModificationTest extends JPATestCase {
 
     try {
       Book b = em.find(Book.class, e.getKey());
-      b.setFirstPublished(1988);
       try {
+        b.setFirstPublished(1988);
         em.close();
         fail("expected exception");
       } catch (PersistenceException ex) {
         assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      } catch (NucleusDataStoreException nde) {
+        assertTrue(nde.getCause() instanceof ConcurrentModificationException);
       }
       assertEquals(b, "harold", "1234", 1988, "the title");
     } finally {
@@ -328,7 +336,7 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     switchDatasource(EntityManagerFactoryName.nontransactional_ds_non_transactional_ops_allowed);
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
-    // DataNuc JPA impl won't detach the object unless you open and close a txn
+    // DataNuc JPA impl won't detach the object unless you open and close a txn ... like the JPA spec says
     beginTxn();
     Book book = em.find(Book.class, e.getKey());
     commitTxn();
@@ -423,21 +431,22 @@ public class JPAConcurrentModificationTest extends JPATestCase {
     Entity e = Book.newBookEntity("harold", "1234", "the title");
     ds.put(e);
     Book b = em.find(Book.class, e.getKey());
-    // make a copy right away, otherwise our change will get reverted
-    // when the txn rolls back
+    // make a copy right away, otherwise our change will get reverted when the txn rolls back
     ExceptionThrowingDatastoreDelegate dd =
         new ExceptionThrowingDatastoreDelegate(getDelegateForThread(), policy);
     setDelegateForThread(dd);
 
     try {
       // update attached object
-      b.setFirstPublished(1988);
       try {
+        b.setFirstPublished(1988);
         em.merge(b);
         em.close();
         fail("expected exception");
       } catch (PersistenceException ex) {
         assertTrue(ex.getCause() instanceof ConcurrentModificationException);
+      } catch (NucleusDataStoreException nde) {
+        assertTrue(nde.getCause() instanceof ConcurrentModificationException);
       }
       em = emf.createEntityManager();
       b = em.find(Book.class, e.getKey());

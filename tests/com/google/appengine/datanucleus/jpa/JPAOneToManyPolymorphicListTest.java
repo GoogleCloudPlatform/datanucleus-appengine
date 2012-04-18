@@ -972,8 +972,8 @@ public class JPAOneToManyPolymorphicListTest extends JPAOneToManyPolymorphicTest
   }
 
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
-    // updates aren't necessarily atomic when non-tx, so get 1 after each collection clear.
-    int expectedUpdatePuts = 3;
+    // updates are now atomic when non-tx, so get 1 after each collection clear and one for the update.
+    int expectedUpdatePuts = 4;
     testOnlyOneParentPutOnChildDelete(new HasOneToManyListJPA(), new BidirTopList(),
                                       NEW_EM_START_END, expectedUpdatePuts);
   }

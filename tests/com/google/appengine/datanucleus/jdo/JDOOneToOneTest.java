@@ -1220,8 +1220,8 @@ public class JDOOneToOneTest extends JDOTestCase {
     // 1 put for the parent, 3 puts for the children, 1 more put
     // to add the child keys back on the parent
     int expectedPutsInSetup = 5;
-    // 1 put per child that we blank out
-    int expectedPutsOnChildDelete = 3;
+    // 1 put per field update that we perform
+    int expectedPutsOnChildDelete = 4;
     testOnlyOneParentPutOnChildDelete(NEW_PM_START_END, expectedPutsInSetup, expectedPutsOnChildDelete);
   }
   private void testOnlyOneParentPutOnChildDelete(StartEnd startEnd, int expectedPutsOnSetup,

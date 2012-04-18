@@ -1078,7 +1078,7 @@ public class JPAOneToOneTest extends JPATestCase {
   }
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
     // 1 put for all updates
-    int expectedPutsOnChildDelete = 3; // Deletes will happen immediately with DN3
+    int expectedPutsOnChildDelete = 4; // Deletes will happen immediately with DN3
     testOnlyOneParentPutOnChildDelete(NEW_EM_START_END, expectedPutsOnChildDelete);
   }
   private void testOnlyOneParentPutOnChildDelete(JPATestCase.StartEnd startEnd,

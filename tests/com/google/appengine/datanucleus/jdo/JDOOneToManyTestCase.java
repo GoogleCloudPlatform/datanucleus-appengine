@@ -1579,8 +1579,13 @@ abstract class JDOOneToManyTestCase extends JDOTestCase {
     } finally {
       DatastoreServiceInterceptor.uninstall();
     }
-    // 1 put to remove the keys
-    assertEquals(1, policy.putParamList.size());
+    if (startEnd == TXN_START_END) {
+      // transactional, so 1 put to do all
+      assertEquals(1, policy.putParamList.size());
+    } else {
+      // non-tx so 1 for each
+      assertEquals(4, policy.putParamList.size());
+    }
   }
 
   void testNonTxnAddOfChildToParentFailsPartwayThrough(HasOneToManyJDO pojo)
