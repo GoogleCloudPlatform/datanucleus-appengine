@@ -701,7 +701,6 @@ public final class EntityUtils {
    * @return The DatastoreTransaction
    */
   public static DatastoreTransaction putEntityIntoDatastore(ExecutionContext ec, Entity entity) {
-    NucleusLogger.GENERAL.info(">> EntityUtils.putEntity " + entity + " called from ", new Exception());
     return putEntitiesIntoDatastore(ec, Collections.singletonList(entity));
   }
 
