@@ -250,8 +250,8 @@ public class JDOUnidirectionalOneToManySubclassTest extends JDOTestCase {
     commitTxn();
     parent = pm.getObjectById(parent.getClass(), parent.getId());
 
-    parent.getSuperParentSuperChildren().add(child);
     try {
+      parent.getSuperParentSuperChildren().add(child);
       pm.close();
       fail("expected exception");
     } catch (UnsupportedOperationException uoe) {

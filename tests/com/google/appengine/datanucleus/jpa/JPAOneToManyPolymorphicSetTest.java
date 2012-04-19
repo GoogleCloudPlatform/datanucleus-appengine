@@ -335,7 +335,7 @@ public class JPAOneToManyPolymorphicSetTest extends JPAOneToManyPolymorphicTestC
 
   public void testOnlyOneParentPutOnChildDelete_NoTxn() throws Throwable {
     // updates are atomic when non-tx, so get 1 after each collection clear, and 1 for the update.
-    int expectedUpdatePuts = 4;
+    int expectedUpdatePuts = 5;
     testOnlyOneParentPutOnChildDelete(new HasOneToManySetJPA(), new BidirTopSet(),
                                      NEW_EM_START_END, expectedUpdatePuts);
   }
