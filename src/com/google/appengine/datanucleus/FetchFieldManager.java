@@ -32,6 +32,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.Relation;
+import org.datanucleus.query.QueryUtils;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -592,10 +593,8 @@ public class FetchFieldManager extends DatastoreFieldManager
 
       if (mmd.getOrderMetaData() != null && mmd.getOrderMetaData().getOrdering() != null &&
           !mmd.getOrderMetaData().getOrdering().equals("#PK")) {
-        // Reorder the collection as per the ordering clause
-        return null;
-        // TODO Enable this when using DN 3.0.10+
-//        coll = QueryUtils.orderCandidates((List)coll, mmd.getType(), mmd.getOrderMetaData().getOrdering(), ec, clr);
+        // Reorder the collection as per the ordering clause (DN 3.0.10+)
+        coll = QueryUtils.orderCandidates((List)coll, mmd.getType(), mmd.getOrderMetaData().getOrdering(), ec, clr);
       }
 
       coll = (Collection)getObjectProvider().wrapSCOField(mmd.getAbsoluteFieldNumber(), coll, false, false, false);

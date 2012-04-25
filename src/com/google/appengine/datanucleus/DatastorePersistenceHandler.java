@@ -57,11 +57,11 @@ import org.datanucleus.util.NucleusLogger;
 import java.sql.Timestamp;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Handler for persistence requests for GAE/J datastore. Lifecycle management processes persists, updates, deletes
@@ -115,7 +115,6 @@ import java.util.Set;
  * <li>PUT the updated Entity in datastore</li>
  * </ol>
  * </p>
- *  
  * <p>
  * <b>PersistenceHandler.deleteObject</b><br/>
  * <ol>
@@ -134,9 +133,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
   private final DatastoreManager storeMgr;
 
-  private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new HashMap();
+  private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new ConcurrentHashMap();
 
-  private final Map<ExecutionContext, BatchDeleteManager> batchDeleteManagerByExecutionContext = new HashMap();
+  private final Map<ExecutionContext, BatchDeleteManager> batchDeleteManagerByExecutionContext = new ConcurrentHashMap();
 
   /**
    * Constructor.
