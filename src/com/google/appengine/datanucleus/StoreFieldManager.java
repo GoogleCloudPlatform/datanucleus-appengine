@@ -84,9 +84,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
   public static final int IS_FK_VALUE = -2;
   private static final int[] IS_FK_VALUE_ARR = {IS_FK_VALUE};
 
-  protected enum Operation { INSERT, UPDATE };
-
-  protected final Operation operation;
+  protected final boolean insert;
 
   protected boolean parentAlreadySet = false;
 
@@ -103,7 +101,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    */
   public StoreFieldManager(ObjectProvider op, String kind) {
     super(op, new Entity(kind), null);
-    this.operation = Operation.INSERT;
+    this.insert = true;
   }
 
   /**
@@ -115,7 +113,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    */
   public StoreFieldManager(ObjectProvider op, Entity datastoreEntity, int[] fieldNumbers) {
     super(op, datastoreEntity, fieldNumbers);
-    this.operation = Operation.UPDATE;
+    this.insert = false;
   }
 
   public void storeBooleanField(int fieldNumber, boolean value) {
@@ -188,6 +186,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
   }
 
+  protected boolean isStorable(AbstractMemberMetaData mmd) {
+    return ((insert && mmd.isInsertable()) || (!insert && mmd.isUpdateable()));
+  }
+
   /**
    * Method to store the provided value in the Entity for the specified field.
    * @param fieldNumber The absolute field number
@@ -195,8 +197,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
    */
   private void storeFieldInEntity(int fieldNumber, Object value) {
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
-    if (!(operation == Operation.INSERT && mmd.isInsertable()) &&
-        !(operation == Operation.UPDATE && mmd.isUpdateable())) {
+    if (!isStorable(mmd)) {
       return;
     }
 
@@ -292,7 +293,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
     }
 
-    if (operation == Operation.INSERT) {
+    if (insert) {
       if (value == null) {
         // Nothing to extract
         checkSettingToNullValue(mmd, value);
@@ -455,7 +456,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
     } else if (key != null) {
-      if (operation == StoreFieldManager.Operation.UPDATE) {
+      if (!insert) {
         // Shouldn't even happen.
         throw new NucleusFatalUserException("You can only rely on this class to properly handle "
             + "parent pks if you instantiated the class without providing a datastore "
@@ -708,7 +709,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         if (mapping instanceof ArrayMapping || mapping instanceof MapMapping) {
           // Ignore postInsert/update for arrays/maps since don't support backing stores
         } else if (mapping instanceof MappingCallbacks) {
-          if (operation == StoreFieldManager.Operation.INSERT) {
+          if (insert) {
             ((MappingCallbacks)mapping).postInsert(op);
           } else {
             ((MappingCallbacks)mapping).postUpdate(op);
