@@ -46,6 +46,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaDataManager;
+import org.datanucleus.metadata.Relation;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
@@ -61,6 +62,13 @@ import org.datanucleus.query.symbol.SymbolTable;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.FieldValues;
 import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.store.mapped.IdentifierFactory;
+import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
+import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
+import org.datanucleus.store.query.AbstractJavaQuery;
+import org.datanucleus.store.schema.naming.ColumnType;
+import org.datanucleus.util.NucleusLogger;
+import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.datanucleus.DatastoreExceptionTranslator;
 import com.google.appengine.datanucleus.FetchFieldManager;
@@ -73,15 +81,6 @@ import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
-
-import org.datanucleus.store.mapped.IdentifierFactory;
-import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
-import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.mapped.mapping.PersistableMapping;
-import org.datanucleus.store.query.AbstractJavaQuery;
-import org.datanucleus.store.schema.naming.ColumnType;
-import org.datanucleus.util.NucleusLogger;
-import org.datanucleus.util.StringUtils;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -877,20 +876,13 @@ public class DatastoreQuery implements Serializable {
           + matchesExprObj.getClass().getName() + ").");
     }
     String matchesExpr = (String) matchesExprObj;
-    String wildcardExpr = getWildcardExpression();
+    String wildcardExpr = (getStoreManager().getApiAdapter().getName().equalsIgnoreCase("JPA")) ? "%" : ".*";
     int wildcardIndex = matchesExpr.indexOf(wildcardExpr);
     if (wildcardIndex == -1 || wildcardIndex != matchesExpr.length() - wildcardExpr.length()) {
       throw new UnsupportedDatastoreFeatureException(
           "Wildcard must appear at the end of the expression string (only prefix matches are supported)");
     }
     return matchesExpr.substring(0, wildcardIndex);
-  }
-
-  private String getWildcardExpression() {
-    if (getStoreManager().getApiAdapter().getName().equalsIgnoreCase("JPA")) {
-      return "%";
-    }
-    return ".*";
   }
 
   private void addPrefix(PrimaryExpression left, Expression right, String prefix, QueryData qd) {
@@ -900,7 +892,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   /**
-   * We fulfill startsWith by adding a >= filter for the method argument and a
+   * We fulfil "String.startsWith" by adding a >= filter for the method argument and a
    * < filter for the method argument translated into an upper limit for the scan.
    */
   private void handleStartsWithOperation(InvokeExpression invokeExpr, QueryData qd) {
@@ -1015,6 +1007,7 @@ public class DatastoreQuery implements Serializable {
       throw new UnsupportedDatastoreFeatureException("Operator " + operator + " does not have a "
           + "corresponding operator in the datastore api.");
     }
+
     Object value;
     if (right instanceof PrimaryExpression) {
       value = qd.parameters.get(((PrimaryExpression) right).getId());
@@ -1051,6 +1044,7 @@ public class DatastoreQuery implements Serializable {
       throw new UnsupportedDatastoreFeatureException(
           "Right side of expression is of unexpected type: " + right.getClass().getName());
     }
+
     List<String> tuples = getTuples(left, qd.compilation.getCandidateAlias());
     AbstractClassMetaData acmd = qd.acmd;
     Query datastoreQuery = qd.primaryDatastoreQuery;
@@ -1066,17 +1060,22 @@ public class DatastoreQuery implements Serializable {
         qd.joinQuery = datastoreQuery;
       }
     }
+
     AbstractMemberMetaData ammd = getMemberMetaDataForTuples(acmd, tuples);
     if (ammd == null) {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
-    JavaTypeMapping mapping = getMappingForFieldWithName(tuples, qd, acmd);
-    if (mapping instanceof PersistableMapping) {
+
+    int relationType = ammd.getRelationType(getClassLoaderResolver());
+    if (Relation.isRelationSingleValued(relationType)) {
+      // Reference to persistable object, so use Key or id
       processPersistableMember(qd, op, ammd, value);
     } else if (MetaDataUtils.isParentPKField(ammd)) {
+      // Reference to parent
       addParentFilter(op, internalPkToKey(acmd, value), qd.primaryDatastoreQuery);
     } else {
       String datastorePropName;
+      // TODO Catch any usage of GQL "field = :collParam" where we ought to use ":collParam.contains(field)"
       if (ammd.isPrimaryKey()) {
         if (value instanceof Collection) {
           processPotentialBatchGet(qd, (Collection) value, acmd, op);
@@ -1092,12 +1091,13 @@ public class DatastoreQuery implements Serializable {
       } else {
         datastorePropName = determinePropertyName(ammd);
       }
+
       value = pojoParamToDatastoreParam(value);
       if (qd.isOrExpression) {
         addLeftPrimaryOrExpression(qd, datastorePropName, value);
       } else {
         if (value instanceof Collection) {
-          // DataNuc compiles IN to EQUALS.  If we receive a Collection
+          // DataNuc compiles IN to EQUALS. If we receive a Collection
           // and the operator is EQUALS we turn it into IN.
           if (op == Query.FilterOperator.EQUAL) {
             op = Query.FilterOperator.IN;
@@ -1244,7 +1244,7 @@ public class DatastoreQuery implements Serializable {
 
   private Object negateNumber(Number negateMe) {
     if (negateMe instanceof BigDecimal) {
-      // datastore doesn't support filtering by BigDecimal to convert to double.
+      // datastore doesn't support filtering by BigDecimal so convert to double.
       return ((BigDecimal) negateMe).negate().doubleValue();
     } else if (negateMe instanceof Float) {
       return -((Float) negateMe);
@@ -1252,26 +1252,6 @@ public class DatastoreQuery implements Serializable {
       return -((Double) negateMe);
     }
     return -negateMe.longValue();
-  }
-
-  JavaTypeMapping getMappingForFieldWithName(List<String> tuples, QueryData qd, AbstractClassMetaData acmd) {
-    ClassLoaderResolver clr = getClassLoaderResolver();
-    JavaTypeMapping mapping = null;
-    // We might be looking for the mapping for a.b.c
-    for (String tuple : tuples) {
-      DatastoreTable table = qd.tableMap.get(acmd.getFullClassName());
-      if (table == null) {
-        table = getStoreManager().getDatastoreClass(acmd.getFullClassName(), clr);
-        qd.tableMap.put(acmd.getFullClassName(), table);
-      }
-      // deepest mapping we have so far
-      AbstractMemberMetaData mmd = acmd.getMetaDataForMember(tuple);
-      mapping = table.getMemberMapping(mmd);
-      // set the class meta data to the class of the type of the field of the
-      // mapping so that we go one deeper if there are any more tuples
-      acmd = getMetaDataManager().getMetaDataForClass(mapping.getMemberMetaData().getType(), clr);
-    }
-    return mapping;
   }
 
   private AbstractMemberMetaData getMemberMetaDataForTuples(AbstractClassMetaData acmd, List<String> tuples) {
