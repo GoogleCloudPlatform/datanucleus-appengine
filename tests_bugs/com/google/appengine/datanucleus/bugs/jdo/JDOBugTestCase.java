@@ -175,7 +175,7 @@ public class JDOBugTestCase extends DatastoreTestCase {
   }
 
   protected ExecutionContext getExecutionContext() {
-    return ((JDOPersistenceManager)pm).getObjectManager();
+    return ((JDOPersistenceManager)pm).getExecutionContext();
   }
 
   private boolean cacheManagers() {
