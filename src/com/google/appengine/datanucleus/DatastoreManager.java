@@ -342,6 +342,8 @@ public class DatastoreManager extends MappedStoreManager {
 
     // The overarching rule for supported inheritance strategies is that we
     // don't split the state of an object across multiple entities.
+    // TODO This is all nonsense. This datastore only allows "COMPLETE_TABLE" really so ignore the inheritance
+    // and remove the need for DatastoreClass
     if (strat == InheritanceStrategy.SUBCLASS_TABLE) {
       // Table mapped into the table(s) of subclass(es)
       // Just add the SchemaData entry with no table - managed by subclass

@@ -807,11 +807,19 @@ public class StoreFieldManager extends DatastoreFieldManager {
   // Nonsense about registering parent key
   private void addToParentKeyMap(KeyRegistry keyRegistry, Object childValue, Key key, ExecutionContext ec,
       String expectedType, boolean checkForPolymorphism) {
+
+    boolean throwException = getStoreManager().getBooleanProperty("datanucleus.appengine.throwExceptionOnUnexpectedPolymorphism", true);
+    if (checkForPolymorphism && !throwException) {
+      // Override the throw of an exception for something that is illogical (to me)
+      checkForPolymorphism = false;
+    }
+
+    // TODO Remove this check when we dump the old storageVersion. We're storing the Key of the other object
+    // in the owner; there are no remote FKs with the latest storageVersion so why should this check be here?
     if (checkForPolymorphism && childValue != null && !childValue.getClass().getName().equals(expectedType)) {
       AbstractClassMetaData acmd = ec.getMetaDataManager().getMetaDataForClass(childValue.getClass(),
           ec.getClassLoaderResolver());
       if (!MetaDataUtils.isNewOrSuperclassTableInheritanceStrategy(acmd)) {
-        // TODO cache the result of this evaluation to improve performance
         throw new UnsupportedOperationException(
             "Received a child of type " + childValue.getClass().getName() + " for a field of type " +
             expectedType + ". Unfortunately polymorphism in relationships is only supported for the " +

@@ -338,6 +338,7 @@ limitations under the License.
         <persistence-property name="datanucleus.appengine.ignorablemetadatabehavior"/> <!-- Make this datastore="true"-->
 		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"/>
 		<persistence-property name="datanucleus.appengine.query.inMemoryWhenUnsupported" datastore="true" value="false"/>
+        <persistence-property name="datanucleus.appengine.throwExceptionOnUnexpectedPolymorphism" datastore="true" value="true"/>
     </extension>
 
     <!-- CUSTOM ANNOTATIONS -->

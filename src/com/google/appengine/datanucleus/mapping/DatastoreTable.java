@@ -536,7 +536,11 @@ public class DatastoreTable implements DatastoreClass {
           } else {
             propertyName = mapping.getDatastoreMapping(0).getDatastoreField().getIdentifier().getIdentifierName();
           }
-          dt.addOwningClassMetaData(propertyName, acmd);
+
+          if (dt != null) {
+            // dt can be null if the other side is abstract using SUBCLASS_TABLE and we don't care with latest storageVersion
+            dt.addOwningClassMetaData(propertyName, acmd);
+          }
         }
 
         if (needsFKToContainerOwner) {

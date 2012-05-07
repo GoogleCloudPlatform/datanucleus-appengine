@@ -121,8 +121,15 @@ public abstract class AbstractFKStore {
     }
     elementTable = this.storeMgr.getDatastoreClass(elementCmd.getFullClassName(), clr);
     if (elementTable == null) {
-      throw new UnsupportedOperationException("Field " + ownerMemberMetaData.getFullFieldName() + " is collection of elements of type " +
-          elementCmd.getFullClassName() + " but this has no table of its own!");
+      // Special case : single subclass with table
+      String[] subclassNames = storeMgr.getNucleusContext().getMetaDataManager().getSubclassesForClass(element_class.getName(), true);
+      if (subclassNames.length == 1) {
+        elementTable = this.storeMgr.getDatastoreClass(subclassNames[0], clr);
+      }
+      if (elementTable == null) {
+        throw new UnsupportedOperationException("Field " + ownerMemberMetaData.getFullFieldName() + " is collection of elements of type " +
+            elementCmd.getFullClassName() + " but this has no table of its own!");
+      }
     }
 
     // Get the field in the element table (if any)
