@@ -69,7 +69,8 @@ public class BatchManagerTest extends JDOTestCase {
     bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
-            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getNucleusContext(), new HashMap<String, Object>());
+            jpm.getExecutionContext().getClassLoaderResolver(), jpm.getExecutionContext().getNucleusContext(), 
+            new HashMap<String, Object>());
     bm.finish(new DatastorePersistenceHandler(dm));
     assertEquals(Utils.newArrayList(sm1, sm2), providedBatchStateList);
     assertFalse(bm.batchOperationInProgress());
@@ -91,7 +92,8 @@ public class BatchManagerTest extends JDOTestCase {
     bm.add(sm2);
     JDOPersistenceManager jpm = (JDOPersistenceManager) pm;
     DatastoreManager dm = new DatastoreManager(
-            jpm.getObjectManager().getClassLoaderResolver(), jpm.getObjectManager().getNucleusContext(), new HashMap<String, Object>());
+            jpm.getExecutionContext().getClassLoaderResolver(), jpm.getExecutionContext().getNucleusContext(), 
+            new HashMap<String, Object>());
     try {
       bm.finish(new DatastorePersistenceHandler(dm));
       fail("expected rte");
