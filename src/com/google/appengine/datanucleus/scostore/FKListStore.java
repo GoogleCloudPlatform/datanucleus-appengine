@@ -357,13 +357,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
         } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
           List<Key> childKeys = (List<Key>) datastoreEntity.getProperty(propName);
-          return getChildrenByKeys(childKeys, ec);
+          return getChildrenByKeys(childKeys, ec); // TODO Use startIdx,endIdx
         } else {
-          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
-            // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
-            NucleusLogger.PERSISTENCE.info("List at field " + ownerMemberMetaData.getFullFieldName() + " of " + op +
-                " not yet migrated to latest storage version, so reading elements via the parent key");
-          }
+          // Ordered list and owned, so get via parent query
+          // Really we want to just take this property, but ordered lists can rely on data in the elements only!
+//          return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
         }
       }
     }

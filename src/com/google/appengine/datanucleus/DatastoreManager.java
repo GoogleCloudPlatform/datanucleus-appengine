@@ -463,6 +463,14 @@ public class DatastoreManager extends MappedStoreManager {
     return new FKSetStore(ammd, this, clr);
   }
 
+  public boolean usesBackedSCOWrappers() {
+    // TODO Use simple SCO wrappers at some point in future since we have no need for the backed variants now
+    /*if (storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      return false;
+    }*/
+    return true;
+  }
+
   public boolean storageVersionAtLeast(StorageVersion storageVersion) {
     return getStorageVersion().ordinal() >= storageVersion.ordinal();
   }
