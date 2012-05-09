@@ -79,9 +79,9 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
   @Override
   public void setStoreManager(StoreManager storeMgr) {
     super.setStoreManager(storeMgr);
-    NucleusContext omfContext = storeMgr.getNucleusContext();
-    MetaDataManager mdm = omfContext.getMetaDataManager();
-    ClassLoaderResolver clr = omfContext.getClassLoaderResolver(getClass().getClassLoader());
+    NucleusContext nucCtx = storeMgr.getNucleusContext();
+    MetaDataManager mdm = nucCtx.getMetaDataManager();
+    ClassLoaderResolver clr = nucCtx.getClassLoaderResolver(getClass().getClassLoader());
     AbstractClassMetaData acmd = mdm.getMetaDataForClass((String) properties.get("class-name"), clr);
     if (acmd != null) {
       ((DatastoreManager) storeMgr).validateMetaDataForClass(acmd);
