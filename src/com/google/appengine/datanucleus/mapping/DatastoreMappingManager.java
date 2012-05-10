@@ -249,15 +249,6 @@ public class DatastoreMappingManager extends AbstractMappingManager {
       prop.setAsPrimaryKey();
     }
 
-//    if (storeMgr.isStrategyDatastoreAttributed(fmd.getValueStrategy(), false)) {
-//      if ((fmd.isPrimaryKey() && ((DatastoreClass) datastoreContainer).isBaseDatastoreClass())
-//          || !fmd.isPrimaryKey()) {
-//        // Increment any PK field if we are in base class, and increment any other field
-//        prop.setAutoIncrement(true);
-//      }
-//    }
-
-//    setDatastoreFieldNullability(fmd, colmd, prop);
     if (fmd.getNullValue() == NullValue.DEFAULT) {
       // Users default should be applied if a null is to be inserted
       prop.setDefaultable();
