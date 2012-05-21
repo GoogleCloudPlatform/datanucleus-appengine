@@ -37,12 +37,12 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jdo</artifactId>
-            <version>3.0.7</version>
+            <version>[3.1.0-m1, 3.1.99)</version>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-jdo-query</artifactId>
-            <version>3.0.1</version>
+            <version>3.0.2</version>
         </dependency>
     </dependencies>
 </project>
