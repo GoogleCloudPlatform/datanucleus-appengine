@@ -185,7 +185,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       while (elementIter.hasNext()) {
         Object element = elementIter.next();
 
-        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
           // Register the parent key for the element when owned
           Key parentKey = EntityUtils.getKeyForObject(ownerOP.getObject(), ownerOP.getExecutionContext());
           KeyRegistry.getKeyRegistry(ownerOP.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
@@ -265,7 +265,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Keys (and therefore parents) are immutable so we don't need to ever
     // actually update the parent FK, but we do need to check to make sure
     // someone isn't trying to modify the parent FK
-    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       EntityUtils.checkParentage(element, op);
     }
 
@@ -304,7 +304,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         deleteElements = false;
       }
       else {
-        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
           // Field is not dependent, and not nullable so we just delete the elements
           NucleusLogger.DATASTORE.debug(LOCALISER.msg("056035"));
           deleteElements = true;
@@ -355,7 +355,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       if (datastoreEntity.hasProperty(propName)) {
         if (indexedList) {
           return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
-        } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+        } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
           List<Key> childKeys = (List<Key>) datastoreEntity.getProperty(propName);
           return getChildrenByKeys(childKeys, ec); // TODO Use startIdx,endIdx
         } else {
@@ -366,7 +366,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       }
     }
 
-    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       // Get child keys by doing a query with the owner as the parent Entity
       Key parentKey = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), op);
       return getChildrenUsingParentQuery(parentKey, getFilterPredicates(startIdx, endIdx), getSortPredicates(), ec).listIterator();
@@ -400,7 +400,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   @Override
   public int size(ObjectProvider op) {
     if (storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS) && !indexedList) {
-      if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+      if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
         // Ordered list can only be done via parent key currently
         return getSizeUsingParentKeyInChildren(op);
       } else {
@@ -889,7 +889,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     // Get current element at this position
     Object obj = get(op, index);
 
-    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       // Register the parent key for the element when owned
       Key parentKey = EntityUtils.getKeyForObject(op.getObject(), op.getExecutionContext());
       KeyRegistry.getKeyRegistry(op.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);

@@ -132,6 +132,8 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
       "datanucleus.appengine.getExtentCanReturnSubclasses";
 
+  public static final String RELATION_DEFAULT_MODE = "datanucleus.appengine.relationDefault";
+
   /**
    * The name of the extension that indicates the return value of the batch
    * delete query should be as accurate as possible at the expense of
@@ -166,6 +168,7 @@ public class DatastoreManager extends MappedStoreManager {
   private final Map<String, AbstractMemberMetaData> parentMemberMetaDataByClass =
     new ConcurrentHashMap<String, AbstractMemberMetaData>();
 
+  private final boolean defaultToOwnedRelations;
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
@@ -219,6 +222,13 @@ public class DatastoreManager extends MappedStoreManager {
 
     storageVersion = StorageVersion.fromStoreManager(this);
 
+    String defaultRelationMode = getStringProperty(RELATION_DEFAULT_MODE);
+    if (defaultRelationMode.equalsIgnoreCase("unowned")) {
+      defaultToOwnedRelations = false;
+    } else {
+      defaultToOwnedRelations = true;
+    }
+    
     // Add listener so we can check all metadata for unsupported features and required schema
     metadataValidator = new MetaDataValidator(this, getMetaDataManager(), clr);
 
@@ -243,6 +253,10 @@ public class DatastoreManager extends MappedStoreManager {
     return serializationMgr;
   }
 
+  public boolean isDefaultToOwnedRelations() {
+    return defaultToOwnedRelations;
+  }
+
   /**
    * Convenience method to log the configuration of this store manager.
    */
@@ -253,6 +267,7 @@ public class DatastoreManager extends MappedStoreManager {
     if (NucleusLogger.DATASTORE.isDebugEnabled())
     {
         NucleusLogger.DATASTORE.debug("StorageVersion : " + storageVersion.toString());
+        NucleusLogger.DATASTORE.debug("Default Relation Mode : " + getStringProperty(RELATION_DEFAULT_MODE));
         NucleusLogger.DATASTORE.debug("===========================================================");
     }
   }

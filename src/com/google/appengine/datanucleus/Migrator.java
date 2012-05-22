@@ -163,7 +163,7 @@ public class Migrator {
     NucleusLogger.DATASTORE.info("Migrating Entity with key=" + entity.getKey() + " for class=" + cls.getName());
     for (int i=0;i<relationFieldNumbers.length;i++) {
       AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNumbers[i]);
-      if (MetaDataUtils.isOwnedRelation(mmd)) {
+      if (MetaDataUtils.isOwnedRelation(mmd, storeMgr)) {
         int relationType = mmd.getRelationType(clr);
         if (relationType == Relation.ONE_TO_ONE_UNI ||
             (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null)) {

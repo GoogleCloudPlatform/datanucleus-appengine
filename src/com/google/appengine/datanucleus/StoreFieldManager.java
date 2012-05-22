@@ -277,7 +277,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     // Register this relation field for later update
     relationStoreInfos.add(new RelationStoreInformation(mmd, value));
 
-    boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+    boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
     if (owned) {
       // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
       if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
@@ -591,7 +591,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (relationFieldNums != null) {
         for (int i=0;i<relationFieldNums.length;i++) {
           AbstractMemberMetaData mmd = acmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNums[i]);
-          boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+          boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
           if (owned) {
             // Register parent key for all owned related objects
             Object childValue = op.provideField(mmd.getAbsoluteFieldNumber());
@@ -670,7 +670,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof SerialisedReferenceMapping ||
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
-          boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+          boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
           int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
           if (owned) {
             // Owned relation
@@ -725,7 +725,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       AbstractMemberMetaData mmd = relInfo.mmd;
       int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
 
-      boolean owned = MetaDataUtils.isOwnedRelation(mmd);
+      boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
       if (owned) {
         // Owned relations only store child keys if storageVersion high enough, and at "owner" side.
         if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {

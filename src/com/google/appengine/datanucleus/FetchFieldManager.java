@@ -336,7 +336,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       DatastoreTable dt = getDatastoreTable();
       JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(mmd);
       if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
-        if (!MetaDataUtils.isOwnedRelation(mmd)) {
+        if (!MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
           // Get other side via property containing key
           return lookupOneToOneChild(mmd, clr);
         }
@@ -372,7 +372,7 @@ public class FetchFieldManager extends DatastoreFieldManager
           return lookupOneToOneChild(mmd, clr);
         }
       } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        if (!MetaDataUtils.isOwnedRelation(mmd)) {
+        if (!MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
           // Get other side via property containing key
           return lookupOneToOneChild(mmd, clr);
         } else {
@@ -432,7 +432,7 @@ public class FetchFieldManager extends DatastoreFieldManager
             return null;
           }
         }
-      } else if (MetaDataUtils.isOwnedRelation(mmd)) {
+      } else if (MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
           // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
           NucleusLogger.PERSISTENCE.info("Persistable object at field " + mmd.getFullFieldName() + " of " + op +
           " not yet migrated to latest storage version, so reading the object via its parent key");

@@ -1329,7 +1329,7 @@ public class DatastoreQuery implements Serializable {
       verifyRelatedKeyIsOfProperType(ammd, valueKey, acmd);
     }
 
-    if (!MetaDataUtils.isOwnedRelation(ammd)) {
+    if (!MetaDataUtils.isOwnedRelation(ammd, getStoreManager())) {
       // Add filter on 1-1 relation field
       qd.primaryDatastoreQuery.addFilter(determinePropertyName(ammd), Query.FilterOperator.EQUAL, valueKey);
       return;

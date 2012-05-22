@@ -69,7 +69,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       throw new NucleusUserException(LOCALISER.msg("056039"));
     }
 
-    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       // Register the parent key for the element when owned
       Key parentKey = EntityUtils.getKeyForObject(op.getObject(), op.getExecutionContext());
       KeyRegistry.getKeyRegistry(op.getExecutionContext()).registerParentKeyForOwnedObject(element, parentKey);
@@ -164,7 +164,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           return false;
         }
         else {
-          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
             // fk is already set and sets are unindexed so there's nothing else to do
             // Keys (and therefore parents) are immutable so we don't need to ever
             // actually update the parent FK, but we do need to check to make sure
@@ -215,7 +215,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           elementSM.flush();
         }
         else {
-          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
             // Element not yet marked for deletion so go through the normal process
             ec.deleteObjectInternal(element);
           } else {
@@ -238,7 +238,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       if (datastoreEntity.hasProperty(propName)) {
         return getChildrenFromParentField(op, ec, -1, -1).listIterator();
       } else {
-        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+        if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
           // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
           NucleusLogger.PERSISTENCE.info("Collection at field " + ownerMemberMetaData.getFullFieldName() + " of " + op +
               " not yet migrated to latest storage version, so reading elements via the parent key");
@@ -246,7 +246,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       }
     }
 
-    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData)) {
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       // Get child keys by doing a query with the owner as the parent Entity
       ApiAdapter apiAdapter = ec.getApiAdapter();
       Key parentKey = EntityUtils.getPrimaryKeyAsKey(apiAdapter, op);

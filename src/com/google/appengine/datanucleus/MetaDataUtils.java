@@ -105,14 +105,23 @@ public class MetaDataUtils {
    * Convenience accessor for whether this relation is owned (or not).
    * Currently assumes owned unless otherwise specified.
    * @param mmd Metadata for the field/property
+   * @param storeMgr StoreManager
    * @return Whether it is owned
    */
-  public static boolean isOwnedRelation(AbstractMemberMetaData mmd) {
-    boolean owned = true;
-    if ("true".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
-      owned = false;
+  public static boolean isOwnedRelation(AbstractMemberMetaData mmd, DatastoreManager storeMgr) {
+    if (storeMgr.isDefaultToOwnedRelations()) {
+      // Defaulting to owned unless specified otherwise
+      if ("true".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
+        return false;
+      }
+      return true;
+    } else {
+      // Defaulting to unowned unless specified otherwise
+      if ("false".equalsIgnoreCase(mmd.getValueForExtension("gae.unowned"))) {
+        return true;
+      }
+      return false;
     }
-    return owned;
   }
 
   /**
@@ -120,7 +129,7 @@ public class MetaDataUtils {
    * expected to exist on the parent
    */
   public static boolean readRelatedKeysFromParent(DatastoreManager storeMgr, AbstractMemberMetaData mmd) {
-    return !MetaDataUtils.isOwnedRelation(mmd) ||
+    return !MetaDataUtils.isOwnedRelation(mmd, storeMgr) ||
         storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS);
   }
 

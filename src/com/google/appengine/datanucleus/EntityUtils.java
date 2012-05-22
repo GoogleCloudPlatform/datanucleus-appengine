@@ -843,12 +843,12 @@ public final class EntityUtils {
     parentKey = KeyRegistry.getKeyRegistry(ec).getParentKeyForOwnedObject(op.getObject());
 
     if (parentKey == null) {
+      DatastoreManager storeMgr = (DatastoreManager)ec.getStoreManager();
       // Mechanism 2, from the parent end of a bidir relation where this is a child
-      DatastoreTable table =
-        ((DatastoreManager)ec.getStoreManager()).getDatastoreClass(op.getClassMetaData().getFullClassName(),
+      DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
           ec.getClassLoaderResolver());
       AbstractMemberMetaData parentField = table.getParentMappingMemberMetaData();
-      if (parentField != null && MetaDataUtils.isOwnedRelation(parentField)) {
+      if (parentField != null && MetaDataUtils.isOwnedRelation(parentField, storeMgr)) {
         Object parent = op.provideField(parentField.getAbsoluteFieldNumber());
         parentKey = parent == null ? null : EntityUtils.getKeyForObject(parent, ec);
       }

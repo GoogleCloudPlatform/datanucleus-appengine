@@ -335,10 +335,15 @@ limitations under the License.
     <!-- PERSISTENCE PROPERTIES -->
     <extension point="org.datanucleus.persistence_properties">
         <persistence-property name="datanucleus.appengine.storageversion" datastore="true"/>
+        <persistence-property name="datanucleus.appengine.relationDefault" datastore="true" value="owned"
+            validator="com.google.appengine.datanucleus.DatastorePropertyValidator"/>
         <persistence-property name="datanucleus.appengine.ignorablemetadatabehavior"/> <!-- Make this datastore="true"-->
-		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"/>
-		<persistence-property name="datanucleus.appengine.query.inMemoryWhenUnsupported" datastore="true" value="false"/>
-        <persistence-property name="datanucleus.appengine.throwExceptionOnUnexpectedPolymorphism" datastore="true" value="true"/>
+		<persistence-property name="datanucleus.appengine.getExtentCanReturnSubclasses" datastore="true" value="false"
+            validator="org.datanucleus.properties.BooleanPropertyValidator"/>
+		<persistence-property name="datanucleus.appengine.query.inMemoryWhenUnsupported" datastore="true" value="false"
+            validator="org.datanucleus.properties.BooleanPropertyValidator"/>
+        <persistence-property name="datanucleus.appengine.throwExceptionOnUnexpectedPolymorphism" datastore="true" value="true"
+            validator="org.datanucleus.properties.BooleanPropertyValidator"/>
     </extension>
 
     <!-- CUSTOM ANNOTATIONS -->

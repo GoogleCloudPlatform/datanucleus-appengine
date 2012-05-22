@@ -305,7 +305,7 @@ public class MetaDataValidator implements MetaDataListener {
         handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
       }
 
-      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd)) {
+      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd, storeMgr)) {
         // We only support many-to-many for unowned relations
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ManyToManyRelationNotSupported",
             ammd.getFullFieldName());
@@ -348,7 +348,7 @@ public class MetaDataValidator implements MetaDataListener {
   }
 
   private void checkForIllegalChildField(AbstractMemberMetaData ammd, boolean noParentAllowed) {
-    if (!MetaDataUtils.isOwnedRelation(ammd)) {
+    if (!MetaDataUtils.isOwnedRelation(ammd, storeMgr)) {
       // The check only applies to owned relations
       return;
     }

@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus.mapping;
 
 import com.google.appengine.api.datastore.Entity;
+import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.Utils;
 
@@ -80,6 +81,7 @@ public class DependentDeleteRequest {
     // a). Delete any dependent objects
     // b). Null any non-dependent objects with FK at other side
     ClassLoaderResolver clr = op.getExecutionContext().getClassLoaderResolver();
+    DatastoreManager storeMgr = (DatastoreManager)op.getExecutionContext().getStoreManager();
     for (MappingCallbacks callback : callbacks) {
       JavaTypeMapping mapping = (JavaTypeMapping) callback;
       AbstractMemberMetaData mmd = mapping.getMemberMetaData();
@@ -91,7 +93,7 @@ public class DependentDeleteRequest {
           ExecutionContext ec = op.getExecutionContext();
           op.loadField(mmd.getAbsoluteFieldNumber());
           Object arr = op.provideField(mmd.getAbsoluteFieldNumber());
-          if (mmd.getArray().isDependentElement() || MetaDataUtils.isOwnedRelation(mmd)) {
+          if (mmd.getArray().isDependentElement() || MetaDataUtils.isOwnedRelation(mmd, storeMgr)) {
             if (arr != null) {
               for (int i=0;i<Array.getLength(arr); i++) {
                 Object elem = Array.get(arr, i);
@@ -109,7 +111,7 @@ public class DependentDeleteRequest {
           op.loadField(mmd.getAbsoluteFieldNumber());
           Map map = (Map)op.provideField(mmd.getAbsoluteFieldNumber());
           if (map != null) {
-            if (mmd.getMap().isDependentKey() || MetaDataUtils.isOwnedRelation(mmd)) {
+            if (mmd.getMap().isDependentKey() || MetaDataUtils.isOwnedRelation(mmd, storeMgr)) {
               Iterator keyIter = map.keySet().iterator();
               while (keyIter.hasNext()) {
                 Object key = keyIter.next();
@@ -118,7 +120,7 @@ public class DependentDeleteRequest {
                 }
               }
             }
-            if (mmd.getMap().isDependentValue() || MetaDataUtils.isOwnedRelation(mmd)) {
+            if (mmd.getMap().isDependentValue() || MetaDataUtils.isOwnedRelation(mmd, storeMgr)) {
               Iterator valIter = map.values().iterator();
               while (valIter.hasNext()) {
                 Object val = valIter.next();
