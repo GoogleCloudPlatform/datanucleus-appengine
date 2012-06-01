@@ -404,6 +404,7 @@ public class IllegalMappingsJPA {
     private Key id;
   }
 
+  // TODO This uses a JDO model class but JPA doesn't support that!
   @Entity
   public static class Has2CollectionsOfSameType {
     @SuppressWarnings("unused")
