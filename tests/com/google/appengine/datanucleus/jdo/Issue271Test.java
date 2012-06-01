@@ -21,8 +21,8 @@ import javax.jdo.JDOHelper;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.Issue271Child;
-import com.google.appengine.datanucleus.test.Issue271Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue271Child;
+import com.google.appengine.datanucleus.test.jdo.Issue271Parent;
 
 public class Issue271Test extends JDOTestCase {
 

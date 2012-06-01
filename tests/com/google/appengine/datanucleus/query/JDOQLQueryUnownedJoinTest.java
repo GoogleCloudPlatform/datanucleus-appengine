@@ -18,13 +18,13 @@ package com.google.appengine.datanucleus.query;
 
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
-import com.google.appengine.datanucleus.test.UnownedJoinsJDO.Course;
-import com.google.appengine.datanucleus.test.UnownedJoinsJDO.Major;
-import com.google.appengine.datanucleus.test.UnownedJoinsJDO.Student;
+import com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.Course;
+import com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.Major;
+import com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.Student;
 
-import static com.google.appengine.datanucleus.test.UnownedJoinsJDO.newCourse;
-import static com.google.appengine.datanucleus.test.UnownedJoinsJDO.newMajor;
-import static com.google.appengine.datanucleus.test.UnownedJoinsJDO.newStudent;
+import static com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.newCourse;
+import static com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.newMajor;
+import static com.google.appengine.datanucleus.test.jdo.UnownedJoinsJDO.newStudent;
 
 import java.util.Collections;
 

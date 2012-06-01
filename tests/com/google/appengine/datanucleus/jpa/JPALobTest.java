@@ -22,7 +22,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.SerializationManager;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.HasLob;
+import com.google.appengine.datanucleus.test.jpa.HasLob;
 
 
 import java.util.Arrays;

@@ -21,8 +21,8 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasMultiValuePropsJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasMultiValuePropsJPA;
 
 
 /**

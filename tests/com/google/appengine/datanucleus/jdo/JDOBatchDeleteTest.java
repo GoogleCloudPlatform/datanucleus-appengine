@@ -20,11 +20,11 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalChildListJDO;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyListJDO;
-import com.google.appengine.datanucleus.test.HasOneToOneJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildListJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyListJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToOneJDO;
 
 import java.lang.reflect.Method;
 

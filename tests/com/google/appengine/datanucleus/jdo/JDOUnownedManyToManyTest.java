@@ -23,8 +23,8 @@ import javax.jdo.Query;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.UnownedJDOManyToManySideA;
-import com.google.appengine.datanucleus.test.UnownedJDOManyToManySideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOManyToManySideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOManyToManySideB;
 
 /**
  * Tests for unowned M-N relations

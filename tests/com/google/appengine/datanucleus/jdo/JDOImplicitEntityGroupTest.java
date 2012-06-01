@@ -18,13 +18,13 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasKeyAncestorStringPkJDO;
-import com.google.appengine.datanucleus.test.HasOneToOneJDO;
-import com.google.appengine.datanucleus.test.HasOneToOneParentJDO;
-import com.google.appengine.datanucleus.test.HasOneToOnesWithDifferentCascadesJDO;
-import com.google.appengine.datanucleus.test.HasStringAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasStringAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToOneJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToOneParentJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToOnesWithDifferentCascadesJDO;
+import com.google.appengine.datanucleus.test.jdo.HasStringAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasStringAncestorStringPkJDO;
 
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 

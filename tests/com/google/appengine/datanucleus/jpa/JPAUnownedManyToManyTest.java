@@ -23,8 +23,8 @@ import javax.persistence.Query;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.UnownedJPAManyToManySideA;
-import com.google.appengine.datanucleus.test.UnownedJPAManyToManySideB;
+import com.google.appengine.datanucleus.test.jpa.UnownedJPAManyToManySideA;
+import com.google.appengine.datanucleus.test.jpa.UnownedJPAManyToManySideB;
 
 /**
  * Tests for unowned M-N relations

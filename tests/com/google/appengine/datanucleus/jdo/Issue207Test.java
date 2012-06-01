@@ -2,8 +2,8 @@ package com.google.appengine.datanucleus.jdo;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.Issue207Child;
-import com.google.appengine.datanucleus.test.Issue207Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue207Child;
+import com.google.appengine.datanucleus.test.jdo.Issue207Parent;
 
 public class Issue207Test extends JDOTestCase {
 

@@ -15,7 +15,7 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import com.google.appengine.datanucleus.test.HasNotNullConstraintsJPA;
+import com.google.appengine.datanucleus.test.jpa.HasNotNullConstraintsJPA;
 
 import javax.persistence.PersistenceException;
 

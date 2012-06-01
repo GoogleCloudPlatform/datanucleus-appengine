@@ -21,7 +21,7 @@ import javax.jdo.JDOHelper;
 
 import junit.framework.Assert;
 
-import com.google.appengine.datanucleus.test.TimestampVersionJDO;
+import com.google.appengine.datanucleus.test.jdo.TimestampVersionJDO;
 
 /**
  * Tests for JDO versioning.

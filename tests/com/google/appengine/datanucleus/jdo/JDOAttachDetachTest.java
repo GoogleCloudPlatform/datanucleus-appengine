@@ -20,11 +20,11 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalChildListJDO;
-import com.google.appengine.datanucleus.test.DetachableJDO;
-import com.google.appengine.datanucleus.test.DetachableWithMultiValuePropsJDO;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasOneToManyListJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildListJDO;
+import com.google.appengine.datanucleus.test.jdo.DetachableJDO;
+import com.google.appengine.datanucleus.test.jdo.DetachableWithMultiValuePropsJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyListJDO;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;

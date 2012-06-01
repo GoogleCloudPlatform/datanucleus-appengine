@@ -21,12 +21,12 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.HasEncodedStringPkJPA;
-import com.google.appengine.datanucleus.test.HasEncodedStringPkSeparateIdFieldJPA;
-import com.google.appengine.datanucleus.test.HasEncodedStringPkSeparateNameFieldJPA;
-import com.google.appengine.datanucleus.test.HasKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasLongPkJPA;
-import com.google.appengine.datanucleus.test.HasUnencodedStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateIdFieldJPA;
+import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateNameFieldJPA;
+import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasLongPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasUnencodedStringPkJPA;
 
 
 import java.util.List;

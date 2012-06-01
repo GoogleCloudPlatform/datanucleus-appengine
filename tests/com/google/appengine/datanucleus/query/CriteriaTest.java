@@ -16,7 +16,7 @@
 package com.google.appengine.datanucleus.query;
 
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.Book;
+import com.google.appengine.datanucleus.test.jpa.Book;
 
 /**
  * @author Max Ross <max.ross@gmail.com>

@@ -22,11 +22,11 @@ import javax.jdo.FetchPlan;
 import javax.jdo.JDOHelper;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideA;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToManyBiSideB;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniListSideA;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniSideA;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToManyUniSideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToManyBiSideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToManyBiSideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToManyUniListSideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToManyUniSideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToManyUniSideB;
 
 /**
  * Tests for 1-N unowned JDO relations.

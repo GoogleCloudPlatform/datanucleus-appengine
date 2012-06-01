@@ -183,7 +183,7 @@
                 <version>3.1.0-m1</version>
                 <configuration>
                     <metadataDirectory>${project.build.testOutputDirectory}</metadataDirectory>
-                    <metadataIncludes>**/test/*.class</metadataIncludes>
+                    <metadataIncludes>**/test/**/*.class</metadataIncludes>
                     <classes>${project.build.testOutputDirectory}</classes>
                     <log4jConfiguration>${basedir}/log4j.properties</log4jConfiguration>
                     <verbose>true</verbose>

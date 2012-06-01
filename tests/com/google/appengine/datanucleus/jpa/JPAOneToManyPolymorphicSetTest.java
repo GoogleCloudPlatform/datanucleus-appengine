@@ -17,21 +17,21 @@ package com.google.appengine.datanucleus.jpa;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirBottomLongPkSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirBottomSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirBottomUnencodedStringPkSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirMiddleLongPkSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirMiddleSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirMiddleUnencodedStringPkSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirTopLongPkSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirTopSet;
-import com.google.appengine.datanucleus.test.BidirectionalSingleTableChildSetJPA.BidirTopUnencodedStringPkSet;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManyKeyPkSetJPA;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManyLongPkSetJPA;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManySetJPA;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJPA.HasOneToManyUnencodedStringPkSetJPA;
-import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirBottom;
-import com.google.appengine.datanucleus.test.UnidirectionalSingeTableChildJPA.UnidirMiddle;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirBottomLongPkSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirBottomSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirBottomUnencodedStringPkSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirMiddleLongPkSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirMiddleSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirMiddleUnencodedStringPkSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirTopLongPkSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirTopSet;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalSingleTableChildSetJPA.BidirTopUnencodedStringPkSet;
+import com.google.appengine.datanucleus.test.jpa.HasPolymorphicRelationsSetJPA.HasOneToManyKeyPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasPolymorphicRelationsSetJPA.HasOneToManyLongPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasPolymorphicRelationsSetJPA.HasOneToManySetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasPolymorphicRelationsSetJPA.HasOneToManyUnencodedStringPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalSingeTableChildJPA.UnidirBottom;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalSingeTableChildJPA.UnidirMiddle;
 
 import static com.google.appengine.datanucleus.PolymorphicTestUtils.getEntityKind;
 

@@ -18,8 +18,8 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
 
 
 /**

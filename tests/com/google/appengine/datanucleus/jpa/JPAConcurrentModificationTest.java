@@ -19,7 +19,7 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
-import com.google.appengine.datanucleus.test.Book;
+import com.google.appengine.datanucleus.test.jpa.Book;
 
 import java.util.ConcurrentModificationException;
 

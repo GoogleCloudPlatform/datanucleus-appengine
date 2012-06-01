@@ -18,12 +18,12 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToOneJPA;
-import com.google.appengine.datanucleus.test.HasOneToOneParentJPA;
-import com.google.appengine.datanucleus.test.HasOneToOnesWithDifferentCascadesJPA;
-import com.google.appengine.datanucleus.test.HasStringAncestorKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasStringAncestorStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToOneJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToOneParentJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToOnesWithDifferentCascadesJPA;
+import com.google.appengine.datanucleus.test.jpa.HasStringAncestorKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasStringAncestorStringPkJPA;
 
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentEquals;
 import static com.google.appengine.datanucleus.TestUtils.assertKeyParentNull;

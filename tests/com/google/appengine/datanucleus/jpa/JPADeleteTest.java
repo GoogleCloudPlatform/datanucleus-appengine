@@ -17,7 +17,7 @@ package com.google.appengine.datanucleus.jpa;
 
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.KitchenSink;
+import com.google.appengine.datanucleus.test.jdo.KitchenSink;
 
 
 /**

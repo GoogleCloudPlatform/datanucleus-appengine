@@ -17,7 +17,7 @@ package com.google.appengine.datanucleus;
 
 import junit.framework.TestCase;
 
-import com.google.appengine.datanucleus.test.HasEnumJDO;
+import com.google.appengine.datanucleus.test.jdo.HasEnumJDO;
 
 import java.util.Arrays;
 

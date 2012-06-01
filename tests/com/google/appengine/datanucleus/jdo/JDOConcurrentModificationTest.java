@@ -19,7 +19,7 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
-import com.google.appengine.datanucleus.test.Flight;
+import com.google.appengine.datanucleus.test.jdo.Flight;
 
 import java.util.ConcurrentModificationException;
 

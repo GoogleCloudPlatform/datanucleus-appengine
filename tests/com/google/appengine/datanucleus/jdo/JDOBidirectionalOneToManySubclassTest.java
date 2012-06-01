@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJDO.Example1;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJDO.Example2;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJDO.Example3;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJDO.Example4;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalOneToManySubclassesJDO.Example1;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalOneToManySubclassesJDO.Example2;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalOneToManySubclassesJDO.Example3;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalOneToManySubclassesJDO.Example4;
 
 
 /**

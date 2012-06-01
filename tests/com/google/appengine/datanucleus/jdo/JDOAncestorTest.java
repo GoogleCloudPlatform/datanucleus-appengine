@@ -20,12 +20,12 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasKeyAncestorStringPkJDO;
-import com.google.appengine.datanucleus.test.HasKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasStringAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasStringAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasStringAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasStringAncestorStringPkJDO;
 
 
 import javax.jdo.JDOFatalUserException;

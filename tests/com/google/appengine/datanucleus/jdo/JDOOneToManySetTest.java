@@ -17,14 +17,14 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalChildJDO;
-import com.google.appengine.datanucleus.test.BidirectionalChildLongPkSetJDO;
-import com.google.appengine.datanucleus.test.BidirectionalChildSetJDO;
-import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkSetJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyKeyPkSetJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyLongPkSetJDO;
-import com.google.appengine.datanucleus.test.HasOneToManySetJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkSetJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildLongPkSetJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildSetJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildUnencodedStringPkSetJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyKeyPkSetJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyLongPkSetJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManySetJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyUnencodedStringPkSetJDO;
 
 import java.util.Collection;
 

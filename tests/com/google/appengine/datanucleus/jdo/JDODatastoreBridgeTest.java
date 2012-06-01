@@ -21,7 +21,7 @@ import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.QueryResultIterable;
 import com.google.appengine.api.datastore.QueryResultList;
 import com.google.appengine.datanucleus.JDODatastoreBridge;
-import com.google.appengine.datanucleus.test.Flight;
+import com.google.appengine.datanucleus.test.jdo.Flight;
 
 
 import java.util.List;

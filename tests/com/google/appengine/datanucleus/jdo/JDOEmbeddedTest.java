@@ -20,13 +20,13 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.EmbeddedChildPC;
-import com.google.appengine.datanucleus.test.EmbeddedParentPC;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasEmbeddedJDO;
-import com.google.appengine.datanucleus.test.HasEmbeddedPc;
-import com.google.appengine.datanucleus.test.HasEmbeddedWithKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedChildPC;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedParentPC;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasEmbeddedJDO;
+import com.google.appengine.datanucleus.test.jdo.HasEmbeddedPc;
+import com.google.appengine.datanucleus.test.jdo.HasEmbeddedWithKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
 
 /**
  * @author Max Ross <maxr@google.com>

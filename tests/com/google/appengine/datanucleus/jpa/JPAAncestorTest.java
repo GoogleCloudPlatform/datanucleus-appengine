@@ -21,12 +21,12 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.datanucleus.TestUtils;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasKeyAncestorStringPkJPA;
-import com.google.appengine.datanucleus.test.HasKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasStringAncestorKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasStringAncestorStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasStringAncestorKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasStringAncestorStringPkJPA;
 
 import javax.persistence.PersistenceException;
 

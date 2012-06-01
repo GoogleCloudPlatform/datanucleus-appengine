@@ -19,7 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.NullDataJPA;
+import com.google.appengine.datanucleus.test.jpa.NullDataJPA;
 
 import java.util.List;
 import java.util.Set;

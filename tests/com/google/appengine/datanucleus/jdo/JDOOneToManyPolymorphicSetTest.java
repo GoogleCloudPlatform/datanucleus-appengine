@@ -17,22 +17,22 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirBottom;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirBottomLongPk;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirBottomUnencodedStringPk;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirMiddle;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirMiddleLongPk;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirMiddleUnencodedStringPk;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirTop;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirTopLongPk;
-import com.google.appengine.datanucleus.test.BidirectionalSuperclassTableChildSetJDO.BidirTopUnencodedStringPkJDO;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJDO.HasOneToManyKeyPkSet;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJDO.HasOneToManyLongPkSet;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJDO.HasOneToManySet;
-import com.google.appengine.datanucleus.test.HasPolymorphicRelationsSetJDO.HasOneToManyUnencodedStringPkSet;
-import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirBottom;
-import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirMiddle;
-import com.google.appengine.datanucleus.test.UnidirectionalSuperclassTableChildJDO.UnidirTop;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirBottom;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirBottomLongPk;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirBottomUnencodedStringPk;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirMiddle;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirMiddleLongPk;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirMiddleUnencodedStringPk;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirTop;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirTopLongPk;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildSetJDO.BidirTopUnencodedStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasPolymorphicRelationsSetJDO.HasOneToManyKeyPkSet;
+import com.google.appengine.datanucleus.test.jdo.HasPolymorphicRelationsSetJDO.HasOneToManyLongPkSet;
+import com.google.appengine.datanucleus.test.jdo.HasPolymorphicRelationsSetJDO.HasOneToManySet;
+import com.google.appengine.datanucleus.test.jdo.HasPolymorphicRelationsSetJDO.HasOneToManyUnencodedStringPkSet;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalSuperclassTableChildJDO.UnidirBottom;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalSuperclassTableChildJDO.UnidirMiddle;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalSuperclassTableChildJDO.UnidirTop;
 
 import java.util.Collection;
 

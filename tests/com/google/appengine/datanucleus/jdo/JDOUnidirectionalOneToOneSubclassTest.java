@@ -18,12 +18,12 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SubParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SubParentWithSuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SuperParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJDO.SuperParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SubChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SubParentWithSubChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SubParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SuperChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SuperParentWithSubChild;
+import com.google.appengine.datanucleus.test.jdo.UnidirectionalOneToOneSubclassesJDO.SuperParentWithSuperChild;
 
 
 /**

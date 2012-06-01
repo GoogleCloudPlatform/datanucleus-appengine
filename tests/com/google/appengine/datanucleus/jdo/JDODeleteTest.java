@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasVersionWithFieldJDO;
-import com.google.appengine.datanucleus.test.KitchenSink;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasVersionWithFieldJDO;
+import com.google.appengine.datanucleus.test.jdo.KitchenSink;
 
 import javax.jdo.JDOHelper;
 import javax.jdo.JDOObjectNotFoundException;

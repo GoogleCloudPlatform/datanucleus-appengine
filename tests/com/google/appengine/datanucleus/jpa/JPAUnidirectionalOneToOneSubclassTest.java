@@ -18,12 +18,12 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SubParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SubParentWithSuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SuperParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToOneSubclassesJPA.SuperParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SubParentWithSubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SubParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SuperParentWithSubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToOneSubclassesJPA.SuperParentWithSuperChild;
 
 
 /**

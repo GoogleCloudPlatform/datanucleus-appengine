@@ -17,7 +17,7 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.HasMultiValuePropsJDO;
+import com.google.appengine.datanucleus.test.jdo.HasMultiValuePropsJDO;
 
 
 /**

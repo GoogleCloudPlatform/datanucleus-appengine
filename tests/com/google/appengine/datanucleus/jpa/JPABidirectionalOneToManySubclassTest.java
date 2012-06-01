@@ -18,10 +18,10 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJPA.Example1;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJPA.Example2;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJPA.Example3;
-import com.google.appengine.datanucleus.test.BidirectionalOneToManySubclassesJPA.Example4;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalOneToManySubclassesJPA.Example1;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalOneToManySubclassesJPA.Example2;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalOneToManySubclassesJPA.Example3;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalOneToManySubclassesJPA.Example4;
 
 
 import java.util.Collections;

@@ -5,8 +5,8 @@ import java.util.Iterator;
 import java.util.List;
 
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
-import com.google.appengine.datanucleus.test.Issue90Child;
-import com.google.appengine.datanucleus.test.Issue90Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue90Child;
+import com.google.appengine.datanucleus.test.jdo.Issue90Parent;
 
 public class Issue90Test extends JDOTestCase {
 

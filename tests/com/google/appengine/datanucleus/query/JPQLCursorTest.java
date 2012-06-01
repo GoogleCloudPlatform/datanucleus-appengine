@@ -23,7 +23,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.QueryResultIterator;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.Book;
+import com.google.appengine.datanucleus.test.jpa.Book;
 
 
 import java.util.Arrays;

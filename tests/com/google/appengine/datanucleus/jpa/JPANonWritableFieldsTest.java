@@ -18,7 +18,7 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.HasNonWritableFieldsJPA;
+import com.google.appengine.datanucleus.test.jpa.HasNonWritableFieldsJPA;
 
 /**
  * @author Max Ross <max.ross@gmail.com>

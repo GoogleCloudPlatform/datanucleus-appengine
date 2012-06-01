@@ -22,9 +22,9 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyListJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyListJPA;
 
 
 import javax.persistence.PersistenceException;

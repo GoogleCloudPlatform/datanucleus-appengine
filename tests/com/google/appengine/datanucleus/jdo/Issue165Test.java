@@ -17,8 +17,8 @@ package com.google.appengine.datanucleus.jdo;
 
 import org.datanucleus.util.NucleusLogger;
 
-import com.google.appengine.datanucleus.test.Issue165Child;
-import com.google.appengine.datanucleus.test.Issue165Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue165Child;
+import com.google.appengine.datanucleus.test.jdo.Issue165Parent;
 
 public class Issue165Test extends JDOTestCase {
 

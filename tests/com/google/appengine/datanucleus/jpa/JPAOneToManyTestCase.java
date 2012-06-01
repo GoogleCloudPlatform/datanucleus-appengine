@@ -26,16 +26,16 @@ import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalChildJPA;
-import com.google.appengine.datanucleus.test.BidirectionalChildLongPkJPA;
-import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkJPA;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyKeyPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyLongPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyWithOrderByJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildLongPkJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildUnencodedStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyKeyPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyLongPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyUnencodedStringPkJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyWithOrderByJPA;
 
 import org.easymock.EasyMock;
 

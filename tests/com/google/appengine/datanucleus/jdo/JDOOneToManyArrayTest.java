@@ -16,9 +16,9 @@ limitations under the License.
 package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.datanucleus.test.BidirectionalChildArrayJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyArrayJDO;
-import com.google.appengine.datanucleus.test.HasOneToManyArrayWithOrderByJDO;
+import com.google.appengine.datanucleus.test.jdo.BidirectionalChildArrayJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyArrayJDO;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyArrayWithOrderByJDO;
 
 /**
  * @author Max Ross <maxr@google.com>

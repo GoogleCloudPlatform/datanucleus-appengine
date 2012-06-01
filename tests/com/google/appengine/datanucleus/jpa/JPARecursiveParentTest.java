@@ -15,7 +15,7 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import com.google.appengine.datanucleus.test.HasRecursiveParentJPA.HasRecursiveParent;
+import com.google.appengine.datanucleus.test.jpa.HasRecursiveParentJPA.HasRecursiveParent;
 
 /**
  * Test recursive relations (Issue 80)

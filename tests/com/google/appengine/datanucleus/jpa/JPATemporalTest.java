@@ -22,7 +22,7 @@ import javax.persistence.Query;
 
 import junit.framework.Assert;
 
-import com.google.appengine.datanucleus.test.TemporalHolder;
+import com.google.appengine.datanucleus.test.jpa.TemporalHolder;
 
 /**
  * Tests for storage of temporal types

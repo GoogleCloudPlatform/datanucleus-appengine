@@ -28,10 +28,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.datanucleus.Migrator;
-import com.google.appengine.datanucleus.test.MigratorOneToManyChild;
-import com.google.appengine.datanucleus.test.MigratorOneToManyParent;
-import com.google.appengine.datanucleus.test.MigratorOneToOneChild;
-import com.google.appengine.datanucleus.test.MigratorOneToOneParent;
+import com.google.appengine.datanucleus.test.jdo.MigratorOneToManyChild;
+import com.google.appengine.datanucleus.test.jdo.MigratorOneToManyParent;
+import com.google.appengine.datanucleus.test.jdo.MigratorOneToOneChild;
+import com.google.appengine.datanucleus.test.jdo.MigratorOneToOneParent;
 
 /**
  * Some simple tests for the Migrator that was written to migrate data from the StorageVersion

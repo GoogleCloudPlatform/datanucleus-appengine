@@ -25,7 +25,7 @@ import javax.persistence.criteria.Root;
 
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.WriteBlocker;
-import com.google.appengine.datanucleus.test.Book;
+import com.google.appengine.datanucleus.test.jpa.Book;
 
 /**
  * Simple tests for use of the JPA criteria API with GAE.

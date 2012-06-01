@@ -18,10 +18,10 @@ package com.google.appengine.datanucleus.jdo;
 import java.util.List;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToOneBiSideA;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToOneBiSideB;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToOneUniSideA;
-import com.google.appengine.datanucleus.test.UnownedJDOOneToOneUniSideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToOneBiSideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToOneBiSideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToOneUniSideA;
+import com.google.appengine.datanucleus.test.jdo.UnownedJDOOneToOneUniSideB;
 
 /**
  * Tests for 1-1 unowned JDO relations.

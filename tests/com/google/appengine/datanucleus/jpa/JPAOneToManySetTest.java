@@ -15,13 +15,13 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
-import com.google.appengine.datanucleus.test.BidirectionalChildLongPkSetJPA;
-import com.google.appengine.datanucleus.test.BidirectionalChildSetJPA;
-import com.google.appengine.datanucleus.test.BidirectionalChildUnencodedStringPkSetJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyKeyPkSetJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyLongPkSetJPA;
-import com.google.appengine.datanucleus.test.HasOneToManySetJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyUnencodedStringPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildLongPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildSetJPA;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildUnencodedStringPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyKeyPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyLongPkSetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManySetJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyUnencodedStringPkSetJPA;
 
 /**
  * @author Max Ross <maxr@google.com>

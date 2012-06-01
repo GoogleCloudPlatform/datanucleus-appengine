@@ -20,8 +20,8 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.EmbeddableJPA;
-import com.google.appengine.datanucleus.test.HasEmbeddedJPA;
+import com.google.appengine.datanucleus.test.jpa.EmbeddableJPA;
+import com.google.appengine.datanucleus.test.jpa.HasEmbeddedJPA;
 
 /**
  * @author Max Ross <maxr@google.com>

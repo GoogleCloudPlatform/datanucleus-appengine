@@ -19,13 +19,13 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.UnownedJoinsJPA.Course;
-import com.google.appengine.datanucleus.test.UnownedJoinsJPA.Major;
-import com.google.appengine.datanucleus.test.UnownedJoinsJPA.Student;
+import com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.Course;
+import com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.Major;
+import com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.Student;
 
-import static com.google.appengine.datanucleus.test.UnownedJoinsJPA.newCourse;
-import static com.google.appengine.datanucleus.test.UnownedJoinsJPA.newMajor;
-import static com.google.appengine.datanucleus.test.UnownedJoinsJPA.newStudent;
+import static com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.newCourse;
+import static com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.newMajor;
+import static com.google.appengine.datanucleus.test.jpa.UnownedJoinsJPA.newStudent;
 
 import java.util.Collections;
 

@@ -15,7 +15,7 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.test.HasRecursiveParentJDO.HasRecursiveParent;
+import com.google.appengine.datanucleus.test.jdo.HasRecursiveParentJDO.HasRecursiveParent;
 
 /**
  * Test recursive relations (Issue 80)

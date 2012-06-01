@@ -21,7 +21,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.HasUnindexedPropertiesJPA;
+import com.google.appengine.datanucleus.test.jpa.HasUnindexedPropertiesJPA;
 
 
 import java.lang.reflect.Field;

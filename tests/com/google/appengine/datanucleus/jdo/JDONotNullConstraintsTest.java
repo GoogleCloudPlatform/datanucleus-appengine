@@ -15,7 +15,7 @@
  **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.test.HasNotNullConstraintsJDO;
+import com.google.appengine.datanucleus.test.jdo.HasNotNullConstraintsJDO;
 
 import javax.jdo.JDOUserException;
 

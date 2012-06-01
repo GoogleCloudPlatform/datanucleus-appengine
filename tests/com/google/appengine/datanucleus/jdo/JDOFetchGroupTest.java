@@ -18,7 +18,7 @@
 package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.Link;
-import com.google.appengine.datanucleus.test.HasFetchGroupsJDO;
+import com.google.appengine.datanucleus.test.jdo.HasFetchGroupsJDO;
 
 
 import javax.jdo.Query;

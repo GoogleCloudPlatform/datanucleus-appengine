@@ -20,14 +20,14 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasPromotedTypesJDO;
-import com.google.appengine.datanucleus.test.HasVersionNoFieldJDO;
-import com.google.appengine.datanucleus.test.HasVersionWithFieldJDO;
-import com.google.appengine.datanucleus.test.KitchenSink;
-import com.google.appengine.datanucleus.test.Name;
-import com.google.appengine.datanucleus.test.Person;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasPromotedTypesJDO;
+import com.google.appengine.datanucleus.test.jdo.HasVersionNoFieldJDO;
+import com.google.appengine.datanucleus.test.jdo.HasVersionWithFieldJDO;
+import com.google.appengine.datanucleus.test.jdo.KitchenSink;
+import com.google.appengine.datanucleus.test.jdo.Name;
+import com.google.appengine.datanucleus.test.jdo.Person;
 
 
 import java.util.Arrays;

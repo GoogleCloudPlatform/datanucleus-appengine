@@ -15,8 +15,8 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.test.Issue73Child;
-import com.google.appengine.datanucleus.test.Issue73Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue73Child;
+import com.google.appengine.datanucleus.test.jdo.Issue73Parent;
 
 public class Issue73Test extends JDOTestCase {
 

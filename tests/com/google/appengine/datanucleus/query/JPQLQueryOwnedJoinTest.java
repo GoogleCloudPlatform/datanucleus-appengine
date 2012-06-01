@@ -15,14 +15,14 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
-import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.Course;
-import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.Major;
-import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newCourse;
-import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newMajor;
-import static com.google.appengine.datanucleus.test.OwnedJoinsJPA.newStudent;
+import static com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.Course;
+import static com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.Major;
+import static com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.newCourse;
+import static com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.newMajor;
+import static com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.newStudent;
 
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.OwnedJoinsJPA.Student;
+import com.google.appengine.datanucleus.test.jpa.OwnedJoinsJPA.Student;
 
 import java.util.Collections;
 

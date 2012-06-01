@@ -26,8 +26,8 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceRecordingImpl;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.TxnIdAnswer;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
 
 import org.datanucleus.api.jdo.exceptions.TransactionNotReadableException;
 import org.datanucleus.api.jdo.exceptions.TransactionNotWritableException;

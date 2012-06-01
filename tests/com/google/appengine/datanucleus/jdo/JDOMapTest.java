@@ -19,8 +19,8 @@ import java.util.Map;
 
 import javax.jdo.JDOHelper;
 
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasOneToManyMapJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasOneToManyMapJDO;
 
 /**
  * Some simple tests where we have a Map field in the persistable object.

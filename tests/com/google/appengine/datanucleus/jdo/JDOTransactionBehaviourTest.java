@@ -15,7 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.test.Flight;
+import com.google.appengine.datanucleus.test.jdo.Flight;
 
 import javax.jdo.PersistenceManager;
 

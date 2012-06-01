@@ -17,8 +17,8 @@ package com.google.appengine.datanucleus.jdo;
 
 import javax.jdo.JDOException;
 
-import com.google.appengine.datanucleus.test.Issue62Child;
-import com.google.appengine.datanucleus.test.Issue62Parent;
+import com.google.appengine.datanucleus.test.jdo.Issue62Child;
+import com.google.appengine.datanucleus.test.jdo.Issue62Parent;
 
 public class Issue62Test extends JDOTestCase {
 

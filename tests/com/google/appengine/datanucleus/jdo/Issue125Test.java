@@ -15,7 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.datanucleus.test.Issue125Entity;
+import com.google.appengine.datanucleus.test.jdo.Issue125Entity;
 
 public class Issue125Test extends JDOTestCase {
 

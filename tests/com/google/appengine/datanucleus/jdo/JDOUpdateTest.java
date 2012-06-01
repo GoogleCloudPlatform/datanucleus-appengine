@@ -21,15 +21,15 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorStringPkJDO;
-import com.google.appengine.datanucleus.test.HasKeyPkJDO;
-import com.google.appengine.datanucleus.test.HasMultiValuePropsJDO;
-import com.google.appengine.datanucleus.test.HasStringAncestorStringPkJDO;
-import com.google.appengine.datanucleus.test.HasVersionWithFieldJDO;
-import com.google.appengine.datanucleus.test.Name;
-import com.google.appengine.datanucleus.test.NullDataJDO;
-import com.google.appengine.datanucleus.test.Person;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasMultiValuePropsJDO;
+import com.google.appengine.datanucleus.test.jdo.HasStringAncestorStringPkJDO;
+import com.google.appengine.datanucleus.test.jdo.HasVersionWithFieldJDO;
+import com.google.appengine.datanucleus.test.jdo.Name;
+import com.google.appengine.datanucleus.test.jdo.NullDataJDO;
+import com.google.appengine.datanucleus.test.jdo.Person;
 
 
 import java.util.ArrayList;

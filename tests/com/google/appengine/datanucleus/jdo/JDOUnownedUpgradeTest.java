@@ -19,11 +19,11 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.UnownedUpgradeJDO.HasOneToManyWithKey;
-import com.google.appengine.datanucleus.test.UnownedUpgradeJDO.HasOneToManyWithUnowned;
-import com.google.appengine.datanucleus.test.UnownedUpgradeJDO.HasOneToOneWithKey;
-import com.google.appengine.datanucleus.test.UnownedUpgradeJDO.HasOneToOneWithUnowned;
-import com.google.appengine.datanucleus.test.UnownedUpgradeJDO.SideB;
+import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToManyWithKey;
+import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToManyWithUnowned;
+import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToOneWithKey;
+import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToOneWithUnowned;
+import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.SideB;
 import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestConfig;
 
 import java.util.Map;

@@ -23,7 +23,7 @@ import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.SerializationManager;
 import com.google.appengine.datanucleus.SerializationStrategy;
-import com.google.appengine.datanucleus.test.HasBytesJPA;
+import com.google.appengine.datanucleus.test.jpa.HasBytesJPA;
 
 
 import java.util.Arrays;

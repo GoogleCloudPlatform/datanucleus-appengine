@@ -19,10 +19,10 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Concrete1;
-import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Concrete2;
-import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Concrete3;
-import com.google.appengine.datanucleus.test.AbstractBaseClassesJPA.Concrete4;
+import com.google.appengine.datanucleus.test.jpa.AbstractBaseClassesJPA.Concrete1;
+import com.google.appengine.datanucleus.test.jpa.AbstractBaseClassesJPA.Concrete2;
+import com.google.appengine.datanucleus.test.jpa.AbstractBaseClassesJPA.Concrete3;
+import com.google.appengine.datanucleus.test.jpa.AbstractBaseClassesJPA.Concrete4;
 
 
 /**

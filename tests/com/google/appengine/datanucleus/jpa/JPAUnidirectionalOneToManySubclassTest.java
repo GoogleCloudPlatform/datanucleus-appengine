@@ -18,12 +18,12 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SubParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SubParentWithSuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SuperChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SuperParentWithSubChild;
-import com.google.appengine.datanucleus.test.UnidirectionalOneToManySubclassesJPA.SuperParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SubParentWithSubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SubParentWithSuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SuperChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SuperParentWithSubChild;
+import com.google.appengine.datanucleus.test.jpa.UnidirectionalOneToManySubclassesJPA.SuperParentWithSuperChild;
 
 
 import java.util.Collections;

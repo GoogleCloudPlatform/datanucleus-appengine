@@ -16,11 +16,11 @@ limitations under the License.
 package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.HasEnumJDO;
-import com.google.appengine.datanucleus.test.HasEnumJDO.MyEnum;
+import com.google.appengine.datanucleus.test.jdo.HasEnumJDO;
+import com.google.appengine.datanucleus.test.jdo.HasEnumJDO.MyEnum;
 
-import static com.google.appengine.datanucleus.test.HasEnumJDO.MyEnum.V1;
-import static com.google.appengine.datanucleus.test.HasEnumJDO.MyEnum.V2;
+import static com.google.appengine.datanucleus.test.jdo.HasEnumJDO.MyEnum.V1;
+import static com.google.appengine.datanucleus.test.jdo.HasEnumJDO.MyEnum.V2;
 
 import java.util.Arrays;
 

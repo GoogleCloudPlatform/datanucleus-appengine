@@ -20,7 +20,7 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.test.SuperclassTableInheritanceJDO.*;
+import com.google.appengine.datanucleus.test.jdo.SuperclassTableInheritanceJDO.*;
 
 import junit.framework.Assert;
 

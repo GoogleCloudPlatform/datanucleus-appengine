@@ -20,13 +20,13 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.BidirectionalChildListJPA;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.DetachableJPA;
-import com.google.appengine.datanucleus.test.DetachableWithMultiValuePropsJDO;
-import com.google.appengine.datanucleus.test.HasGrandchildJPA;
-import com.google.appengine.datanucleus.test.HasOneToManyListJPA;
-import com.google.appengine.datanucleus.test.HasOneToManySetJPA;
+import com.google.appengine.datanucleus.test.jdo.DetachableWithMultiValuePropsJDO;
+import com.google.appengine.datanucleus.test.jpa.BidirectionalChildListJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.DetachableJPA;
+import com.google.appengine.datanucleus.test.jpa.HasGrandchildJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManyListJPA;
+import com.google.appengine.datanucleus.test.jpa.HasOneToManySetJPA;
 
 
 import java.io.ByteArrayInputStream;

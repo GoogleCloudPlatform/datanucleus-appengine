@@ -20,22 +20,22 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.DatastoreManager;
-import com.google.appengine.datanucleus.test.SubclassesJDO;
-import com.google.appengine.datanucleus.test.SubclassesJDO.CompleteTableParentNoChildStrategy;
-import com.google.appengine.datanucleus.test.SubclassesJDO.CompleteTableParentWithCompleteTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.CompleteTableParentWithEmbedded;
-import com.google.appengine.datanucleus.test.SubclassesJDO.CompleteTableParentWithNewTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.CompleteTableParentWithSubclassTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.DurableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.NewTableParentWithCompleteTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.NewTableParentWithNewTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.NewTableParentWithSubclassTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.OverrideParent;
-import com.google.appengine.datanucleus.test.SubclassesJDO.Parent;
-import com.google.appengine.datanucleus.test.SubclassesJDO.SubclassTableParentWithCompleteTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.SubclassTableParentWithNewTableChild;
-import com.google.appengine.datanucleus.test.SubclassesJDO.SubclassTableParentWithSubclassTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.CompleteTableParentNoChildStrategy;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.CompleteTableParentWithCompleteTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.CompleteTableParentWithEmbedded;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.CompleteTableParentWithNewTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.CompleteTableParentWithSubclassTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.DurableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.NewTableParentWithCompleteTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.NewTableParentWithNewTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.NewTableParentWithSubclassTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.OverrideParent;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Parent;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.SubclassTableParentWithCompleteTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.SubclassTableParentWithNewTableChild;
+import com.google.appengine.datanucleus.test.jdo.SubclassesJDO.SubclassTableParentWithSubclassTableChild;
 
 import org.datanucleus.api.jdo.exceptions.NoPersistenceInformationException;
 
@@ -352,7 +352,7 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("b", e.getProperty("bString"));
   }
 
-  private void testInsertGrandchild(com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild grandchild) throws Exception {
+  private void testInsertGrandchild(com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild grandchild) throws Exception {
     grandchild.setAString("a");
     grandchild.setBString("b");
     grandchild.setCString("c");
@@ -392,7 +392,7 @@ public class JDOSubclassTest extends JDOTestCase {
     commitTxn();
   }
 
-  private void testFetchGrandchild(Class<? extends com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild> grandchildClass) {
+  private void testFetchGrandchild(Class<? extends com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild> grandchildClass) {
     Entity e = new Entity(kindForClass(grandchildClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
@@ -400,7 +400,7 @@ public class JDOSubclassTest extends JDOTestCase {
     ds.put(e);
 
     beginTxn();
-    com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild
+    com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild
         grandchild = pm.getObjectById(grandchildClass, e.getKey());
     assertEquals(grandchildClass, grandchild.getClass());
     assertEquals("a", grandchild.getAString());
@@ -491,7 +491,7 @@ public class JDOSubclassTest extends JDOTestCase {
     commitTxn();
   }
 
-  private void testQueryGrandchild(Class<? extends com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild> grandchildClass) {
+  private void testQueryGrandchild(Class<? extends com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild> grandchildClass) {
     Entity e1 = new Entity(kindForClass(grandchildClass));
     e1.setProperty("aString", "a2");
     e1.setProperty("bString", "b1");
@@ -598,7 +598,7 @@ public class JDOSubclassTest extends JDOTestCase {
     }
   }
 
-  private void testDeleteGrandchild(Class<? extends com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild> grandchildClass) {
+  private void testDeleteGrandchild(Class<? extends com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild> grandchildClass) {
     Entity e = new Entity(kindForClass(grandchildClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
@@ -646,14 +646,14 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("not b", e.getProperty("bString"));
   }
 
-  private void testUpdateGrandchild(Class<? extends com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild> grandchildClass) throws Exception {
+  private void testUpdateGrandchild(Class<? extends com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild> grandchildClass) throws Exception {
     Entity e = new Entity(kindForClass(grandchildClass));
     e.setProperty("aString", "a");
     e.setProperty("bString", "b");
     ds.put(e);
 
     beginTxn();
-    com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild
+    com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild
         grandchild = pm.getObjectById(grandchildClass, e.getKey());
     grandchild.setAString("not a");
     grandchild.setBString("not b");
@@ -665,7 +665,7 @@ public class JDOSubclassTest extends JDOTestCase {
     assertEquals("not c", e.getProperty("cString"));
   }
 
-  private void testGrandchild(com.google.appengine.datanucleus.test.SubclassesJDO.Grandchild grandchild) throws Exception {
+  private void testGrandchild(com.google.appengine.datanucleus.test.jdo.SubclassesJDO.Grandchild grandchild) throws Exception {
     testInsertGrandchild(grandchild);
     testUpdateGrandchild(grandchild.getClass());
     testDeleteGrandchild(grandchild.getClass());

@@ -3,7 +3,7 @@ package com.google.appengine.datanucleus.query;
 import javax.persistence.TypedQuery;
 
 import com.google.appengine.datanucleus.jpa.JPATestCase;
-import com.google.appengine.datanucleus.test.Flight;
+import com.google.appengine.datanucleus.test.jdo.Flight;
 
 public class Issue256Test extends JPATestCase {
   public void testRun() {

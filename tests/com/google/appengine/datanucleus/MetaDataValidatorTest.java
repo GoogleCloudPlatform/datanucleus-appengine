@@ -23,7 +23,7 @@ import org.datanucleus.metadata.InvalidMetaDataException;
 import org.datanucleus.metadata.MetaDataManager;
 
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
-import com.google.appengine.datanucleus.test.Flight;
+import com.google.appengine.datanucleus.test.jdo.Flight;
 
 /**
  * @author Max Ross <maxr@google.com>

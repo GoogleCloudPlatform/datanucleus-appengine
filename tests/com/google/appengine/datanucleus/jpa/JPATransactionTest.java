@@ -27,9 +27,9 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceRecordingImpl;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.TxnIdAnswer;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.Flight;
-import com.google.appengine.datanucleus.test.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jdo.Flight;
+import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
+import com.google.appengine.datanucleus.test.jpa.Book;
 
 import org.easymock.EasyMock;
 

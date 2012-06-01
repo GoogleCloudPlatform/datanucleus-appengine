@@ -24,11 +24,11 @@ import com.google.appengine.datanucleus.BaseDatastoreServiceDelegate;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.SequenceTestLock;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.SequenceExamplesJPA.HasSequence;
-import com.google.appengine.datanucleus.test.SequenceExamplesJPA.HasSequenceOnNonPkFields;
-import com.google.appengine.datanucleus.test.SequenceExamplesJPA.HasSequenceWithNoSequenceName;
-import com.google.appengine.datanucleus.test.SequenceExamplesJPA.HasSequenceWithSequenceGenerator;
-import com.google.appengine.datanucleus.test.SequenceExamplesJPA.HasSequenceWithUnencodedStringPk;
+import com.google.appengine.datanucleus.test.jpa.SequenceExamplesJPA.HasSequence;
+import com.google.appengine.datanucleus.test.jpa.SequenceExamplesJPA.HasSequenceOnNonPkFields;
+import com.google.appengine.datanucleus.test.jpa.SequenceExamplesJPA.HasSequenceWithNoSequenceName;
+import com.google.appengine.datanucleus.test.jpa.SequenceExamplesJPA.HasSequenceWithSequenceGenerator;
+import com.google.appengine.datanucleus.test.jpa.SequenceExamplesJPA.HasSequenceWithUnencodedStringPk;
 import com.google.appengine.datanucleus.valuegenerator.SequenceGenerator;
 
 import java.util.List;

@@ -21,8 +21,8 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.test.Book;
-import com.google.appengine.datanucleus.test.HasMultiValuePropsJPA;
+import com.google.appengine.datanucleus.test.jpa.Book;
+import com.google.appengine.datanucleus.test.jpa.HasMultiValuePropsJPA;
 
 
 import java.util.ArrayList;

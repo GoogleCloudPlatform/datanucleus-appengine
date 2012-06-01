@@ -16,7 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import com.google.appengine.api.datastore.Blob;
-import com.google.appengine.datanucleus.test.HasSerializableJDO;
+import com.google.appengine.datanucleus.test.jdo.HasSerializableJDO;
 
 import junit.framework.TestCase;
 

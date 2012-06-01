@@ -19,7 +19,7 @@ import java.util.Currency;
 import java.util.Locale;
 import java.util.TimeZone;
 
-import com.google.appengine.datanucleus.test.HasExtraTypes1JDO;
+import com.google.appengine.datanucleus.test.jdo.HasExtraTypes1JDO;
 
 /**
  * Tests for persistence of various non-standard Java types

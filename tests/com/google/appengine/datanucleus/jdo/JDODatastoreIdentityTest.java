@@ -19,8 +19,8 @@ import java.util.Set;
 
 import javax.jdo.JDOObjectNotFoundException;
 
-import com.google.appengine.datanucleus.test.HasDatastoreIdentityChildJDO;
-import com.google.appengine.datanucleus.test.HasDatastoreIdentityParentJDO;
+import com.google.appengine.datanucleus.test.jdo.HasDatastoreIdentityChildJDO;
+import com.google.appengine.datanucleus.test.jdo.HasDatastoreIdentityParentJDO;
 
 /**
  * Tests for datastore-identity with JDO.
