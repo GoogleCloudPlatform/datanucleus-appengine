@@ -205,34 +205,39 @@ public class StoreFieldManager extends DatastoreFieldManager {
     ClassLoaderResolver clr = getClassLoaderResolver();
     int relationType = mmd.getRelationType(clr);
 
-    if (mmd.getEmbeddedMetaData() != null) {
-      // Embedded field handling
-      if (Relation.isRelationSingleValued(relationType)) {
-        // Embedded persistable object
-        ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd, fieldNumber, value);
-        // TODO Create own FieldManager instead of reusing this one
-        // We need to build a mapping consumer for the embedded class so that we get correct
-        // fieldIndex --> metadata mappings for the class in the proper embedded context
-        // TODO(maxr) Consider caching this
-        InsertMappingConsumer mc = buildMappingConsumer(
-            embeddedOP.getClassMetaData(), getClassLoaderResolver(),
-            embeddedOP.getClassMetaData().getAllMemberPositions(),
-            mmd.getEmbeddedMetaData());
-        fieldManagerStateStack.addFirst(
-            new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
-        embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
-        fieldManagerStateStack.removeFirst();
-        return;
-      } else if (Relation.isRelationMultiValued(relationType)) {
-        if (mmd.hasCollection()) {
-          // TODO Support embedded collections
-        } else if (mmd.hasMap()) {
-          // TODO Support embedded maps
-        } else if (mmd.hasArray()) {
-          // TODO Support embedded arrays
-        }
-        throw new NucleusUserException("Don't currently support embedded multi-valued fields");
+    if (Relation.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
+      // Embedded persistable object
+      ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd, fieldNumber, value);
+      // TODO Create own FieldManager instead of reusing this one
+      // We need to build a mapping consumer for the embedded class so that we get correct
+      // fieldIndex --> metadata mappings for the class in the proper embedded context
+      // TODO(maxr) Consider caching this
+      InsertMappingConsumer mc = buildMappingConsumer(
+          embeddedOP.getClassMetaData(), getClassLoaderResolver(),
+          embeddedOP.getClassMetaData().getAllMemberPositions(),
+          mmd.getEmbeddedMetaData());
+      fieldManagerStateStack.addFirst(
+          new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
+      embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+      fieldManagerStateStack.removeFirst();
+      return;
+    } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
+      // Embedded container field
+      if (mmd.hasCollection()) {
+        /*// TODO Support embedded collections
+        AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+        Collection valueColl = (Collection) value;
+        Iterator collIter = valueColl.iterator();
+        while (collIter.hasNext()) {
+          Object element = collIter.next();
+          NucleusLogger.GENERAL.info(">> StoreFM field=" + mmd.getFullFieldName() + " element=" + element);
+        }*/
+      } else if (mmd.hasMap()) {
+        // TODO Support embedded maps
+      } else if (mmd.hasArray()) {
+        // TODO Support embedded arrays
       }
+      throw new NucleusUserException("Don't currently support embedded multi-valued fields");
     }
 
     if (mmd.isSerialized()) {

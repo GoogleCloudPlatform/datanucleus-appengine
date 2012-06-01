@@ -16,12 +16,18 @@
  * **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
+import javax.jdo.JDOUserException;
+
+import org.datanucleus.util.NucleusLogger;
+
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedChildPC;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedOwner;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedParentPC;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedRelatedBase;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.HasEmbeddedJDO;
 import com.google.appengine.datanucleus.test.jdo.HasEmbeddedPc;
@@ -176,5 +182,24 @@ public class JDOEmbeddedTest extends JDOTestCase {
     pm.currentTransaction().begin();
     pm.makePersistent(pi);
     pm.currentTransaction().commit();
+  }
+
+  public void testEmbeddedCollection() {
+    EmbeddedOwner owner = new EmbeddedOwner();
+    EmbeddedRelatedBase baseRel = new EmbeddedRelatedBase("First Base", 100);
+    owner.addChild(baseRel);
+
+    NucleusLogger.GENERAL.info(">> Persisting owner + embedded collection");
+    try {
+      pm.currentTransaction().begin();
+      pm.makePersistent(owner);
+      pm.currentTransaction().commit();
+    } catch (JDOUserException jdoe) {
+      // Expected. TODO Remove this once we implement embedded collections
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+    }
   }
 }

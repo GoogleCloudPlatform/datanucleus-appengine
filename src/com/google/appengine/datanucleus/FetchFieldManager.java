@@ -242,13 +242,72 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   public Object fetchObjectField(int fieldNumber) {
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
-    if (mmd.getEmbeddedMetaData() != null) {
-      return fetchEmbeddedField(mmd, fieldNumber);
-    } else if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
-      return fetchRelationField(getClassLoaderResolver(), mmd);
-    } else {
-      return fetchFieldFromEntity(fieldNumber);
+    int relationType = mmd.getRelationType(getClassLoaderResolver());
+
+    if (mmd.getEmbeddedMetaData() != null && Relation.isRelationSingleValued(relationType)) {
+      // Embedded persistable object
+
+      ObjectProvider eop = getEmbeddedObjectProvider(mmd, fieldNumber, null);
+      // We need to build a mapping consumer for the embedded class so that we get correct 
+      // fieldIndex --> metadata mappings for the class in the proper embedded context
+      // TODO(maxr) Consider caching this
+      InsertMappingConsumer mappingConsumer = buildMappingConsumer(
+          eop.getClassMetaData(), getClassLoaderResolver(),
+          eop.getClassMetaData().getAllMemberPositions(),
+          mmd.getEmbeddedMetaData());
+      // TODO Create own FieldManager instead of reusing this one
+      AbstractMemberMetaDataProvider mmdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
+      fieldManagerStateStack.addFirst(new FieldManagerState(eop, mmdProvider, mappingConsumer, true));
+      try {
+        AbstractClassMetaData acmd = eop.getClassMetaData();
+        eop.replaceFields(acmd.getAllMemberPositions(), this);
+
+        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getNullIndicatorColumn() != null) {
+          String nullColumn = mmd.getEmbeddedMetaData().getNullIndicatorColumn();
+          String nullValue = mmd.getEmbeddedMetaData().getNullIndicatorValue();
+          AbstractMemberMetaData[] embMmds = mmd.getEmbeddedMetaData().getMemberMetaData();
+          AbstractMemberMetaData nullMmd = null;
+          for (int i=0;i<embMmds.length;i++) {
+            ColumnMetaData[] colmds = embMmds[i].getColumnMetaData();
+            if (colmds != null && colmds[0].getName() != null && colmds[0].getName().equals(nullColumn)) {
+              nullMmd = embMmds[i];
+              break;
+            }
+          }
+          if (nullMmd != null) {
+            int nullFieldPos = eop.getClassMetaData().getAbsolutePositionOfMember(nullMmd.getName());
+            Object val = eop.provideField(nullFieldPos);
+            if (val == null && nullValue == null) {
+              return null;
+            } else if (val != null && nullValue != null && val.equals(nullValue)) {
+              return null;
+            }
+          }
+          return eop.getObject();
+        }
+        else {
+          return eop.getObject();
+        }
+      } finally {
+        fieldManagerStateStack.removeFirst();
+      }
+    } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
+      // Embedded container
+      if (mmd.hasCollection()) {
+        // TODO Support embedded collections
+      } else if (mmd.hasMap()) {
+        // TODO Support embedded maps
+      } else if (mmd.hasArray()) {
+        // TODO Support embedded arrays
+      }
+      throw new NucleusUserException("Don't currently support embedded multi-value objects at " + mmd.getFullFieldName());
     }
+
+    if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
+      return fetchRelationField(getClassLoaderResolver(), mmd);
+    }
+
+    return fetchFieldFromEntity(fieldNumber);
   }
 
   Object fetchFieldFromEntity(int fieldNumber) {
@@ -479,71 +538,6 @@ public class FetchFieldManager extends DatastoreFieldManager
         datastoreEntity.getKind(), datastoreEntity.getKey(), propertyName,
         mmd.getFullFieldName());
     throw new NullPointerException(msg);
-  }
-
-  /**
-   * We can't trust the fieldNumber on the mmd provided because some embedded
-   * fields don't have this set.  That's why we pass it in as a separate param.
-   */
-  private Object fetchEmbeddedField(AbstractMemberMetaData mmd, int fieldNumber) {
-    int relationType = mmd.getRelationType(getClassLoaderResolver());
-    if (Relation.isRelationSingleValued(relationType)) {
-      ObjectProvider eop = getEmbeddedObjectProvider(mmd, fieldNumber, null);
-      // We need to build a mapping consumer for the embedded class so that we get correct 
-      // fieldIndex --> metadata mappings for the class in the proper embedded context
-      // TODO(maxr) Consider caching this
-      InsertMappingConsumer mappingConsumer = buildMappingConsumer(
-          eop.getClassMetaData(), getClassLoaderResolver(),
-          eop.getClassMetaData().getAllMemberPositions(),
-          mmd.getEmbeddedMetaData());
-      // TODO Create own FieldManager instead of reusing this one
-      AbstractMemberMetaDataProvider mmdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
-      fieldManagerStateStack.addFirst(new FieldManagerState(eop, mmdProvider, mappingConsumer, true));
-      try {
-        AbstractClassMetaData acmd = eop.getClassMetaData();
-        eop.replaceFields(acmd.getAllMemberPositions(), this);
-
-        if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getNullIndicatorColumn() != null) {
-          String nullColumn = mmd.getEmbeddedMetaData().getNullIndicatorColumn();
-          String nullValue = mmd.getEmbeddedMetaData().getNullIndicatorValue();
-          AbstractMemberMetaData[] embMmds = mmd.getEmbeddedMetaData().getMemberMetaData();
-          AbstractMemberMetaData nullMmd = null;
-          for (int i=0;i<embMmds.length;i++) {
-            ColumnMetaData[] colmds = embMmds[i].getColumnMetaData();
-            if (colmds != null && colmds[0].getName() != null && colmds[0].getName().equals(nullColumn)) {
-              nullMmd = embMmds[i];
-              break;
-            }
-          }
-          if (nullMmd != null) {
-            int nullFieldPos = eop.getClassMetaData().getAbsolutePositionOfMember(nullMmd.getName());
-            Object val = eop.provideField(nullFieldPos);
-            if (val == null && nullValue == null) {
-              return null;
-            } else if (val != null && nullValue != null && val.equals(nullValue)) {
-              return null;
-            }
-          }
-          return eop.getObject();
-        }
-        else {
-          return eop.getObject();
-        }
-      } finally {
-        fieldManagerStateStack.removeFirst();
-      }
-    }
-    else if (Relation.isRelationMultiValued(relationType)) {
-      if (mmd.hasCollection()) {
-        // TODO Support embedded collections
-      } else if (mmd.hasMap()) {
-        // TODO Support embedded maps
-      } else if (mmd.hasArray()) {
-        // TODO Support embedded arrays
-      }
-      throw new NucleusUserException("Don't currently support embedded multi-value objects at " + mmd.getFullFieldName());
-    }
-    return null;
   }
 
   /**
