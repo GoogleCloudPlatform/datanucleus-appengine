@@ -145,6 +145,7 @@ public class JPAAttachDetachTest extends JPATestCase {
     assertEquals("not yar", e.getProperty("val"));
   }
 
+  // TODO Should not be referring to DetachableWithMultiValuePropsJDO since is JDO!!
   public void testSerializeWithMultiValueProps() throws Exception {
     beginTxn();
     DetachableWithMultiValuePropsJDO pojo = new DetachableWithMultiValuePropsJDO();

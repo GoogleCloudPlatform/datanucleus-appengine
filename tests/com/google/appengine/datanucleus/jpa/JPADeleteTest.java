@@ -21,6 +21,7 @@ import com.google.appengine.datanucleus.test.jdo.KitchenSink;
 
 
 /**
+ * TODO This uses KitchenSink but that is a JDO model class!!
  * @author Max Ross <maxr@google.com>
  */
 public class JPADeleteTest extends JPATestCase {

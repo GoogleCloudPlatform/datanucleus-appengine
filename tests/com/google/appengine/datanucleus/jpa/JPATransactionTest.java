@@ -27,6 +27,7 @@ import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceRecordingImpl;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.TxnIdAnswer;
+// TODO Should not be using these JDO model classes in a JPA test!!
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.HasKeyAncestorKeyPkJDO;
 import com.google.appengine.datanucleus.test.jpa.Book;
