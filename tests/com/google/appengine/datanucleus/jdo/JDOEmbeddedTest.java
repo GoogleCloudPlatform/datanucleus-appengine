@@ -16,12 +16,13 @@
  * **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import javax.jdo.JDOUserException;
+import java.util.Collection;
 
 import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
+import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedChildPC;
@@ -185,17 +186,70 @@ public class JDOEmbeddedTest extends JDOTestCase {
   }
 
   public void testEmbeddedCollection() {
-    EmbeddedOwner owner = new EmbeddedOwner();
-    EmbeddedRelatedBase baseRel = new EmbeddedRelatedBase("First Base", 100);
-    owner.addChild(baseRel);
-
-    NucleusLogger.GENERAL.info(">> Persisting owner + embedded collection");
+    Object id = null;
+    Key ownerKey = null;
     try {
+      EmbeddedOwner owner = new EmbeddedOwner();
+      EmbeddedRelatedBase baseRel1 = new EmbeddedRelatedBase("First Base", 100);
+      owner.addChild(baseRel1);
+      EmbeddedRelatedBase baseRel2 = new EmbeddedRelatedBase("Second Base", 200);
+      owner.addChild(baseRel2);
+
       pm.currentTransaction().begin();
       pm.makePersistent(owner);
       pm.currentTransaction().commit();
-    } catch (JDOUserException jdoe) {
-      // Expected. TODO Remove this once we implement embedded collections
+      id = pm.getObjectId(owner);
+      ownerKey = owner.getKey();
+    } catch (Exception e) {
+      NucleusLogger.PERSISTENCE.error("Exception on persist of embedded collection", e);
+      fail("Exception occurred on persist of embedded collection : " + e.getMessage());
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+      pm.close();
+    }
+    pmf.getDataStoreCache().evictAll();
+
+    // Check datastore values direct
+    try {
+      Entity entity = ds.get(ownerKey);
+      assertTrue(entity.hasProperty("children"));
+      Object propVal = entity.getProperty("children");
+      assertNotNull(propVal);
+      long numChildren = (Long)entity.getProperty("children");
+      assertEquals(2, numChildren);
+
+      assertTrue(entity.hasProperty("name_0"));
+      assertTrue(entity.hasProperty("value_0"));
+      assertTrue(entity.hasProperty("name_1"));
+      assertTrue(entity.hasProperty("value_1"));
+    } catch (EntityNotFoundException enfe) {
+      fail("Failure to retrieve Entity for persisted owner with embedded collection");
+    }
+
+    // Check retrieval
+    pm = pmf.getPersistenceManager();
+    try {
+      pm.currentTransaction().begin();
+      EmbeddedOwner owner = (EmbeddedOwner)pm.getObjectById(id);
+      Collection<EmbeddedRelatedBase> children = owner.getChildren();
+      assertEquals(2, children.size());
+      boolean firstPresent = false;
+      boolean secondPresent = false;
+      for (EmbeddedRelatedBase elem : children) {
+        if (elem.getName().equals("First Base") && elem.getValue() == 100) {
+          firstPresent = true;
+        } else if (elem.getName().equals("Second Base") && elem.getValue() == 200) {
+          secondPresent = true;
+        }
+      }
+      assertTrue(firstPresent);
+      assertTrue(secondPresent);
+      pm.currentTransaction().commit();
+    } catch (Exception e) {
+      NucleusLogger.PERSISTENCE.error("Exception on retrieve of embedded collection", e);
+      fail("Exception occurred on retrieve of embedded collection : " + e.getMessage());
     } finally {
       if (pm.currentTransaction().isActive()) {
         pm.currentTransaction().rollback();

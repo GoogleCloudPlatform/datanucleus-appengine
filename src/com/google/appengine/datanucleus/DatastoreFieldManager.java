@@ -81,7 +81,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     this.fieldManagerStateStack.addFirst(new FieldManagerState(op));
 
     // Sanity check
-    String expectedKind = EntityUtils.determineKind(getClassMetaData(), op.getExecutionContext());
+    String expectedKind = EntityUtils.determineKind(op.getClassMetaData(), ec);
     if (!expectedKind.equals(datastoreEntity.getKind())) {
       throw new NucleusException(
           "ObjectProvider is for <" + expectedKind + "> but key is for <" + datastoreEntity.getKind()
@@ -186,6 +186,16 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     return embeddedOP;
   }
 
+  protected String getPropertyNameForMember(AbstractMemberMetaData mmd) {
+    String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd);
+
+    if (fieldManagerStateStack.getFirst().index != null) {
+      // Embedded Collection uses property name with suffixed index
+      return propName + "_" + fieldManagerStateStack.getFirst().index;
+    }
+    return propName;
+  }
+
   /**
    * Just exists so we can override in tests. 
    */
@@ -196,15 +206,24 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   protected static final class FieldManagerState {
     protected final ObjectProvider op;
     protected final EmbeddedMetaData embmd;
+    protected final Integer index;
 
     protected FieldManagerState(ObjectProvider op) {
       this.op = op;
       this.embmd = null;
+      index = null;
     }
 
     protected FieldManagerState(ObjectProvider op, EmbeddedMetaData embmd) {
       this.op = op;
       this.embmd = embmd;
+      index = null;
+    }
+
+    protected FieldManagerState(ObjectProvider op, EmbeddedMetaData embmd, int pos) {
+      this.op = op;
+      this.embmd = embmd;
+      this.index = pos;
     }
   }
 }

@@ -32,6 +32,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.NullValue;
 import org.datanucleus.metadata.Relation;
@@ -215,20 +216,40 @@ public class StoreFieldManager extends DatastoreFieldManager {
     } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
       // Embedded container field
       if (mmd.hasCollection()) {
-        /*// TODO Support embedded collections
-        AbstractClassMetaData embcmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
+        // Embedded collections
+        // This is stored flat with all property names for the element class gaining a suffix "_{index}"
+        // so we have properties like "NAME_0", "PRICE_0", "NAME_1", "PRICE_1" etc.
+        Class elementType = clr.classForName(mmd.getCollection().getElementType());
         Collection valueColl = (Collection) value;
-        Iterator collIter = valueColl.iterator();
-        while (collIter.hasNext()) {
-          Object element = collIter.next();
-          NucleusLogger.GENERAL.info(">> StoreFM field=" + mmd.getFullFieldName() + " element=" + element);
-        }*/
+        EmbeddedMetaData embmd = 
+          mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
+
+        // Add property for size of collection
+        String collPropName = getPropertyNameForMember(mmd);
+        EntityUtils.setEntityProperty(datastoreEntity, mmd, collPropName,
+            (valueColl != null ? valueColl.size() : -1));
+
+        if (valueColl != null) {
+          Iterator collIter = valueColl.iterator();
+          int index = 0;
+          while (collIter.hasNext()) {
+            Object element = collIter.next();
+
+            ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, element);
+            fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, index));
+            embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+            fieldManagerStateStack.removeFirst();
+            index++;
+          }
+        }
+        return;
       } else if (mmd.hasMap()) {
         // TODO Support embedded maps
+        throw new NucleusUserException("Don't currently support embedded Maps (" + mmd.getFullFieldName() + ")");
       } else if (mmd.hasArray()) {
         // TODO Support embedded arrays
+        throw new NucleusUserException("Don't currently support embedded arrays (" + mmd.getFullFieldName() + ")");
       }
-      throw new NucleusUserException("Don't currently support embedded multi-valued fields");
     }
 
     if (mmd.isSerialized()) {
@@ -239,8 +260,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         // Make sure we can have a null property for this field
         checkSettingToNullValue(mmd, value);
       }
-      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, getPropertyNameForMember(mmd), value);
       return;
     }
 
@@ -265,8 +285,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
 
-      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, getPropertyNameForMember(mmd), value);
       return;
     }
 
@@ -323,8 +342,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         }
       }
 
-      EntityUtils.setEntityProperty(datastoreEntity, mmd, 
-          EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd), value);
+      EntityUtils.setEntityProperty(datastoreEntity, mmd, getPropertyNameForMember(mmd), value);
     }
   }
 
@@ -578,7 +596,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     ObjectProvider op = getObjectProvider();
-    ExecutionContext ec = op.getExecutionContext();
     DatastoreTable table = getDatastoreTable();
     if (datastoreEntity.getKey() != null) {
       Key key = datastoreEntity.getKey();
@@ -608,11 +625,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
               if (childValue instanceof Iterable) {
                 // TODO(maxr): Make sure we're not pulling back unnecessary data when we iterate over the values.
                 for (Object element : (Iterable) childValue) {
-                  addToParentKeyMap(keyRegistry, element, key, op.getExecutionContext(), expectedType, true);
+                  addToParentKeyMap(keyRegistry, element, key, ec, expectedType, true);
                 }
               } else if (childValue.getClass().isArray()) {
                 for (int j=0;j<Array.getLength(childValue);i++) {
-                  addToParentKeyMap(keyRegistry, Array.get(childValue, i), key, op.getExecutionContext(), expectedType, true);
+                  addToParentKeyMap(keyRegistry, Array.get(childValue, i), key, ec, expectedType, true);
                 }
               } else if (childValue instanceof Map) {
                 boolean persistableKey = (mmd.getMap().getKeyClassMetaData(ec.getClassLoaderResolver(), ec.getMetaDataManager()) != null);
@@ -621,14 +638,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
                 while (entryIter.hasNext()) {
                   Map.Entry entry = (Map.Entry)entryIter.next();
                   if (persistableKey) {
-                    addToParentKeyMap(keyRegistry, entry.getKey(), key, op.getExecutionContext(), expectedType, true);
+                    addToParentKeyMap(keyRegistry, entry.getKey(), key, ec, expectedType, true);
                   }
                   if (persistableVal) {
-                    addToParentKeyMap(keyRegistry, entry.getValue(), key, op.getExecutionContext(), expectedType, true);
+                    addToParentKeyMap(keyRegistry, entry.getValue(), key, ec, expectedType, true);
                   }
                 }
               } else {
-                addToParentKeyMap(keyRegistry, childValue, key, op.getExecutionContext(), expectedType, 
+                addToParentKeyMap(keyRegistry, childValue, key, ec, expectedType, 
                     !table.isParentKeyProvider(mmd));
               }
             }

@@ -30,6 +30,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.query.QueryUtils;
@@ -193,8 +194,7 @@ public class FetchFieldManager extends DatastoreFieldManager
   public String fetchStringField(int fieldNumber) {
     if (isPK(fieldNumber)) {
       if (MetaDataUtils.isEncodedPKField(getClassMetaData(), fieldNumber)) {
-        // If this is an encoded pk field, transform the Key into its String
-        // representation.
+        // If this is an encoded pk field, transform the Key into its String representation.
         return KeyFactory.keyToString(datastoreEntity.getKey());
       } else {
         if (datastoreEntity.getKey().isComplete() && datastoreEntity.getKey().getName() == null) {
@@ -249,8 +249,7 @@ public class FetchFieldManager extends DatastoreFieldManager
 
       fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, mmd.getEmbeddedMetaData()));
       try {
-        AbstractClassMetaData acmd = embeddedOP.getClassMetaData();
-        embeddedOP.replaceFields(acmd.getAllMemberPositions(), this);
+        embeddedOP.replaceFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
 
         // Checks for whether the member values imply a null object
         if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getNullIndicatorColumn() != null) {
@@ -285,13 +284,44 @@ public class FetchFieldManager extends DatastoreFieldManager
     } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
       // Embedded container
       if (mmd.hasCollection()) {
-        // TODO Support embedded collections
+        // Embedded collections
+        String collPropName = getPropertyNameForMember(mmd);
+        Long collSize = (Long)datastoreEntity.getProperty(collPropName);
+        if (collSize == null || collSize == -1) {
+          // Size of collection not stored or stored as -1, so null on persist
+          return null;
+        }
+
+        Class elementType = getClassLoaderResolver().classForName(mmd.getCollection().getElementType());
+        EmbeddedMetaData embmd = 
+          mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
+        Collection<Object> coll;
+        try {
+          Class instanceType = SCOUtils.getContainerInstanceType(mmd.getType(), mmd.getOrderMetaData() != null);
+          coll = (Collection<Object>) instanceType.newInstance();
+        } catch (Exception e) {
+          throw new NucleusDataStoreException(e.getMessage(), e);
+        }
+
+        for (int i=0;i<collSize;i++) {
+          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, null);
+
+          fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
+          try {
+            embeddedOP.replaceFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+          } finally {
+            fieldManagerStateStack.removeFirst();
+          }
+          coll.add(embeddedOP.getObject());
+        }
+        return coll;
       } else if (mmd.hasMap()) {
         // TODO Support embedded maps
+        throw new NucleusUserException("Don't currently support embedded maps at " + mmd.getFullFieldName());
       } else if (mmd.hasArray()) {
         // TODO Support embedded arrays
+        throw new NucleusUserException("Don't currently support embedded arrays at " + mmd.getFullFieldName());
       }
-      throw new NucleusUserException("Don't currently support embedded multi-value objects at " + mmd.getFullFieldName());
     }
 
     if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
@@ -325,7 +355,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
       return datastoreEntity.getKey().getId();
     } else {
-      Object value = datastoreEntity.getProperty(EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd));
+      Object value = datastoreEntity.getProperty(getPropertyNameForMember(mmd));
       ClassLoaderResolver clr = getClassLoaderResolver();
       if (mmd.isSerialized()) {
         if (value != null) {
@@ -368,7 +398,7 @@ public class FetchFieldManager extends DatastoreFieldManager
     Object value = null;
     int relationType = mmd.getRelationType(clr);
     if (Relation.isRelationMultiValued(relationType)) {
-      String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd);
+      String propName = getPropertyNameForMember(mmd);
       if (datastoreEntity.hasProperty(propName)) {
         if (mmd.hasCollection()) {
           // Fields of type Collection<PC>
@@ -454,16 +484,15 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
     }
 
-    return mapping.getObject(getObjectProvider().getExecutionContext(), parentKey, NOT_USED);
+    return mapping.getObject(ec, parentKey, NOT_USED);
   }
 
   private Object lookupOneToOneChild(AbstractMemberMetaData mmd, ClassLoaderResolver clr) {
-    ExecutionContext ec = getObjectProvider().getExecutionContext();
     AbstractClassMetaData childCmd = ec.getMetaDataManager().getMetaDataForClass(mmd.getType(), clr);
     String kind = getStoreManager().getIdentifierFactory().newDatastoreContainerIdentifier(childCmd).getIdentifierName();
     if (MetaDataUtils.readRelatedKeysFromParent(getStoreManager(), mmd)) {
       // Use the child key stored in the parent (if present)
-      String propName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd);
+      String propName = getPropertyNameForMember(mmd);
       if (datastoreEntity.hasProperty(propName)) {
         Object value = datastoreEntity.getProperty(propName);
         if (value == null) {
@@ -524,7 +553,7 @@ public class FetchFieldManager extends DatastoreFieldManager
 
     // Put together a really helpful error message
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
-    String propertyName = EntityUtils.getPropertyName(getStoreManager().getIdentifierFactory(), mmd);
+    String propertyName = getPropertyNameForMember(mmd);
     final String msg = String.format(ILLEGAL_NULL_ASSIGNMENT_ERROR_FORMAT,
         datastoreEntity.getKind(), datastoreEntity.getKey(), propertyName,
         mmd.getFullFieldName());
@@ -698,7 +727,9 @@ public class FetchFieldManager extends DatastoreFieldManager
             continue;
           }
           key = EntityUtils.entityToPojo(entity, keyCmd, clr, ec, false, ec.getFetchPlan());
-        } // TODO Make use of TypeConversionUtils for non-PC types
+        } else {
+          // TODO Make use of TypeConversionUtils for non-PC types
+        }
 
         Object val = keyValIter.next();
         if (valCmd != null) {
@@ -712,7 +743,9 @@ public class FetchFieldManager extends DatastoreFieldManager
             continue;
           }
           val = EntityUtils.entityToPojo(entity, valCmd, clr, ec, false, ec.getFetchPlan());
-        } // TODO Make use of TypeConversionUtils for non-PC types
+        } else {
+          // TODO Make use of TypeConversionUtils for non-PC types
+        }
 
         map.put(key, val);
       }
