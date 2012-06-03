@@ -217,15 +217,15 @@ public class StoreFieldManager extends DatastoreFieldManager {
       // Embedded container field
       if (mmd.hasCollection()) {
         // Embedded collections
-        // This is stored flat with all property names for the element class gaining a suffix "_{index}"
-        // so we have properties like "NAME_0", "PRICE_0", "NAME_1", "PRICE_1" etc.
+        // This is stored flat with all property names for the element class gaining a suffix ".{index}"
+        // so we have properties like "NAME.0", "PRICE.0", "NAME.1", "PRICE.1" etc.
         Class elementType = clr.classForName(mmd.getCollection().getElementType());
         Collection valueColl = (Collection) value;
         EmbeddedMetaData embmd = 
           mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
 
         // Add property for size of collection
-        String collPropName = getPropertyNameForMember(mmd);
+        String collPropName = getPropertyNameForMember(mmd) + ".size";
         EntityUtils.setEntityProperty(datastoreEntity, mmd, collPropName,
             (valueColl != null ? valueColl.size() : -1));
 
@@ -243,18 +243,39 @@ public class StoreFieldManager extends DatastoreFieldManager {
           }
         }
         return;
+      } else if (mmd.hasArray()) {
+        // Embedded arrays
+        // This is stored flat with all property names for the element class gaining a suffix ".{index}"
+        // so we have properties like "NAME.0", "PRICE.0", "NAME.1", "PRICE.1" etc.
+        Class elementType = clr.classForName(mmd.getArray().getElementType());
+        EmbeddedMetaData embmd = 
+          mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
+
+        // Add property for size of array
+        String arrPropName = getPropertyNameForMember(mmd) + ".size";;
+        EntityUtils.setEntityProperty(datastoreEntity, mmd, arrPropName,
+            (value != null ? Array.getLength(value) : -1));
+
+        if (value != null) {
+          for (int i=0;i<Array.getLength(value);i++) {
+            Object element = Array.get(value, i);
+
+            ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, element);
+            fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
+            embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+            fieldManagerStateStack.removeFirst();
+          }
+        }
+        return;
       } else if (mmd.hasMap()) {
         // TODO Support embedded maps
         throw new NucleusUserException("Don't currently support embedded Maps (" + mmd.getFullFieldName() + ")");
-      } else if (mmd.hasArray()) {
-        // TODO Support embedded arrays
-        throw new NucleusUserException("Don't currently support embedded arrays (" + mmd.getFullFieldName() + ")");
       }
     }
 
     if (mmd.isSerialized()) {
       if (value != null) {
-        // Serialize the field (producing a Blob)
+        // Serialise the field (producing a Blob)
         value = getStoreManager().getSerializationManager().serialize(clr, mmd, value);
       } else {
         // Make sure we can have a null property for this field

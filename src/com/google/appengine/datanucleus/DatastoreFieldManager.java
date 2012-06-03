@@ -191,7 +191,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
     if (fieldManagerStateStack.getFirst().index != null) {
       // Embedded Collection uses property name with suffixed index
-      return propName + "_" + fieldManagerStateStack.getFirst().index;
+      return propName + "." + fieldManagerStateStack.getFirst().index;
     }
     return propName;
   }

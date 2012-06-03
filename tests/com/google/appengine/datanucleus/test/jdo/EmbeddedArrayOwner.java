@@ -15,9 +15,6 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.test.jdo;
 
-import java.util.Collection;
-import java.util.HashSet;
-
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.IdentityType;
 import javax.jdo.annotations.PersistenceCapable;
@@ -27,26 +24,26 @@ import javax.jdo.annotations.PrimaryKey;
 import com.google.appengine.api.datastore.Key;
 
 /**
- * Class with an embedded collection of objects.
+ * Class with an embedded array of objects.
  */
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
-public class EmbeddedOwner {
+public class EmbeddedArrayOwner {
   @PrimaryKey 
   @Persistent(valueStrategy=IdGeneratorStrategy.IDENTITY)
   private Key key;
 
   @Persistent(embedded="true")
-  private Collection<EmbeddedRelatedBase> children = new HashSet<EmbeddedRelatedBase>();
+  private EmbeddedRelatedBase[] array = null;
 
   public Key getKey() {
     return key;
   }
 
-  public void addChild(EmbeddedRelatedBase child) {
-    this.children.add(child);
+  public EmbeddedRelatedBase[] getArray() {
+    return array;
   }
 
-  public Collection<EmbeddedRelatedBase> getChildren() {
-    return children;
+  public void setArray(EmbeddedRelatedBase[] arr) {
+    this.array = arr;
   }
 }

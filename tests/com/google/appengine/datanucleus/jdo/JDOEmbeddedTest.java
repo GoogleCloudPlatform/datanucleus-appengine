@@ -25,8 +25,9 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedArrayOwner;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedChildPC;
-import com.google.appengine.datanucleus.test.jdo.EmbeddedOwner;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedCollectionOwner;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedParentPC;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedRelatedBase;
 import com.google.appengine.datanucleus.test.jdo.Flight;
@@ -189,7 +190,7 @@ public class JDOEmbeddedTest extends JDOTestCase {
     Object id = null;
     Key ownerKey = null;
     try {
-      EmbeddedOwner owner = new EmbeddedOwner();
+      EmbeddedCollectionOwner owner = new EmbeddedCollectionOwner();
       EmbeddedRelatedBase baseRel1 = new EmbeddedRelatedBase("First Base", 100);
       owner.addChild(baseRel1);
       EmbeddedRelatedBase baseRel2 = new EmbeddedRelatedBase("Second Base", 200);
@@ -214,16 +215,16 @@ public class JDOEmbeddedTest extends JDOTestCase {
     // Check datastore values direct
     try {
       Entity entity = ds.get(ownerKey);
-      assertTrue(entity.hasProperty("children"));
-      Object propVal = entity.getProperty("children");
+      assertTrue(entity.hasProperty("children.size"));
+      Object propVal = entity.getProperty("children.size");
       assertNotNull(propVal);
-      long numChildren = (Long)entity.getProperty("children");
+      long numChildren = (Long)entity.getProperty("children.size");
       assertEquals(2, numChildren);
 
-      assertTrue(entity.hasProperty("name_0"));
-      assertTrue(entity.hasProperty("value_0"));
-      assertTrue(entity.hasProperty("name_1"));
-      assertTrue(entity.hasProperty("value_1"));
+      assertTrue(entity.hasProperty("name.0"));
+      assertTrue(entity.hasProperty("value.0"));
+      assertTrue(entity.hasProperty("name.1"));
+      assertTrue(entity.hasProperty("value.1"));
     } catch (EntityNotFoundException enfe) {
       fail("Failure to retrieve Entity for persisted owner with embedded collection");
     }
@@ -232,7 +233,7 @@ public class JDOEmbeddedTest extends JDOTestCase {
     pm = pmf.getPersistenceManager();
     try {
       pm.currentTransaction().begin();
-      EmbeddedOwner owner = (EmbeddedOwner)pm.getObjectById(id);
+      EmbeddedCollectionOwner owner = (EmbeddedCollectionOwner)pm.getObjectById(id);
       Collection<EmbeddedRelatedBase> children = owner.getChildren();
       assertEquals(2, children.size());
       boolean firstPresent = false;
@@ -250,6 +251,76 @@ public class JDOEmbeddedTest extends JDOTestCase {
     } catch (Exception e) {
       NucleusLogger.PERSISTENCE.error("Exception on retrieve of embedded collection", e);
       fail("Exception occurred on retrieve of embedded collection : " + e.getMessage());
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+    }
+  }
+
+  public void testEmbeddedArray() {
+    Object id = null;
+    Key ownerKey = null;
+    try {
+      EmbeddedArrayOwner owner = new EmbeddedArrayOwner();
+      EmbeddedRelatedBase baseRel1 = new EmbeddedRelatedBase("First Base", 100);
+      EmbeddedRelatedBase baseRel2 = new EmbeddedRelatedBase("Second Base", 200);
+      EmbeddedRelatedBase[] array = new EmbeddedRelatedBase[]{baseRel1, baseRel2};
+      owner.setArray(array);
+
+      pm.currentTransaction().begin();
+      pm.makePersistent(owner);
+      pm.currentTransaction().commit();
+      id = pm.getObjectId(owner);
+      ownerKey = owner.getKey();
+    } catch (Exception e) {
+      NucleusLogger.PERSISTENCE.error("Exception on persist of embedded array", e);
+      fail("Exception occurred on persist of embedded array : " + e.getMessage());
+    } finally {
+      if (pm.currentTransaction().isActive()) {
+        pm.currentTransaction().rollback();
+      }
+      pm.close();
+    }
+    pmf.getDataStoreCache().evictAll();
+
+    // Check datastore values direct
+    try {
+      Entity entity = ds.get(ownerKey);
+      assertTrue(entity.hasProperty("array.size"));
+      Object propVal = entity.getProperty("array.size");
+      assertNotNull(propVal);
+      long numChildren = (Long)entity.getProperty("array.size");
+      assertEquals(2, numChildren);
+
+      assertTrue(entity.hasProperty("name.0"));
+      assertTrue(entity.hasProperty("value.0"));
+      assertTrue(entity.hasProperty("name.1"));
+      assertTrue(entity.hasProperty("value.1"));
+    } catch (EntityNotFoundException enfe) {
+      fail("Failure to retrieve Entity for persisted owner with embedded array");
+    }
+
+    // Check retrieval
+    pm = pmf.getPersistenceManager();
+    try {
+      pm.currentTransaction().begin();
+      EmbeddedArrayOwner owner = (EmbeddedArrayOwner)pm.getObjectById(id);
+      EmbeddedRelatedBase[] array = owner.getArray();
+      assertEquals(2, array.length);
+      for (int i=0;i<array.length;i++) {
+        if (i == 0) {
+          assertTrue("First element incorrect",
+              array[i].getName().equals("First Base") && array[i].getValue() == 100);
+        } else if (i == 1) {
+          assertTrue("Second element incorrect",
+              array[i].getName().equals("Second Base") && array[i].getValue() == 200);
+        }
+      }
+      pm.currentTransaction().commit();
+    } catch (Exception e) {
+      NucleusLogger.PERSISTENCE.error("Exception on retrieve of embedded array", e);
+      fail("Exception occurred on retrieve of embedded array : " + e.getMessage());
     } finally {
       if (pm.currentTransaction().isActive()) {
         pm.currentTransaction().rollback();

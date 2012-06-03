@@ -285,7 +285,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       // Embedded container
       if (mmd.hasCollection()) {
         // Embedded collections
-        String collPropName = getPropertyNameForMember(mmd);
+        String collPropName = getPropertyNameForMember(mmd) + ".size";;
         Long collSize = (Long)datastoreEntity.getProperty(collPropName);
         if (collSize == null || collSize == -1) {
           // Size of collection not stored or stored as -1, so null on persist
@@ -315,13 +315,36 @@ public class FetchFieldManager extends DatastoreFieldManager
           coll.add(embeddedOP.getObject());
         }
         return coll;
-      } else if (mmd.hasMap()) {
-        // TODO Support embedded maps
-        throw new NucleusUserException("Don't currently support embedded maps at " + mmd.getFullFieldName());
       } else if (mmd.hasArray()) {
-        // TODO Support embedded arrays
-        throw new NucleusUserException("Don't currently support embedded arrays at " + mmd.getFullFieldName());
+        // Embedded arrays
+        String arrPropName = getPropertyNameForMember(mmd) + ".size";;
+        Long arrSize = (Long)datastoreEntity.getProperty(arrPropName);
+        if (arrSize == null || arrSize == -1) {
+          // Size of array not stored or stored as -1, so null on persist
+          return null;
+        }
+
+        Class elementType = getClassLoaderResolver().classForName(mmd.getArray().getElementType());
+        EmbeddedMetaData embmd = 
+          mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
+        Object value = Array.newInstance(elementType, arrSize.intValue());
+
+        for (int i=0;i<arrSize;i++) {
+          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, null);
+
+          fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
+          try {
+            embeddedOP.replaceFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+          } finally {
+            fieldManagerStateStack.removeFirst();
+          }
+          Array.set(value, i, embeddedOP.getObject());
+        }
+        return value;
       }
+    } else if (mmd.hasMap()) {
+      // TODO Support embedded maps
+      throw new NucleusUserException("Don't currently support embedded maps at " + mmd.getFullFieldName());
     }
 
     if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
