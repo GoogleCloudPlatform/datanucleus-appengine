@@ -341,10 +341,10 @@ public class FetchFieldManager extends DatastoreFieldManager
           Array.set(value, i, embeddedOP.getObject());
         }
         return value;
+      } else if (mmd.hasMap()) {
+        // TODO Support embedded maps
+        throw new NucleusUserException("Don't currently support embedded maps at " + mmd.getFullFieldName());
       }
-    } else if (mmd.hasMap()) {
-      // TODO Support embedded maps
-      throw new NucleusUserException("Don't currently support embedded maps at " + mmd.getFullFieldName());
     }
 
     if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
