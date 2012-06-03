@@ -52,7 +52,6 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Query;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
-import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
 
 /**
  * FieldManager to handle the fetching of fields from an Entity into a managed object.
@@ -246,22 +245,14 @@ public class FetchFieldManager extends DatastoreFieldManager
 
     if (mmd.getEmbeddedMetaData() != null && Relation.isRelationSingleValued(relationType)) {
       // Embedded persistable object
+      ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd.getType(), fieldNumber, null);
 
-      ObjectProvider eop = getEmbeddedObjectProvider(mmd, fieldNumber, null);
-      // We need to build a mapping consumer for the embedded class so that we get correct 
-      // fieldIndex --> metadata mappings for the class in the proper embedded context
-      // TODO(maxr) Consider caching this
-      InsertMappingConsumer mappingConsumer = buildMappingConsumer(
-          eop.getClassMetaData(), getClassLoaderResolver(),
-          eop.getClassMetaData().getAllMemberPositions(),
-          mmd.getEmbeddedMetaData());
-      // TODO Create own FieldManager instead of reusing this one
-      AbstractMemberMetaDataProvider mmdProvider = getEmbeddedAbstractMemberMetaDataProvider(mappingConsumer);
-      fieldManagerStateStack.addFirst(new FieldManagerState(eop, mmdProvider, mappingConsumer, true));
+      fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, mmd.getEmbeddedMetaData()));
       try {
-        AbstractClassMetaData acmd = eop.getClassMetaData();
-        eop.replaceFields(acmd.getAllMemberPositions(), this);
+        AbstractClassMetaData acmd = embeddedOP.getClassMetaData();
+        embeddedOP.replaceFields(acmd.getAllMemberPositions(), this);
 
+        // Checks for whether the member values imply a null object
         if (mmd.getEmbeddedMetaData() != null && mmd.getEmbeddedMetaData().getNullIndicatorColumn() != null) {
           String nullColumn = mmd.getEmbeddedMetaData().getNullIndicatorColumn();
           String nullValue = mmd.getEmbeddedMetaData().getNullIndicatorValue();
@@ -275,18 +266,18 @@ public class FetchFieldManager extends DatastoreFieldManager
             }
           }
           if (nullMmd != null) {
-            int nullFieldPos = eop.getClassMetaData().getAbsolutePositionOfMember(nullMmd.getName());
-            Object val = eop.provideField(nullFieldPos);
+            int nullFieldPos = embeddedOP.getClassMetaData().getAbsolutePositionOfMember(nullMmd.getName());
+            Object val = embeddedOP.provideField(nullFieldPos);
             if (val == null && nullValue == null) {
               return null;
             } else if (val != null && nullValue != null && val.equals(nullValue)) {
               return null;
             }
           }
-          return eop.getObject();
+          return embeddedOP.getObject();
         }
         else {
-          return eop.getObject();
+          return embeddedOP.getObject();
         }
       } finally {
         fieldManagerStateStack.removeFirst();
@@ -357,11 +348,11 @@ public class FetchFieldManager extends DatastoreFieldManager
 
         if (mmd.getTypeConverterName() != null) {
           // User-defined TypeConverter
-          TypeConverter conv = getExecutionContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
+          TypeConverter conv = ec.getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
           value = conv.toMemberType(value);
         } else {
           // Perform any conversions from the stored-type to the field type
-          TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+          TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
           value = getConversionUtils().datastoreValueToPojoValue(typeMgr, clr, value, mmd);
         }
 
@@ -381,13 +372,13 @@ public class FetchFieldManager extends DatastoreFieldManager
       if (datastoreEntity.hasProperty(propName)) {
         if (mmd.hasCollection()) {
           // Fields of type Collection<PC>
-          return getCollectionFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getCollectionFromDatastoreObject(mmd, ec, clr, propName);
         } else if (mmd.hasArray()) {
           // Fields of type PC[]
-          return getArrayFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getArrayFromDatastoreObject(mmd, ec, clr, propName);
         } else if (mmd.hasMap()) {
           // Fields of type Map<PC, NonPC>, Map<NonPC, PC>, Map<PC, PC>
-          return getMapFromDatastoreObject(mmd, getExecutionContext(), clr, propName);
+          return getMapFromDatastoreObject(mmd, ec, clr, propName);
         }
       }
       return null;
@@ -493,7 +484,7 @@ public class FetchFieldManager extends DatastoreFieldManager
         }
       } else if (MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
           // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
-          NucleusLogger.PERSISTENCE.info("Persistable object at field " + mmd.getFullFieldName() + " of " + op +
+          NucleusLogger.PERSISTENCE.info("Persistable object at field " + mmd.getFullFieldName() + " of " + getObjectProvider() +
           " not yet migrated to latest storage version, so reading the object via its parent key");
       } else {
         // Unowned relation but we don't have the property? That's bad data.

@@ -57,7 +57,6 @@ import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
-import com.google.appengine.datanucleus.mapping.InsertMappingConsumer;
 
 /**
  * FieldManager to handle the putting of fields from a managed object into an Entity.
@@ -201,25 +200,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
-    ExecutionContext ec = getExecutionContext();
     ClassLoaderResolver clr = getClassLoaderResolver();
     int relationType = mmd.getRelationType(clr);
 
     if (Relation.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
       // Embedded persistable object
-      ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd, fieldNumber, value);
-      // TODO Create own FieldManager instead of reusing this one
-      // We need to build a mapping consumer for the embedded class so that we get correct
-      // fieldIndex --> metadata mappings for the class in the proper embedded context
-      // TODO(maxr) Consider caching this
-      InsertMappingConsumer mc = buildMappingConsumer(
-          embeddedOP.getClassMetaData(), getClassLoaderResolver(),
-          embeddedOP.getClassMetaData().getAllMemberPositions(),
-          mmd.getEmbeddedMetaData());
-      fieldManagerStateStack.addFirst(
-          new FieldManagerState(embeddedOP, getEmbeddedAbstractMemberMetaDataProvider(mc), mc, true));
+      ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd.getType(), fieldNumber, value);
+
+      fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, mmd.getEmbeddedMetaData()));
       embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
       fieldManagerStateStack.removeFirst();
+
       return;
     } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
       // Embedded container field
@@ -260,11 +251,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
       } else {
         if (mmd.getTypeConverterName() != null) {
           // User-defined type-converter
-          TypeConverter conv = getExecutionContext().getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
+          TypeConverter conv = ec.getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
           value = conv.toDatastoreType(value);
         } else {
           // Perform any conversions from the field type to the stored-type
-          TypeManager typeMgr = op.getExecutionContext().getNucleusContext().getTypeManager();
+          TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
           value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
         }
 
@@ -284,16 +275,17 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
     if (owned) {
-      // Owned - Skip out for all situations where aren't the owner (since our key has the parent key)
       if (!getStoreManager().storageVersionAtLeast(StorageVersion.WRITE_OWNED_CHILD_KEYS_TO_PARENTS)) {
         // don't write child keys to the parent if the storage version isn't high enough
         return;
       }
+
+      // Skip out for all situations where this isn't the owner (since our key has the parent key)
       if (relationType == Relation.MANY_TO_ONE_BI) {
-        // We don't store any "FK" of the parent TODO We ought to but Google don't want to
+        // We don't store any "FK" of the parent
         return;
       } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
-        // We don't store any "FK" of the other side TODO We ought to but Google don't want to
+        // We don't store any "FK" of the other side
         return;
       }
     }
@@ -344,7 +336,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
    * @return The persisted form of the object (or null if deleted)
    */
   Object processPersistable(AbstractMemberMetaData mmd, Object pc) {
-    ExecutionContext ec = getExecutionContext();
     if (ec.getApiAdapter().isDeleted(pc)) {
       // Child is deleted, so return null
       return null;
@@ -695,11 +686,11 @@ public class StoreFieldManager extends DatastoreFieldManager {
               } else {
                 EntityUtils.checkParentage(relInfo.value, op);
               }
-              mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
+              mapping.setObject(ec, datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
             }
           } else {
             // Unowned relation
-            mapping.setObject(getExecutionContext(), datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
+            mapping.setObject(ec, datastoreEntity, IS_FK_VALUE_ARR, relInfo.value, op, mmd.getAbsoluteFieldNumber());
           }
         }
       } catch (NotYetFlushedException e) {
@@ -856,12 +847,12 @@ public class StoreFieldManager extends DatastoreFieldManager {
   Object establishEntityGroup() {
     Key parentKey = datastoreEntity.getParent();
     if (parentKey == null) {
-      KeyRegistry keyReg = KeyRegistry.getKeyRegistry(op.getExecutionContext());
-      if (keyReg.isUnowned(op.getObject())) {
+      KeyRegistry keyReg = KeyRegistry.getKeyRegistry(ec);
+      if (keyReg.isUnowned(getObjectProvider().getObject())) {
         return null;
       }
 
-      parentKey = EntityUtils.getParentKey(datastoreEntity, op);
+      parentKey = EntityUtils.getParentKey(datastoreEntity, getObjectProvider());
       if (parentKey != null) {
         datastoreEntity = EntityUtils.recreateEntityWithParent(parentKey, datastoreEntity);
       }
