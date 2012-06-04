@@ -15,12 +15,15 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.test.jdo;
 
+import javax.jdo.annotations.Discriminator;
+import javax.jdo.annotations.DiscriminatorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 
 /**
  * Base of an object embedded into another object.
  */
 @PersistenceCapable(embeddedOnly="true")
+@Discriminator(strategy=DiscriminatorStrategy.CLASS_NAME)
 public class EmbeddedRelatedBase {
 
   String name;

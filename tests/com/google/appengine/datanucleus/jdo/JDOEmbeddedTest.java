@@ -30,6 +30,7 @@ import com.google.appengine.datanucleus.test.jdo.EmbeddedChildPC;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedCollectionOwner;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedParentPC;
 import com.google.appengine.datanucleus.test.jdo.EmbeddedRelatedBase;
+import com.google.appengine.datanucleus.test.jdo.EmbeddedRelatedSub;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.HasEmbeddedJDO;
 import com.google.appengine.datanucleus.test.jdo.HasEmbeddedPc;
@@ -193,8 +194,8 @@ public class JDOEmbeddedTest extends JDOTestCase {
       EmbeddedCollectionOwner owner = new EmbeddedCollectionOwner();
       EmbeddedRelatedBase baseRel1 = new EmbeddedRelatedBase("First Base", 100);
       owner.addChild(baseRel1);
-      EmbeddedRelatedBase baseRel2 = new EmbeddedRelatedBase("Second Base", 200);
-      owner.addChild(baseRel2);
+      EmbeddedRelatedSub subRel2 = new EmbeddedRelatedSub("Second Base", 200, "Other Type");
+      owner.addChild(subRel2);
 
       pm.currentTransaction().begin();
       pm.makePersistent(owner);
@@ -239,9 +240,11 @@ public class JDOEmbeddedTest extends JDOTestCase {
       boolean firstPresent = false;
       boolean secondPresent = false;
       for (EmbeddedRelatedBase elem : children) {
-        if (elem.getName().equals("First Base") && elem.getValue() == 100) {
+        if (elem.getName().equals("First Base") && elem.getValue() == 100 &&
+            elem.getClass().getName().equals(EmbeddedRelatedBase.class.getName())) {
           firstPresent = true;
-        } else if (elem.getName().equals("Second Base") && elem.getValue() == 200) {
+        } else if (elem.getName().equals("Second Base") && elem.getValue() == 200 &&
+            elem.getClass().getName().equals(EmbeddedRelatedSub.class.getName())) {
           secondPresent = true;
         }
       }
@@ -264,8 +267,8 @@ public class JDOEmbeddedTest extends JDOTestCase {
     try {
       EmbeddedArrayOwner owner = new EmbeddedArrayOwner();
       EmbeddedRelatedBase baseRel1 = new EmbeddedRelatedBase("First Base", 100);
-      EmbeddedRelatedBase baseRel2 = new EmbeddedRelatedBase("Second Base", 200);
-      EmbeddedRelatedBase[] array = new EmbeddedRelatedBase[]{baseRel1, baseRel2};
+      EmbeddedRelatedSub subRel2 = new EmbeddedRelatedSub("Second Base", 200, "Other Type");
+      EmbeddedRelatedBase[] array = new EmbeddedRelatedBase[]{baseRel1, subRel2};
       owner.setArray(array);
 
       pm.currentTransaction().begin();
@@ -311,10 +314,12 @@ public class JDOEmbeddedTest extends JDOTestCase {
       for (int i=0;i<array.length;i++) {
         if (i == 0) {
           assertTrue("First element incorrect",
-              array[i].getName().equals("First Base") && array[i].getValue() == 100);
+              array[i].getName().equals("First Base") && array[i].getValue() == 100 &&
+              array[i].getClass().getName().equals(EmbeddedRelatedBase.class.getName()));
         } else if (i == 1) {
           assertTrue("Second element incorrect",
-              array[i].getName().equals("Second Base") && array[i].getValue() == 200);
+              array[i].getName().equals("Second Base") && array[i].getValue() == 200 &&
+              array[i].getClass().getName().equals(EmbeddedRelatedSub.class.getName()));
         }
       }
       pm.currentTransaction().commit();

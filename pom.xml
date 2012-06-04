@@ -58,8 +58,8 @@
         <dependency>
             <groupId>javax.jdo</groupId>
             <artifactId>jdo-api</artifactId>
-            <!--<version>3.1-SNAPSHOT-20110926</version>-->
-            <version>[3.0, 4.0)</version>
+            <version>3.1-SNAPSHOT-20120604</version>
+            <!--version>[3.0, 4.0)</version-->
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>

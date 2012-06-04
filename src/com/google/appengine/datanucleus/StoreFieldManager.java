@@ -32,6 +32,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ArrayMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.NullValue;
@@ -221,6 +222,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
         // so we have properties like "NAME.0", "PRICE.0", "NAME.1", "PRICE.1" etc.
         Class elementType = clr.classForName(mmd.getCollection().getElementType());
         Collection valueColl = (Collection) value;
+        AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
         EmbeddedMetaData embmd = 
           mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
 
@@ -228,6 +230,23 @@ public class StoreFieldManager extends DatastoreFieldManager {
         String collPropName = getPropertyNameForMember(mmd) + ".size";
         EntityUtils.setEntityProperty(datastoreEntity, mmd, collPropName,
             (valueColl != null ? valueColl.size() : -1));
+
+        // Add discriminator for elements if defined
+        String collDiscName = null;
+        if (elemCmd.hasDiscriminatorStrategy()) {
+          collDiscName = elemCmd.getDiscriminatorColumnName();
+          if (embmd != null && embmd.getDiscriminatorMetaData() != null) {
+            // Override if specified under <embedded>
+            DiscriminatorMetaData dismd = embmd.getDiscriminatorMetaData();
+            ColumnMetaData discolmd = dismd.getColumnMetaData();
+            if (discolmd != null && discolmd.getName() != null) {
+              collDiscName = discolmd.getName();
+            }
+          }
+          if (collDiscName == null) {
+            collDiscName = getPropertyNameForMember(mmd) + ".discrim";
+          }
+        }
 
         if (valueColl != null) {
           Iterator collIter = valueColl.iterator();
@@ -238,6 +257,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
             ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, element);
             fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, index));
             embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+
+            // Add discriminator for elements if defined
+            if (collDiscName != null) {
+              EntityUtils.setEntityProperty(datastoreEntity, elemCmd.getDiscriminatorMetaDataRoot(), 
+                  collDiscName + "." + index, embeddedOP.getClassMetaData().getDiscriminatorValue());
+            }
+
             fieldManagerStateStack.removeFirst();
             index++;
           }
@@ -248,13 +274,31 @@ public class StoreFieldManager extends DatastoreFieldManager {
         // This is stored flat with all property names for the element class gaining a suffix ".{index}"
         // so we have properties like "NAME.0", "PRICE.0", "NAME.1", "PRICE.1" etc.
         Class elementType = clr.classForName(mmd.getArray().getElementType());
+        AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
         EmbeddedMetaData embmd = 
           mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
 
         // Add property for size of array
-        String arrPropName = getPropertyNameForMember(mmd) + ".size";;
-        EntityUtils.setEntityProperty(datastoreEntity, mmd, arrPropName,
+        String arrBaseName = getPropertyNameForMember(mmd);
+        EntityUtils.setEntityProperty(datastoreEntity, mmd, arrBaseName + ".size",
             (value != null ? Array.getLength(value) : -1));
+
+        // Add discriminator for elements if defined
+        String arrDiscName = null;
+        if (elemCmd.hasDiscriminatorStrategy()) {
+          arrDiscName = elemCmd.getDiscriminatorColumnName();
+          if (embmd != null && embmd.getDiscriminatorMetaData() != null) {
+            // Override if specified under <embedded>
+            DiscriminatorMetaData dismd = embmd.getDiscriminatorMetaData();
+            ColumnMetaData discolmd = dismd.getColumnMetaData();
+            if (discolmd != null && discolmd.getName() != null) {
+              arrDiscName = discolmd.getName();
+            }
+          }
+          if (arrDiscName == null) {
+            arrDiscName = getPropertyNameForMember(mmd) + ".discrim";
+          }
+        }
 
         if (value != null) {
           for (int i=0;i<Array.getLength(value);i++) {
@@ -263,6 +307,13 @@ public class StoreFieldManager extends DatastoreFieldManager {
             ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, element);
             fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
             embeddedOP.provideFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
+
+            // Add discriminator for elements if defined
+            if (arrDiscName != null) {
+              EntityUtils.setEntityProperty(datastoreEntity, elemCmd.getDiscriminatorMetaDataRoot(),
+                  arrDiscName + "." + i, embeddedOP.getClassMetaData().getDiscriminatorValue());
+            }
+
             fieldManagerStateStack.removeFirst();
           }
         }

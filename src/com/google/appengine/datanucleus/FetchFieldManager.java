@@ -30,6 +30,7 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
+import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.Relation;
@@ -241,7 +242,8 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   public Object fetchObjectField(int fieldNumber) {
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
-    int relationType = mmd.getRelationType(getClassLoaderResolver());
+    ClassLoaderResolver clr = getClassLoaderResolver();
+    int relationType = mmd.getRelationType(clr);
 
     if (mmd.getEmbeddedMetaData() != null && Relation.isRelationSingleValued(relationType)) {
       // Embedded persistable object
@@ -292,7 +294,8 @@ public class FetchFieldManager extends DatastoreFieldManager
           return null;
         }
 
-        Class elementType = getClassLoaderResolver().classForName(mmd.getCollection().getElementType());
+        Class elementType = clr.classForName(mmd.getCollection().getElementType());
+        AbstractClassMetaData elemCmd = mmd.getCollection().getElementClassMetaData(clr, ec.getMetaDataManager());
         EmbeddedMetaData embmd = 
           mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
         Collection<Object> coll;
@@ -303,9 +306,34 @@ public class FetchFieldManager extends DatastoreFieldManager
           throw new NucleusDataStoreException(e.getMessage(), e);
         }
 
-        for (int i=0;i<collSize;i++) {
-          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, null);
+        // Use discriminator for elements if available
+        String collDiscName = null;
+        if (elemCmd.hasDiscriminatorStrategy()) {
+          collDiscName = elemCmd.getDiscriminatorColumnName();
+          if (embmd != null && embmd.getDiscriminatorMetaData() != null) {
+            // Override if specified under <embedded>
+            DiscriminatorMetaData dismd = embmd.getDiscriminatorMetaData();
+            ColumnMetaData discolmd = dismd.getColumnMetaData();
+            if (discolmd != null && discolmd.getName() != null) {
+              collDiscName = discolmd.getName();
+            }
+          }
+          if (collDiscName == null) {
+            collDiscName = getPropertyNameForMember(mmd) + ".discrim";
+          }
+        }
 
+        for (int i=0;i<collSize;i++) {
+          Class elementCls = elementType;
+          if (collDiscName != null) {
+            Object discVal = datastoreEntity.getProperty(collDiscName + "." + i);
+            String className = 
+              org.datanucleus.metadata.MetaDataUtils.getClassNameFromDiscriminatorValue((String)discVal, 
+                  elemCmd.getDiscriminatorMetaDataRoot(), ec);
+            elementCls = clr.classForName(className);
+          }
+
+          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementCls, fieldNumber, null);
           fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
           try {
             embeddedOP.replaceFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
@@ -324,14 +352,40 @@ public class FetchFieldManager extends DatastoreFieldManager
           return null;
         }
 
-        Class elementType = getClassLoaderResolver().classForName(mmd.getArray().getElementType());
-        EmbeddedMetaData embmd = 
+        Class elementType = clr.classForName(mmd.getArray().getElementType());
+        AbstractClassMetaData elemCmd = mmd.getArray().getElementClassMetaData(clr, ec.getMetaDataManager());
+        EmbeddedMetaData embmd =
           mmd.getElementMetaData() != null ? mmd.getElementMetaData().getEmbeddedMetaData() : null;
         Object value = Array.newInstance(elementType, arrSize.intValue());
 
-        for (int i=0;i<arrSize;i++) {
-          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementType, fieldNumber, null);
+        // Use discriminator for elements if available
+        String arrDiscName = null;
+        if (elemCmd.hasDiscriminatorStrategy()) {
+          arrDiscName = elemCmd.getDiscriminatorColumnName();
+          if (embmd != null && embmd.getDiscriminatorMetaData() != null) {
+            // Override if specified under <embedded>
+            DiscriminatorMetaData dismd = embmd.getDiscriminatorMetaData();
+            ColumnMetaData discolmd = dismd.getColumnMetaData();
+            if (discolmd != null && discolmd.getName() != null) {
+              arrDiscName = discolmd.getName();
+            }
+          }
+          if (arrDiscName == null) {
+            arrDiscName = getPropertyNameForMember(mmd) + ".discrim";
+          }
+        }
 
+        for (int i=0;i<arrSize;i++) {
+          Class elementCls = elementType;
+          if (arrDiscName != null) {
+            Object discVal = datastoreEntity.getProperty(arrDiscName + "." + i);
+            String className = 
+              org.datanucleus.metadata.MetaDataUtils.getClassNameFromDiscriminatorValue((String)discVal, 
+                  elemCmd.getDiscriminatorMetaDataRoot(), ec);
+            elementCls = clr.classForName(className);
+          }
+
+          ObjectProvider embeddedOP = getEmbeddedObjectProvider(elementCls, fieldNumber, null);
           fieldManagerStateStack.addFirst(new FieldManagerState(embeddedOP, embmd, i));
           try {
             embeddedOP.replaceFields(embeddedOP.getClassMetaData().getAllMemberPositions(), this);
@@ -347,8 +401,8 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
     }
 
-    if (mmd.getRelationType(getClassLoaderResolver()) != Relation.NONE && !mmd.isSerialized()) {
-      return fetchRelationField(getClassLoaderResolver(), mmd);
+    if (mmd.getRelationType(clr) != Relation.NONE && !mmd.isSerialized()) {
+      return fetchRelationField(clr, mmd);
     }
 
     return fetchFieldFromEntity(fieldNumber);
