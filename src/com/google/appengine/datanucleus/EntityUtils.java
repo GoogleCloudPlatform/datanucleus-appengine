@@ -957,7 +957,6 @@ public final class EntityUtils {
   public static Object entityToPojo(final Entity entity, final AbstractClassMetaData acmd,
       final ClassLoaderResolver clr, ExecutionContext ec, boolean ignoreCache, final FetchPlan fetchPlan) {
     final DatastoreManager storeMgr = (DatastoreManager) ec.getStoreManager();
-    DatastoreTable table = storeMgr.getDatastoreClass(acmd.getFullClassName(), ec.getClassLoaderResolver());
     storeMgr.validateMetaDataForClass(acmd);
 
     FieldValues fv = null;
@@ -995,7 +994,7 @@ public final class EntityUtils {
     }
 
     Object id = null;
-    Class cls = getClassFromDiscriminator(entity, acmd, table, clr, ec);
+    Class cls = getClassFromDiscriminator(entity, acmd, storeMgr, clr, ec);
     if (acmd.getIdentityType() == IdentityType.DATASTORE) {
       Key key = entity.getKey();
       if (key.getName() != null) {
@@ -1031,19 +1030,19 @@ public final class EntityUtils {
    * Entity if present, otherwise returns the candidate type
    * @param entity The Entity to get values from
    * @param acmd Metadata for the candidate
-   * @param table Table we're retrieving information from
+   * @param storeMgr Datastore Manager
    * @param clr ClassLoader resolver
    * @param ec ExecutionContext
    * @return The class of this Entity
    */
   private static Class<?> getClassFromDiscriminator(Entity entity, AbstractClassMetaData acmd,
-      DatastoreTable table, ClassLoaderResolver clr, ExecutionContext ec) {
+      DatastoreManager storeMgr, ClassLoaderResolver clr, ExecutionContext ec) {
     if (!acmd.hasDiscriminatorStrategy()) {
       return clr.classForName(acmd.getFullClassName());
     }
 
     String discrimPropertyName = EntityUtils.getDiscriminatorPropertyName(
-        table.getStoreManager().getIdentifierFactory(), acmd.getDiscriminatorMetaDataRoot());
+        storeMgr.getIdentifierFactory(), acmd.getDiscriminatorMetaDataRoot());
     Object discrimValue = entity.getProperty(discrimPropertyName);
 
     if (discrimValue == null) {

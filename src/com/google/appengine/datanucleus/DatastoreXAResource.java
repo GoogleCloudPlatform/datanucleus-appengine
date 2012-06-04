@@ -57,10 +57,11 @@ class DatastoreXAResource extends EmulatedXAResource {
       Transaction datastoreTxn = datastoreService.beginTransaction(txnOpts);
       currentTxn = new DatastoreTransaction(datastoreTxn);
       if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
-        NucleusLogger.TRANSACTION.debug("Started datastore transaction: " + currentTxn.getInnerTxn().getId());
+        NucleusLogger.TRANSACTION.debug(
+            LOCALISER.msg("AppEngine.Transaction.Started", currentTxn.getInnerTxn().getId()));
       }
     } else {
-      throw new XAException("Transaction has already been started and nested transactions are not supported");
+      throw new XAException(LOCALISER.msg("AppEngine.Transaction.AlreadyStarted"));
     }
   }
 
@@ -70,11 +71,12 @@ class DatastoreXAResource extends EmulatedXAResource {
     if (currentTxn != null) {
       currentTxn.commit();
       if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
-        NucleusLogger.TRANSACTION.debug("Committed datastore transaction: " + currentTxn.getInnerTxn().getId());
+        NucleusLogger.TRANSACTION.debug(
+            LOCALISER.msg("AppEngine.Transaction.Committed", currentTxn.getInnerTxn().getId()));
       }
       currentTxn = null;
     } else {
-      throw new XAException("Transaction has not been started, cannot commit");
+      throw new XAException(LOCALISER.msg("AppEngine.Transaction.CommitInvalid"));
     }
   }
 
@@ -84,11 +86,12 @@ class DatastoreXAResource extends EmulatedXAResource {
     if (currentTxn != null) {
       currentTxn.rollback();
       if (NucleusLogger.TRANSACTION.isDebugEnabled()) {
-        NucleusLogger.TRANSACTION.debug("Rolled back datastore transaction: " + currentTxn.getInnerTxn().getId());
+        NucleusLogger.TRANSACTION.debug(
+            LOCALISER.msg("AppEngine.Transaction.RolledBack", currentTxn.getInnerTxn().getId()));
       }
       currentTxn = null;
     } else {
-      throw new XAException("Transaction has not been started, cannot rollback");
+      throw new XAException(LOCALISER.msg("AppEngine.Transaction.RollbackInvalid"));
     }
   }
 }

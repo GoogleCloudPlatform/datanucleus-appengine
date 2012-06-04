@@ -19,6 +19,8 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.datanucleus.util.Localiser;
+
 import com.google.appengine.api.datastore.DatastoreService;
 
 /**
@@ -32,6 +34,8 @@ import com.google.appengine.api.datastore.DatastoreService;
  * @author Max Ross <maxr@google.com>
  */
 class EmulatedXAResource implements XAResource {
+  protected static final Localiser LOCALISER = Localiser.getInstance(
+      "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
   private enum State {NEW, ACTIVE, INACTIVE}
 
@@ -55,7 +59,7 @@ class EmulatedXAResource implements XAResource {
 
   public void commit(Xid xid, boolean onePhase) throws XAException {
     if (state != State.ACTIVE) {
-      throw new XAException("A transaction has not been started, cannot commit");
+      throw new XAException(LOCALISER.msg("AppEngine.Transaction.CommitInvalid"));
     }
     keyRegistry.clearParentKeys();
     keyRegistry.clearUnownedObjects();
@@ -64,7 +68,7 @@ class EmulatedXAResource implements XAResource {
 
   public void rollback(Xid xid) throws XAException {
     if (state != State.ACTIVE) {
-      throw new XAException("A transaction has not been started, cannot rollback");
+      throw new XAException(LOCALISER.msg("AppEngine.Transaction.RollbackInvalid"));
     }
     keyRegistry.clearParentKeys();
     keyRegistry.clearUnownedObjects();
