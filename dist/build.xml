@@ -2,9 +2,9 @@
 <project name="gae" default="testdist">
 
   <property name="version.major" value="2"/>
-  <property name="version.minor" value="0"/>
-  <property name="version.point" value="0"/>
-  <property name="version.rc" value="-RC3"/>
+  <property name="version.minor" value="1"/>
+  <property name="version.point" value="1"/>
+  <property name="version.rc" value="-SNAPSHOT"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="zip.prefix" value="datanucleus-appengine"/>
   <property name="dist.target" value="../target/${zip.prefix}-${version}-dist.zip"/>
@@ -45,6 +45,7 @@
       /tmp/testdist/lib/impl/agent
       /tmp/testdist/lib/impl/agent/appengine-agentruntime.jar
       /tmp/testdist/lib/user/appengine-api.jar
+      /tmp/testdist/lib/opt/tools/appengine-local-endpoints/v1/appengine-local-endpoints.jar
       /tmp/testdist/config/user/ant-macros.xml
      -->
     <delete dir="${orm.tmpdist.dir}"/>
@@ -115,6 +116,13 @@
     <copy todir="${orm.sdk.tmpdist.dir}/config/user">
       <fileset dir=".">
         <include name="ant-macros.xml"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/opt/tools/appengine-local-endpoints/v1"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/opt/tools/appengine-local-endpoints/v1">
+      <fileset dir=".">
+        <include name="appengine-local-endpoints.jar"/>
       </fileset>
     </copy>
 
@@ -196,6 +204,7 @@
         <fileset dir="${appengine.sdk.lib.path}/shared" includes = "appengine*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/agent" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/testing" includes = "*.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/opt/tools/appengine-local-endpoints/v1" includes = "*.jar"/>
       </copy>
       <copy  todir="." verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.config.path}/user" includes="ant-macros.xml"/>

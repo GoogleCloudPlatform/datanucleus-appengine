@@ -7,4 +7,5 @@
     <property name="helloorm.persistence.standard" value="JPA"/>
   </system-properties>
   <resource-files/>
+  <threadsafe>true</threadsafe>
 </appengine-web-app>

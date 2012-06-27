@@ -4,4 +4,5 @@
   <resource-files>
   </resource-files>
   <static-files/>
+  <threadsafe>true</threadsafe>
 </appengine-web-app>
