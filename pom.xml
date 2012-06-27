@@ -8,7 +8,7 @@
     <groupId>com.google.appengine.orm</groupId>
     <artifactId>datanucleus-appengine</artifactId>
     <packaging>jar</packaging>
-    <version>2.1.0-SNAPSHOT</version>
+    <version>2.1.0-final</version>
 
     <repositories>
         <repository>
@@ -18,13 +18,13 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
-            <id>DataNucleus_Nightly</id>
-            <url>http://www.datanucleus.org/downloads/maven2-nightly</url>
-            <snapshots>
-                <enabled>true</enabled>
-            </snapshots>
-        </repository>
+        <!--<repository>-->
+            <!--<id>DataNucleus_Nightly</id>-->
+            <!--<url>http://www.datanucleus.org/downloads/maven2-nightly</url>-->
+            <!--<snapshots>-->
+                <!--<enabled>true</enabled>-->
+            <!--</snapshots>-->
+        <!--</repository>-->
     </repositories>
 
     <pluginRepositories>
@@ -38,7 +38,7 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-1.0-sdk</artifactId>
-            <version>1.6.6</version>
+            <version>1.7.0</version>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
@@ -58,8 +58,8 @@
         <dependency>
             <groupId>javax.jdo</groupId>
             <artifactId>jdo-api</artifactId>
-            <version>3.1-SNAPSHOT-20120609</version>
-            <!--version>[3.0, 4.0)</version-->
+            <!--<version>3.1-SNAPSHOT-20120609</version>-->
+            <version>[3.0, 4.0)</version>
         </dependency>
         <dependency>
             <groupId>org.apache.geronimo.specs</groupId>
@@ -101,13 +101,13 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-stubs</artifactId>
-            <version>1.6.6</version>
+            <version>1.7.0</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-testing</artifactId>
-            <version>1.6.6</version>
+            <version>1.7.0</version>
             <scope>test</scope>
         </dependency>
         <!--dependency>
