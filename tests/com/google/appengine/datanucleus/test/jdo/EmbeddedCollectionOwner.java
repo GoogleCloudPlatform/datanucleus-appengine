@@ -18,7 +18,6 @@ package com.google.appengine.datanucleus.test.jdo;
 import java.util.Collection;
 import java.util.HashSet;
 
-import javax.jdo.annotations.Discriminator;
 import javax.jdo.annotations.Element;
 import javax.jdo.annotations.Embedded;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -39,7 +38,7 @@ public class EmbeddedCollectionOwner {
   private Key key;
 
   @Persistent(embedded="true")
-  @Element(embeddedMapping=@Embedded(discriminatorColumnName=@Discriminator(column="CHILD_DISCRIM")))
+  @Element(embeddedMapping=@Embedded())//(discriminatorColumnName=@Discriminator(column="CHILD_DISCRIM"))) // TODO Enable this when JDO3.1 is released
   private Collection<EmbeddedRelatedBase> children = new HashSet<EmbeddedRelatedBase>();
 
   public Key getKey() {
