@@ -42,7 +42,7 @@ final class ApiConfigMatcher implements IArgumentMatcher {
   }
 
   public void appendTo(StringBuffer buffer) {
-    buffer.append("Env Matcher: " + expectedApiConfig.getDeadlineInSeconds());
+    buffer.append("ApiConfig Matcher: " + expectedApiConfig.getDeadlineInSeconds());
   }
 
   public static ApiProxy.ApiConfig eqApiConfig(ApiProxy.ApiConfig apiConfig) {

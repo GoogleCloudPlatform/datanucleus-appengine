@@ -297,12 +297,12 @@ public class DatastoreQuery implements Serializable {
       txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
     }
 
-    PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
-    FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-
     if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
       qd.primaryDatastoreQuery.setKeysOnly();
     }
+
+    PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
+    FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
 
     if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
       NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());

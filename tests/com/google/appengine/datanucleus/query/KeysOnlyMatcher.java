@@ -23,28 +23,25 @@ import org.easymock.IArgumentMatcher;
 /**
  * @author Max Ross <max.ross@gmail.com>
  */
-public class ChunkMatcher implements IArgumentMatcher {
-  private final Integer expectedChunkSize;
+public class KeysOnlyMatcher implements IArgumentMatcher {
+  private final boolean expectedKeysOnly;
 
-  public ChunkMatcher(Integer expectedChunkSize) {
-    this.expectedChunkSize = expectedChunkSize;
+  public KeysOnlyMatcher(boolean expectedKeysOnly) {
+    this.expectedKeysOnly = expectedKeysOnly;
   }
 
   public boolean matches(Object argument) {
     DatastorePb.Query query = new DatastorePb.Query();
     query.mergeFrom((byte[]) argument);
-    if (expectedChunkSize == null) {
-      return !query.hasCount();
-    }
-    return expectedChunkSize.equals(query.getCount());
+    return expectedKeysOnly == query.isKeysOnly();
   }
 
   public void appendTo(StringBuffer buffer) {
-    buffer.append("Chunk Matcher: " + expectedChunkSize);
+    buffer.append("Keys Only: " + expectedKeysOnly);
   }
 
-  public static byte[] eqChunkSize(Integer expectedChunkSize) {
-    EasyMock.reportMatcher(new ChunkMatcher(expectedChunkSize));
+  public static byte[] eqKeysOnly(boolean expectedKeysOnly) {
+    EasyMock.reportMatcher(new KeysOnlyMatcher(expectedKeysOnly));
     return null;
   }
 }

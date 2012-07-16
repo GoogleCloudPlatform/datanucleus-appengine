@@ -2489,6 +2489,29 @@ public class JDOQLQueryTest extends JDOTestCase {
     }
   }
 
+  public void testSetKeysOnly() {
+    DatastoreServiceFactoryInternal.setDatastoreService(null);
+    ApiProxy.Delegate original = getDelegateForThread();
+    Future<DatastorePb.QueryResult> result = EasyMock.createNiceMock(Future.class);
+    try {
+      ApiProxy.Delegate delegate = EasyMock.createMock(ApiProxy.Delegate.class);
+      setDelegateForThread(delegate);
+      ApiProxy.ApiConfig config = new ApiProxy.ApiConfig();
+      EasyMock.expect(delegate.makeAsyncCall(EasyMock.isA(ApiProxy.Environment.class),
+                                EasyMock.eq(LocalDatastoreService.PACKAGE),
+                                EasyMock.eq("RunQuery"),
+                                KeysOnlyMatcher.eqKeysOnly(true),
+                                ApiConfigMatcher.eqApiConfig(config))).andReturn(result);
+      EasyMock.replay(delegate, result);
+      Query q = pm.newQuery("select id from " + Flight.class.getName());
+      List<String> ids = (List<String>) q.execute();
+      ids.size(); // force resolution of the entire result set
+      EasyMock.verify(delegate);
+    } finally {
+      setDelegateForThread(original);
+    }
+  }
+
   public void testRestrictFetchedFields_OneField() {
     Entity e1 = Flight.newFlightEntity("jimmy", "bos", "mia", 23, 24);
     ds.put(null, e1);
