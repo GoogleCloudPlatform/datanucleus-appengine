@@ -1510,11 +1510,14 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testCountQuery() {
+    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
+    assertEquals(0l, q.getSingleResult());
+
     Entity e1 = Book.newBookEntity("jimmy", "12345", "the title", 2003);
     Entity e2 = Book.newBookEntity("jimmy", "12345", "the title", 2004);
     ds.put(e1);
     ds.put(e2);
-    Query q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
+    q = em.createQuery("select count(id) from " + Book.class.getName() + " c");
     assertEquals(2l, q.getSingleResult());
 
     q = em.createQuery("select COUNT(id) from " + Book.class.getName() + " c");
