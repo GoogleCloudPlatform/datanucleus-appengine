@@ -139,11 +139,14 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     }
 
     public void close() {
-      for (ManagedConnectionResourceListener listener : listeners) {
+      // Take copy since listeners can de-register themselves at close
+      List<ManagedConnectionResourceListener> resourceListeners = new ArrayList(listeners);
+
+      for (ManagedConnectionResourceListener listener : resourceListeners) {
         listener.managedConnectionPreClose();
       }
       // nothing to actually close
-      for (ManagedConnectionResourceListener listener : listeners) {
+      for (ManagedConnectionResourceListener listener : resourceListeners) {
         listener.managedConnectionPostClose();
       }
     }
