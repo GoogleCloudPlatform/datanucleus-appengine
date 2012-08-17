@@ -393,7 +393,7 @@ public class DatastoreManager extends MappedStoreManager {
 
     boolean jpa = getApiAdapter().getName().equalsIgnoreCase("JPA");
     String unsupportedMsg = GAE_LOCALISER.msg(jpa ? "AppEngine.BadInheritance.JPA" : "AppEngine.BadInheritance.JDO", 
-        cmd.getInheritanceMetaData().getStrategy(), cmd.getFullClassName(), getApiAdapter().getName());
+        cmd.getInheritanceMetaData().getStrategy().toString(), cmd.getFullClassName(), getApiAdapter().getName());
     throw new UnsupportedInheritanceStrategyException(unsupportedMsg);
   }
 
