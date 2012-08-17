@@ -391,6 +391,8 @@ public class DatastoreManager extends MappedStoreManager {
       }
     }
 
+    // TODO Don't do this. GAE basically supports "complete-table" always so we should just ignore any
+    // inheritance metadata that implies otherwise.
     boolean jpa = getApiAdapter().getName().equalsIgnoreCase("JPA");
     String unsupportedMsg = GAE_LOCALISER.msg(jpa ? "AppEngine.BadInheritance.JPA" : "AppEngine.BadInheritance.JDO", 
         cmd.getInheritanceMetaData().getStrategy().toString(), cmd.getFullClassName(), getApiAdapter().getName());
