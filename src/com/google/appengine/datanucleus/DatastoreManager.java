@@ -35,6 +35,7 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
+import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.DefaultCandidateExtent;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.Extent;
@@ -486,6 +487,11 @@ public class DatastoreManager extends MappedStoreManager {
       return false;
     }*/
     return true;
+  }
+
+  public boolean useBackedSCOWrapperForMember(AbstractMemberMetaData mmd, ExecutionContext ec) {
+    // Use backed SCO wrapper on relation field (to support legacy), and use simple SCO wrapper on others
+    return (mmd.getRelationType(ec.getClassLoaderResolver()) == Relation.NONE ? false : true);
   }
 
   public boolean storageVersionAtLeast(StorageVersion storageVersion) {

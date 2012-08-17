@@ -53,6 +53,7 @@ import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.Localiser;
+import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
@@ -204,6 +205,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     ClassLoaderResolver clr = getClassLoaderResolver();
     int relationType = mmd.getRelationType(clr);
+    NucleusLogger.GENERAL.info(">> storeFieldInEntity field=" + mmd.getFullFieldName() + " relationType=" + relationType);
 
     if (Relation.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
       // Embedded persistable object

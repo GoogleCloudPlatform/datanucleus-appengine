@@ -1107,6 +1107,7 @@ public class DatastoreQuery implements Serializable {
           }
         }
         try {
+          // TODO If the "value" is of a type that is not stored natively do a conversion to the stored value
           datastoreQuery.addFilter(datastorePropName, op, value);
         } catch (IllegalArgumentException iae) {
           throw DatastoreExceptionTranslator.wrapIllegalArgumentException(iae);
