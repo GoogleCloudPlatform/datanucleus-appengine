@@ -54,8 +54,6 @@ import javax.jdo.spi.JDOImplHelper;
  */
 public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
-  private static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
-
   /**
    * List of FieldManagerState, with the last one being the root object, and earlier ones being those
    * for (nested) embedded objects.
@@ -194,13 +192,6 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
       return propName + "." + fieldManagerStateStack.getFirst().index;
     }
     return propName;
-  }
-
-  /**
-   * Just exists so we can override in tests. 
-   */
-  TypeConversionUtils getConversionUtils() {
-    return TYPE_CONVERSION_UTILS;
   }
 
   protected static final class FieldManagerState {

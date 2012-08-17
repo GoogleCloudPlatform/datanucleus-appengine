@@ -50,7 +50,6 @@ import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
-import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -343,15 +342,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (value == null) {
         checkSettingToNullValue(mmd, value);
       } else {
-        if (mmd.getTypeConverterName() != null) {
-          // User-defined type-converter
-          TypeConverter conv = ec.getTypeManager().getTypeConverterForName(mmd.getTypeConverterName());
-          value = conv.toDatastoreType(value);
-        } else {
-          // Perform any conversions from the field type to the stored-type
-          TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
-          value = getConversionUtils().pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
-        }
+        // Perform any conversions from the field type to the stored-type
+        TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
+        value = DatastoreManager.TYPE_CONVERSION_UTILS.pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
 
         if (value instanceof SCO) {
           // Use the unwrapped value so the datastore doesn't fail on unknown types

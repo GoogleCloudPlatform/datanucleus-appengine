@@ -181,6 +181,8 @@ public class DatastoreManager extends MappedStoreManager {
 
   MetaDataValidator metadataValidator;
 
+  public static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
+
   /**
    * Construct a DatastoreManager.
    * @param clr The ClassLoaderResolver

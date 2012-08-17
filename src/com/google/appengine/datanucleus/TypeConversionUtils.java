@@ -26,6 +26,7 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCOUtils;
+import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.datanucleus.Utils.Function;
 
@@ -39,7 +40,7 @@ import java.util.*;
  *
  * @author Max Ross <maxr@google.com>
  */
-class TypeConversionUtils {
+public class TypeConversionUtils {
   TypeConversionUtils() {}
 
   private static final Set<Class> SUPPORTED_CLASSES = buildSupportedClasses();
@@ -140,6 +141,9 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> INTEGER_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
+      if (in instanceof Long) {
+        return (Long)in;
+      }
       return null==in ? null : ((Integer) in).longValue() ;
     }
   };
@@ -149,6 +153,9 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> SHORT_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
+      if (in instanceof Long) {
+        return (Long)in;
+      }
       return null==in ? null : ((Short) in).longValue() ;
     }
   };
@@ -167,6 +174,9 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> BYTE_TO_LONG = new Function<Object, Object>() {
     public Long apply(Object in) {
+      if (in instanceof Long) {
+        return (Long)in;
+      }
       return null==in ? null : ((Byte) in).longValue() ;
     }
   };
@@ -176,6 +186,9 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> FLOAT_TO_DOUBLE = new Function<Object, Object>() {
     public Double apply(Object in) {
+      if (in instanceof Double) {
+        return (Double)in;
+      }
       return null==in ? null : ((Float) in).doubleValue() ;
     }
   };
@@ -185,6 +198,9 @@ class TypeConversionUtils {
    */
   private static final Function<Object, Object> BIG_DECIMAL_TO_DOUBLE = new Function<Object, Object>() {
     public Double apply(Object in) {
+      if (in instanceof Double) {
+        return (Double)in;
+      }
       return null==in ? null : ((BigDecimal) in).doubleValue() ;
     }
   };
@@ -340,7 +356,7 @@ class TypeConversionUtils {
    *
    * @return A representation of the datastore property value that can be set on the pojo.
    */
-  Object datastoreValueToPojoValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
+  public Object datastoreValueToPojoValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
       AbstractMemberMetaData ammd) {
     if (ammd.hasArray()) {
       value = datastoreValueToPojoArray(value, ammd);
@@ -378,7 +394,7 @@ class TypeConversionUtils {
         } else {
           if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
               ammd.getTypeName().startsWith("com.google.appengine.api")) {
-            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd.getType()).apply(value);
           } else if (value instanceof String) {
             TypeConverter conv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
             if (conv != null) {
@@ -393,7 +409,7 @@ class TypeConversionUtils {
             }
           } else {
             // Unsupported type on GAE/J ?
-            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd).apply(value);
+            value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd.getType()).apply(value);
           }
         }
       }
@@ -664,19 +680,18 @@ class TypeConversionUtils {
    * function exists.
    */
   private Function<Object, Object> getDatastoreToPojoTypeFunc(
-      Function<Object, Object> defaultVal, AbstractMemberMetaData ammd) {
-    Function<Object, Object> candidate = DATASTORE_TO_POJO_TYPE_FUNC.get(ammd.getType());
+      Function<Object, Object> defaultVal, Class type) {
+    Function<Object, Object> candidate = DATASTORE_TO_POJO_TYPE_FUNC.get(type);
     return candidate != null ? candidate : defaultVal;
   }
 
   /**
    * Get the pojo to datastore conversion function for the field identified by
-   * the given field number, returning the provided default if no conversion
-   * function exists.
+   * the given field number, returning the provided default if no conversion function exists.
    */
   private Function<Object, Object> getPojoToDatastoreTypeFunc(
-      Function<Object, Object> defaultVal, AbstractMemberMetaData ammd) {
-    Function<Object, Object> candidate = POJO_TO_DATASTORE_TYPE_FUNC.get(ammd.getType());
+      Function<Object, Object> defaultVal, Class type) {
+    Function<Object, Object> candidate = POJO_TO_DATASTORE_TYPE_FUNC.get(type);
     return candidate != null ? candidate : defaultVal;
   }
 
@@ -696,7 +711,7 @@ class TypeConversionUtils {
     return result;
   }
 
-  /**
+    /**
    * Performs type conversions on a pojo value to return the value to be stored.
    * @param typeMgr TypeManager
    * @param clr class loader resolver to use for string to class conversions
@@ -705,86 +720,105 @@ class TypeConversionUtils {
    * @return A representation of the pojo value that can be set on a datastore {@link Entity}.
    */
   @SuppressWarnings("deprecation")
-  Object pojoValueToDatastoreValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
+  public Object pojoValueToDatastoreValue(TypeManager typeMgr, ClassLoaderResolver clr, Object value, 
       AbstractMemberMetaData ammd) {
-    if (ammd.hasArray()) {
-      value = convertPojoArrayToDatastoreValue(ammd, value);
-    } else if (ammd.hasCollection()) {
-      value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
-    } else if (ammd.hasMap()) {
-      value = convertPojoMapToDatastoreValue(clr, ammd, (Map)value);
+    if (value == null) {
+      return null;
+    }
+
+    if (ammd.getTypeConverterName() != null) {
+      // User-defined type-converter
+      TypeConverter conv = typeMgr.getTypeConverterForName(ammd.getTypeConverterName());
+      value = conv.toDatastoreType(value);
     } else {
-      if (value != null) {
-        if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
-          // java.sql.Time -> Long
-          value = ((java.sql.Time)value).getTime(); // Pass a long through since this is not supported
-        } else if (java.sql.Date.class.isAssignableFrom(ammd.getType())) {
-          // java.sql.Date -> Long
-          value = ((java.sql.Date)value).getTime(); // Pass a long through since this is not supported
-        } else if (java.sql.Timestamp.class.isAssignableFrom(ammd.getType())) {
-          // java.sql.Timestamp -> Long
-          value = ((java.sql.Timestamp)value).getTime(); // Pass a long through since this is not supported
-        } else if (Date.class.isAssignableFrom(ammd.getType())) {
-          // java.util.Date -> Date (date, time, datetime)
-          ColumnMetaData[] colmds = ammd.getColumnMetaData();
-          if (colmds != null && colmds.length > 0 && colmds[0].getJdbcType() != null) {
-            String jdbcType = colmds[0].getJdbcType();
-            if (jdbcType.equalsIgnoreCase("time")) { // Dump the date part
-              Calendar cal = Calendar.getInstance();
-              cal.setTime((Date) value);
-              java.sql.Time time = new java.sql.Time(0);
-              time.setHours(cal.get(Calendar.HOUR_OF_DAY));
-              time.setMinutes(cal.get(Calendar.MINUTE));
-              time.setSeconds(cal.get(Calendar.SECOND));
-              value = new Date(time.getTime());
-            } else if (jdbcType.equalsIgnoreCase("date")) { // Dump the time part
-              Calendar cal = Calendar.getInstance();
-              cal.setTime((Date) value);
-              java.sql.Date date = new java.sql.Date(0);
-              date.setDate(cal.get(Calendar.DAY_OF_MONTH));
-              date.setMonth(cal.get(Calendar.MONTH));
-              date.setYear(cal.get(Calendar.YEAR)-1900);
-              value = new Date(date.getTime());
+      // Perform conversion
+      if (ammd.hasArray()) {
+        value = convertPojoArrayToDatastoreValue(ammd, value);
+      } else if (ammd.hasCollection()) {
+        value = convertPojoCollectionToDatastoreValue(clr, ammd, (Collection<?>) value);
+      } else if (ammd.hasMap()) {
+        value = convertPojoMapToDatastoreValue(clr, ammd, (Map)value);
+      } else {
+        if (value != null) {
+          if (java.sql.Time.class.isAssignableFrom(ammd.getType())) {
+            // java.sql.Time -> Long
+            value = ((java.sql.Time)value).getTime(); // Pass a long through since this is not supported
+          } else if (java.sql.Date.class.isAssignableFrom(ammd.getType())) {
+            // java.sql.Date -> Long
+            value = ((java.sql.Date)value).getTime(); // Pass a long through since this is not supported
+          } else if (java.sql.Timestamp.class.isAssignableFrom(ammd.getType())) {
+            // java.sql.Timestamp -> Long
+            value = ((java.sql.Timestamp)value).getTime(); // Pass a long through since this is not supported
+          } else if (Date.class.isAssignableFrom(ammd.getType())) {
+            // java.util.Date -> Date (date, time, datetime)
+            ColumnMetaData[] colmds = ammd.getColumnMetaData();
+            if (colmds != null && colmds.length > 0 && colmds[0].getJdbcType() != null) {
+              String jdbcType = colmds[0].getJdbcType();
+              if (jdbcType.equalsIgnoreCase("time")) { // Dump the date part
+                Calendar cal = Calendar.getInstance();
+                cal.setTime((Date) value);
+                java.sql.Time time = new java.sql.Time(0);
+                time.setHours(cal.get(Calendar.HOUR_OF_DAY));
+                time.setMinutes(cal.get(Calendar.MINUTE));
+                time.setSeconds(cal.get(Calendar.SECOND));
+                value = new Date(time.getTime());
+              } else if (jdbcType.equalsIgnoreCase("date")) { // Dump the time part
+                Calendar cal = Calendar.getInstance();
+                cal.setTime((Date) value);
+                java.sql.Date date = new java.sql.Date(0);
+                date.setDate(cal.get(Calendar.DAY_OF_MONTH));
+                date.setMonth(cal.get(Calendar.MONTH));
+                date.setYear(cal.get(Calendar.YEAR)-1900);
+                value = new Date(date.getTime());
+              }
             }
-          }
-        } else if (Enum.class.isAssignableFrom(ammd.getType())) {
-          // Enum -> String(name) / Long(ordinal)
-          boolean asOrdinal = false;
-          if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
-            String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
-            if (jdbcType != null && jdbcType.equalsIgnoreCase("integer")) {
-              // Persisted as ordinal
-              asOrdinal = true;
+          } else if (Enum.class.isAssignableFrom(ammd.getType())) {
+            // Enum -> String(name) / Long(ordinal)
+            boolean asOrdinal = false;
+            if (ammd.getColumnMetaData() != null && ammd.getColumnMetaData().length > 0) {
+              String jdbcType = ammd.getColumnMetaData()[0].getJdbcType();
+              if (jdbcType != null && jdbcType.equalsIgnoreCase("integer")) {
+                // Persisted as ordinal
+                asOrdinal = true;
+              }
             }
-          }
-          if (asOrdinal) {
-            value = ((Enum)value).ordinal();
-          } else {
-            value = ((Enum) value).name();
-          }
-        } else {
-          if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
-              ammd.getTypeName().startsWith("com.google.appengine.api")) {
-            value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
-          } else {
-            TypeConverter strConv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
-            if (strConv != null) {
-              // Persist as String
-              value = strConv.toDatastoreType(value);
+            if (asOrdinal) {
+              if (value instanceof Enum) {
+                value = ((Enum)value).ordinal();
+              }
             } else {
-              TypeConverter longConv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
-              if (longConv != null) {
-                // Persist as Long
-                value = longConv.toDatastoreType(value);
+              if (value instanceof Enum) {
+                value = ((Enum) value).name();
+              }
+            }
+          } else {
+            if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
+                ammd.getTypeName().startsWith("com.google.appengine.api")) {
+              NucleusLogger.GENERAL.info(">> field=" + ammd.getFullFieldName() +
+                  " value.type=" + value.getClass().getName() + 
+                  " field.type=" + ammd.getType().getName() + " val=" + value);
+              value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
+            } else {
+              TypeConverter strConv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
+              if (strConv != null) {
+                // Persist as String
+                value = strConv.toDatastoreType(value);
               } else {
-                // Unsupported type on GAE/J ?
-                value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd).apply(value);
+                TypeConverter longConv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
+                if (longConv != null) {
+                  // Persist as Long
+                  value = longConv.toDatastoreType(value);
+                } else {
+                  // Unsupported type on GAE/J ?
+                  value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
+                }
               }
             }
           }
         }
       }
     }
+
     return value;
   }
 

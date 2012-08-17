@@ -1107,7 +1107,11 @@ public class DatastoreQuery implements Serializable {
           }
         }
         try {
-          // TODO If the "value" is of a type that is not stored natively do a conversion to the stored value
+          if (!ammd.hasContainer()) {
+            // Non-container field comparison, so allow conversion between input value and equivalent datastore value
+            value = DatastoreManager.TYPE_CONVERSION_UTILS.pojoValueToDatastoreValue(
+                getExecutionContext().getNucleusContext().getTypeManager(), getClassLoaderResolver(), value, ammd);
+          }
           datastoreQuery.addFilter(datastorePropName, op, value);
         } catch (IllegalArgumentException iae) {
           throw DatastoreExceptionTranslator.wrapIllegalArgumentException(iae);
