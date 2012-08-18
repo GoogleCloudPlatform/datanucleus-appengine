@@ -26,7 +26,6 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
 import org.datanucleus.store.types.sco.SCOUtils;
-import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.datanucleus.Utils.Function;
 
@@ -794,23 +793,25 @@ public class TypeConversionUtils {
           } else {
             if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
                 ammd.getTypeName().startsWith("com.google.appengine.api")) {
-              NucleusLogger.GENERAL.info(">> field=" + ammd.getFullFieldName() +
-                  " value.type=" + value.getClass().getName() + 
-                  " field.type=" + ammd.getType().getName() + " val=" + value);
               value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
             } else {
-              TypeConverter strConv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
-              if (strConv != null) {
-                // Persist as String
-                value = strConv.toDatastoreType(value);
-              } else {
-                TypeConverter longConv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
-                if (longConv != null) {
-                  // Persist as Long
-                  value = longConv.toDatastoreType(value);
+              // Use TypeConverter where appropriate
+              // Note : We also come through here when converting parameter values for queries, which may not be the
+              // same type as the value of the field (e.g pass in the String form when using a UUID)
+              if (ammd.getType().isAssignableFrom(value.getClass())) {
+                TypeConverter strConv = typeMgr.getTypeConverterForType(ammd.getType(), String.class);
+                if (strConv != null) {
+                  // Persist as String
+                  value = strConv.toDatastoreType(value);
                 } else {
-                  // Unsupported type on GAE/J ?
-                  value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
+                  TypeConverter longConv = typeMgr.getTypeConverterForType(ammd.getType(), Long.class);
+                  if (longConv != null) {
+                    // Persist as Long
+                    value = longConv.toDatastoreType(value);
+                  } else {
+                    // Unsupported type on GAE/J ?
+                    value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
+                  }
                 }
               }
             }
