@@ -204,7 +204,6 @@ public class StoreFieldManager extends DatastoreFieldManager {
 
     ClassLoaderResolver clr = getClassLoaderResolver();
     int relationType = mmd.getRelationType(clr);
-    NucleusLogger.GENERAL.info(">> storeFieldInEntity field=" + mmd.getFullFieldName() + " relationType=" + relationType);
 
     if (Relation.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
       // Embedded persistable object
