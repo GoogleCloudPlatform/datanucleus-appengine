@@ -156,7 +156,7 @@ public class MetaDataValidator implements MetaDataListener {
       if (pkType == Long.class) {
         noParentAllowed = true;
       }
-    } else {
+    } else if (acmd.getIdentityType() == IdentityType.APPLICATION) {
       // Validate primary-key
       int[] pkPositions = acmd.getPKMemberPositions();
       if (pkPositions == null) {
@@ -165,12 +165,15 @@ public class MetaDataValidator implements MetaDataListener {
       if (pkPositions.length != 1) {
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.CompositePKNotSupported", acmd.getFullClassName());
       }
+
+      // TODO Support composite PKs
       int pkPos = pkPositions[0];
       pkMemberMetaData = acmd.getMetaDataForManagedMemberAtAbsolutePosition(pkPos);
 
-      // TODO Allow int, Integer types
       pkType = pkMemberMetaData.getType();
-      if (pkType.equals(Long.class) || pkType.equals(long.class)) {
+      if (pkType.equals(Long.class) || pkType.equals(long.class) || 
+          pkType.equals(Integer.class) || pkType.equals(int.class)) {
+        // Allow Long, long, Integer, int numeric PK types
         noParentAllowed = true;
       } else if (pkType.equals(String.class)) {
         if (!MetaDataUtils.isEncodedPKField(acmd, pkPos)) {
