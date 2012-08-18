@@ -31,7 +31,6 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
-import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.metadata.VersionStrategy;
@@ -328,23 +327,21 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Object newId = null;
       Class pkType = null;
       boolean identityStrategyUsed = false;
-      if (cmd.getIdentityType() == IdentityType.APPLICATION) {
-        int[] pkFields = cmd.getPKMemberPositions();
-        AbstractMemberMetaData pkMmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(pkFields[0]);
-        if (pkMmd.getValueStrategy() == IdentityStrategy.IDENTITY) {
+      if (cmd.pkIsDatastoreAttributed(storeMgr)) {
+        if (cmd.getIdentityType() == IdentityType.APPLICATION) {
+          // Assume only 1 PK field
           identityStrategyUsed = true;
           pkType = cmd.getMetaDataForManagedMemberAtAbsolutePosition(cmd.getPKMemberPositions()[0]).getType();
-        }
-      } else if (cmd.getIdentityType() == IdentityType.DATASTORE &&
-          cmd.getIdentityMetaData().getValueStrategy() == IdentityStrategy.IDENTITY) {
-        identityStrategyUsed = true;
-        pkType = Key.class;
-        ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
-        if (colmd != null) {
-          if ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType())) {
-            pkType = String.class;
-          } else if ("integer".equalsIgnoreCase(colmd.getJdbcType()) || "numeric".equalsIgnoreCase(colmd.getJdbcType())) {
-            pkType = Long.class;
+        } else if (cmd.getIdentityType() == IdentityType.DATASTORE) {
+          identityStrategyUsed = true;
+          pkType = Key.class;
+          ColumnMetaData colmd = cmd.getIdentityMetaData().getColumnMetaData();
+          if (colmd != null) {
+            if ("varchar".equalsIgnoreCase(colmd.getJdbcType()) || "char".equalsIgnoreCase(colmd.getJdbcType())) {
+              pkType = String.class;
+            } else if ("integer".equalsIgnoreCase(colmd.getJdbcType()) || "numeric".equalsIgnoreCase(colmd.getJdbcType())) {
+              pkType = Long.class;
+            }
           }
         }
       }

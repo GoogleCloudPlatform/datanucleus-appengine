@@ -52,7 +52,6 @@ import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.sco.SCO;
 import org.datanucleus.util.Localiser;
-import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.Key;
