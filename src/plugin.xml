@@ -334,6 +334,10 @@ limitations under the License.
 
     <!-- PERSISTENCE PROPERTIES -->
     <extension point="org.datanucleus.persistence_properties">
+        <persistence-property name="datanucleus.appengine.autoCreateDatastoreTxns" value="true"
+            validator="org.datanucleus.properties.BooleanPropertyValidator"/>
+        <persistence-property name="datanucleus.appengine.datastoreEnableXGTransactions"
+            validator="org.datanucleus.properties.BooleanPropertyValidator"/>
         <persistence-property name="datanucleus.appengine.storageversion" datastore="true"/>
         <persistence-property name="datanucleus.appengine.relationDefault" datastore="true" value="owned"
             validator="com.google.appengine.datanucleus.DatastorePropertyValidator"/>
