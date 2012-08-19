@@ -1340,7 +1340,7 @@ public class DatastoreQuery implements Serializable {
       return;
     }
 
-    if (!qd.tableMap.get(ammd.getAbstractClassMetaData().getFullClassName()).isParentKeyProvider(ammd)) {
+    if (!qd.table.isParentKeyProvider(ammd)) {
       // Looks like a join.  If it can be satisfied by just extracting the
       // parent key from the provided key, fulfill it.
       if (op != Query.FilterOperator.EQUAL) {

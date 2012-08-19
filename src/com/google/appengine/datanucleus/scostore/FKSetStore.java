@@ -24,7 +24,6 @@ import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusUserException;
-import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.Relation;
 import org.datanucleus.store.ExecutionContext;
@@ -81,28 +80,11 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
     boolean inserted = validateElementForWriting(ec, element, new FieldValues() {
       public void fetchFields(ObjectProvider esm) {
         // Find the (element) table storing the FK back to the owner
-        if (elementTable == null) {
-          // "subclass-table", persisted into table of other class
-          AbstractClassMetaData[] managingCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
-          if (managingCmds != null && managingCmds.length > 0) {
-            // Find which of these subclasses is appropriate for this element
-            for (int i=0;i<managingCmds.length;i++) {
-              Class tblCls = clr.classForName(managingCmds[i].getFullClassName());
-              if (tblCls.isAssignableFrom(esm.getObject().getClass())) {
-                elementTable = storeMgr.getDatastoreClass(managingCmds[i].getFullClassName(), clr);
-                break;
-              }
-            }
-          }
-        }
-
-        if (elementTable != null) {
-          JavaTypeMapping externalFKMapping = elementTable.getExternalMapping(ownerMemberMetaData, 
-              MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
-          if (externalFKMapping != null) {
-            // The element has an external FK mapping so set the value it needs to use in the INSERT
-            esm.setAssociatedValue(externalFKMapping, op.getObject());
-          }
+        JavaTypeMapping externalFKMapping = elementTable.getExternalMapping(ownerMemberMetaData, 
+            MappingConsumer.MAPPING_TYPE_EXTERNAL_FK);
+        if (externalFKMapping != null) {
+          // The element has an external FK mapping so set the value it needs to use in the INSERT
+          esm.setAssociatedValue(externalFKMapping, op.getObject());
         }
 
         if (relationType == Relation.ONE_TO_MANY_BI) {
@@ -198,12 +180,38 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
     return success;
   }
 
+  /**
+   * Convenience method for whether we should delete elements when clear()/remove() is called.
+   * Owned relations will be deleted, whereas unowned will follow the "dependent-element" setting.
+   * @return Whether to delete an element on call of clear()/remove()
+   */
+  protected boolean deleteElementsOnRemoveOrClear() {
+    // Removal of child should always delete the child with GAE since cannot null the parent in owned relations
+    boolean deleteElements = false;
+    boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
+    if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
+      dependent = true;
+    }
+
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
+      // Field is not dependent, and not nullable so we just delete the elements
+      NucleusLogger.DATASTORE.debug(LOCALISER.msg("056035"));
+      deleteElements = true;
+    } else {
+      if (dependent) {
+        deleteElements = true;
+      }
+      // TODO Allow for non-nullable FK
+    }
+    return deleteElements;
+  }
+
   /* (non-Javadoc)
    * @see org.datanucleus.store.scostore.CollectionStore#clear(org.datanucleus.store.ObjectProvider)
    */
   public void clear(ObjectProvider op) {
-    // Find elements present in the datastore and delete them one-by-one
-    // Removal of child should always delete the child with GAE since cannot null the parent in owned relations
+    // Find elements present in the datastore and process them one-by-one
+    boolean deleteElements = deleteElementsOnRemoveOrClear();
     ExecutionContext ec = op.getExecutionContext();
     Iterator elementsIter = iterator(op);
     if (elementsIter != null) {
@@ -213,10 +221,8 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           // Element is waiting to be deleted so flush it (it has the FK)
           ObjectProvider elementSM = ec.findObjectProvider(element);
           elementSM.flush();
-        }
-        else {
-          if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
-            // Element not yet marked for deletion so go through the normal process
+        } else {
+          if (deleteElements) {
             ec.deleteObjectInternal(element);
           } else {
             // TODO Null this out (in parent)
@@ -268,42 +274,43 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
         return false;
     }
 
-    // Find the state manager for the element
+    // Find the ObjectProvider for the element
     Object elementToRemove = element;
     ExecutionContext ec = op.getExecutionContext();
     if (ec.getApiAdapter().isDetached(element)) {// User passed in detached object to collection.remove()! {
       // Find an attached equivalent of this detached object (DON'T attach the object itself)
       elementToRemove = ec.findObject(ec.getApiAdapter().getIdForObject(element), true, false, element.getClass().getName());
     }
-
     ObjectProvider elementOP = ec.findObjectProvider(elementToRemove);
-    Object oldOwner = null;
-    if (relationType == Relation.ONE_TO_MANY_BI) {
-      if (!ec.getApiAdapter().isDeleted(elementToRemove)) {
-        // Find the existing owner if the record hasn't already been deleted
-        int elemOwnerFieldNumber = getFieldNumberInElementForBidirectional(elementOP);
-        ec.getApiAdapter().isLoaded(elementOP, elemOwnerFieldNumber);
-        oldOwner = elementOP.provideField(elemOwnerFieldNumber);
+
+    // Check for change of owner of the element (removed from this but added to another one maybe?)
+    if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
+      // Check for ownership change when owned relation, and prevent changes
+      Object oldOwner = null;
+      if (relationType == Relation.ONE_TO_MANY_BI) {
+        if (!ec.getApiAdapter().isDeleted(elementToRemove)) {
+          // Find the existing owner if the record hasn't already been deleted
+          int elemOwnerFieldNumber = getFieldNumberInElementForBidirectional(elementOP);
+          ec.getApiAdapter().isLoaded(elementOP, elemOwnerFieldNumber);
+          oldOwner = elementOP.provideField(elemOwnerFieldNumber);
+        }
+      }
+      if (Relation.isBidirectional(relationType) && oldOwner != op.getObject() && oldOwner != null) {
+        // Owner of the element has been changed, so reject it
+        return false;
       }
     }
-    else {
-      // TODO Check if the element is managed by a different owner now
-    }
 
-    // Owner of the element has been changed
-    if (Relation.isBidirectional(relationType) && oldOwner != op.getObject() && oldOwner != null) {
-      // TODO Handle this. Can't swap owner of elements in GAE
-      return false;
-    }
-
-    // Delete the element since cannot remove it and null the parent
+    boolean deleteElements = deleteElementsOnRemoveOrClear();
     if (ec.getApiAdapter().isPersistable(elementToRemove) && ec.getApiAdapter().isDeleted(elementToRemove)) {
       // Element is waiting to be deleted so flush it (it has the FK)
       elementOP.flush();
-    }
-    else {
-      // Element not yet marked for deletion so go through the normal process
-      ec.deleteObjectInternal(elementToRemove);
+    } else {
+      if (deleteElements) {
+        ec.deleteObjectInternal(elementToRemove);
+      } else {
+        // TODO Null it out
+      }
     }
 
     return true;

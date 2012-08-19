@@ -25,7 +25,6 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.OrderExpression;
 import org.datanucleus.query.expression.VariableExpression;
-import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
@@ -43,8 +42,10 @@ import java.util.Set;
  */
 final class QueryData {
   final Map parameters;
+
   final AbstractClassMetaData acmd;
-  final Map<String, DatastoreTable> tableMap = Utils.newHashMap();
+  final DatastoreTable table;
+
   final QueryCompilation compilation;
   final Query primaryDatastoreQuery;
   final DatastoreQuery.ResultType resultType;
@@ -54,6 +55,7 @@ final class QueryData {
 
   // only used by JDO when there is an explicit variable
   VariableExpression joinVariableExpression;
+
   OrderExpression joinOrderExpression;
   Query joinQuery;
   String currentOrProperty;
@@ -66,7 +68,7 @@ final class QueryData {
       Utils.Function<Entity, Object> resultTransformer) {
     this.parameters = parameters;
     this.acmd = acmd;
-    this.tableMap.put(acmd.getFullClassName(), table);
+    this.table = table;
     this.compilation = compilation;
     this.primaryDatastoreQuery = primaryDatastoreQuery;
     this.resultType = resultType;
@@ -79,7 +81,7 @@ final class QueryData {
    */
   public String getDatastoreQueryAsString() {
     StringBuilder str = new StringBuilder();
-    str.append("Kind=" + StringUtils.collectionToString(tableMap.values()));
+    str.append("Kind=" + table);
     List<FilterPredicate> filterPreds = primaryDatastoreQuery.getFilterPredicates();
     if (filterPreds.size() > 0) {
       str.append(" Filter : ");

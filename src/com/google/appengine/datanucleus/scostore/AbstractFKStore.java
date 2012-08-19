@@ -119,6 +119,8 @@ public abstract class AbstractFKStore {
     if (elementCmd == null) {
       throw new NucleusUserException(LOCALISER.msg("056003", element_class.getName(), ownerMemberMetaData.getFullFieldName()));
     }
+
+    // Set table of element
     elementTable = this.storeMgr.getDatastoreClass(elementCmd.getFullClassName(), clr);
     if (elementTable == null) {
       // Special case : single subclass with table

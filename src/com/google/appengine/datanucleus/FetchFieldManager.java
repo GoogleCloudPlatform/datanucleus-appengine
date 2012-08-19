@@ -490,49 +490,43 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
       return null;
     } else if (Relation.isRelationSingleValued(relationType)) {
-      DatastoreTable dt = getDatastoreTable();
-      JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(mmd);
-      if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
-        if (!MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
-          // Get other side via property containing key
-          return lookupOneToOneChild(mmd, clr);
-        }
+      boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
+      if (owned) {
+        // Owned relation, so 1-1_uni/1-1_bi store the relation in the property, and all others at other side
+        DatastoreTable dt = getDatastoreTable();
+        JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(mmd);
+        if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
+          // Even though the mapping is 1 to 1, we model it as a 1 to many and then
+          // just throw a runtime exception if we get multiple children.  We would
+          // prefer to store the child id on the parent, but we can't because creating
+          // a parent and child at the same time involves 3 distinct writes:
+          // 1) We put the parent object in order to get a Key.
+          // 2) We put the child object, which needs the Key of the parent as
+          // the parent of its own Key so that parent and child reside in the
+          // same entity group.
+          // 3) We re-put the parent object, adding the Key of the child object
+          // as a property on the parent.
+          // The problem is that the datastore does not support multiple writes
+          // to the same entity within a single transaction, so there's no way
+          // to perform this sequence of events atomically, and that's a problem.
 
-        // Even though the mapping is 1 to 1, we model it as a 1 to many and then
-        // just throw a runtime exception if we get multiple children.  We would
-        // prefer to store the child id on the parent, but we can't because creating
-        // a parent and child at the same time involves 3 distinct writes:
-        // 1) We put the parent object in order to get a Key.
-        // 2) We put the child object, which needs the Key of the parent as
-        // the parent of its own Key so that parent and child reside in the
-        // same entity group.
-        // 3) We re-put the parent object, adding the Key of the child object
-        // as a property on the parent.
-        // The problem is that the datastore does not support multiple writes
-        // to the same entity within a single transaction, so there's no way
-        // to perform this sequence of events atomically, and that's a problem.
+          // We have 2 scenarios here.  The first is that we're loading the parent
+          // side of a 1 to 1 and we want the child.  In that scenario we're going
+          // to issue a parent query against the child table with the expectation
+          // that there is either 1 result or 0.
 
-        // We have 2 scenarios here.  The first is that we're loading the parent
-        // side of a 1 to 1 and we want the child.  In that scenario we're going
-        // to issue a parent query against the child table with the expectation
-        // that there is either 1 result or 0.
-
-        // The second scearnio is that we're loading the child side of a
-        // bidirectional 1 to 1 and we want the parent.  In that scenario
-        // the key of the parent is part of the child's key so we can just
-        // issue a fetch using the parent's key.
-        if (dt.isParentKeyProvider(mmd)) {
-          // bidir 1 to 1 and we are the child
-          return lookupParent(mmd, mapping, false);
-        } else {
-          // bidir 1 to 1 and we are the parent
-          return lookupOneToOneChild(mmd, clr);
-        }
-      } else if (relationType == Relation.MANY_TO_ONE_BI) {
-        if (!MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
-          // Get other side via property containing key
-          return lookupOneToOneChild(mmd, clr);
-        } else {
+          // The second scearnio is that we're loading the child side of a
+          // bidirectional 1 to 1 and we want the parent.  In that scenario
+          // the key of the parent is part of the child's key so we can just
+          // issue a fetch using the parent's key.
+          if (dt.isParentKeyProvider(mmd)) {
+            // bidir 1 to 1 and we are the child
+            return lookupParent(mmd, mapping, false);
+          } else {
+            // bidir 1 to 1 and we are the parent
+            return lookupOneToOneChild(mmd, clr);
+          }
+        } else if (relationType == Relation.MANY_TO_ONE_BI) {
           // Get owner via parent key of this object
           // Do not complain about a non existing parent if we have a self referencing relation 
           // and are on the top of the hierarchy.
@@ -541,6 +535,9 @@ public class FetchFieldManager extends DatastoreFieldManager
           boolean allowNullParent = (other == parent && datastoreEntity.getKey().getParent() == null);
           return lookupParent(mmd, mapping, allowNullParent);
         }
+      } else {
+        // Unowned relation, so get related object from the property
+        return lookupOneToOneChild(mmd, clr);
       }
     }
     return value;

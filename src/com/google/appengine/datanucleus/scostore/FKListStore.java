@@ -59,7 +59,6 @@ import com.google.appengine.datanucleus.KeyRegistry;
 import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.mapping.DatastoreTable;
 import com.google.appengine.datanucleus.query.LazyResult;
 
 /**
@@ -276,55 +275,58 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     return true;
   }
 
-  /* (non-Javadoc)
-   * @see org.datanucleus.store.scostore.CollectionStore#clear(org.datanucleus.store.ObjectProvider)
+  /**
+   * Convenience method for whether we should delete elements when clear()/remove() is called.
+   * @return Whether to delete an element on call of clear()/remove()
    */
-  public void clear(ObjectProvider op) {
+  protected boolean deleteElementsOnRemoveOrClear() {
     boolean deleteElements = false;
-    ExecutionContext ec = op.getExecutionContext();
 
     boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
     if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
       dependent = true;
     }
+
     if (dependent) {
       // Elements are dependent and can't exist on their own, so delete them all
       NucleusLogger.DATASTORE.debug(LOCALISER.msg("056034"));
       deleteElements = true;
-    }
-    else {
-      if (ownerMapping.isNullable() && orderMapping == null) {
-        // Field is not dependent, and nullable so we null the FK
+    } else {
+      if ((ownerMapping.isNullable() && orderMapping == null) ||
+          (ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable())) {
+        // Field isn't dependent, and is nullable, so we'll null it
         NucleusLogger.DATASTORE.debug(LOCALISER.msg("056036"));
         deleteElements = false;
-      }
-      else if (ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
-        // Field is not dependent, and nullable so we null the FK
-        NucleusLogger.DATASTORE.debug(LOCALISER.msg("056036"));
-        deleteElements = false;
-      }
-      else {
+      } else {
         if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
           // Field is not dependent, and not nullable so we just delete the elements
           NucleusLogger.DATASTORE.debug(LOCALISER.msg("056035"));
           deleteElements = true;
+        } else {
+          // Unowned relation doesn't care since FK is not stored
         }
       }
     }
 
-    if (deleteElements) {
-      // Find elements present in the datastore and delete them one-by-one
-      Iterator elementsIter = iterator(op);
-      if (elementsIter != null) {
-        while (elementsIter.hasNext()) {
-          Object element = elementsIter.next();
-          if (ec.getApiAdapter().isPersistable(element) && ec.getApiAdapter().isDeleted(element)) {
-            // Element is waiting to be deleted so flush it (it has the FK)
-            ObjectProvider objSM = ec.findObjectProvider(element);
-            objSM.flush();
-          }
-          else {
-            // Element not yet marked for deletion so go through the normal process
+    return deleteElements;
+  }
+
+  /* (non-Javadoc)
+   * @see org.datanucleus.store.scostore.CollectionStore#clear(org.datanucleus.store.ObjectProvider)
+   */
+  public void clear(ObjectProvider op) {
+    boolean deleteElements = deleteElementsOnRemoveOrClear();
+    ExecutionContext ec = op.getExecutionContext();
+    Iterator elementsIter = iterator(op);
+    if (elementsIter != null) {
+      while (elementsIter.hasNext()) {
+        Object element = elementsIter.next();
+        if (ec.getApiAdapter().isPersistable(element) && ec.getApiAdapter().isDeleted(element)) {
+          // Element is waiting to be deleted so flush it (it has the FK)
+          ObjectProvider objSM = ec.findObjectProvider(element);
+          objSM.flush();
+        } else {
+          if (deleteElements) {
             ec.deleteObjectInternal(element);
           }
         }
@@ -478,6 +480,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       internalRemove(ownerOP, element, currentSize);
     }
 
+    // TODO This does delete of element, yet internalRemove/removeAt also do
     boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
     if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
       dependent = true;
@@ -548,60 +551,54 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       throw new NucleusUserException("Cannot remove an element from a particular position with an ordered list since no indexes exist");
     }
 
-    boolean nullify = false;
-    boolean dependent = ownerMemberMetaData.getCollection().isDependentElement();
-    if (ownerMemberMetaData.isCascadeRemoveOrphans()) {
-      dependent = true;
-    }
-
-    // TODO Don't go through this if using latest storage version since we store child keys in owner
-
-    if (!dependent && ownerMapping != null && ownerMapping.isNullable() && orderMapping != null && orderMapping.isNullable()) {
-      NucleusLogger.DATASTORE.debug(LOCALISER.msg("056043"));
-      nullify = true;
-    } else {
-      NucleusLogger.DATASTORE.debug(LOCALISER.msg("056042"));
-    }
-
+    // Handle delete/nulling of the element - Use thread-local to prevent recurse
     if (removing.get()) {
       return;
     }
-
-    if (nullify) {
-      // we don't support unowned relationships yet
-    } else {
-      // first we need to delete the element
-      ExecutionContext ec = ownerOP.getExecutionContext();
-      Object element = get(ownerOP, index);
-      // the delete call can end up cascading back here, so set a thread-local to make sure we don't do it more than once
+    boolean deleteElement = deleteElementsOnRemoveOrClear();
+    ExecutionContext ec = ownerOP.getExecutionContext();
+    Object element = get(ownerOP, index);
+    try {
       removing.set(true);
-      try {
-        ec.deleteObjectInternal(element);
-      } finally {
-        removing.set(false);
-      }
 
-      if (orderMapping != null) {
-        // need to shift everyone down
-        DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
-        DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
-        AbstractClassMetaData acmd = elementCmd;
-        String kind =
-          storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
-        Query q = new Query(kind);
-        Key key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), ownerOP);
-        q.setAncestor(key);
-
-        // create an entity just to capture the name of the index property
-        Entity entity = new Entity(kind);
-        orderMapping.setObject(ec, entity, new int[] {1}, index);
-        String indexProp = entity.getProperties().keySet().iterator().next();
-        q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN, index);
-        for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
-          Long pos = (Long) shiftMe.getProperty(indexProp);
-          shiftMe.setProperty(indexProp, pos - 1);
-          EntityUtils.putEntityIntoDatastore(ec, shiftMe);
+      if (!deleteElement) {
+        // Nullify the index of the element
+        ObjectProvider elementOP = ec.findObjectProvider(element);
+        if (elementOP != null && !ec.getApiAdapter().isDeleted(element)) {
+          Entity elementEntity = getOwnerEntity(elementOP);
+          elementEntity.removeProperty(getIndexPropertyName()); // Actually remove the index
+          EntityUtils.putEntityIntoDatastore(ec, elementEntity);
         }
+      } else {
+        // Delete the element
+        ec.deleteObjectInternal(element);
+      }
+    } finally {
+      removing.set(false);
+    }
+
+    // TODO Don't bother with this if using latest storage version (but update tests too)
+    // Not storing element keys in owner, so need to update the index property of following objects
+    if (orderMapping != null) {
+      // need to shift indexes of following elements down
+      DatastoreServiceConfig config = storeMgr.getDefaultDatastoreServiceConfigForReads();
+      DatastoreService service = DatastoreServiceFactoryInternal.getDatastoreService(config);
+      AbstractClassMetaData acmd = elementCmd;
+      String kind =
+        storeMgr.getIdentifierFactory().newDatastoreContainerIdentifier(acmd).getIdentifierName();
+      Query q = new Query(kind);
+      Key key = EntityUtils.getPrimaryKeyAsKey(ec.getApiAdapter(), ownerOP);
+      q.setAncestor(key);
+
+      // create an entity just to capture the name of the index property
+      Entity entity = new Entity(kind);
+      orderMapping.setObject(ec, entity, new int[] {1}, index);
+      String indexProp = entity.getProperties().keySet().iterator().next();
+      q.addFilter(indexProp, Query.FilterOperator.GREATER_THAN, index);
+      for (Entity shiftMe : service.prepare(service.getCurrentTransaction(null), q).asIterable()) {
+        Long pos = (Long) shiftMe.getProperty(indexProp);
+        shiftMe.setProperty(indexProp, pos - 1);
+        EntityUtils.putEntityIntoDatastore(ec, shiftMe);
       }
     }
   }
@@ -982,8 +979,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       sortPredicates.add(sortPredicate);
     } else {
       for (OrderMetaData.FieldOrder fieldOrder : ownerMemberMetaData.getOrderMetaData().getFieldOrders()) {
-        AbstractMemberMetaData orderMmd = 
-          ((DatastoreTable)elementTable).getClassMetaData().getMetaDataForMember(fieldOrder.getFieldName());
+        AbstractMemberMetaData orderMmd = elementCmd.getMetaDataForMember(fieldOrder.getFieldName());
         String orderPropName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), orderMmd);
         boolean isPrimaryKey = orderMmd.isPrimaryKey();
         if (isPrimaryKey) {
@@ -1009,9 +1005,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
   }
 
   boolean isPrimaryKey(String propertyName) {
-    DatastoreTable table = (DatastoreTable) this.elementTable;
-    AbstractMemberMetaData ammd = table.getClassMetaData().getMetaDataForMember(propertyName);
-    return ammd.isPrimaryKey();
+    return elementCmd.getMetaDataForMember(propertyName).isPrimaryKey();
   }
 
   /**
