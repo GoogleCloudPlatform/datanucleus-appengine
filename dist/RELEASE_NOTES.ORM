@@ -1,6 +1,23 @@
 Release Notes for the Google App Engine ORM, a DataNucleus plugin that provides
 access to the Google App Engine Datastore via JDO and JPA.
 
+VERSION 2.1.1
+
+- Entity relationship, owned or unowned, is always dependent
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=290
+
+- Allow use of simple SCO wrappers for non-relation fields
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=291
+
+- Support full range of input value conversions for use in queries
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=292
+
+- If using "NATIVE"/"AUTO" value strategy for identity, doesn't put id back on managed object at persist
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=293
+
+- Enable use of int/Integer for PK fields
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=294
+
 VERSION 2.1.0
 
 - JDO Keys-only query counts toward Datastore Read instead of Datastore Small.
