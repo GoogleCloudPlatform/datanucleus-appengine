@@ -18,6 +18,9 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=293
 - Enable use of int/Integer for PK fields
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=294
 
+- http://code.google.com/p/googleappengine/issues/detail?id=1748
+BigDecimal fields are restored from database as float value
+
 VERSION 2.1.0
 
 - JDO Keys-only query counts toward Datastore Read instead of Datastore Small.
