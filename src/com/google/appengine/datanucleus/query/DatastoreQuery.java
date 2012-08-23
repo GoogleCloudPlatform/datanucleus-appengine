@@ -70,6 +70,7 @@ import org.datanucleus.store.schema.naming.ColumnType;
 import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
+import com.google.appengine.datanucleus.BigDecimals;
 import com.google.appengine.datanucleus.DatastoreExceptionTranslator;
 import com.google.appengine.datanucleus.FetchFieldManager;
 import com.google.appengine.datanucleus.DatastoreManager;
@@ -1092,7 +1093,7 @@ public class DatastoreQuery implements Serializable {
         datastorePropName = determinePropertyName(ammd);
       }
 
-      value = pojoParamToDatastoreParam(value);
+      value = pojoParamToDatastoreParam(value, ammd.getType());
       if (qd.isOrExpression) {
         addLeftPrimaryOrExpression(qd, datastorePropName, value);
       } else {
@@ -1107,9 +1108,9 @@ public class DatastoreQuery implements Serializable {
           }
         }
         try {
-          if (!ammd.hasContainer()) {
+          if (!ammd.hasContainer() ) {
             // Non-container field comparison, so allow conversion between input value and equivalent datastore value
-            value = DatastoreManager.TYPE_CONVERSION_UTILS.pojoValueToDatastoreValue(
+            value = getStoreManager().getTypeConversionUtils().pojoValueToDatastoreValue(
                 getExecutionContext().getNucleusContext().getTypeManager(), getClassLoaderResolver(), value, ammd);
           }
           datastoreQuery.addFilter(datastorePropName, op, value);
@@ -1225,7 +1226,7 @@ public class DatastoreQuery implements Serializable {
   }
 
   // TODO(maxr): Use TypeConversionUtils
-  private Object pojoParamToDatastoreParam(Object param) {
+  private Object pojoParamToDatastoreParam(Object param, Class type) {
     if (param instanceof Enum) {
       // TODO Cater for persisting Enum as ordinal. Need the mmd of the other side
       param = ((Enum) param).name();
@@ -1234,7 +1235,10 @@ public class DatastoreQuery implements Serializable {
     } else if (param instanceof Byte[]) {
       param = new ShortBlob(PrimitiveArrays.toByteArray(Arrays.asList((Byte[]) param)));
     } else if (param instanceof BigDecimal) {
-      param = ((BigDecimal) param).doubleValue();
+      if (type.equals(Double.class)|| type.equals(double.class)
+          ||type.equals(Float.class)|| type.equals(float.class)) {
+        param = ((BigDecimal) param).doubleValue();
+      } 
     } else if (param instanceof Character) {
       param = param.toString();
     }
@@ -1249,8 +1253,8 @@ public class DatastoreQuery implements Serializable {
 
   private Object negateNumber(Number negateMe) {
     if (negateMe instanceof BigDecimal) {
-      // datastore doesn't support filtering by BigDecimal so convert to double.
-      return ((BigDecimal) negateMe).negate().doubleValue();
+      // datastore doesn't support filtering by BigDecimal so convert to string.
+      return BigDecimals.toSortableString(((BigDecimal) negateMe).negate());
     } else if (negateMe instanceof Float) {
       return -((Float) negateMe);
     } else if (negateMe instanceof Double) {

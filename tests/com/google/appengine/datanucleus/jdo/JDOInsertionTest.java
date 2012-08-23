@@ -20,6 +20,7 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
+import com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
 import com.google.appengine.datanucleus.test.jdo.HasPromotedTypesJDO;
@@ -31,6 +32,8 @@ import com.google.appengine.datanucleus.test.jdo.Person;
 
 
 import java.util.Arrays;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.jdo.JDOFatalUserException;
 import javax.jdo.JDOHelper;
@@ -76,6 +79,9 @@ public class JDOInsertionTest extends JDOTestCase {
   }
 
   public void testKitchenSinkInsert() throws EntityNotFoundException {
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("datanucleus.appengine.BigDecimalsEncoding", "String");
+    switchDatasource(PersistenceManagerFactoryName.originalStorageVersion, props);
     KitchenSink ks = KitchenSink.newKitchenSink();
     assertNull(ks.key);
     makePersistentInTxn(ks, TXN_START_END);

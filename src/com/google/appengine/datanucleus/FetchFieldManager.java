@@ -460,7 +460,8 @@ public class FetchFieldManager extends DatastoreFieldManager
         } else {
           // Perform any conversions from the stored-type to the field type
           TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
-          value = DatastoreManager.TYPE_CONVERSION_UTILS.datastoreValueToPojoValue(typeMgr, clr, value, mmd);
+          value = ((DatastoreManager) ec.getStoreManager()).getTypeConversionUtils()
+              .datastoreValueToPojoValue(typeMgr, clr, value, mmd);
         }
 
         if (value != null && !(value instanceof SCO)) {

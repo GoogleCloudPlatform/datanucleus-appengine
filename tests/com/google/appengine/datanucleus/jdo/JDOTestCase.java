@@ -27,6 +27,7 @@ import org.datanucleus.api.jdo.JDOPersistenceManager;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.store.ExecutionContext;
 
+import java.util.HashMap;
 import java.util.Map;
 
 import javax.jdo.JDOHelper;
@@ -58,11 +59,13 @@ public class JDOTestCase extends DatastoreTestCase {
 
   @Override
   protected void setUp() throws Exception {
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("datanucleus.appengine.BigDecimalsEncoding", "String");
     super.setUp();
     ds = DatastoreServiceFactory.getDatastoreService();
     pmf = pmfCache.get().get(getPersistenceManagerFactoryName());
     if (pmf == null) {
-      pmf = JDOHelper.getPersistenceManagerFactory(getPersistenceManagerFactoryName().name());
+      pmf = JDOHelper.getPersistenceManagerFactory(props, getPersistenceManagerFactoryName().name());
       if (cacheManagers()) {
         pmfCache.get().put(getPersistenceManagerFactoryName(), pmf);
       }

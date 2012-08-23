@@ -15,6 +15,8 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.query;
 
+import static com.google.appengine.datanucleus.test.jdo.Flight.newFlightEntity;
+
 import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreTimeoutException;
 import com.google.appengine.api.datastore.Entity;
@@ -36,6 +38,7 @@ import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
 import com.google.appengine.datanucleus.jdo.JDOTestCase;
+import com.google.appengine.datanucleus.test.jdo.AbstractBaseClassesJDO.Base1;
 import com.google.appengine.datanucleus.test.jdo.BidirectionalChildListJDO;
 import com.google.appengine.datanucleus.test.jdo.BidirectionalChildLongPkListJDO;
 import com.google.appengine.datanucleus.test.jdo.BidirectionalGrandchildListJDO;
@@ -65,18 +68,18 @@ import com.google.appengine.datanucleus.test.jdo.HasUnencodedStringPkJDO;
 import com.google.appengine.datanucleus.test.jdo.KitchenSink;
 import com.google.appengine.datanucleus.test.jdo.NullDataJDO;
 import com.google.appengine.datanucleus.test.jdo.Person;
-import com.google.appengine.datanucleus.test.jdo.AbstractBaseClassesJDO.Base1;
 import com.google.appengine.datanucleus.test.jdo.UnidirectionalSuperclassTableChildJDO.UnidirTop;
 import com.google.appengine.datanucleus.test.jpa.Book;
 import com.google.apphosting.api.ApiProxy;
 import com.google.apphosting.api.DatastorePb;
 
-import org.datanucleus.exceptions.NucleusUserException;
+import junit.framework.Assert;
+
 import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 import org.datanucleus.api.jdo.JDOQuery;
+import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.query.expression.Expression;
 import org.datanucleus.store.query.cache.QueryResultsCache;
-
 import org.easymock.EasyMock;
 
 import java.io.ByteArrayOutputStream;
@@ -103,10 +106,6 @@ import javax.jdo.JDOUserException;
 import javax.jdo.Query;
 import javax.jdo.listener.InstanceLifecycleEvent;
 import javax.jdo.listener.LoadLifecycleListener;
-
-import junit.framework.Assert;
-
-import static com.google.appengine.datanucleus.test.jdo.Flight.newFlightEntity;
 
 /**
  * @author Max Ross <maxr@google.com>
@@ -1614,10 +1613,26 @@ public class JDOQLQueryTest extends JDOTestCase {
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
     ds.put(null, e);
 
-    Query q = pm.newQuery(
-        "select from " + KitchenSink.class.getName() + " where bigDecimal == bd parameters " + BigDecimal.class.getName() + " bd");
+    Query q = pm.newQuery("select from " + KitchenSink.class.getName()
+        + " where bigDecimal == bd parameters " + BigDecimal.class.getName()
+        + " bd");
     @SuppressWarnings("unchecked")
-    List<KitchenSink> results = (List<KitchenSink>) q.execute(new BigDecimal(2.444d));
+    List<KitchenSink> results = (List<KitchenSink>) q.execute(
+        new BigDecimal("2.444"));
+    assertEquals(1, results.size());
+  }
+  
+  public void testBigDecimalInequalityQuery() {
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ds.put(null, e);
+
+    Query q = pm.newQuery("select from " + KitchenSink.class.getName()
+        + " where bigDecimal > bd1 && bigDecimal < bd2 parameters "
+        + BigDecimal.class.getName() + " bd1, " + BigDecimal.class.getName()
+        + " bd2");
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.execute(
+        new BigDecimal("2"), new BigDecimal("3"));
     assertEquals(1, results.size());
   }
 

@@ -23,6 +23,7 @@ import com.google.appengine.api.datastore.Link;
 import com.google.appengine.api.datastore.ShortBlob;
 import com.google.appengine.api.datastore.Text;
 import com.google.appengine.api.users.User;
+import com.google.appengine.datanucleus.BigDecimals;
 import com.google.appengine.datanucleus.Utils;
 
 
@@ -166,7 +167,7 @@ public class KitchenSink {
     ks.doublePrimVal = 2.22d;
     ks.dateVal = DATE1;
     ks.ksEnum = KitchenSinkEnum.ONE;
-    ks.bigDecimal = new BigDecimal(2.444d);
+    ks.bigDecimal = new BigDecimal("2.444");
     ks.userVal = USER1;
     ks.blobVal = BLOB1;
     ks.textVal = TEXT1;
@@ -193,7 +194,7 @@ public class KitchenSink {
     ks.booleanArray = new Boolean[] {Boolean.FALSE, Boolean.TRUE};
     ks.dateArray = new Date[] {DATE1, DATE2};
     ks.ksEnumArray = new KitchenSinkEnum[] {KitchenSinkEnum.TWO, KitchenSinkEnum.ONE};
-    ks.bigDecimalArray = new BigDecimal[] {new BigDecimal(3.4444d), new BigDecimal(4.3333d)};
+    ks.bigDecimalArray = new BigDecimal[] {new BigDecimal("3.4444"), new BigDecimal("4.3333")};
     ks.userArray = new User[] {USER1, USER2};
     ks.blobArray = new Blob[] {BLOB1, BLOB2};
     ks.textArray = new Text[] {TEXT1, TEXT2};
@@ -212,7 +213,7 @@ public class KitchenSink {
     ks.booleanList = Utils.newArrayList(true, false);
     ks.dateList = Utils.newArrayList(DATE1, DATE2);
     ks.ksEnumList = Utils.newArrayList(KitchenSinkEnum.TWO, KitchenSinkEnum.ONE);
-    ks.bigDecimalList = Utils.newArrayList(new BigDecimal(7.6666d), new BigDecimal(6.7777d));
+    ks.bigDecimalList = Utils.newArrayList(new BigDecimal("7.6666"), new BigDecimal("6.7777"));
     ks.userList = Utils.newArrayList(USER1, USER2);
     ks.blobList = Utils.newArrayList(BLOB1, BLOB2);
     ks.textList = Utils.newArrayList(TEXT1, TEXT2);
@@ -253,7 +254,7 @@ public class KitchenSink {
     entity.setProperty("doubleVal", 2.22d);
     entity.setProperty("dateVal", DATE1);
     entity.setProperty("ksEnum", KitchenSinkEnum.ONE.name());
-    entity.setProperty("bigDecimal", 2.444d);
+    entity.setProperty("bigDecimal", BigDecimals.toSortableString(new BigDecimal("2.444")));
     entity.setProperty("userVal", USER1);
     entity.setProperty("blobVal", BLOB1);
     entity.setProperty("textVal", TEXT1);
@@ -278,9 +279,11 @@ public class KitchenSink {
     entity.setProperty("primitiveBooleanArray", Utils.newArrayList(true, false));
     entity.setProperty("booleanArray", Utils.newArrayList(false, true));
     entity.setProperty("dateArray", Utils.newArrayList(DATE1, DATE2));
-    entity.setProperty("ksEnumArray",
-                       Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
-    entity.setProperty("bigDecimalArray", Utils.newArrayList(3.4444d, 4.3333d));
+    entity.setProperty("ksEnumArray", Utils.newArrayList(
+        KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
+    entity.setProperty("bigDecimalArray", Utils.newArrayList(
+        BigDecimals.toSortableString(new BigDecimal("3.4444")),
+        BigDecimals.toSortableString(new BigDecimal("4.3333"))));
     entity.setProperty("userArray", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobArray", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textArray", Utils.newArrayList(TEXT1, TEXT2));
@@ -298,9 +301,11 @@ public class KitchenSink {
     entity.setProperty("floatList", Utils.newArrayList((double) 23.44f, (double) 24.55f));
     entity.setProperty("booleanList", Utils.newArrayList(true, false));
     entity.setProperty("dateList", Utils.newArrayList(DATE1, DATE2));
-    entity.setProperty("ksEnumList",
-                       Utils.newArrayList(KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
-    entity.setProperty("bigDecimalList", Utils.newArrayList(7.6666d, 6.7777d));
+    entity.setProperty("ksEnumList", Utils.newArrayList(
+        KitchenSinkEnum.TWO.name(), KitchenSinkEnum.ONE.name()));
+    entity.setProperty("bigDecimalList", Utils.newArrayList(
+        BigDecimals.toSortableString(new BigDecimal("7.6666")),
+        BigDecimals.toSortableString(new BigDecimal("6.7777"))));
     entity.setProperty("userList", Utils.newArrayList(USER1, USER2));
     entity.setProperty("blobList", Utils.newArrayList(BLOB1, BLOB2));
     entity.setProperty("textList", Utils.newArrayList(TEXT1, TEXT2));

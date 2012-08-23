@@ -342,7 +342,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
       } else {
         // Perform any conversions from the field type to the stored-type
         TypeManager typeMgr = ec.getNucleusContext().getTypeManager();
-        value = DatastoreManager.TYPE_CONVERSION_UTILS.pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
+        value = ((DatastoreManager) ec.getStoreManager())
+            .getTypeConversionUtils()
+            .pojoValueToDatastoreValue(typeMgr, clr, value, mmd);
 
         if (value instanceof SCO) {
           // Use the unwrapped value so the datastore doesn't fail on unknown types

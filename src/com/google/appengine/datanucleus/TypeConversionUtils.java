@@ -40,9 +40,17 @@ import java.util.*;
  * @author Max Ross <maxr@google.com>
  */
 public class TypeConversionUtils {
-  TypeConversionUtils() {}
 
-  private static final Set<Class> SUPPORTED_CLASSES = buildSupportedClasses();
+  private final boolean encodeBigDecimalAsString;
+  
+  /**
+   * Maps primitive types to functions which promote from the primitive type to
+   * the datastore representation. Note that we map both the true primitive
+   * class and the object version.
+   */
+  private final Map<Class<?>, Function<Object, Object>> pojoToDatastoreTypeFunction;
+
+  private final Set<Class> supportedClasses;
 
   private static final Set<Class> buildSupportedClasses() {
     Set<Class> classes = new HashSet<Class>();
@@ -115,11 +123,18 @@ public class TypeConversionUtils {
   };
 
   /**
-   * A {@link Function} that converts {@link Double} to {@link BigDecimal}.
+   * A {@link Function} that converts {@link Double} or {@link String} to {@link BigDecimal}.
    */
-  private static final Function<Object, Object> DOUBLE_TO_BIG_DECIMAL = new Function<Object, Object>() {
+  private static final Function<Object, Object> STRING_OR_DOUBLE_TO_BIG_DECIMAL = new Function<Object, Object>() {
     public BigDecimal apply(Object in) {
-      return null==in ? null : new BigDecimal((Double) in);
+      if (in == null) {
+        return null;
+      }
+      if (in instanceof String) {
+        return BigDecimals.fromSortableString((String) in);
+      } else {
+        return new BigDecimal((Double) in);
+      }
     }
   };
 
@@ -138,7 +153,7 @@ public class TypeConversionUtils {
   /**
    * A {@link Function} that converts {@link Integer} to {@link Long}.
    */
-  private static final Function<Object, Object> INTEGER_TO_LONG = new Function<Object, Object>() {
+  private final Function<Object, Object> integerToLong = new Function<Object, Object>() {
     public Long apply(Object in) {
       if (in instanceof Long) {
         return (Long)in;
@@ -150,7 +165,7 @@ public class TypeConversionUtils {
   /**
    * A {@link Function} that converts {@link Short} to {@link Long}.
    */
-  private static final Function<Object, Object> SHORT_TO_LONG = new Function<Object, Object>() {
+  private final Function<Object, Object> shortToLong = new Function<Object, Object>() {
     public Long apply(Object in) {
       if (in instanceof Long) {
         return (Long)in;
@@ -162,7 +177,7 @@ public class TypeConversionUtils {
   /**
    * A {@link Function} that converts {@link Character} to {@link Long}.
    */
-  private static final Function<Object, Object> CHARACTER_TO_LONG = new Function<Object, Object>() {
+  private final Function<Object, Object> characterToLong = new Function<Object, Object>() {
     public Long apply(Object character) {
       return null==character ? null : Long.valueOf((Character) character);
     }
@@ -171,7 +186,7 @@ public class TypeConversionUtils {
   /**
    * A {@link Function} that converts {@link Byte} to {@link Long}.
    */
-  private static final Function<Object, Object> BYTE_TO_LONG = new Function<Object, Object>() {
+  private final Function<Object, Object> byteToLong = new Function<Object, Object>() {
     public Long apply(Object in) {
       if (in instanceof Long) {
         return (Long)in;
@@ -183,7 +198,7 @@ public class TypeConversionUtils {
   /**
    * A {@link Function} that converts {@link Float} to {@link Double}.
    */
-  private static final Function<Object, Object> FLOAT_TO_DOUBLE = new Function<Object, Object>() {
+  private final Function<Object, Object> floatToDouble = new Function<Object, Object>() {
     public Double apply(Object in) {
       if (in instanceof Double) {
         return (Double)in;
@@ -193,14 +208,15 @@ public class TypeConversionUtils {
   };
 
   /**
-   * A {@link Function} that converts {@link BigDecimal} to {@link Double}.
+   * A {@link Function} that converts {@link BigDecimal} to {@link String}.
    */
-  private static final Function<Object, Object> BIG_DECIMAL_TO_DOUBLE = new Function<Object, Object>() {
-    public Double apply(Object in) {
-      if (in instanceof Double) {
-        return (Double)in;
+  private final Function<Object, Object> bigDecimalToDoubleOrString = new Function<Object, Object>() {
+    public Object apply(Object in) {
+      if (encodeBigDecimalAsString) {
+        return null==in ? null : BigDecimals.toSortableString((BigDecimal) in);
+      } else {
+        return null==in ? null : ((BigDecimal) in).doubleValue();
       }
-      return null==in ? null : ((BigDecimal) in).doubleValue() ;
     }
   };
 
@@ -224,32 +240,24 @@ public class TypeConversionUtils {
     map.put(Character.TYPE, LONG_TO_CHARACTER);
     map.put(Float.class, DOUBLE_TO_FLOAT);
     map.put(Float.TYPE, DOUBLE_TO_FLOAT);
-    map.put(BigDecimal.class, DOUBLE_TO_BIG_DECIMAL);
+    map.put(BigDecimal.class, STRING_OR_DOUBLE_TO_BIG_DECIMAL);
     map.put(Text.class, STRING_TO_TEXT);
     return map;
   }
 
-  /**
-   * Maps primitive types to functions which promote from the primitive
-   * type to the datastore representation.  Note that we map both
-   * the true primitive class and the object version.
-   */
-  private static final Map<Class<?>, Function<Object, Object>> POJO_TO_DATASTORE_TYPE_FUNC =
-      buildPojoToDatastoreTypeFuncMap();
-
-  private static Map<Class<?>, Function<Object, Object>> buildPojoToDatastoreTypeFuncMap() {
+  private Map<Class<?>, Function<Object, Object>> buildPojoToDatastoreTypeFuncMap() {
     Map<Class<?>, Function<Object, Object>> map = new HashMap<Class<?>, Function<Object, Object>>();
-    map.put(Integer.class, INTEGER_TO_LONG);
-    map.put(Integer.TYPE, INTEGER_TO_LONG);
-    map.put(Short.class, SHORT_TO_LONG);
-    map.put(Short.TYPE, SHORT_TO_LONG);
-    map.put(Byte.class, BYTE_TO_LONG);
-    map.put(Byte.TYPE, BYTE_TO_LONG);
-    map.put(Character.class, CHARACTER_TO_LONG);
-    map.put(Character.TYPE, CHARACTER_TO_LONG);
-    map.put(Float.class, FLOAT_TO_DOUBLE);
-    map.put(Float.TYPE, FLOAT_TO_DOUBLE);
-    map.put(BigDecimal.class, BIG_DECIMAL_TO_DOUBLE);
+    map.put(Integer.class, integerToLong);
+    map.put(Integer.TYPE, integerToLong);
+    map.put(Short.class, shortToLong);
+    map.put(Short.TYPE, shortToLong);
+    map.put(Byte.class, byteToLong);
+    map.put(Byte.TYPE, byteToLong);
+    map.put(Character.class, characterToLong);
+    map.put(Character.TYPE, characterToLong);
+    map.put(Float.class, floatToDouble);
+    map.put(Float.TYPE, floatToDouble);
+    map.put(BigDecimal.class, bigDecimalToDoubleOrString);
     return map;
   }
 
@@ -259,6 +267,12 @@ public class TypeConversionUtils {
     }
   };
 
+  TypeConversionUtils(boolean encodeBigDecimalAsString) {
+    this.encodeBigDecimalAsString = encodeBigDecimalAsString;
+    this.supportedClasses = buildSupportedClasses();
+    this.pojoToDatastoreTypeFunction = buildPojoToDatastoreTypeFuncMap();
+  }
+  
   /**
    * @param metaData The meta data we'll consult.
    *
@@ -323,9 +337,9 @@ public class TypeConversionUtils {
       // special handling.
       List<Object> datastoreList =
           (List<Object>) PrimitiveUtils.PRIMITIVE_ARRAY_TO_LIST_FUNC_MAP.get(componentType).apply(value);
-      if (POJO_TO_DATASTORE_TYPE_FUNC.get(componentType) != null) {
+      if (pojoToDatastoreTypeFunction.get(componentType) != null) {
         datastoreList =
-            Utils.transform(datastoreList, POJO_TO_DATASTORE_TYPE_FUNC.get(componentType));
+            Utils.transform(datastoreList, pojoToDatastoreTypeFunction.get(componentType));
       }
       return datastoreList;
     }
@@ -335,9 +349,9 @@ public class TypeConversionUtils {
 
   private List<?> convertNonPrimitivePojoArrayToDatastoreList(Object[] array) {
     List<?> datastoreList = Arrays.asList(array);
-    if (POJO_TO_DATASTORE_TYPE_FUNC.get(array.getClass().getComponentType()) != null) {
+    if (pojoToDatastoreTypeFunction.get(array.getClass().getComponentType()) != null) {
       datastoreList = Utils.transform(Arrays.asList(array),
-          POJO_TO_DATASTORE_TYPE_FUNC.get(array.getClass().getComponentType()));
+          pojoToDatastoreTypeFunction.get(array.getClass().getComponentType()));
     }
     return datastoreList;
   }
@@ -391,7 +405,7 @@ public class TypeConversionUtils {
             value = Enum.valueOf(enumClass, (String) value);
           }
         } else {
-          if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
+          if (supportedClasses.contains(ammd.getType()) ||
               ammd.getTypeName().startsWith("com.google.appengine.api")) {
             value = getDatastoreToPojoTypeFunc(Utils.identity(), ammd.getType()).apply(value);
           } else if (value instanceof String) {
@@ -690,7 +704,7 @@ public class TypeConversionUtils {
    */
   private Function<Object, Object> getPojoToDatastoreTypeFunc(
       Function<Object, Object> defaultVal, Class type) {
-    Function<Object, Object> candidate = POJO_TO_DATASTORE_TYPE_FUNC.get(type);
+    Function<Object, Object> candidate = pojoToDatastoreTypeFunction.get(type);
     return candidate != null ? candidate : defaultVal;
   }
 
@@ -791,7 +805,7 @@ public class TypeConversionUtils {
               }
             }
           } else {
-            if (SUPPORTED_CLASSES.contains(ammd.getType()) ||
+            if (supportedClasses.contains(ammd.getType()) ||
                 ammd.getTypeName().startsWith("com.google.appengine.api")) {
               value = getPojoToDatastoreTypeFunc(Utils.identity(), ammd.getType()).apply(value);
             } else {
@@ -834,10 +848,10 @@ public class TypeConversionUtils {
     } else if (pojoPropertyIsByteCollection(ammd)) {
       result = convertByteCollectionToShortBlob((Collection<Byte>) value);
     } else {
-      if (POJO_TO_DATASTORE_TYPE_FUNC.get(elementType) != null) {
+      if (pojoToDatastoreTypeFunction.get(elementType) != null) {
         // this will transform non-lists into lists while also transforming
         // the elements of the collection
-        result = Utils.transform(value, POJO_TO_DATASTORE_TYPE_FUNC.get(elementType));
+        result = Utils.transform(value, pojoToDatastoreTypeFunction.get(elementType));
       } else if (!(value instanceof List)){
         // elements don't need to be transformed but the container might
         result = Utils.transform(value, IDENTITY);
@@ -858,7 +872,7 @@ public class TypeConversionUtils {
     while (entryIter.hasNext()) {
       Map.Entry entry = (Map.Entry)entryIter.next();
       Object key = entry.getKey();
-      Function keyFunc = POJO_TO_DATASTORE_TYPE_FUNC.get(keyType);
+      Function keyFunc = pojoToDatastoreTypeFunction.get(keyType);
       if (keyFunc != null) {
         result.add(keyFunc.apply(key));
       } else {
@@ -866,7 +880,7 @@ public class TypeConversionUtils {
       }
       
       Object val = entry.getValue();
-      Function valFunc = POJO_TO_DATASTORE_TYPE_FUNC.get(valType);
+      Function valFunc = pojoToDatastoreTypeFunction.get(valType);
       if (valFunc != null) {
         result.add(valFunc.apply(val));
       } else {

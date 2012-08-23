@@ -26,7 +26,7 @@ import java.util.Arrays;
  */
 public class TypeConversionUtilsTest extends TestCase {
   public void testNullToArray() {
-    TypeConversionUtils tcu = new TypeConversionUtils();
+    TypeConversionUtils tcu = new TypeConversionUtils(true);
     @SuppressWarnings("unused")
     String[] stringArray =
         (String[]) tcu.convertDatastoreListToPojoArray(null, String.class);

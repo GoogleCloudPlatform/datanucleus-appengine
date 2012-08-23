@@ -134,6 +134,24 @@ public class DatastoreManager extends MappedStoreManager {
       "datanucleus.appengine.getExtentCanReturnSubclasses";
 
   public static final String RELATION_DEFAULT_MODE = "datanucleus.appengine.relationDefault";
+  
+  /**
+   * A property that is expected to be set to either "String" or "Double". The
+   * default is Double.
+   *
+   *  Double indicates that BigDecimals should be stored as a double, and
+   * therefore lose precision when stored.
+   *
+   * String indicates they should be serialized to a string using the
+   * {@link BigDecimals} class. This will result in retaining their precision
+   * when decoded. It is still possible to use inequality queries against them.
+   * For this reason string is generally preferable.
+   *
+   *
+   *  Inequality queries for fields where some values are doubles and some are
+   * encoded as strings will not work.
+   */
+  public static final String BIG_DECIMALS_ENCODEING = "datanucleus.appengine.BigDecimalsEncoding";
 
   /**
    * The name of the extension that indicates the return value of the batch
@@ -170,6 +188,7 @@ public class DatastoreManager extends MappedStoreManager {
     new ConcurrentHashMap<String, AbstractMemberMetaData>();
 
   private final boolean defaultToOwnedRelations;
+  private final TypeConversionUtils typeConversionUtils;
   private final StorageVersion storageVersion;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForReads;
   private final DatastoreServiceConfig defaultDatastoreServiceConfigPrototypeForWrites;
@@ -180,8 +199,6 @@ public class DatastoreManager extends MappedStoreManager {
   protected SerializationManager serializationMgr = null;
 
   MetaDataValidator metadataValidator;
-
-  public static final TypeConversionUtils TYPE_CONVERSION_UTILS = new TypeConversionUtils();
 
   /**
    * Construct a DatastoreManager.
@@ -226,12 +243,13 @@ public class DatastoreManager extends MappedStoreManager {
     storageVersion = StorageVersion.fromStoreManager(this);
 
     String defaultRelationMode = getStringProperty(RELATION_DEFAULT_MODE);
-    if (defaultRelationMode.equalsIgnoreCase("unowned")) {
-      defaultToOwnedRelations = false;
-    } else {
-      defaultToOwnedRelations = true;
-    }
-    
+    defaultToOwnedRelations = defaultRelationMode.equalsIgnoreCase("unowned") ? false : true;
+
+    String bigDecimalsEncoding = getStringProperty(BIG_DECIMALS_ENCODEING);
+    typeConversionUtils =
+        "String".equalsIgnoreCase(bigDecimalsEncoding) ? new TypeConversionUtils(true)
+            : new TypeConversionUtils(false);
+
     // Add listener so we can check all metadata for unsupported features and required schema
     metadataValidator = new MetaDataValidator(this, getMetaDataManager(), clr);
 
@@ -674,6 +692,9 @@ public class DatastoreManager extends MappedStoreManager {
         persistenceConfig.getBooleanProperty(DATASTORE_ENABLE_XG_TXNS_PROPERTY));
     }
 
+  public TypeConversionUtils getTypeConversionUtils() {
+    return typeConversionUtils;
+  }
 
   // For testing
   String getTxConnectionFactoryName() {
@@ -708,4 +729,5 @@ public class DatastoreManager extends MappedStoreManager {
     }
     return txnOpts;
   }
+
 }

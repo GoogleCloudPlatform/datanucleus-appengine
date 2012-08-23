@@ -34,6 +34,7 @@ import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
+import com.google.appengine.datanucleus.jdo.JDOTestCase.PersistenceManagerFactoryName;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.KitchenSink;
@@ -49,6 +50,8 @@ import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkJPA;
 import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateIdFieldJPA;
 import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateNameFieldJPA;
 import com.google.appengine.datanucleus.test.jpa.HasEnumJPA;
+import com.google.appengine.datanucleus.test.jpa.HasFloatJPA;
+import com.google.appengine.datanucleus.test.jpa.HasIntegerVersionJPA;
 import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorStringPkJPA;
 import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
 import com.google.appengine.datanucleus.test.jpa.HasLongPkJPA;
@@ -84,9 +87,11 @@ import java.math.BigDecimal;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
@@ -1276,12 +1281,45 @@ public class JPQLQueryTest extends JPATestCase {
   }
 
   public void testBigDecimalQuery() {
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("datanucleus.appengine.BigDecimalsEncoding", "String");
+    switchDatasource(EntityManagerFactoryName.originalStorageVersion, props);
+    
     Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
     ds.put(e);
 
     Query q = em.createQuery(
         "select from " + KitchenSink.class.getName() + " c where bigDecimal = :bd");
-    q.setParameter("bd", new BigDecimal(2.444d));
+    q.setParameter("bd", new BigDecimal("2.444"));
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+  
+  public void testBigDecimalInequalityQuery() {
+    Map<String, String> props = new HashMap<String, String>();
+    props.put("datanucleus.appengine.BigDecimalsEncoding", "String");
+    switchDatasource(EntityManagerFactoryName.originalStorageVersion, props);
+    
+    Entity e = KitchenSink.newKitchenSinkEntity("blarg", null);
+    ds.put(e);
+
+    Query q = em.createQuery(
+        "select from " + KitchenSink.class.getName() + " c where bigDecimal < :bd1 and bigDecimal > :bd2");
+    q.setParameter("bd1", new BigDecimal("3"));
+    q.setParameter("bd2", new BigDecimal("2"));
+    @SuppressWarnings("unchecked")
+    List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
+    assertEquals(1, results.size());
+  }
+  
+  public void testQueryWithLiteralFloat() {
+    Entity e = new Entity(HasFloatJPA.class.getSimpleName());
+    e.setProperty("aFloat", -2.23f);
+    ds.put(e);
+
+    Query q = em.createQuery(
+        "select from " + HasFloatJPA.class.getName() + " c where aFloat > -2.25");
     @SuppressWarnings("unchecked")
     List<KitchenSink> results = (List<KitchenSink>) q.getResultList();
     assertEquals(1, results.size());

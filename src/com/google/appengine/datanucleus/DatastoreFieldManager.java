@@ -24,7 +24,6 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
-
 import org.datanucleus.state.ObjectProviderFactory;
 import org.datanucleus.store.ExecutionContext;
 import org.datanucleus.store.ObjectProvider;
@@ -54,6 +53,8 @@ import javax.jdo.spi.JDOImplHelper;
  */
 public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
+  private final TypeConversionUtils typeConversionUtils;
+
   /**
    * List of FieldManagerState, with the last one being the root object, and earlier ones being those
    * for (nested) embedded objects.
@@ -77,6 +78,8 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
     this.ec = op.getExecutionContext();
     this.datastoreEntity = datastoreEntity;
     this.fieldManagerStateStack.addFirst(new FieldManagerState(op));
+    DatastoreManager storeManager = (DatastoreManager) ec.getStoreManager();
+    this.typeConversionUtils = storeManager.getTypeConversionUtils();
 
     // Sanity check
     String expectedKind = EntityUtils.determineKind(op.getClassMetaData(), ec);
@@ -192,6 +195,13 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
       return propName + "." + fieldManagerStateStack.getFirst().index;
     }
     return propName;
+  }
+
+  /**
+   * Just exists so we can override in tests. 
+   */
+  TypeConversionUtils getConversionUtils() {
+    return typeConversionUtils;
   }
 
   protected static final class FieldManagerState {

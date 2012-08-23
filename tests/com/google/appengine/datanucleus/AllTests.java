@@ -162,6 +162,7 @@ public class AllTests {
     suite.addTestSuite(JPAMetaDataValidatorTest.class);
     suite.addTestSuite(MetaDataValidatorTest.class);
     suite.addTestSuite(EntityUtilsTest.class);
+    suite.addTestSuite(BigDecimalsTest.class);
     suite.addTestSuite(JDOBytesTest.class);
     suite.addTestSuite(JPABytesTest.class);
     suite.addTestSuite(JDOConcurrentModificationTest.class);
