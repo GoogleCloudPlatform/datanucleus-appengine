@@ -20,7 +20,6 @@ import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
-import com.google.appengine.datanucleus.jpa.JPATestCase.EntityManagerFactoryName;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.HasKeyPkJDO;
 import com.google.appengine.datanucleus.test.jdo.HasPromotedTypesJDO;

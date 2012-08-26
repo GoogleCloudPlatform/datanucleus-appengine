@@ -34,7 +34,6 @@ import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.WriteBlocker;
-import com.google.appengine.datanucleus.jdo.JDOTestCase.PersistenceManagerFactoryName;
 import com.google.appengine.datanucleus.jpa.JPATestCase;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 import com.google.appengine.datanucleus.test.jdo.KitchenSink;
@@ -51,7 +50,6 @@ import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateIdFie
 import com.google.appengine.datanucleus.test.jpa.HasEncodedStringPkSeparateNameFieldJPA;
 import com.google.appengine.datanucleus.test.jpa.HasEnumJPA;
 import com.google.appengine.datanucleus.test.jpa.HasFloatJPA;
-import com.google.appengine.datanucleus.test.jpa.HasIntegerVersionJPA;
 import com.google.appengine.datanucleus.test.jpa.HasKeyAncestorStringPkJPA;
 import com.google.appengine.datanucleus.test.jpa.HasKeyPkJPA;
 import com.google.appengine.datanucleus.test.jpa.HasLongPkJPA;

@@ -1,5 +1,5 @@
 /**********************************************************************
-Copyright (c) 2011 Google Inc.
+Copyright (c) 2012 Google Inc.
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -13,32 +13,34 @@ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
 **********************************************************************/
-package com.google.appengine.datanucleus.test.jdo;
+package com.google.appengine.datanucleus.test.jpa;
 
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.jdo.annotations.IdGeneratorStrategy;
-import javax.jdo.annotations.PersistenceCapable;
-import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.PrimaryKey;
+import javax.persistence.CascadeType;
+import javax.persistence.Entity;
+import javax.persistence.GeneratedValue;
+import javax.persistence.GenerationType;
+import javax.persistence.Id;
+import javax.persistence.OneToMany;
 
 import com.google.appengine.datanucleus.annotations.Unowned;
 
 /**
- * "Owner" of a 1-N unidirectional relation in JDO, using unowned relations.
+ * "owner" of a 1-N unidirectional relation in JPA, using unowned (Set) relations.
  */
-@PersistenceCapable(detachable="true")
-public class UnownedJDOOneToManyUniSideA {
-  @PrimaryKey
-  @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
-  Long id;
-
-  @Persistent
-  @Unowned
-  Set<UnownedJDOOneToManyUniSideB> others = new HashSet<UnownedJDOOneToManyUniSideB>();
+@Entity
+public class UnownedJPAOneToManyUniSetSideA {
+  @Id
+  @GeneratedValue(strategy=GenerationType.IDENTITY)
+  long id;
 
   String name;
+
+  @Unowned
+  @OneToMany(cascade={CascadeType.PERSIST, CascadeType.MERGE})
+  Set<UnownedJPAOneToManyUniSideB> bs = new HashSet<UnownedJPAOneToManyUniSideB>();
 
   public Long getId() {
     return id;
@@ -52,11 +54,11 @@ public class UnownedJDOOneToManyUniSideA {
     return name;
   }
 
-  public void addOther(UnownedJDOOneToManyUniSideB other) {
-    this.others.add(other);
+  public void addB(UnownedJPAOneToManyUniSideB other) {
+    this.bs.add(other);
   }
 
-  public Set<UnownedJDOOneToManyUniSideB> getOthers() {
-    return others;
+  public Set<UnownedJPAOneToManyUniSideB> getBs() {
+    return bs;
   }
 }
