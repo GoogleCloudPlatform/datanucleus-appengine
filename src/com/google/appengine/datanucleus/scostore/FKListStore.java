@@ -358,8 +358,13 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         if (indexedList) {
           return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
         } else if (!MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
-          List<Key> childKeys = (List<Key>) datastoreEntity.getProperty(propName);
-          return getChildrenByKeys(childKeys, ec); // TODO Use startIdx,endIdx
+          Object value = datastoreEntity.getProperty(propName);
+          if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
+            // No elements so just return
+            return Utils.newArrayList().listIterator();
+          }
+
+          return getChildrenByKeys((List<Key>) value, ec); // TODO Use startIdx,endIdx
         } else {
           // Ordered list and owned, so get via parent query
           // Really we want to just take this property, but ordered lists can rely on data in the elements only!

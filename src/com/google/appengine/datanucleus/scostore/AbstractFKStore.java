@@ -47,6 +47,7 @@ import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -310,7 +311,8 @@ public abstract class AbstractFKStore {
     String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), ownerMemberMetaData);
     if (datastoreEntity.hasProperty(propName)) {
       Object value = datastoreEntity.getProperty(propName);
-      if (value == null) {
+      if (value == null || (value instanceof Collection && ((Collection)value).isEmpty())) {
+        // No elements so just return
         return Utils.newArrayList();
       }
 
