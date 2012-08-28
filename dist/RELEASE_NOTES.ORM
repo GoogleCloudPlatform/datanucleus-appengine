@@ -18,8 +18,12 @@ http://code.google.com/p/datanucleus-appengine/issues/detail?id=293
 - Enable use of int/Integer for PK fields
 http://code.google.com/p/datanucleus-appengine/issues/detail?id=294
 
-- http://code.google.com/p/googleappengine/issues/detail?id=1748
-BigDecimal fields are restored from database as float value
+- BigDecimal fields are restored from database as float value
+http://code.google.com/p/googleappengine/issues/detail?id=1748
+
+- Null checks on persist of unowned List relations
+http://code.google.com/p/datanucleus-appengine/issues/detail?id=299
+
 
 VERSION 2.1.0
 
