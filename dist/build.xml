@@ -3,7 +3,7 @@
 
   <property name="version.major" value="2"/>
   <property name="version.minor" value="1"/>
-  <property name="version.point" value="1"/>
+  <property name="version.point" value="2"/>
   <property name="version.rc" value="-SNAPSHOT"/>
   <property name="version" value="${version.major}.${version.minor}.${version.point}${version.rc}"/>
   <property name="zip.prefix" value="datanucleus-appengine"/>
@@ -46,6 +46,8 @@
       /tmp/testdist/lib/impl/agent/appengine-agentruntime.jar
       /tmp/testdist/lib/user/appengine-api.jar
       /tmp/testdist/lib/opt/tools/appengine-local-endpoints/v1/appengine-local-endpoints.jar
+      /tmp/testdist/lib/opt/user/appengine-local-endpoints/v1/appengine-local-endpoints.jar
+      /tmp/testdist/lib/override/appengine-dev-jdk-overrides.jar
       /tmp/testdist/config/user/ant-macros.xml
      -->
     <delete dir="${orm.tmpdist.dir}"/>
@@ -121,7 +123,14 @@
 
     <mkdir dir="${orm.sdk.tmpdist.lib.dir}/opt/tools/appengine-local-endpoints/v1"/>
     <copy todir="${orm.sdk.tmpdist.lib.dir}/opt/tools/appengine-local-endpoints/v1">
-      <fileset dir=".">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-local-endpoints.jar"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/opt/user/appengine-local-endpoints/v1"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/opt/user/appengine-local-endpoints/v1">
+      <fileset dir="${orm.lib.dir}">
         <include name="appengine-local-endpoints.jar"/>
       </fileset>
     </copy>
@@ -130,6 +139,13 @@
     <copy todir="${orm.sdk.tmpdist.dir}/config/sdk">
       <fileset dir=".">
         <include name="logging.properties"/>
+      </fileset>
+    </copy>
+
+    <mkdir dir="${orm.sdk.tmpdist.lib.dir}/override"/>
+    <copy todir="${orm.sdk.tmpdist.lib.dir}/override">
+      <fileset dir="${orm.lib.dir}">
+        <include name="appengine-dev-jdk-overrides.jar"/>
       </fileset>
     </copy>
 
@@ -205,6 +221,7 @@
         <fileset dir="${appengine.sdk.lib.path}/agent" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/testing" includes = "*.jar"/>
         <fileset dir="${appengine.sdk.lib.path}/opt/tools/appengine-local-endpoints/v1" includes = "*.jar"/>
+        <fileset dir="${appengine.sdk.lib.path}/override" includes = "*.jar"/>
       </copy>
       <copy  todir="." verbose="true" overwrite="true">
         <fileset dir="${appengine.sdk.config.path}/user" includes="ant-macros.xml"/>
