@@ -561,8 +561,7 @@ public class DatastoreTable implements DatastoreClass {
             } else {
               AbstractClassMetaData[] elementCmds;
               // TODO : Cater for interface elements, and get the metadata for the implementation classes here
-              if (elementCmd.getInheritanceMetaData().getStrategy()
-                  == InheritanceStrategy.SUBCLASS_TABLE) {
+              if (elementCmd.getInheritanceMetaData().getStrategy() == InheritanceStrategy.SUBCLASS_TABLE) {
                 elementCmds = storeMgr.getClassesManagingTableForClass(elementCmd, clr);
               } else {
                 elementCmds = new ClassMetaData[1];
