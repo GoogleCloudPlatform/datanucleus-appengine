@@ -573,27 +573,28 @@ public class FetchFieldManager extends DatastoreFieldManager
         if (value == null) {
           return null;
         }
+
         if (value instanceof Key) {
           DatastoreServiceConfig config = getStoreManager().getDefaultDatastoreServiceConfigForReads();
           DatastoreService datastoreService = DatastoreServiceFactoryInternal.getDatastoreService(config);
           try {
-            Entity childEntity = datastoreService.get((Key)value);
-            return EntityUtils.entityToPojo(childEntity, childCmd, clr, ec, false, ec.getFetchPlan());
+            return EntityUtils.entityToPojo(datastoreService.get((Key)value), childCmd, clr, ec, false, ec.getFetchPlan());
           } catch (EntityNotFoundException enfe) {
-            // TODO: Should this throw a data integrity exception? It seems to for oneToMany.
-            NucleusLogger.PERSISTENCE.error("Field " + mmd.getFullFieldName() + " of " + getObjectProvider().getInternalObjectId() +
-                " was pointing to object with key " + value + " but this doesn't exist!");
+            // TODO: Should this throw a data integrity exception? It seems to for 1-N.
+            NucleusLogger.PERSISTENCE.error("Member " + mmd.getFullFieldName() + " of " + getObjectProvider().getInternalObjectId() +
+                " was pointing to object with key " + value + " but this doesn't exist! Returning null");
             return null;
           }
         }
       } else if (MetaDataUtils.isOwnedRelation(mmd, getStoreManager())) {
           // Not yet got the property in the parent, so this entity has not yet been migrated to latest storage version
-          NucleusLogger.PERSISTENCE.info("Persistable object at field " + mmd.getFullFieldName() + " of " + getObjectProvider() +
+          NucleusLogger.PERSISTENCE.info("Persistable object at member " + mmd.getFullFieldName() + " of " + getObjectProvider() +
           " not yet migrated to latest storage version, so reading the object via its parent key");
       } else {
-        // Unowned relation but we don't have the property? That's bad data.
-        throw new NucleusException("Object " + datastoreEntity.getKey() + " has unowned property " + mmd.getFullFieldName() +
-          " but no corresponding property " + propName + " on its datastore entity.");
+        // Unowned relation but we don't have the property! Why? Maybe was originally uni but changed to bi?
+        NucleusLogger.PERSISTENCE.error("Object " + datastoreEntity.getKey() + " has unowned member " + mmd.getFullFieldName() +
+          " but no corresponding property " + propName + " on its datastore entity, so returning null");
+        return null;
       }
     }
 
