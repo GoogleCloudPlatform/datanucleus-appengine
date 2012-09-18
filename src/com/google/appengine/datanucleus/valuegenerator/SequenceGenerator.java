@@ -60,14 +60,6 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
   private static final String SEQUENCE_POSTFIX = "_SEQUENCE__";
   private static final String KEY_CACHE_SIZE_PROPERTY = "key-cache-size";
 
-  // TODO(maxr): Get rid of this when the local datastore id allocation behavior mirrors prod
-  private static final ThreadLocal<String> SEQUENCE_POSTFIX_APPENDAGE = new ThreadLocal<String>() {
-    @Override
-    protected String initialValue() {
-      return "";
-    }
-  };
-
   // can't be final because we need the storeMgr to derive it, and storeMgr
   // isn't set until setStoreManager is invoked.
   private String sequenceName;
@@ -113,9 +105,6 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     }
   }
 
-  /**
-   * AbstractClassMetaData can be null.
-   */
   private String determineSequenceName(AbstractClassMetaData acmd) {
     String sequenceName = (String) properties.get("sequence-name");
     if (sequenceName != null) {
@@ -148,8 +137,7 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     DatastoreServiceConfig config = ((DatastoreManager) storeMgr).getDefaultDatastoreServiceConfigForWrites();
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
     KeyRange range = ds.allocateIds(sequenceName, size);
-    // Too bad we can't pass an iterable and construct the ids
-    // on demand.
+    // Too bad we can't pass an iterable and construct the ids on demand.
     List<Long> ids = Utils.newArrayList();
     long current = range.getStart().getId();
     for (int i = 0; i < size; i++) {
@@ -157,6 +145,14 @@ public class SequenceGenerator extends AbstractDatastoreGenerator {
     }
     return new ValueGenerationBlock(ids);
   }
+
+  // This postfix is for testing only. TODO Remove when local datastore id allocation behaviour mirrors prod
+  private static final ThreadLocal<String> SEQUENCE_POSTFIX_APPENDAGE = new ThreadLocal<String>() {
+    @Override
+    protected String initialValue() {
+      return "";
+    }
+  };
 
   public static void setSequencePostfixAppendage(String appendage) {
     SEQUENCE_POSTFIX_APPENDAGE.set(appendage);
