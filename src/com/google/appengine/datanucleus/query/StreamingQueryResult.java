@@ -113,7 +113,7 @@ class StreamingQueryResult extends AbstractQueryResult {
    * Method to cache the results (List of the Entity keys) if it has been requested. 
    */
   protected void cacheQueryResults() {
-    if (query.useResultsCaching()) {
+    if (query != null && query.useResultsCaching()) {
       lazyResult.resolveAll();
       query.getQueryManager().addDatastoreQueryResult(query, query.getInputParameters(), lazyResult.getEntityKeys());
     }
