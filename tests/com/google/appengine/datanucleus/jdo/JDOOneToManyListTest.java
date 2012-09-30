@@ -18,6 +18,7 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.TestUtils;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jdo.BidirectionalChildJDO;
@@ -394,7 +395,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+
+    // TODO This is only for older storage versions; check owner relation List positions for current
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -405,7 +409,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("jimmy", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX_longpk"));
     }
 
@@ -414,7 +419,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX_longpk"));
     }
 
@@ -471,7 +477,10 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+
+    // TODO This is only for older storage versions; check owner relation List positions for current
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -482,7 +491,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("jimmy", flightEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(f.getId()), flightEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), flightEntity, f.getId());
-    if (isIndexed()) {
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, flightEntity.getProperty("flights_INTEGER_IDX"));
     }
 
@@ -491,7 +501,8 @@ public class JDOOneToManyListTest extends JDOOneToManyTestCase {
     assertEquals("yag", hasKeyPkEntity.getProperty("str"));
     assertEquals(hasKeyPk.getKey(), hasKeyPkEntity.getKey());
     assertKeyParentEquals(parent.getClass(), parent.getId(), hasKeyPkEntity, hasKeyPk.getKey());
-    if (isIndexed()) {
+    if (isIndexed() && 
+        getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
       assertEquals(0L, hasKeyPkEntity.getProperty("hasKeyPks_INTEGER_IDX"));
     }
 

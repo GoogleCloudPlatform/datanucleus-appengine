@@ -244,8 +244,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Object assignedParentPk = fieldMgr.establishEntityGroup();
       Entity entity = fieldMgr.getEntity();
 
-/*      if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {*/
-        // Set any order mapping(s)
+      if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+        // Older storage versions : store list positions in the element
         DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
             ec.getClassLoaderResolver());
         Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
@@ -261,7 +261,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
             }
           }
         }
-      /*}*/
+      }
 
       // Set version
       handleVersioningBeforeWrite(op, entity, true, "inserting");

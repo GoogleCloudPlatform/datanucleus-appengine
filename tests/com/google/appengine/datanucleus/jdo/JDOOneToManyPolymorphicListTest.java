@@ -499,20 +499,24 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(getEntityKind(UnidirTop.class), unidirChildEntity.getKind());
-    assertEquals(unidir.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    int numProps = unidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(unidirLevel.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals(expectedStr, unidirChildEntity.getProperty("str"));
     assertEquals(expectedName, unidirChildEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(unidir.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getClass(), parent.getId(), unidirChildEntity, unidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX_longpk"));
     }
 
@@ -573,20 +577,24 @@ public class JDOOneToManyPolymorphicListTest extends JDOOneToManyPolymorphicTest
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getClass(), parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(getEntityKind(UnidirTop.class), unidirChildEntity.getKind());
-    assertEquals(unidir.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    int numProps = unidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(unidirLevel.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals(expectedStr, unidirChildEntity.getProperty("str"));
     assertEquals(expectedName, unidirChildEntity.getProperty("name"));
     assertEquals(KeyFactory.stringToKey(unidir.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getClass(), parent.getId(), unidirChildEntity, unidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 

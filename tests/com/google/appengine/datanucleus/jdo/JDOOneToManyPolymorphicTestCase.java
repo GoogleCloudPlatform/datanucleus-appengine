@@ -27,6 +27,7 @@ import com.google.appengine.api.datastore.TransactionOptions;
 import com.google.appengine.datanucleus.DatastoreServiceFactoryInternal;
 import com.google.appengine.datanucleus.DatastoreServiceInterceptor;
 import com.google.appengine.datanucleus.PolymorphicTestUtils;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.test.jdo.BidirectionalSuperclassTableChildJDO;
@@ -56,6 +57,7 @@ import java.util.List;
 import java.util.Set;
 
 import javax.jdo.JDOFatalUserException;
+import javax.jdo.PersistenceManager;
 
 import static com.google.appengine.datanucleus.PolymorphicTestUtils.getEntityKind;
 
@@ -93,6 +95,9 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     }
   };
 
+  protected boolean hasIndexPropertyInChild(PersistenceManager pm) {
+    return getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal();
+  }
 
   @Override
   protected void tearDown() throws Exception {
@@ -131,11 +136,17 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
     assertNotNull(bidirChildEntity);
     assertEquals(bidirChild.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
-    assertEquals(bidirChild.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+
+    int numProps = bidirChild.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
+
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -143,11 +154,15 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     assertEquals(expectedUnidirKind, unidirEntity.getKind());
     assertNotNull(unidirEntity);
     assertEquals(unidirLevel.discriminator, unidirEntity.getProperty("TYPE"));
-    assertEquals(unidirChild.getPropertyCount() + getIndexPropertyCount(), unidirEntity.getProperties().size());
+    numProps = unidirChild.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirEntity.getProperties().size());
     assertEquals(expectedStr, unidirEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidirChild.getId()), unidirEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(parent.getId(), unidirEntity, unidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -205,24 +220,34 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidirChild.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
-    assertEquals(bidirChild.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+
+    int numProps = bidirChild.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
+
     assertEquals(bidirChild.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidirChild.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidirChild.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidirChild.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    numProps = unidirChild.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(unidirLevel.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals(exepectedStr, unidirChildEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidirChild.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidirChild.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -298,24 +323,32 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
-    assertEquals(bidir2.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+    int numProps = bidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
     assertEquals(bidir2.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir2.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidir2.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    numProps = unidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(UnidirLevel.Top.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals("another str", unidirChildEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidir2.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -397,36 +430,48 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
-    assertEquals(bidir2.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+    int numProps = bidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
     assertEquals(bidir2.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
     assertEquals("another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
-    assertEquals(bidir3.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+    numProps = bidir3.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
     assertEquals(bidir3.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yet another yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir3.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(1L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir2.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidir2.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    numProps = unidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(UnidirLevel.Bottom.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals("another str", unidirChildEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidir2.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -437,7 +482,7 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     assertEquals("yet another str", unidirChildEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidir3.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(1L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -507,24 +552,32 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity bidirChildEntity = ds.get(KeyFactory.stringToKey(bidir2.getId()));
     assertNotNull(bidirChildEntity);
     assertEquals(expectedBidirKind, bidirChildEntity.getKind());
-    assertEquals(bidir2.getPropertyCount() + getIndexPropertyCount(), bidirChildEntity.getProperties().size());
+    int numProps = bidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirChildEntity.getProperties().size());
     assertEquals(bidir2.getClass().getName(), bidirChildEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yam", bidirChildEntity.getProperty("childVal"));
     assertEquals(KeyFactory.stringToKey(bidir2.getId()), bidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirChildEntity, bidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirChildEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir2.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidir2.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    numProps = unidir2.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(UnidirLevel.Bottom.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals("another str", unidirChildEntity.getProperty("str"));
     assertEquals(KeyFactory.stringToKey(unidir2.getId()), unidirChildEntity.getKey());
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir2.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
@@ -569,22 +622,30 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidir.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    int numProps = unidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(unidirLevel.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals("yam", unidirChildEntity.getProperty("str"));
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     assertNotNull(bidirEntity);
     assertEquals(expectedBidirKind, bidirEntity.getKind());
-    assertEquals(bidir.getPropertyCount() + getIndexPropertyCount(), bidirEntity.getProperties().size());
+    numProps = bidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirEntity.getProperties().size());
     assertEquals(bidir.getClass().getName(), bidirEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -619,22 +680,30 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity unidirChildEntity = ds.get(KeyFactory.stringToKey(unidir.getId()));
     assertNotNull(unidirChildEntity);
     assertEquals(expectedUnidirKind, unidirChildEntity.getKind());
-    assertEquals(unidir.getPropertyCount() + getIndexPropertyCount(), unidirChildEntity.getProperties().size());
+    int numProps = unidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, unidirChildEntity.getProperties().size());
     assertEquals(unidirLevel.discriminator, unidirChildEntity.getProperty("TYPE"));
     assertEquals("yam", unidirChildEntity.getProperty("str"));
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), unidirChildEntity, unidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, unidirChildEntity.getProperty("unidirChildren_INTEGER_IDX"));
     }
 
     Entity bidirEntity = ds.get(KeyFactory.stringToKey(bidir.getId()));
     assertNotNull(bidirEntity);
     assertEquals(expectedBidirKind, bidirEntity.getKind());
-    assertEquals(bidir.getPropertyCount() + getIndexPropertyCount(), bidirEntity.getProperties().size());
+    numProps = bidir.getPropertyCount();
+    if (hasIndexPropertyInChild(pm)) {
+      numProps += getIndexPropertyCount();
+    }
+    assertEquals(numProps, bidirEntity.getProperties().size());
     assertEquals(bidir.getClass().getName(), bidirEntity.getProperty("DISCRIMINATOR"));
     assertEquals("yap", bidirEntity.getProperty("childVal"));
     PolymorphicTestUtils.assertKeyParentEquals(pojo.getId(), bidirEntity, bidir.getId());
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
       assertEquals(0L, bidirEntity.getProperty("bidirChildren_INTEGER_IDX"));
     }
 
@@ -1085,7 +1154,8 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity unidirEntity3 = ds.get(KeyFactory.stringToKey(unidir3.getId()));
     Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
+      // Only have index property when using older storageVersions
       assertEquals(0L, unidirEntity1.getProperty("unidirChildren_INTEGER_IDX"));
       assertEquals(1L, unidirEntity3.getProperty("unidirChildren_INTEGER_IDX"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
@@ -1154,7 +1224,8 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     Entity unidirEntity3 = ds.get(KeyFactory.stringToKey(unidir3.getId()));
     Entity bidirEntity1 = ds.get(KeyFactory.stringToKey(bidir1.getId()));
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
+      // Only have index property when using older storageVersions
       assertEquals(0L, unidirEntity1.getProperty("unidirChildren_INTEGER_IDX_longpk"));
       assertEquals(1L, unidirEntity3.getProperty("unidirChildren_INTEGER_IDX_longpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));
@@ -1227,7 +1298,8 @@ abstract class JDOOneToManyPolymorphicTestCase extends JDOTestCase {
     bidirEntity1.setProperty("DISCRIMINATOR", "B");
     Entity bidirEntity3 = ds.get(KeyFactory.stringToKey(bidir3.getId()));
     bidirEntity3.setProperty("DISCRIMINATOR", "M");
-    if (isIndexed()) {
+    if (isIndexed() && hasIndexPropertyInChild(pm)) {
+      // Only have index property when using older storageVersions
       assertEquals(0L, unidirEntity1.getProperty("unidirChildren_INTEGER_IDX_unencodedstringpk"));
       assertEquals(1L, unidirEntity3.getProperty("unidirChildren_INTEGER_IDX_unencodedstringpk"));
       assertEquals(0L, bidirEntity1.getProperty("bidirChildren_INTEGER_IDX"));

@@ -19,6 +19,7 @@ import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
+import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jdo.AbstractBaseClassesJDO.Concrete1;
 import com.google.appengine.datanucleus.test.jdo.AbstractBaseClassesJDO.Concrete2;
@@ -63,13 +64,20 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("str3", concrete3Entity.getProperty("str"));
 
-    assertEquals(2, concrete4aEntity.getProperties().size());
-    assertEquals("str4a", concrete4aEntity.getProperty("str"));
-    assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
-
-    assertEquals(2, concrete4bEntity.getProperties().size());
-    assertEquals("str4b", concrete4bEntity.getProperty("str"));
-    assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
+    if (getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
+      assertEquals(2, concrete4aEntity.getProperties().size());
+      assertEquals("str4a", concrete4aEntity.getProperty("str"));
+      assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+      assertEquals(2, concrete4bEntity.getProperties().size());
+      assertEquals("str4b", concrete4bEntity.getProperty("str"));
+      assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
+    } else {
+      // List index not present with latest storage version
+      assertEquals(1, concrete4aEntity.getProperties().size());
+      assertEquals("str4a", concrete4aEntity.getProperty("str"));
+      assertEquals(1, concrete4bEntity.getProperties().size());
+      assertEquals("str4b", concrete4bEntity.getProperty("str"));
+    }
 
     beginTxn();
     concrete = pm.getObjectById(concrete.getClass(), concrete.getId());
@@ -105,9 +113,15 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("blam3", concrete3Entity.getProperty("str"));
 
-    assertEquals(2, concrete4aEntity.getProperties().size());
-    assertEquals("blam4", concrete4aEntity.getProperty("str"));
-    assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+    if (getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
+      assertEquals(2, concrete4aEntity.getProperties().size());
+      assertEquals("blam4", concrete4aEntity.getProperty("str"));
+      assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+    } else {
+      assertEquals(1, concrete4aEntity.getProperties().size());
+      assertEquals("blam4", concrete4aEntity.getProperty("str"));
+    }
+
     try {
       ds.get(concrete4bKey);
     } catch (EntityNotFoundException enfe) {
@@ -174,13 +188,20 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("str3", concrete3Entity.getProperty("str"));
 
-    assertEquals(2, concrete4aEntity.getProperties().size());
-    assertEquals("str4a", concrete4aEntity.getProperty("str"));
-    assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
-
-    assertEquals(2, concrete4bEntity.getProperties().size());
-    assertEquals("str4b", concrete4bEntity.getProperty("str"));
-    assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
+    if (getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
+      assertEquals(2, concrete4aEntity.getProperties().size());
+      assertEquals("str4a", concrete4aEntity.getProperty("str"));
+      assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+      assertEquals(2, concrete4bEntity.getProperties().size());
+      assertEquals("str4b", concrete4bEntity.getProperty("str"));
+      assertEquals(1L, concrete4bEntity.getProperty("concrete4_INTEGER_IDX"));
+    } else {
+      // List index not present with latest storage version
+      assertEquals(1, concrete4aEntity.getProperties().size());
+      assertEquals("str4a", concrete4aEntity.getProperty("str"));
+      assertEquals(1, concrete4bEntity.getProperties().size());
+      assertEquals("str4b", concrete4bEntity.getProperty("str"));
+    }
 
     beginTxn();
     concrete = pm.getObjectById(concrete.getClass(), concrete.getId());
@@ -221,9 +242,15 @@ public class JDOAbstractBaseClassTest extends JDOTestCase {
     assertEquals(1, concrete3Entity.getProperties().size());
     assertEquals("blam3", concrete3Entity.getProperty("str"));
 
-    assertEquals(2, concrete4aEntity.getProperties().size());
-    assertEquals("blam4", concrete4aEntity.getProperty("str"));
-    assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+    if (getStorageVersion(pm).ordinal() < StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS.ordinal()) {
+      assertEquals(2, concrete4aEntity.getProperties().size());
+      assertEquals("blam4", concrete4aEntity.getProperty("str"));
+      assertEquals(0L, concrete4aEntity.getProperty("concrete4_INTEGER_IDX"));
+    } else {
+      assertEquals(1, concrete4aEntity.getProperties().size());
+      assertEquals("blam4", concrete4aEntity.getProperty("str"));
+    }
+
     try {
       ds.get(concrete4bKey);
     } catch (EntityNotFoundException enfe) {
