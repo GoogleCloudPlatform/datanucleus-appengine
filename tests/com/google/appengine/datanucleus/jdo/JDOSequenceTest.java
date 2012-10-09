@@ -28,9 +28,9 @@ import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequence
 import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequenceOnNonPkFields;
 import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequenceWithNoSequenceName;
 import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequenceWithSequenceGenerator;
+import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequenceWithSequenceGenerator2;
 import com.google.appengine.datanucleus.test.jdo.SequenceExamplesJDO.HasSequenceWithUnencodedStringPk;
 import com.google.appengine.datanucleus.valuegenerator.SequenceGenerator;
-
 
 import java.util.List;
 
@@ -128,8 +128,8 @@ public class JDOSequenceTest extends JDOTestCase {
     pmf.close();
     tearDown();
     setUp();
-    KeyRange range = ds.allocateIds("jdothat", 1);
-    HasSequenceWithSequenceGenerator pojo = new HasSequenceWithSequenceGenerator();
+    KeyRange range = ds.allocateIds("jdothat2", 1);
+    HasSequenceWithSequenceGenerator2 pojo = new HasSequenceWithSequenceGenerator2();
     beginTxn();
     pm.makePersistent(pojo);
     commitTxn();
@@ -139,22 +139,22 @@ public class JDOSequenceTest extends JDOTestCase {
     // allocator in line with the prod allocator
     // assertEquals(range.getEnd().getId(), pojo.getId() - 1);
     assertTrue(range.getEnd().getId() < pojo.getId());
-    Sequence seq = pm.getSequence("jdo1");
+    Sequence seq = pm.getSequence("jdo1b");
 //    assertEquals(pojo.getId() + 12, seq.nextValue());
     assertTrue(pojo.getId() + 12 <= seq.nextValue());
 //    assertEquals(pojo.getId() + 13, seq.nextValue());
     assertTrue(pojo.getId() + 13 <= seq.nextValue());
-    assertEquals(Utils.newArrayList("jdothat", "jdothat"), sequenceNames);
+    assertEquals(Utils.newArrayList("jdothat2", "jdothat2"), sequenceNames);
     assertEquals(Utils.newArrayList(12L, 12L), sequenceBatchSizes);
     sequenceNames.clear();
     sequenceBatchSizes.clear();
     // getting a sequence always gets you a fresh batch
-    seq = pm.getSequence("jdo1");
+    seq = pm.getSequence("jdo1b");
 //    assertEquals(pojo.getId() + 24, seq.nextValue());
     assertTrue(pojo.getId() + 24 <= seq.nextValue());
 //    assertEquals(pojo.getId() + 25, seq.nextValue());
     assertTrue(pojo.getId() + 25 <= seq.nextValue());
-    assertEquals(Utils.newArrayList("jdothat"), sequenceNames);
+    assertEquals(Utils.newArrayList("jdothat2"), sequenceNames);
     assertEquals(Utils.newArrayList(12L), sequenceBatchSizes);
   }
 

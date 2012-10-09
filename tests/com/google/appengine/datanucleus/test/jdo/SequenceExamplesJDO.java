@@ -79,6 +79,30 @@ public final class SequenceExamplesJDO {
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
+  @Sequence(name = "jdo1b", datastoreSequence = "jdothat2", strategy = SequenceStrategy.NONTRANSACTIONAL,
+            extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
+  public static class HasSequenceWithSequenceGenerator2 {
+
+    @PrimaryKey
+    @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE, sequence = "jdo1b")
+    private Long id;
+
+    private String val;
+
+    public Long getId() {
+      return id;
+    }
+
+    public String getVal() {
+      return val;
+    }
+
+    public void setVal(String val) {
+      this.val = val;
+    }
+  }
+
+  @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Sequence(name = "jdo2", strategy = SequenceStrategy.NONTRANSACTIONAL,
             extensions = @Extension(vendorName = "datanucleus", key="key-cache-size", value="12"))
   public static class HasSequenceWithNoSequenceName {
