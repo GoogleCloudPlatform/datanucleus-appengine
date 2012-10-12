@@ -261,7 +261,7 @@ public class FetchFieldManager extends DatastoreFieldManager
           AbstractMemberMetaData nullMmd = null;
           for (int i=0;i<embMmds.length;i++) {
             ColumnMetaData[] colmds = embMmds[i].getColumnMetaData();
-            if (colmds != null && colmds[0].getName() != null && colmds[0].getName().equals(nullColumn)) {
+            if (colmds != null && colmds.length > 0 && colmds[0].getName() != null && colmds[0].getName().equals(nullColumn)) {
               nullMmd = embMmds[i];
               break;
             }
