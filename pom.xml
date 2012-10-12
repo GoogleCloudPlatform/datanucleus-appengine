@@ -186,7 +186,8 @@
                     <metadataIncludes>**/test/**/*.class</metadataIncludes>
                     <classes>${project.build.testOutputDirectory}</classes>
                     <log4jConfiguration>${basedir}/log4j.properties</log4jConfiguration>
-                    <verbose>true</verbose>
+                    <verbose>false</verbose>
+                    <fork>false</fork>
                 </configuration>
                 <executions>
                     <execution>
