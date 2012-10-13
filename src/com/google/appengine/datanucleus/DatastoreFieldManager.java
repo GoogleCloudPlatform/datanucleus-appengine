@@ -161,7 +161,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
   protected RuntimeException exceptionForUnexpectedKeyType(String fieldType, int fieldNumber) {
     return new IllegalStateException(fieldType + " for type " + getClassMetaData().getName()
             + " is of unexpected type " + getMetaData(fieldNumber).getType().getName()
-            + " (must be String, Long, or " + Key.class.getName() + ")");
+            + " (must be String, Long, long, or " + Key.class.getName() + ")");
   }
 
   /**
