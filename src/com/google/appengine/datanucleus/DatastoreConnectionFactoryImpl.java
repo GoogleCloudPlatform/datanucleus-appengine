@@ -96,6 +96,7 @@ public class DatastoreConnectionFactoryImpl extends AbstractConnectionFactory {
     return isAutoCreateTransaction;
   }
 
+  // TODO Change this to extend AbstractManagedConnection
   static class DatastoreManagedConnection implements ManagedConnection {
     private boolean managed = false;
     private boolean locked = false;
