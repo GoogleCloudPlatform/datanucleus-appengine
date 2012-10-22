@@ -133,8 +133,12 @@ public class DatastoreManager extends MappedStoreManager {
   public static final String GET_EXTENT_CAN_RETURN_SUBCLASSES_PROPERTY =
       "datanucleus.appengine.getExtentCanReturnSubclasses";
 
+  /** Property to set the default type of relations ("owned", "unowned") with default as "owned". */
   public static final String RELATION_DEFAULT_MODE = "datanucleus.appengine.relationDefault";
-  
+
+  /** Property allowing the user to turn off GAE/J-specific validation of metadata and assume its ok. */
+  public static final String VALIDATE_METADATA = "datanucleus.appengine.validateMetaData";
+
   /**
    * A property that is expected to be set to either "String" or "Double". The
    * default is Double.
@@ -562,7 +566,10 @@ public class DatastoreManager extends MappedStoreManager {
   public void validateMetaDataForClass(AbstractClassMetaData cmd) {
     // Only validate each meta data once
     if (validatedClasses.add(cmd.getFullClassName())) {
-      metadataValidator.validate(cmd);
+      if (getBooleanProperty(VALIDATE_METADATA, true)) {
+        // Only do if the persistence property is not set to false
+        metadataValidator.validate(cmd);
+      }
 
       AbstractMemberMetaData parentPkMmd = MetaDataUtils.getParentPkMemberMetaDataForClass(cmd, getMetaDataManager(),
           getNucleusContext().getClassLoaderResolver(cmd.getClass().getClassLoader()));

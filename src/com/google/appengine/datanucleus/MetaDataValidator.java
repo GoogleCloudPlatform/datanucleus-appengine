@@ -24,7 +24,6 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InvalidMetaDataException;
-import org.datanucleus.metadata.MetaDataListener;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.Relation;
@@ -37,12 +36,10 @@ import java.util.Set;
 
 /**
  * AppEngine-specific rules validator for Meta Data.
- * Can also be used as a DataNucleus MetaDataListener to listen for when metadata is loaded and validate
- * it at source.
  *
  * @author Max Ross <maxr@google.com>
  */
-public class MetaDataValidator implements MetaDataListener {
+public class MetaDataValidator {
   protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
         "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
@@ -83,8 +80,7 @@ public class MetaDataValidator implements MetaDataListener {
   /**
    * Config property that determines the action we take when we encounter ignorable meta-data.
    */
-  private static final String
-      IGNORABLE_META_DATA_BEHAVIOR_PROPERTY = "datanucleus.appengine.ignorableMetaDataBehavior";
+  private static final String IGNORABLE_META_DATA_BEHAVIOR_PROPERTY = "datanucleus.appengine.ignorableMetaDataBehavior";
 
   /**
    * This message is appended to every ignorable meta-data warning so users
@@ -118,23 +114,17 @@ public class MetaDataValidator implements MetaDataListener {
     this.clr = clr;
   }
 
-  /* (non-Javadoc)
-   * @see org.datanucleus.metadata.MetaDataListener#loaded(org.datanucleus.metadata.AbstractClassMetaData)
-   */
-  public void loaded(AbstractClassMetaData cmd) {
-    validate(cmd);
-  }
-
   /**
-   * validate the metadata for the provided class.
+   * validate the metadata for the provided class to add GAE/J restrictions.
    * @param acmd Metadata for the class to validate
    */
   public void validate(AbstractClassMetaData acmd) {
-    NucleusLogger.METADATA.info("Performing appengine-specific metadata validation for " + acmd.getFullClassName());
     if (acmd.isEmbeddedOnly()) {
       // Nothing to check
       return;
     }
+
+    NucleusLogger.METADATA.info("Performing appengine-specific metadata validation for " + acmd.getFullClassName());
 
     // validate inheritance
     // TODO Put checks on supported inheritance here
@@ -435,8 +425,7 @@ public class MetaDataValidator implements MetaDataListener {
   }
 
   private boolean getBooleanConfigProperty(String configProperty) {
-    return metaDataManager.getNucleusContext().getPersistenceConfiguration()
-        .getBooleanProperty(configProperty);
+    return metaDataManager.getNucleusContext().getPersistenceConfiguration().getBooleanProperty(configProperty);
   }
 
   private IgnorableMetaDataBehavior getIgnorableMetaDataBehavior() {
