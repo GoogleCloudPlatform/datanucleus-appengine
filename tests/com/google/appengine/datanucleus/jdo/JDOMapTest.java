@@ -52,13 +52,21 @@ public class JDOMapTest extends JDOTestCase {
     assertNotNull("Map<String,Flight> is null!", map1);
     assertEquals(2, map1.size());
     assertTrue(map1.containsKey("BA201"));
+    Flight fl11 = map1.get("BA201");
+    assertEquals("LHR", fl11.getOrigin());
+    assertEquals("CHI", fl11.getDest());
     assertTrue(map1.containsKey("IB3311"));
+    Flight fl12 = map1.get("IB3311");
+    assertEquals("BCN", fl12.getOrigin());
+    assertEquals("MAD", fl12.getDest());
 
     Map<Integer, String> map2 = pojoRead.getBasicMap();
     assertNotNull("Map<Integer,String> is null!", map2);
     assertEquals(2, map2.size());
     assertTrue(map2.containsKey(1));
+    assertEquals("First Entry", map2.get(1));
     assertTrue(map2.containsKey(2));
+    assertEquals("Second Entry", map2.get(2));
 
     commitTxn();
   }
