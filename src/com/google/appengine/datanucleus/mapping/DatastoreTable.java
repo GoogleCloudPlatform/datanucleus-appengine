@@ -98,8 +98,7 @@ public class DatastoreTable implements DatastoreClass {
   private final AbstractClassMetaData cmd;
   private final ClassLoaderResolver clr;
   private final DatastoreAdapter dba;
-  protected final DatastoreIdentifier identifier;
-  private final Map<String, AbstractClassMetaData> owningClassMetaData = Utils.newHashMap();
+  private final DatastoreIdentifier identifier;
 
   /**
    * Mappings for fields mapped to this table, keyed by the FieldMetaData.
@@ -521,26 +520,6 @@ public class DatastoreTable implements DatastoreClass {
             dt.markFieldAsParentKeyProvider(fmd.getName());
           }
         } else if (relationType == Relation.MANY_TO_ONE_BI) {
-          DatastoreTable dt = storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
-          AbstractClassMetaData acmd = null;
-          if (fmd.getType().isInterface()) {
-            // Take first implementation
-            String[] fieldTypeImpls = mmgr.getClassesImplementingInterface(fmd.getTypeName(), clr);
-            acmd = mmgr.getMetaDataForClass(fieldTypeImpls[0], clr);
-          } else {
-            acmd = mmgr.getMetaDataForClass(fmd.getType(), clr);
-          }
-          String propertyName = null;
-          if (fmd.getColumnMetaData() != null && fmd.getColumnMetaData().length == 1) {
-            propertyName = fmd.getColumnMetaData()[0].getName();
-          } else {
-            propertyName = mapping.getDatastoreMapping(0).getDatastoreField().getIdentifier().getIdentifierName();
-          }
-
-          if (dt != null) {
-            // dt can be null if the other side is abstract using SUBCLASS_TABLE and we don't care with latest storageVersion
-            dt.addOwningClassMetaData(propertyName, acmd);
-          }
         }
 
         if (needsFKToContainerOwner) {
@@ -1261,10 +1240,7 @@ public class DatastoreTable implements DatastoreClass {
                 // User either wants it nullable, or havent specified anything, so make it nullable
                 refColumn.setNullable();
               }
-              AbstractClassMetaData acmd =
-                  storeMgr.getMetaDataManager().getMetaDataForClass(ownerIdMapping.getType(), clr);
               // this is needed for one-to-many sets
-              addOwningClassMetaData(colmd.getName(), acmd);
               fkMapping.addDatastoreMapping(getStoreManager().getMappingManager()
                   .createDatastoreMapping(mapping, refColumn,
                                           refDatastoreMapping.getJavaTypeMapping().getJavaType().getName()));
@@ -1418,14 +1394,6 @@ public class DatastoreTable implements DatastoreClass {
 
   public AbstractClassMetaData getClassMetaData() {
     return cmd;
-  }
-
-  void addOwningClassMetaData(String columnName, AbstractClassMetaData acmd) {
-    owningClassMetaData.put(columnName, acmd);
-  }
-
-  AbstractClassMetaData getOwningClassMetaDataForColumn(String col) {
-    return owningClassMetaData.get(col);
   }
 
   public JavaTypeMapping getMultitenancyMapping() {
