@@ -66,6 +66,7 @@ import org.datanucleus.util.NucleusLogger;
 import org.datanucleus.util.StringUtils;
 
 import com.google.appengine.datanucleus.DatastoreManager;
+import com.google.appengine.datanucleus.MetaDataUtils;
 import com.google.appengine.datanucleus.Utils;
 
 import java.text.MessageFormat;
@@ -145,13 +146,12 @@ public class DatastoreTable implements DatastoreClass {
   /** Highest absolute field number managed by this table */
   private int highestFieldNumber = 0;
 
-  /**
-   * Dependent fields.  Unlike pretty much the rest of this class, this member and the
-   * code that populates it is specific to the appengine plugin.
-   */
-  private final List<AbstractMemberMetaData> sameEntityGroupMemberMetaData = Utils.newArrayList();
+  /** Mappings to the owner where this is an element. */
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalFkMappings = Utils.newHashMap();
+
+  /** Mappings of the position where this is an element in a List. */
   private final Map<AbstractMemberMetaData, JavaTypeMapping> externalOrderMappings = Utils.newHashMap();
+
   private AbstractMemberMetaData parentMappingMemberMetaData;
 
   /** MetaData for all classes being managed here. */
@@ -617,14 +617,6 @@ public class DatastoreTable implements DatastoreClass {
     if (absoluteFieldNumber > highestFieldNumber) {
       highestFieldNumber = absoluteFieldNumber;
     }
-
-    if (isInSameEntityGroup(fmd)) {
-      sameEntityGroupMemberMetaData.add(fmd);
-    }
-  }
-
-  private boolean isInSameEntityGroup(AbstractMemberMetaData ammd) {
-    return ammd.getRelationType(clr) != Relation.NONE;
   }
 
   public boolean managesField(String fieldName) {
@@ -1125,10 +1117,6 @@ public class DatastoreTable implements DatastoreClass {
     return null;
   }
 
-  public List<AbstractMemberMetaData> getSameEntityGroupMemberMetaData() {
-    return sameEntityGroupMemberMetaData;
-  }
-
   /**
    * Accessor for all of the external FK mappings (used by FK Lists, Collections, Arrays)
    * @return The mappings for the FKs of 1-Ns, keyed by the field/property metadata.
@@ -1279,7 +1267,10 @@ public class DatastoreTable implements DatastoreClass {
         // Create new order mapping since we need one and we aren't using a shared FK
         orderMapping = addOrderColumn(fmd);
       }
-      getExternalOrderMappings().put(fmd, orderMapping);
+
+      if (!MetaDataUtils.readRelatedKeysFromParent(storeMgr, fmd)) {
+        getExternalOrderMappings().put(fmd, orderMapping);
+      }
     }
 
     return orderMapping;

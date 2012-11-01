@@ -17,7 +17,6 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
-import com.google.appengine.datanucleus.StorageVersion;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToManyWithKey;
 import com.google.appengine.datanucleus.test.jdo.UnownedUpgradeJDO.HasOneToManyWithUnowned;
@@ -29,7 +28,11 @@ import com.google.appengine.tools.development.testing.LocalDatastoreServiceTestC
 import java.util.Map;
 
 /**
- * Tests for upgrading Key relations to unowned relations
+ * Tests for upgrading Key relations to real unowned relations.
+ * In the original storage version you could save a Key in the other object.
+ * In the latest storage version you have real unowned relations.
+ * These tests simulate creating using the old storage version and old classes, and then reading back in
+ * using the new storage version and new (equivalent) classes.
  */
 public class JDOUnownedUpgradeTest extends JDOTestCase {
 
@@ -45,6 +48,7 @@ public class JDOUnownedUpgradeTest extends JDOTestCase {
   }
 
   public void testOneToManyUpgrade() {
+    // Persist using original storage version
     switchDatasource(PersistenceManagerFactoryName.originalStorageVersion);
 
     // Do the writes with the relationship managed via Key
@@ -72,11 +76,11 @@ public class JDOUnownedUpgradeTest extends JDOTestCase {
         HasOneToManyWithKey.class, withKey.getId()).getOthers().size());
     commitTxn();
 
+    // Read back in using latest storage version, as unowned
     Map<String, String> props = Utils.newHashMap();
     props.put("datanucleus.appengine.datastoreEnableXGTransactions", Boolean.TRUE.toString());
-    props.put("datanucleus.appengine.storageVersion", StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN.name());
-    switchDatasource(PersistenceManagerFactoryName.originalStorageVersion, props);
-    // Now read it back as an unowned relationship
+    switchDatasource(PersistenceManagerFactoryName.transactional, props);
+
     beginTxn();
     HasOneToManyWithUnowned withUnowned =
         pm.getObjectById(HasOneToManyWithUnowned.class, withKey.getId());
@@ -87,6 +91,7 @@ public class JDOUnownedUpgradeTest extends JDOTestCase {
   }
 
   public void testOneToOneUpgrade() throws EntityNotFoundException {
+    // Persist using original storage version
     switchDatasource(PersistenceManagerFactoryName.originalStorageVersion);
 
     // Do the writes with the relationship managed via Key
@@ -106,12 +111,11 @@ public class JDOUnownedUpgradeTest extends JDOTestCase {
     assertNotNull(pm.getObjectById(HasOneToOneWithKey.class, withKey.getId()).getOther());
     commitTxn();
 
+    // Read back in using latest storage version, as unowned
     Map<String, String> props = Utils.newHashMap();
     props.put("datanucleus.appengine.datastoreEnableXGTransactions", Boolean.TRUE.toString());
-    props.put("datanucleus.appengine.storageVersion", StorageVersion.PARENTS_DO_NOT_REFER_TO_CHILDREN.name());
-    switchDatasource(PersistenceManagerFactoryName.originalStorageVersion, props);
+    switchDatasource(PersistenceManagerFactoryName.transactional, props);
 
-    // Now read it back as an unowned relationship
     beginTxn();
     HasOneToOneWithUnowned withUnowned = pm.getObjectById(HasOneToOneWithUnowned.class, withKey.getId());
     assertNotNull(withUnowned.getOther());

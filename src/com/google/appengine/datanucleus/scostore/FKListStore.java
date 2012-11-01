@@ -85,10 +85,11 @@ public class FKListStore extends AbstractFKStore implements ListStore {
     if (ownerMemberMetaData.getOrderMetaData() != null && !ownerMemberMetaData.getOrderMetaData().isIndexedList()) {
         indexedList = false;
     }
-    if (orderMapping == null && indexedList) {
-        // "Indexed List" but no order mapping present!
-        throw new NucleusUserException(LOCALISER.msg("056041", 
-            ownerMemberMetaData.getAbstractClassMetaData().getFullClassName(), ownerMemberMetaData.getName(), elementType));
+    if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS) && 
+        orderMapping == null && indexedList) {
+      // Early storage version requires that indexedList has an order mapping in the element
+      throw new NucleusUserException(LOCALISER.msg("056041", 
+          ownerMemberMetaData.getAbstractClassMetaData().getFullClassName(), ownerMemberMetaData.getName(), elementType));
     }
   }
 
@@ -366,9 +367,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
 
           return getChildrenByKeys((List<Key>) value, ec); // TODO Use startIdx,endIdx
         } else {
-          // Ordered list and owned, so get via parent query
-          // Really we want to just take this property, but ordered lists can rely on data in the elements only!
-//          return getChildrenFromParentField(op, ec, startIdx, endIdx).listIterator();
+          // TODO Get the objects and then order them in-memory using the order criteria
+        }
+      } else {
+        if (op.getLifecycleState().isDeleted()) {
+          // Object has been deleted so just return empty list
+          return Utils.newArrayList().listIterator();
         }
       }
     }
@@ -571,7 +575,10 @@ public class FKListStore extends AbstractFKStore implements ListStore {
         ObjectProvider elementOP = ec.findObjectProvider(element);
         if (elementOP != null && !ec.getApiAdapter().isDeleted(element)) {
           Entity elementEntity = getOwnerEntity(elementOP);
-          elementEntity.removeProperty(getIndexPropertyName()); // Actually remove the index
+          if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+            // Remove the external index property from the element
+            elementEntity.removeProperty(getIndexPropertyName());
+          }
           EntityUtils.putEntityIntoDatastore(ec, elementEntity);
         }
       } else {
