@@ -512,7 +512,7 @@ public class DatastoreTable implements DatastoreClass {
             needsFKToContainerOwner = true;
           /*}*/
         } else if (relationType == Relation.ONE_TO_ONE_BI) {
-          if (fmd.getMappedBy() != null) {
+          if (fmd.getMappedBy() != null && MetaDataUtils.isOwnedRelation(fmd, storeMgr)) {
             // This element type has a many-to-one pointing back.
             // We assume that our pk is part of the pk of the element type.
             DatastoreTable dt = storeMgr.getDatastoreClass(fmd.getAbstractClassMetaData().getFullClassName(), clr);
@@ -553,7 +553,7 @@ public class DatastoreTable implements DatastoreClass {
                 DatastoreTable dt =
                     (DatastoreTable) storeMgr.getDatastoreClass(elementCmd1.getFullClassName(), clr);
                 dt.runCallBacks();
-                if (fmd.getMappedBy() != null) {
+                if (fmd.getMappedBy() != null && MetaDataUtils.isOwnedRelation(fmd, storeMgr)) {
                   // This element type has a many-to-one pointing back.
                   // We assume that our pk is part of the pk of the element type.
                   dt.markFieldAsParentKeyProvider(fmd.getMappedBy());
@@ -605,7 +605,9 @@ public class DatastoreTable implements DatastoreClass {
       parentMappingMemberMetaData = newParentMappingField;
     } else if (parentMappingMemberMetaData != newParentMappingField) { // intentional reference compare
       throw new NucleusException(
-          "App Engine ORM does not support multiple parent key provider fields.");
+          "App Engine ORM does not support multiple parent key provider fields : class=" + cmd.getFullClassName() + 
+          " requested to have member=" + mappedBy + 
+          " but already have member=" + parentMappingMemberMetaData.getName());
     }
   }
 
