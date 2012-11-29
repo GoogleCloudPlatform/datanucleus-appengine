@@ -30,10 +30,15 @@ import com.google.appengine.datanucleus.test.jpa.HasPrimitiveShortVersionJPA;
 import com.google.appengine.datanucleus.test.jpa.HasShortVersionJPA;
 import com.google.appengine.datanucleus.test.jpa.HasTimestampVersionJPA;
 import com.google.appengine.datanucleus.test.jpa.HasVersionJPA;
+import com.google.appengine.datanucleus.test.jpa.HasVersionMain;
+import com.google.appengine.datanucleus.test.jpa.HasVersionSub;
 
 import javax.jdo.JDOHelper;
+import javax.persistence.EntityManager;
 import javax.persistence.OptimisticLockException;
 import javax.persistence.RollbackException;
+
+import org.datanucleus.util.NucleusLogger;
 
 import junit.framework.Assert;
 
@@ -336,5 +341,75 @@ public class JPAVersionTest extends JPATestCase {
     long firstMillis = firstVersion.getTime();
     long secondMillis = secondVersion.getTime();
     Assert.assertTrue(secondMillis > firstMillis);
+  }
+
+  public void testParentChildWithVersion() {
+
+    Key mainKey = KeyFactory.createKey(HasVersionMain.class.getSimpleName(), 1);
+
+    // Persist a Main
+    em.getTransaction().begin();
+    HasVersionMain m = new HasVersionMain(mainKey);
+    em.persist(m);
+    em.getTransaction().commit();
+    em.close();
+
+    // Add a Sub to the Main
+    EntityManager em = emf.createEntityManager();
+    em.getTransaction().begin();
+    HasVersionMain main = em.find(HasVersionMain.class, mainKey);
+    HasVersionSub s = new HasVersionSub();
+    s.setKey(mainKey, "Init db #0");
+    main.getSubs().add(s);
+    em.getTransaction().commit();
+    em.close();
+
+    // Get and detach Main (1)
+    em = emf.createEntityManager();
+    em.getTransaction().begin();
+    HasVersionMain m1 = em.find(HasVersionMain.class, mainKey);
+    m1.getSubs(); // Make sure subs are loaded
+    HasVersionSub s1 = m1.getSubs().get(0);
+    s1.getValue(); s1.getVersion();
+    em.getTransaction().commit();
+    em.close();
+
+    // Get and detach Main (2)
+    em = emf.createEntityManager();
+    em.getTransaction().begin();
+    HasVersionMain m2 = em.find(HasVersionMain.class, mainKey);
+    m2.getSubs(); // Make sure subs are loaded
+    HasVersionSub s2 = m2.getSubs().get(0);
+    s2.getValue(); s2.getVersion();
+    em.getTransaction().commit();
+    em.close();
+
+    // Update both detached objects
+    s1.incValue(2);
+    s2.incValue(3);
+
+    // Merge m1
+    em = emf.createEntityManager();
+    em.getTransaction().begin();
+    em.merge(m1);
+    em.getTransaction().commit();
+    em.close();
+
+    // Merge m2
+    em = emf.createEntityManager();
+    try {
+      em.getTransaction().begin();
+      em.merge(m2);
+      em.flush();
+      em.getTransaction().commit();
+      fail("Should have thrown OptimisticLockException on merge but didnt");
+    } catch (OptimisticLockException ole) {
+      NucleusLogger.GENERAL.info(">> Exception thrown on merge", ole);
+    } finally {
+      if (em.getTransaction().isActive()) {
+        em.getTransaction().rollback();
+      }
+      em.close();
+    }
   }
 }

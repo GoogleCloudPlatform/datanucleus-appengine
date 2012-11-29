@@ -16,6 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import java.lang.reflect.Field;
+import java.sql.Timestamp;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -52,6 +53,7 @@ import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.VersionMetaData;
+import org.datanucleus.metadata.VersionStrategy;
 
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreClass;
@@ -1015,6 +1017,16 @@ public final class EntityUtils {
     // TODO(maxr): Seems like we should be able to refactor the handler
     // so that we can do a fetch without having to hide the entity in the state manager.
     op.setAssociatedValue(((DatastoreManager)ec.getStoreManager()).getDatastoreTransaction(ec), entity);
+
+    // Make sure any version is set
+    if (acmd.isVersioned()) {
+      VersionMetaData vermd = acmd.getVersionMetaDataForClass();
+      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vermd));
+      if (vermd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
+        versionValue = new Timestamp((Long)versionValue);
+      }
+      op.setVersion(versionValue);
+    }
 
     if (fetchPlan == null) {
       // Projection, so load everything
