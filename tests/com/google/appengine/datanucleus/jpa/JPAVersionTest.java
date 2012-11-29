@@ -371,6 +371,7 @@ public class JPAVersionTest extends JPATestCase {
     m1.getSubs(); // Make sure subs are loaded
     HasVersionSub s1 = m1.getSubs().get(0);
     s1.getValue(); s1.getVersion();
+    assertNotNull("Version on element is null", JDOHelper.getVersion(s1));
     em.getTransaction().commit();
     em.close();
 
@@ -381,6 +382,7 @@ public class JPAVersionTest extends JPATestCase {
     m2.getSubs(); // Make sure subs are loaded
     HasVersionSub s2 = m2.getSubs().get(0);
     s2.getValue(); s2.getVersion();
+    assertNotNull("Version on element is null", JDOHelper.getVersion(s2));
     em.getTransaction().commit();
     em.close();
 
