@@ -566,7 +566,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     op.replaceFields(fieldNumbers, new FetchFieldManager(op, entity, fieldNumbers));
 
-    // Refresh version - is this needed? should have been set on retrieval anyway
+    // Refresh version in case not yet set (e.g created HOLLOW object, and this is first fetch)
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
       Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd));
