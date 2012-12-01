@@ -82,6 +82,7 @@ import com.google.appengine.datanucleus.PrimitiveArrays;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.Utils.Function;
 import com.google.appengine.datanucleus.mapping.DatastoreTable;
+import com.google.appengine.datanucleus.query.QueryData.QueryType;
 
 import java.io.Serializable;
 import java.math.BigDecimal;
@@ -247,6 +248,22 @@ public class DatastoreQuery implements Serializable {
     addFilters(qd);
     addSorts(qd);
 
+    // Set query type
+    if (qd.batchGetKeys != null &&
+        qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
+        qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
+      // Batch Get Query - only execute a batch get if there aren't any other filters or sorts
+      qd.type = QueryType.BATCH_GET;
+    } else if (qd.joinQuery != null) {
+      // Join Query
+      qd.type = QueryType.JOIN;
+    } else {
+      qd.type = QueryType.NORMAL;
+      if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
+        qd.primaryDatastoreQuery.setKeysOnly();
+      }
+    }
+
     return qd;
   }
 
@@ -271,62 +288,60 @@ public class DatastoreQuery implements Serializable {
     DatastoreService ds = DatastoreServiceFactoryInternal.getDatastoreService(config);
 
     // Execute the most appropriate type of query
-    if (qd.batchGetKeys != null &&
-        qd.primaryDatastoreQuery.getFilterPredicates().size() == 1 &&
-        qd.primaryDatastoreQuery.getSortPredicates().isEmpty()) {
-      // Batch Get Query - only execute a batch get if there aren't any other filters or sorts
+    if (qd.type == QueryType.BATCH_GET) {
+      // BatchGet query
       return executeBatchGetQuery(ds, qd);
-    } else if (qd.joinQuery != null) {
-      // Join Query
+    } else if (qd.type == QueryType.JOIN) {
+      // Join query
       FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-      return wrapEntityQueryResult(new JoinHelper().executeJoinQuery(qd, this, ds, opts), qd.resultTransformer, ds, null);
-    } else {
-      // Normal Query
-      return executeNormalQuery(ds, qd);
-    }
-  }
-
-  private Object executeNormalQuery(DatastoreService ds, QueryData qd) {
-    latestDatastoreQuery = qd.primaryDatastoreQuery;
-    Transaction txn = null;
-    // give users a chance to opt-out of having their query execute in a txn
-    Map extensions = query.getExtensions();
-    if (extensions == null ||
-        !extensions.containsKey(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN) ||
-        !(Boolean)extensions.get(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN)) {
-      // If this is an ancestor query, execute it in the current transaction
-      txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
-    }
-
-    if (qd.resultType == ResultType.KEYS_ONLY || isBulkDelete()) {
-      qd.primaryDatastoreQuery.setKeysOnly();
-    }
-
-    PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
-    FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
-
-    if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
-      NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
-    }
-    if (getExecutionContext().getStatistics() != null) {
-      getExecutionContext().getStatistics().incrementNumReads();
-    }
-
-    Iterable<Entity> entityIterable;
-    Cursor endCursor = null;
-    if (opts != null) {
-      if (opts.getLimit() != null) {
-        QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
-        endCursor = entities.getCursor();
-        entityIterable = entities;
-      } else {
-        entityIterable = preparedQuery.asQueryResultIterable(opts);
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Executing join query in datastore for " + query.toString());
       }
-    } else {
-      entityIterable = preparedQuery.asQueryResultIterable();
-    }
+      if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumReads();
+      }
 
-    return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, endCursor);
+      Iterable<Entity> entityIterable = new JoinHelper().executeJoinQuery(qd, this, ds, opts);
+
+      return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, null);
+    } else {
+      // Normal query
+      latestDatastoreQuery = qd.primaryDatastoreQuery;
+      Transaction txn = null;
+      // give users a chance to opt-out of having their query execute in a txn
+      if (extensions == null ||
+          !extensions.containsKey(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN) ||
+          !(Boolean)extensions.get(DatastoreManager.QUERYEXT_EXCLUDE_FROM_TXN)) {
+        // If this is an ancestor query, execute it in the current transaction
+        txn = qd.primaryDatastoreQuery.getAncestor() != null ? ds.getCurrentTransaction(null) : null;
+      }
+
+      PreparedQuery preparedQuery = ds.prepare(txn, qd.primaryDatastoreQuery);
+      FetchOptions opts = buildFetchOptions(query.getRangeFromIncl(), query.getRangeToExcl());
+
+      if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
+        NucleusLogger.DATASTORE_NATIVE.debug("Executing query in datastore for " + query.toString());
+      }
+      if (getExecutionContext().getStatistics() != null) {
+        getExecutionContext().getStatistics().incrementNumReads();
+      }
+
+      Iterable<Entity> entityIterable;
+      Cursor endCursor = null;
+      if (opts != null) {
+        if (opts.getLimit() != null) {
+          QueryResultList<Entity> entities = preparedQuery.asQueryResultList(opts);
+          endCursor = entities.getCursor();
+          entityIterable = entities;
+        } else {
+          entityIterable = preparedQuery.asQueryResultIterable(opts);
+        }
+      } else {
+        entityIterable = preparedQuery.asQueryResultIterable();
+      }
+
+      return wrapEntityQueryResult(entityIterable, qd.resultTransformer, ds, endCursor);
+    }
   }
 
   private Object executeBatchGetQuery(DatastoreService ds, QueryData qd) {
@@ -361,8 +376,8 @@ public class DatastoreQuery implements Serializable {
       if (getExecutionContext().getStatistics() != null) {
         getExecutionContext().getStatistics().incrementNumWrites();
       }
-      ds.delete(innerTxn, keysToDelete);
 
+      ds.delete(innerTxn, keysToDelete);
       return (long) keysToDelete.size();
     } else {
       if (NucleusLogger.DATASTORE_NATIVE.isDebugEnabled()) {
@@ -371,6 +386,7 @@ public class DatastoreQuery implements Serializable {
       if (getExecutionContext().getStatistics() != null) {
         getExecutionContext().getStatistics().incrementNumReads();
       }
+
       Map<Key, Entity> entityMap = ds.get(innerTxn, qd.batchGetKeys);
       // return the entities in the order in which the keys were provided
       Collection<Entity> entities = new ArrayList<Entity>();
@@ -380,7 +396,6 @@ public class DatastoreQuery implements Serializable {
           entities.add(entity);
         }
       }
-
       return newStreamingQueryResultForEntities(entities, qd.resultTransformer, null, query);
     }
   }
@@ -581,6 +596,9 @@ public class DatastoreQuery implements Serializable {
         // May need non-key fields
         keysOnly = false;
       }
+    }
+    if (keysOnly) {
+      NucleusLogger.GENERAL.info(">> query is keysonly");
     }
 
     return (keysOnly ? ResultType.KEYS_ONLY : ResultType.ENTITY);

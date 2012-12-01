@@ -41,6 +41,8 @@ import java.util.Set;
  * @author Max Ross <maxr@google.com>
  */
 final class QueryData {
+  QueryType type = QueryType.NORMAL;
+
   final Map parameters;
 
   final AbstractClassMetaData acmd;
@@ -82,6 +84,12 @@ final class QueryData {
   public String getDatastoreQueryAsString() {
     StringBuilder str = new StringBuilder();
     str.append("Kind=" + table);
+    if (primaryDatastoreQuery.isKeysOnly()) {
+      str.append(" KEYS-ONLY");
+    }
+    if (primaryDatastoreQuery.getAncestor() != null) {
+      str.append(" ANCESTOR=" + primaryDatastoreQuery.getAncestor());
+    }
     List<FilterPredicate> filterPreds = primaryDatastoreQuery.getFilterPredicates();
     if (filterPreds.size() > 0) {
       str.append(" Filter : ");
@@ -107,7 +115,13 @@ final class QueryData {
         }
       }
     }
+    str.append(" [QUERY-TYPE=" + type + "]");
     return str.toString();
   }
-}
 
+  public enum QueryType {
+    BATCH_GET,
+    JOIN,
+    NORMAL
+  }
+}
