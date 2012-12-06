@@ -18,7 +18,7 @@ package com.google.appengine.datanucleus;
 import com.google.appengine.api.datastore.Key;
 
 import org.datanucleus.store.connection.ManagedConnection;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.StoreManager;
 
 import java.util.HashSet;

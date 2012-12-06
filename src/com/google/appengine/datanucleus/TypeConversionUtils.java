@@ -25,7 +25,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
-import org.datanucleus.store.types.sco.SCOUtils;
+import org.datanucleus.store.types.SCOUtils;
 
 import com.google.appengine.datanucleus.Utils.Function;
 

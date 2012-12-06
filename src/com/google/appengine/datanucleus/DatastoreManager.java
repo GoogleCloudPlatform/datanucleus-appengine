@@ -35,18 +35,18 @@ import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ClassMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.store.DefaultCandidateExtent;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.NucleusConnection;
 import org.datanucleus.store.NucleusConnectionImpl;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.StoreData;
 import org.datanucleus.store.connection.ConnectionFactory;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.exceptions.NoExtentException;
-import org.datanucleus.store.exceptions.NoTableManagedException;
+import org.datanucleus.store.mapped.exceptions.NoTableManagedException;
 import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.MappedStoreData;
@@ -515,7 +515,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   public boolean useBackedSCOWrapperForMember(AbstractMemberMetaData mmd, ExecutionContext ec) {
     // Use backed SCO wrapper on relation field (to support legacy), and use simple SCO wrapper on others
-    return (mmd.getRelationType(ec.getClassLoaderResolver()) == Relation.NONE ? false : true);
+    return (mmd.getRelationType(ec.getClassLoaderResolver()) == RelationType.NONE ? false : true);
   }
 
   public boolean storageVersionAtLeast(StorageVersion storageVersion) {

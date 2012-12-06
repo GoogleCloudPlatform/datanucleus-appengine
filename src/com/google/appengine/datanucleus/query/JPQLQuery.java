@@ -25,7 +25,7 @@ import com.google.appengine.datanucleus.MetaDataUtils;
 
 import org.datanucleus.query.evaluator.JPQLEvaluator;
 import org.datanucleus.query.evaluator.JavaQueryEvaluator;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
@@ -90,7 +90,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
    * @return Use in-memory evaluation?
    */
   protected boolean evaluateInMemory() {
-    if (candidateCollection != null || candidateExtent != null) {
+    if (candidateCollection != null) {
       if (compilation != null && compilation.getSubqueryAliases() != null) {
         // TODO In-memory evaluation of subqueries isn't fully implemented yet, so remove this when it is
         NucleusLogger.QUERY.warn("In-memory evaluator doesn't currently handle subqueries completely so evaluating in datastore");
@@ -126,7 +126,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
       throw new NucleusException("JPQL Bulk UPDATE is not yet supported");
     }
 
-    if (candidateCollection == null && candidateExtent == null && 
+    if (candidateCollection == null && 
         type == Query.SELECT && resultClass == null && result == null) {
       // Check for cached query results
       List<Object> cachedResults = getQueryManager().getDatastoreQueryResult(this, parameters);
@@ -142,15 +142,7 @@ public class JPQLQuery extends AbstractJPQLQuery {
       List candidates = null;
       if (candidateCollection != null) {
         candidates = new ArrayList(candidateCollection);
-      }
-      else if (candidateExtent != null) {
-        candidates = new ArrayList();
-        Iterator iter = candidateExtent.iterator();
-        while (iter.hasNext()) {
-          candidates.add(iter.next());
-        }
-      }
-      else {
+      } else {
         Extent ext = getStoreManager().getExtent(ec, candidateClass, subclasses);
         candidates = new ArrayList();
         Iterator iter = ext.iterator();

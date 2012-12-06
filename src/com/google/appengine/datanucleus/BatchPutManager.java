@@ -15,7 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus;
 
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 
 import java.util.List;
 

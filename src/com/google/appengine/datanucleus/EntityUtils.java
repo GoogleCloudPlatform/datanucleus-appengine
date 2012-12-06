@@ -33,9 +33,9 @@ import com.google.appengine.datanucleus.query.QueryEntityPKFetchFieldManager;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.FetchPlan;
 import org.datanucleus.PropertyNames;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NoPersistenceInformationException;
 import org.datanucleus.exceptions.NucleusFatalUserException;
@@ -859,7 +859,7 @@ public final class EntityUtils {
     if (parentKey == null) {
       // Mechanism 3, use attach parent info from ExecutionContext
       // TODO This will need a change to cater for unowned relations. How do we know which field is used?
-      ObjectProvider ownerOP = op.getExecutionContext().getObjectProviderOfOwnerForAttachingObject(op.getObject());
+      ObjectProvider ownerOP = ec.findObjectProviderOfOwnerForAttachingObject(op.getObject());
       if (ownerOP != null) {
         Object parentPojo = ownerOP.getObject();
         ObjectProvider mergeOP = ec.findObjectProvider(parentPojo);

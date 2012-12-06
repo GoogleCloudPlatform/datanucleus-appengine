@@ -24,9 +24,8 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
-import org.datanucleus.state.ObjectProviderFactory;
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.ExecutionContext;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.fieldmanager.AbstractFieldManager;
 
 import java.util.LinkedList;
@@ -181,7 +180,7 @@ public abstract class DatastoreFieldManager extends AbstractFieldManager {
 
     ObjectProvider embeddedOP = ec.findObjectProvider(value);
     if (embeddedOP == null) {
-        embeddedOP = ObjectProviderFactory.newForEmbedded(ec, value, false, getObjectProvider(), fieldNumber);
+        embeddedOP = ec.newObjectProviderForEmbedded(value, false, getObjectProvider(), fieldNumber);
         embeddedOP.setPcObjectType(ObjectProvider.EMBEDDED_PC);
     }
     return embeddedOP;

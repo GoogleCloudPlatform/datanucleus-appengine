@@ -20,7 +20,7 @@ import com.google.appengine.datanucleus.test.jdo.HasSerializableJDO;
 
 import junit.framework.TestCase;
 
-import org.datanucleus.JDOClassLoaderResolver;
+import org.datanucleus.ClassLoaderResolverImpl;
 import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.ExtensionMetaData;
@@ -60,7 +60,7 @@ public class SerializationManagerTest extends TestCase {
   public void testGetDefaultSerializer() {
     SerializationManager mgr = new SerializationManager();
     AbstractMemberMetaData ammd = new AbstractMemberMetaData(null, "yar") {};
-    assertSame(SerializationManager.DEFAULT_SERIALIZATION_STRATEGY, mgr.getSerializationStrategy(new JDOClassLoaderResolver(), ammd));
+    assertSame(SerializationManager.DEFAULT_SERIALIZATION_STRATEGY, mgr.getSerializationStrategy(new ClassLoaderResolverImpl(), ammd));
   }
 
   public void testGetCustomSerializer() {
@@ -75,7 +75,7 @@ public class SerializationManagerTest extends TestCase {
         return new ExtensionMetaData[] {emd};
       }
     };
-    SerializationStrategy serializationStrategy = mgr.getSerializationStrategy(new JDOClassLoaderResolver(), ammd);
+    SerializationStrategy serializationStrategy = mgr.getSerializationStrategy(new ClassLoaderResolverImpl(), ammd);
     assertTrue(serializationStrategy instanceof HasSerializableJDO.ProtocolBufferSerializationStrategy);
   }
 
@@ -92,7 +92,7 @@ public class SerializationManagerTest extends TestCase {
       }
     };
     try {
-      mgr.getSerializationStrategy(new JDOClassLoaderResolver(), ammd);
+      mgr.getSerializationStrategy(new ClassLoaderResolverImpl(), ammd);
       fail("Expectd NucleusException");
     } catch (NucleusException ne) {
       // good

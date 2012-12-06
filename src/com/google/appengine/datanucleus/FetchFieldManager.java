@@ -33,15 +33,15 @@ import org.datanucleus.metadata.ColumnMetaData;
 import org.datanucleus.metadata.DiscriminatorMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.MetaData;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.QueryUtils;
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.ExecutionContext;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.types.TypeManager;
 import org.datanucleus.store.types.converters.TypeConverter;
-import org.datanucleus.store.types.sco.SCO;
-import org.datanucleus.store.types.sco.SCOUtils;
+import org.datanucleus.store.types.SCO;
+import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.Blob;
@@ -243,9 +243,9 @@ public class FetchFieldManager extends DatastoreFieldManager
   public Object fetchObjectField(int fieldNumber) {
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
     ClassLoaderResolver clr = getClassLoaderResolver();
-    int relationType = mmd.getRelationType(clr);
+    RelationType relationType = mmd.getRelationType(clr);
 
-    if (mmd.getEmbeddedMetaData() != null && Relation.isRelationSingleValued(relationType)) {
+    if (mmd.getEmbeddedMetaData() != null && RelationType.isRelationSingleValued(relationType)) {
       // Embedded persistable object
       ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd.getType(), fieldNumber, null);
 
@@ -283,7 +283,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       } finally {
         fieldManagerStateStack.removeFirst();
       }
-    } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
+    } else if (RelationType.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
       // Embedded container
       if (mmd.hasCollection()) {
         // Embedded collections
@@ -401,7 +401,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       }
     }
 
-    if (mmd.getRelationType(clr) != Relation.NONE && !mmd.isSerialized()) {
+    if (mmd.getRelationType(clr) != RelationType.NONE && !mmd.isSerialized()) {
       return fetchRelationField(clr, mmd);
     }
 
@@ -474,8 +474,8 @@ public class FetchFieldManager extends DatastoreFieldManager
 
   Object fetchRelationField(ClassLoaderResolver clr, AbstractMemberMetaData mmd) {
     Object value = null;
-    int relationType = mmd.getRelationType(clr);
-    if (Relation.isRelationMultiValued(relationType)) {
+    RelationType relationType = mmd.getRelationType(clr);
+    if (RelationType.isRelationMultiValued(relationType)) {
       String propName = getPropertyNameForMember(mmd);
       if (datastoreEntity.hasProperty(propName)) {
         if (mmd.hasCollection()) {
@@ -490,13 +490,13 @@ public class FetchFieldManager extends DatastoreFieldManager
         }
       }
       return null;
-    } else if (Relation.isRelationSingleValued(relationType)) {
+    } else if (RelationType.isRelationSingleValued(relationType)) {
       boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
       if (owned) {
         // Owned relation, so 1-1_uni/1-1_bi store the relation in the property, and all others at other side
         DatastoreTable dt = getDatastoreTable();
         JavaTypeMapping mapping = dt.getMemberMappingInDatastoreClass(mmd);
-        if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
+        if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.ONE_TO_ONE_UNI) {
           // Even though the mapping is 1 to 1, we model it as a 1 to many and then
           // just throw a runtime exception if we get multiple children.  We would
           // prefer to store the child id on the parent, but we can't because creating
@@ -527,7 +527,7 @@ public class FetchFieldManager extends DatastoreFieldManager
             // bidir 1 to 1 and we are the parent
             return lookupOneToOneChild(mmd, clr);
           }
-        } else if (relationType == Relation.MANY_TO_ONE_BI) {
+        } else if (relationType == RelationType.MANY_TO_ONE_BI) {
           // Get owner via parent key of this object
           // Do not complain about a non existing parent if we have a self referencing relation 
           // and are on the top of the hierarchy.

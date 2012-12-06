@@ -24,7 +24,7 @@ import com.google.appengine.datanucleus.MetaDataUtils;
 
 import org.datanucleus.query.evaluator.JDOQLEvaluator;
 import org.datanucleus.query.evaluator.JavaQueryEvaluator;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.Extent;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
@@ -85,7 +85,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
    * @return Use in-memory evaluation?
    */
   protected boolean evaluateInMemory() {
-    if (candidateCollection != null || candidateExtent != null) {
+    if (candidateCollection != null) {
       if (compilation != null && compilation.getSubqueryAliases() != null) {
         // TODO In-memory evaluation of subqueries isn't fully implemented yet, so remove this when it is
         NucleusLogger.QUERY.warn("In-memory evaluator doesn't currently handle subqueries completely so evaluating in datastore");
@@ -116,7 +116,7 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
         NucleusLogger.QUERY.debug(LOCALISER.msg("021046", "JDOQL", getSingleStringQuery(), null));
     }
 
-    if (candidateCollection == null && candidateExtent == null && 
+    if (candidateCollection == null &&
         type == Query.SELECT && resultClass == null && result == null) {
       // Check for cached query results
       List<Object> cachedResults = getQueryManager().getDatastoreQueryResult(this, parameters);
@@ -132,12 +132,6 @@ public class JDOQLQuery extends AbstractJDOQLQuery {
         List candidates = null;
         if (candidateCollection != null) {
           candidates = new ArrayList(candidateCollection);
-        } else if (candidateExtent != null) {
-          candidates = new ArrayList();
-          Iterator iter = candidateExtent.iterator();
-          while (iter.hasNext()) {
-            candidates.add(iter.next());
-          }
         } else {
           Extent ext = getStoreManager().getExtent(ec, candidateClass, subclasses);
           candidates = new ArrayList();

@@ -28,7 +28,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.DiscriminatorStrategy;
 import org.datanucleus.metadata.FieldRole;
 import org.datanucleus.metadata.OrderMetaData;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.util.NucleusLogger;
 
 import com.google.appengine.api.datastore.DatastoreService;
@@ -164,9 +164,9 @@ public class Migrator {
     for (int i=0;i<relationFieldNumbers.length;i++) {
       AbstractMemberMetaData mmd = cmd.getMetaDataForManagedMemberAtAbsolutePosition(relationFieldNumbers[i]);
       if (MetaDataUtils.isOwnedRelation(mmd, storeMgr)) {
-        int relationType = mmd.getRelationType(clr);
-        if (relationType == Relation.ONE_TO_ONE_UNI ||
-            (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null)) {
+        RelationType relationType = mmd.getRelationType(clr);
+        if (relationType == RelationType.ONE_TO_ONE_UNI ||
+            (relationType == RelationType.ONE_TO_ONE_BI && mmd.getMappedBy() == null)) {
           // 1-1 owner
           String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), mmd);
           if (!entity.hasProperty(propName)) {
@@ -186,7 +186,7 @@ public class Migrator {
             entity.setProperty(propName, value);
           }
         }
-        else if (relationType == Relation.ONE_TO_MANY_UNI || relationType == Relation.ONE_TO_MANY_BI) {
+        else if (relationType == RelationType.ONE_TO_MANY_UNI || relationType == RelationType.ONE_TO_MANY_BI) {
           // 1-N
           String propName = EntityUtils.getPropertyName(storeMgr.getIdentifierFactory(), mmd);
           if (!entity.hasProperty(propName)) {

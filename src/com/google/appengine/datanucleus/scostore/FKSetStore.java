@@ -25,10 +25,10 @@ import org.datanucleus.FetchPlan;
 import org.datanucleus.api.ApiAdapter;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.metadata.RelationType;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
 import org.datanucleus.store.scostore.SetStore;
@@ -87,14 +87,14 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           esm.setAssociatedValue(externalFKMapping, op.getObject());
         }
 
-        if (relationType == Relation.ONE_TO_MANY_BI) {
+        if (relationType == RelationType.ONE_TO_MANY_BI) {
           // TODO Move this into RelationshipManager
           // Managed Relations : 1-N bidir, so make sure owner is correct at persist
           Object currentOwner = esm.provideField(getFieldNumberInElementForBidirectional(esm));
           if (currentOwner == null) {
             // No owner, so correct it
             NucleusLogger.PERSISTENCE.info(LOCALISER.msg("056037",
-                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(op.getObject()), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(esm.getObject())));
             esm.replaceFieldMakeDirty(getFieldNumberInElementForBidirectional(esm), newOwner);
           }
@@ -102,7 +102,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
             // Owner of the element is neither this container and not being attached
             // Inconsistent owner, so throw exception
             throw new NucleusUserException(LOCALISER.msg("056038",
-                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(op.getObject()), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(esm.getObject()),
                 StringUtils.toJVMIDString(currentOwner)));
           }
@@ -117,13 +117,13 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       // Element was already persistent so make sure the FK is in place
       // TODO This is really "ManagedRelationships" so needs to go in RelationshipManager
       ObjectProvider elementOP = ec.findObjectProvider(element);
-      if (relationType == Relation.ONE_TO_MANY_BI) {
+      if (relationType == RelationType.ONE_TO_MANY_BI) {
         // Managed Relations : 1-N bidir, so update the owner of the element
         ec.getApiAdapter().isLoaded(elementOP, getFieldNumberInElementForBidirectional(elementOP)); // Ensure is loaded
         Object oldOwner = elementOP.provideField(getFieldNumberInElementForBidirectional(elementOP));
         if (oldOwner != newOwner) {
           if (NucleusLogger.PERSISTENCE.isDebugEnabled()) {
-            NucleusLogger.PERSISTENCE.debug(LOCALISER.msg("055009", op.toPrintableID(),
+            NucleusLogger.PERSISTENCE.debug(LOCALISER.msg("055009", StringUtils.toJVMIDString(op.getObject()),
                 ownerMemberMetaData.getFullFieldName(), StringUtils.toJVMIDString(element)));
           }
 
@@ -287,7 +287,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
     if (MetaDataUtils.isOwnedRelation(ownerMemberMetaData, storeMgr)) {
       // Check for ownership change when owned relation, and prevent changes
       Object oldOwner = null;
-      if (relationType == Relation.ONE_TO_MANY_BI) {
+      if (relationType == RelationType.ONE_TO_MANY_BI) {
         if (!ec.getApiAdapter().isDeleted(elementToRemove)) {
           // Find the existing owner if the record hasn't already been deleted
           int elemOwnerFieldNumber = getFieldNumberInElementForBidirectional(elementOP);
@@ -295,7 +295,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
           oldOwner = elementOP.provideField(elemOwnerFieldNumber);
         }
       }
-      if (Relation.isBidirectional(relationType) && oldOwner != op.getObject() && oldOwner != null) {
+      if (RelationType.isBidirectional(relationType) && oldOwner != op.getObject() && oldOwner != null) {
         // Owner of the element has been changed, so reject it
         return false;
       }
@@ -376,7 +376,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
    * @return The field number in the element for this relation
    */
   protected int getFieldNumberInElementForBidirectional(ObjectProvider elementOP) {
-    if (Relation.isBidirectional(relationType)) {
+    if (RelationType.isBidirectional(relationType)) {
       AbstractMemberMetaData[] relMmds = ownerMemberMetaData.getRelatedMemberMetaData(clr);
       if (relMmds != null) {
         return relMmds[0].getAbsoluteFieldNumber();

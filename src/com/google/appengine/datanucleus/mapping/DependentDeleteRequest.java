@@ -23,9 +23,9 @@ import com.google.appengine.datanucleus.Utils;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.metadata.RelationType;
+import org.datanucleus.ExecutionContext;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.store.mapped.MappedStoreManager;
@@ -85,10 +85,10 @@ public class DependentDeleteRequest {
     for (MappingCallbacks callback : callbacks) {
       JavaTypeMapping mapping = (JavaTypeMapping) callback;
       AbstractMemberMetaData mmd = mapping.getMemberMetaData();
-      int relationType = mmd.getRelationType(clr);
+      RelationType relationType = mmd.getRelationType(clr);
       if (callback instanceof ArrayMapping) {
         // Handle dependent field delete
-        if (Relation.isRelationMultiValued(relationType)) {
+        if (RelationType.isRelationMultiValued(relationType)) {
           // Field of type PC[], make sure it is loaded and handle dependent-element
           ExecutionContext ec = op.getExecutionContext();
           op.loadField(mmd.getAbsoluteFieldNumber());
@@ -105,7 +105,7 @@ public class DependentDeleteRequest {
           }
         }
       } else if (callback instanceof MapMapping) {
-        if (Relation.isRelationMultiValued(relationType)) {
+        if (RelationType.isRelationMultiValued(relationType)) {
           // Field of type Map<PC,PC> or Map<NonPC,PC> or Map<PC,NonPC>, make sure it is loaded and handle dependent-key/value
           ExecutionContext ec = op.getExecutionContext();
           op.loadField(mmd.getAbsoluteFieldNumber());
@@ -136,8 +136,8 @@ public class DependentDeleteRequest {
         callback.preDelete(op);
       }
 
-      if (mmd.isDependent() && (relationType == Relation.ONE_TO_ONE_UNI ||
-          (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null))) {
+      if (mmd.isDependent() && (relationType == RelationType.ONE_TO_ONE_UNI ||
+          (relationType == RelationType.ONE_TO_ONE_BI && mmd.getMappedBy() == null))) {
         // Make sure the field is loaded
         op.loadField(mmd.getAbsoluteFieldNumber());
         Object relatedPc = op.provideField(mmd.getAbsoluteFieldNumber());
@@ -213,13 +213,13 @@ public class DependentDeleteRequest {
         } else if (m instanceof PersistableMapping || m instanceof ReferenceMapping) {
           if (m.getNumberOfDatastoreMappings() == 0) {
             // Field storing a PC object with FK at other side
-            int relationType = fmd.getRelationType(clr);
-            if (relationType == Relation.ONE_TO_ONE_BI) {
+            RelationType relationType = fmd.getRelationType(clr);
+            if (relationType == RelationType.ONE_TO_ONE_BI) {
               if (fmd.getMappedBy() != null) {
                 // 1-1 bidirectional field without datastore column(s) (with single FK at other side)
                 oneToOneNonOwnerFields.add(fmd);
               }
-            } else if (relationType == Relation.MANY_TO_ONE_BI) {
+            } else if (relationType == RelationType.MANY_TO_ONE_BI) {
               AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
               if (fmd.getJoinMetaData() != null || relatedMmds[0].getJoinMetaData() != null) {
                 // 1-N bidirectional using join table for relation

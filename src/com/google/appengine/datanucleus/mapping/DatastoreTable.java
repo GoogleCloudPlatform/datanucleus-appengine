@@ -36,12 +36,12 @@ import org.datanucleus.metadata.MetaData;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.OrderMetaData;
 import org.datanucleus.metadata.PropertyMetaData;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.VersionMetaData;
 import org.datanucleus.plugin.ConfigurationElement;
-import org.datanucleus.store.types.sco.SCOUtils;
-import org.datanucleus.store.exceptions.NoSuchPersistentFieldException;
-import org.datanucleus.store.exceptions.NoTableManagedException;
+import org.datanucleus.store.types.SCOUtils;
+import org.datanucleus.store.mapped.exceptions.NoSuchPersistentFieldException;
+import org.datanucleus.store.mapped.exceptions.NoTableManagedException;
 import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.DatastoreField;
@@ -501,17 +501,17 @@ public class DatastoreTable implements DatastoreClass {
         // Calculate if we need a FK adding due to a 1-N relationship TODO Remove this when no longer supporting old storageVersion
         // Note that we ignore any "join" setting since we don't use join tables
         boolean needsFKToContainerOwner = false;
-        int relationType = fmd.getRelationType(clr);
-        if (relationType == Relation.ONE_TO_MANY_BI) {
+        RelationType relationType = fmd.getRelationType(clr);
+        if (relationType == RelationType.ONE_TO_MANY_BI) {
           /*AbstractMemberMetaData[] relatedMmds = fmd.getRelatedMemberMetaData(clr);
           if (fmd.getJoinMetaData() == null && relatedMmds[0].getJoinMetaData() == null) {*/
             needsFKToContainerOwner = true;
           /*}*/
-        } else if (relationType == Relation.ONE_TO_MANY_UNI) {
+        } else if (relationType == RelationType.ONE_TO_MANY_UNI) {
           /*if (fmd.getJoinMetaData() == null) {*/
             needsFKToContainerOwner = true;
           /*}*/
-        } else if (relationType == Relation.ONE_TO_ONE_BI) {
+        } else if (relationType == RelationType.ONE_TO_ONE_BI) {
           if (fmd.getMappedBy() != null && MetaDataUtils.isOwnedRelation(fmd, storeMgr)) {
             // This element type has a many-to-one pointing back.
             // We assume that our pk is part of the pk of the element type.
@@ -519,7 +519,7 @@ public class DatastoreTable implements DatastoreClass {
             dt.runCallBacks();
             dt.markFieldAsParentKeyProvider(fmd.getName());
           }
-        } else if (relationType == Relation.MANY_TO_ONE_BI) {
+        } else if (relationType == RelationType.MANY_TO_ONE_BI) {
         }
 
         if (needsFKToContainerOwner) {

@@ -34,14 +34,14 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.CollectionMetaData;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.metadata.RelationType;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MappingConsumer;
-import org.datanucleus.store.types.sco.SCOUtils;
+import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.util.ClassUtils;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -76,7 +76,7 @@ public abstract class AbstractFKStore {
 
   protected ClassLoaderResolver clr;
 
-  protected int relationType;
+  protected RelationType relationType;
 
   /** Primary table for the element(s). */
   protected DatastoreClass elementTable;
@@ -146,7 +146,7 @@ public abstract class AbstractFKStore {
       }
 
       // Check that the type of the element "mapped-by" field is consistent with the owner type when 1-N
-      if ((relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) &&
+      if ((relationType == RelationType.ONE_TO_MANY_BI || relationType == RelationType.ONE_TO_MANY_UNI) &&
           !clr.isAssignableFrom(elementMemberMetaData.getType(), ownerMmd.getAbstractClassMetaData().getFullClassName())) {
         throw new NucleusUserException(LOCALISER.msg("056025", ownerMmd.getFullFieldName(), 
             elementMemberMetaData.getFullFieldName(), elementMemberMetaData.getTypeName(), ownerMmd.getAbstractClassMetaData().getFullClassName()));

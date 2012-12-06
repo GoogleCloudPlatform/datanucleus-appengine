@@ -28,7 +28,7 @@ import org.datanucleus.NucleusContext;
 import org.datanucleus.api.jpa.JPAEntityManager;
 import org.datanucleus.api.jpa.JPAEntityManagerFactory;
 import org.datanucleus.metadata.MetaDataManager;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.mapped.MappedStoreManager;
 
 import java.util.Map;

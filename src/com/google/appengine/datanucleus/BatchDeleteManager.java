@@ -19,7 +19,7 @@ import com.google.appengine.api.datastore.Key;
 
 import java.util.List;
 
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 
 /**
  * Manages batch deletes that are initiated via standard JDO calls.

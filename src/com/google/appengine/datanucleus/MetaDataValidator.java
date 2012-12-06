@@ -26,7 +26,7 @@ import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.InvalidMetaDataException;
 import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.metadata.OrderMetaData;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.metadata.SequenceMetaData;
 import org.datanucleus.util.Localiser;
 import org.datanucleus.util.NucleusLogger;
@@ -93,13 +93,6 @@ public class MetaDataValidator {
                     IGNORABLE_META_DATA_BEHAVIOR_PROPERTY,
                     IgnorableMetaDataBehavior.NONE,
                     IgnorableMetaDataBehavior.ERROR);
-
-  private static final Set<Integer> NON_REPEATABLE_RELATION_TYPES = Utils.newHashSet(
-      Relation.ONE_TO_MANY_BI,
-      Relation.ONE_TO_MANY_UNI,
-      Relation.ONE_TO_ONE_BI,
-      Relation.ONE_TO_ONE_UNI
-  );
 
   private static final String ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE =
       "datanucleus.appengine.allowMultipleRelationsOfSameType";
@@ -291,21 +284,23 @@ public class MetaDataValidator {
 
     checkForIllegalChildField(ammd, noParentAllowed);
 
-    if (ammd.getRelationType(clr) != Relation.NONE) {
+    if (ammd.getRelationType(clr) != RelationType.NONE) {
       // Look for "eager" relationships.  Not supported but not necessarily an error
       // since we can always fall back to "lazy."
       if (ammd.isDefaultFetchGroup() && !ammd.isEmbedded()) {
         handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
       }
 
-      if (ammd.getRelationType(clr) == Relation.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd, storeMgr)) {
+      if (ammd.getRelationType(clr) == RelationType.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd, storeMgr)) {
         // We only support many-to-many for unowned relations
         throw new InvalidMetaDataException(GAE_LOCALISER, "AppEngine.MetaData.ManyToManyRelationNotSupported",
             ammd.getFullFieldName());
       }
 
+      RelationType relType = ammd.getRelationType(clr);
       if (ammd.getEmbeddedMetaData() == null &&
-          NON_REPEATABLE_RELATION_TYPES.contains(ammd.getRelationType(clr)) &&
+          (relType == RelationType.ONE_TO_ONE_UNI || relType == RelationType.ONE_TO_ONE_BI ||
+           relType == RelationType.ONE_TO_MANY_UNI || relType == RelationType.ONE_TO_MANY_BI) &&
           !getBooleanConfigProperty(ALLOW_MULTIPLE_RELATIONS_OF_SAME_TYPE) &&
           !storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
         // Check on multiple relations of the same type for early storage versions
@@ -349,12 +344,12 @@ public class MetaDataValidator {
     // Figure out if this field is the owning side of a one to one or a one to
     // many.  If it is, look at the mapping of the child class and make sure their
     // pk isn't Long or unencoded String.
-    int relationType = ammd.getRelationType(clr);
-    if (relationType == Relation.NONE || ammd.isEmbedded()) {
+    RelationType relationType = ammd.getRelationType(clr);
+    if (relationType == RelationType.NONE || ammd.isEmbedded()) {
       return;
     }
     AbstractClassMetaData childAcmd = null;
-    if (relationType == Relation.ONE_TO_MANY_BI || relationType == Relation.ONE_TO_MANY_UNI) {
+    if (relationType == RelationType.ONE_TO_MANY_BI || relationType == RelationType.ONE_TO_MANY_UNI) {
       if (ammd.getCollection() != null) {
         childAcmd = ammd.getCollection().getElementClassMetaData(clr, metaDataManager);
       } else if (ammd.getArray() != null) {
@@ -366,7 +361,7 @@ public class MetaDataValidator {
       if (ammd.getOrderMetaData() != null) {
         verifyOneToManyOrderBy(ammd, childAcmd);
       }
-    } else if (relationType == Relation.ONE_TO_ONE_BI || relationType == Relation.ONE_TO_ONE_UNI) {
+    } else if (relationType == RelationType.ONE_TO_ONE_BI || relationType == RelationType.ONE_TO_ONE_UNI) {
       childAcmd = metaDataManager.getMetaDataForClass(ammd.getType(), clr);
     }
     if (childAcmd == null) {

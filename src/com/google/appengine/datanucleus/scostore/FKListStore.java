@@ -33,10 +33,10 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.OrderMetaData;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.metadata.RelationType;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.DatastoreClass;
 import org.datanucleus.store.mapped.exceptions.MappedDatastoreException;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -526,7 +526,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
       if (ownerMapping.isNullable()) {
         // Nullify the FK
         ObjectProvider elementSM = ec.findObjectProvider(element);
-        if (relationType == Relation.ONE_TO_MANY_BI) {
+        if (relationType == RelationType.ONE_TO_MANY_BI) {
           // TODO This is ManagedRelations - move into RelationshipManager
           elementSM.replaceFieldMakeDirty(ownerMemberMetaData.getRelatedMemberMetaData(clr)[0].getAbsoluteFieldNumber(), 
               null);
@@ -1087,14 +1087,14 @@ public class FKListStore extends AbstractFKStore implements ListStore {
             }
           }
         }
-        if (relationType == Relation.ONE_TO_MANY_BI) {
+        if (relationType == RelationType.ONE_TO_MANY_BI) {
           // TODO This is ManagedRelations - move into RelationshipManager
           // Managed Relations : 1-N bidir, so make sure owner is correct at persist
           Object currentOwner = elementOP.provideField(elementMemberMetaData.getAbsoluteFieldNumber());
           if (currentOwner == null) {
             // No owner, so correct it
             NucleusLogger.PERSISTENCE.info(LOCALISER.msg("056037",
-                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(op.getObject()), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(elementOP.getObject())));
             elementOP.replaceFieldMakeDirty(elementMemberMetaData.getAbsoluteFieldNumber(), newOwner);
           }
@@ -1102,7 +1102,7 @@ public class FKListStore extends AbstractFKStore implements ListStore {
             // Owner of the element is neither this container nor is it being attached
             // Inconsistent owner, so throw exception
             throw new NucleusUserException(LOCALISER.msg("056038",
-                op.toPrintableID(), ownerMemberMetaData.getFullFieldName(), 
+                StringUtils.toJVMIDString(op.getObject()), ownerMemberMetaData.getFullFieldName(), 
                 StringUtils.toJVMIDString(elementOP.getObject()),
                 StringUtils.toJVMIDString(currentOwner)));
           }

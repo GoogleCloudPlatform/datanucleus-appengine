@@ -16,7 +16,7 @@ limitations under the License.
 package com.google.appengine.datanucleus;
 
 import org.datanucleus.api.jdo.JDOPersistenceManager;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.easymock.EasyMock;
 
 import com.google.appengine.datanucleus.jdo.JDOTestCase;

@@ -26,8 +26,8 @@ import com.google.appengine.api.datastore.QueryResultList;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.api.jpa.JPAEntityManager;
 import org.datanucleus.metadata.AbstractClassMetaData;
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.ExecutionContext;
+import org.datanucleus.state.ObjectProvider;
 
 import java.util.List;
 

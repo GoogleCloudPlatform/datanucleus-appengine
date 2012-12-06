@@ -46,7 +46,7 @@ import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.MetaDataManager;
-import org.datanucleus.metadata.Relation;
+import org.datanucleus.metadata.RelationType;
 import org.datanucleus.query.compiler.QueryCompilation;
 import org.datanucleus.query.expression.DyadicExpression;
 import org.datanucleus.query.expression.Expression;
@@ -59,9 +59,9 @@ import org.datanucleus.query.expression.PrimaryExpression;
 import org.datanucleus.query.expression.VariableExpression;
 import org.datanucleus.query.symbol.Symbol;
 import org.datanucleus.query.symbol.SymbolTable;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.FieldValues;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.mapped.IdentifierFactory;
 import org.datanucleus.store.mapped.mapping.EmbeddedMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
@@ -1085,8 +1085,8 @@ public class DatastoreQuery implements Serializable {
       throw noMetaDataException(left.getId(), acmd.getFullClassName());
     }
 
-    int relationType = ammd.getRelationType(getClassLoaderResolver());
-    if (Relation.isRelationSingleValued(relationType)) {
+    RelationType relationType = ammd.getRelationType(getClassLoaderResolver());
+    if (RelationType.isRelationSingleValued(relationType)) {
       // Reference to persistable object, so use Key or id
       processPersistableMember(qd, op, ammd, value);
     } else if (MetaDataUtils.isParentPKField(ammd)) {

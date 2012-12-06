@@ -19,7 +19,7 @@ import com.google.appengine.api.datastore.Cursor;
 import com.google.appengine.api.datastore.Entity;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.store.StoreManager;
 import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.connection.ManagedConnectionResourceListener;

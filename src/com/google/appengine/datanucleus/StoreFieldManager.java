@@ -37,9 +37,9 @@ import org.datanucleus.metadata.EmbeddedMetaData;
 import org.datanucleus.metadata.IdentityStrategy;
 import org.datanucleus.metadata.IdentityType;
 import org.datanucleus.metadata.NullValue;
-import org.datanucleus.metadata.Relation;
-import org.datanucleus.store.ExecutionContext;
-import org.datanucleus.store.ObjectProvider;
+import org.datanucleus.metadata.RelationType;
+import org.datanucleus.ExecutionContext;
+import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.exceptions.NotYetFlushedException;
 import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.EmbeddedPCMapping;
@@ -51,7 +51,7 @@ import org.datanucleus.store.mapped.mapping.PersistableMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedPCMapping;
 import org.datanucleus.store.mapped.mapping.SerialisedReferenceMapping;
 import org.datanucleus.store.types.TypeManager;
-import org.datanucleus.store.types.sco.SCO;
+import org.datanucleus.store.types.SCO;
 import org.datanucleus.util.Localiser;
 
 import com.google.appengine.api.datastore.Entity;
@@ -207,9 +207,9 @@ public class StoreFieldManager extends DatastoreFieldManager {
     }
 
     ClassLoaderResolver clr = getClassLoaderResolver();
-    int relationType = mmd.getRelationType(clr);
+    RelationType relationType = mmd.getRelationType(clr);
 
-    if (Relation.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
+    if (RelationType.isRelationSingleValued(relationType) && mmd.getEmbeddedMetaData() != null) {
       // Embedded persistable object
       ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd.getType(), fieldNumber, value);
 
@@ -218,7 +218,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       fieldManagerStateStack.removeFirst();
 
       return;
-    } else if (Relation.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
+    } else if (RelationType.isRelationMultiValued(relationType) && mmd.isEmbedded()) {
       // Embedded container field
       if (mmd.hasCollection()) {
         // Embedded collections
@@ -340,7 +340,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       return;
     }
 
-    if (relationType == Relation.NONE) {
+    if (relationType == RelationType.NONE) {
       // Basic field
       if (value == null) {
         checkSettingToNullValue(mmd, value);
@@ -372,10 +372,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
       }
 
       // Skip out for all situations where this isn't the owner (since our key has the parent key)
-      if (relationType == Relation.MANY_TO_ONE_BI) {
+      if (relationType == RelationType.MANY_TO_ONE_BI) {
         // We don't store any "FK" of the parent
         return;
-      } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
+      } else if (relationType == RelationType.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
         // We don't store any "FK" of the other side
         return;
       }
@@ -385,7 +385,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
       if (value == null) {
         // Nothing to extract
         checkSettingToNullValue(mmd, value);
-      } else if (Relation.isRelationSingleValued(relationType)) {
+      } else if (RelationType.isRelationSingleValued(relationType)) {
         Key key = EntityUtils.extractChildKey(value, ec, owned ? datastoreEntity : null);
         if (key != null && owned && !datastoreEntity.getKey().equals(key.getParent())) {
           // Detect attempt to add an object with its key set (and hence parent set) on owned field
@@ -393,7 +393,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
               key, datastoreEntity.getKey()));
         }
         value = key;
-      } else if (Relation.isRelationMultiValued(relationType)) {
+      } else if (RelationType.isRelationMultiValued(relationType)) {
         if (mmd.hasCollection()) {
           if (value != null) {
             value = getDatastoreObjectForCollection(mmd, (Collection)value, ec, owned, false);
@@ -767,14 +767,14 @@ public class StoreFieldManager extends DatastoreFieldManager {
             mapping instanceof PersistableMapping ||
             mapping instanceof InterfaceMapping) {
           boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
-          int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
+          RelationType relationType = mmd.getRelationType(ec.getClassLoaderResolver());
           if (owned) {
             // Owned relation
             boolean owner = false;
-            if (relationType == Relation.ONE_TO_ONE_UNI || relationType == Relation.ONE_TO_MANY_UNI ||
-                relationType == Relation.ONE_TO_MANY_BI) {
+            if (relationType == RelationType.ONE_TO_ONE_UNI || relationType == RelationType.ONE_TO_MANY_UNI ||
+                relationType == RelationType.ONE_TO_MANY_BI) {
               owner = true;
-            } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() == null) {
+            } else if (relationType == RelationType.ONE_TO_ONE_BI && mmd.getMappedBy() == null) {
               owner = true;
             }
 
@@ -819,7 +819,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     // Stage 3 : set child keys in parent
     for (RelationStoreInformation relInfo : relationStoreInfos) {
       AbstractMemberMetaData mmd = relInfo.mmd;
-      int relationType = mmd.getRelationType(ec.getClassLoaderResolver());
+      RelationType relationType = mmd.getRelationType(ec.getClassLoaderResolver());
 
       boolean owned = MetaDataUtils.isOwnedRelation(mmd, getStoreManager());
       if (owned) {
@@ -828,10 +828,10 @@ public class StoreFieldManager extends DatastoreFieldManager {
           // don't write child keys to the parent if the storage version isn't high enough
           continue;
         }
-        if (relationType == Relation.MANY_TO_ONE_BI) {
+        if (relationType == RelationType.MANY_TO_ONE_BI) {
           // We don't store any "FK" of the parent at the child side (use parent key instead)
           continue;
-        } else if (relationType == Relation.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
+        } else if (relationType == RelationType.ONE_TO_ONE_BI && mmd.getMappedBy() != null) {
           // We don't store any "FK" at the non-owner side (use parent key instead)
           continue;
         }
@@ -846,7 +846,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
           modifiedEntity = true;
           EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
         }
-      } else if (Relation.isRelationSingleValued(relationType)) {
+      } else if (RelationType.isRelationSingleValued(relationType)) {
         if (ec.getApiAdapter().isDeleted(value)) {
           value = null;
         } else {
@@ -872,7 +872,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
             EntityUtils.setEntityProperty(datastoreEntity, mmd, propName, value);
           }
         }
-      } else if (Relation.isRelationMultiValued(relationType)) {
+      } else if (RelationType.isRelationMultiValued(relationType)) {
         if (mmd.hasCollection()) {
           value = getDatastoreObjectForCollection(mmd, (Collection)value, ec, owned, true);
           if (!datastoreEntity.hasProperty(propName) || !value.equals(datastoreEntity.getProperty(propName))) {
