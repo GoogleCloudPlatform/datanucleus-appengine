@@ -307,7 +307,7 @@ public class DatastoreManager extends MappedStoreManager {
 
   @Override
   public NucleusConnection getNucleusConnection(ExecutionContext ec) {
-    ConnectionFactory cf = connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
+    ConnectionFactory cf = connectionMgr.lookupConnectionFactory(primaryConnectionFactoryName);
 
     final ManagedConnection mc;
     final boolean enlisted;
@@ -637,7 +637,7 @@ public class DatastoreManager extends MappedStoreManager {
    */
   public boolean connectionFactoryIsAutoCreateTransaction() {
     DatastoreConnectionFactoryImpl connFactory = 
-        (DatastoreConnectionFactoryImpl) connectionMgr.lookupConnectionFactory(txConnectionFactoryName);
+        (DatastoreConnectionFactoryImpl) connectionMgr.lookupConnectionFactory(primaryConnectionFactoryName);
     return connFactory.isAutoCreateTransaction();
   }
 
@@ -701,16 +701,6 @@ public class DatastoreManager extends MappedStoreManager {
 
   public TypeConversionUtils getTypeConversionUtils() {
     return typeConversionUtils;
-  }
-
-  // For testing
-  String getTxConnectionFactoryName() {
-    return txConnectionFactoryName;
-  }
-
-  // For testing
-  String getNonTxConnectionFactoryName() {
-    return nontxConnectionFactoryName;
   }
 
   // visible for testing
