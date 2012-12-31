@@ -533,10 +533,12 @@ public class FKListStore extends AbstractFKStore implements ListStore {
           if (ec.isFlushing()) {
             elementSM.flush();
           }
-        }
-        // TODO Shouldn't we always null the FK in the datastore, not just when unidirectional?
-        else {
+        } else {
           updateElementFk(ownerOP, element, null, -1);
+          if (deleteElementsOnRemoveOrClear()) {
+            // TODO If present elsewhere in List then don't delete the element from persistence
+            ec.deleteObjectInternal(element);
+          }
         }
       }
       else {
