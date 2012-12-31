@@ -18,14 +18,13 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <!-- ENABLED since currently dependent on DN3.2 SNAPSHOTs. DISABLE BEFORE RELEASE -->
-        <repository>
+        <!--repository>
             <id>DataNucleus_Nightly</id>
             <url>http://www.datanucleus.org/downloads/maven2-nightly</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository-->
     </repositories>
 
     <pluginRepositories>
@@ -45,7 +44,7 @@
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
             <!--version>3.2.0-m1</version-->
-            <version>[3.2.0-m2-SNAPSHOT, )</version>
+            <version>[3.2.0-m2, )</version>
         </dependency>
 
         <dependency>
@@ -64,14 +63,14 @@
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jdo</artifactId>
             <!--version>3.2.0-m1</version-->
-            <version>[3.2.0-m2-SNAPSHOT, )</version>
+            <version>[3.2.0-m2, )</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jpa</artifactId>
             <!--version>3.2.0-m1</version-->
-            <version>[3.2.0-m2-SNAPSHOT, )</version>
+            <version>[3.2.0-m2, )</version>
             <optional>true</optional>
         </dependency>
         <dependency>
