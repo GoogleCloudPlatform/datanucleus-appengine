@@ -229,7 +229,7 @@ public class CollectionMapping extends AbstractContainerMapping implements Mappi
         }
 
         // makes sure field is loaded
-        sm.getExecutionContext().getApiAdapter().isLoaded(sm, getAbsoluteFieldNumber());
+        sm.isLoaded(getAbsoluteFieldNumber());
         Collection value = (Collection) sm.provideField(getAbsoluteFieldNumber());
         if (value == null)
         {

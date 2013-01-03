@@ -273,7 +273,7 @@ public class PersistableMapping extends MultiMapping implements MappingCallbacks
             if (!mmd.isPrimaryKey())
             {
                 // Make sure the field is loaded
-                nucleusCtx.getApiAdapter().isLoaded(sm, mmd.getAbsoluteFieldNumber());
+                sm.isLoaded(mmd.getAbsoluteFieldNumber());
             }
             FieldManager fm = new SingleValueFieldManager();
             sm.provideFields(new int[] {mmd.getAbsoluteFieldNumber()}, fm);
@@ -883,7 +883,7 @@ public class PersistableMapping extends MultiMapping implements MappingCallbacks
         int fieldNumber = mmd.getAbsoluteFieldNumber();
         try
         {
-            ec.getApiAdapter().isLoaded(sm, fieldNumber);
+            sm.isLoaded(fieldNumber);
         }
         catch (JDOObjectNotFoundException onfe) // TODO Use different method that throws NucleusObjectNotFoundException
         {

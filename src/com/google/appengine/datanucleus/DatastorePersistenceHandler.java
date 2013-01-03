@@ -666,7 +666,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     if (cmd.isVersioned()) {
       ExecutionContext ec = op.getExecutionContext();
       String versionPropertyName = EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd);
-      Object curVersion = op.getExecutionContext().getApiAdapter().getVersion(op);
+      Object curVersion = op.getVersion();
       if (curVersion != null) {
         // Fetch the latest and greatest version of the entity from the datastore
         // to see if anyone has made a change underneath us.  We need to execute

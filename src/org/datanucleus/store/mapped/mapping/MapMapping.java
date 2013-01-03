@@ -236,7 +236,7 @@ public class MapMapping extends AbstractContainerMapping implements MappingCallb
         }
 
         // makes sure field is loaded
-        sm.getExecutionContext().getApiAdapter().isLoaded(sm, getAbsoluteFieldNumber());
+        sm.isLoaded(getAbsoluteFieldNumber());
         java.util.Map value = (java.util.Map) sm.provideField(getAbsoluteFieldNumber());
         if (value == null || value.isEmpty())
         {

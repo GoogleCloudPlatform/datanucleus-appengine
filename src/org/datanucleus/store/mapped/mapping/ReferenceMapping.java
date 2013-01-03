@@ -794,7 +794,7 @@ public abstract class ReferenceMapping extends MultiPersistableMapping implement
             {
                 // makes sure field is loaded
                 int fieldNumber = getMemberMetaData().getAbsoluteFieldNumber();
-                sm.getExecutionContext().getApiAdapter().isLoaded(sm, fieldNumber);
+                sm.isLoaded(fieldNumber);
                 Object pc = sm.provideField(fieldNumber);
                 if (pc != null)
                 {

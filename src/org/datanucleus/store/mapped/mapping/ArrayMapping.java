@@ -267,7 +267,7 @@ public class ArrayMapping extends AbstractContainerMapping implements MappingCal
         }
 
         // makes sure field is loaded
-        sm.getExecutionContext().getApiAdapter().isLoaded(sm, getAbsoluteFieldNumber());
+        sm.isLoaded(getAbsoluteFieldNumber());
         Object value = sm.provideField(getAbsoluteFieldNumber());
         if (value == null)
         {

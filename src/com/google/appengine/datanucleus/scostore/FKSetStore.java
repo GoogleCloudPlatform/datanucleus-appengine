@@ -119,7 +119,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
       ObjectProvider elementOP = ec.findObjectProvider(element);
       if (relationType == RelationType.ONE_TO_MANY_BI) {
         // Managed Relations : 1-N bidir, so update the owner of the element
-        ec.getApiAdapter().isLoaded(elementOP, getFieldNumberInElementForBidirectional(elementOP)); // Ensure is loaded
+        elementOP.isLoaded(getFieldNumberInElementForBidirectional(elementOP)); // Ensure is loaded
         Object oldOwner = elementOP.provideField(getFieldNumberInElementForBidirectional(elementOP));
         if (oldOwner != newOwner) {
           if (NucleusLogger.PERSISTENCE.isDebugEnabled()) {
@@ -291,7 +291,7 @@ public class FKSetStore extends AbstractFKStore implements SetStore {
         if (!ec.getApiAdapter().isDeleted(elementToRemove)) {
           // Find the existing owner if the record hasn't already been deleted
           int elemOwnerFieldNumber = getFieldNumberInElementForBidirectional(elementOP);
-          ec.getApiAdapter().isLoaded(elementOP, elemOwnerFieldNumber);
+          elementOP.isLoaded(elemOwnerFieldNumber);
           oldOwner = elementOP.provideField(elemOwnerFieldNumber);
         }
       }
