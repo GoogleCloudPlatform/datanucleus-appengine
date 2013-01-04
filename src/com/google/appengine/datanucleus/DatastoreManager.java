@@ -257,8 +257,6 @@ public class DatastoreManager extends MappedStoreManager {
     // Add listener so we can check all metadata for unsupported features and required schema
     metadataValidator = new MetaDataValidator(this, getMetaDataManager(), clr);
 
-    initialiseAutoStart(clr);
-
     logConfiguration();
 
     datastoreServiceForReads = DatastoreServiceFactoryInternal.getDatastoreService(
