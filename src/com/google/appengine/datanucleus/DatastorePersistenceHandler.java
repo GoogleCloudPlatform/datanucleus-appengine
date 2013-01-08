@@ -131,18 +131,19 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
   protected static final Localiser GAE_LOCALISER = Localiser.getInstance(
       "com.google.appengine.datanucleus.Localisation", DatastoreManager.class.getClassLoader());
 
-  private final DatastoreManager storeMgr;
-
   private final Map<ExecutionContext, BatchPutManager> batchPutManagerByExecutionContext = new ConcurrentHashMap();
 
   private final Map<ExecutionContext, BatchDeleteManager> batchDeleteManagerByExecutionContext = new ConcurrentHashMap();
+
+  private final DatastoreManager datastoreMgr;
 
   /**
    * Constructor.
    * @param storeMgr The StoreManager to use.
    */
   public DatastorePersistenceHandler(StoreManager storeMgr) {
-    this.storeMgr = (DatastoreManager) storeMgr;
+    super(storeMgr);
+    this.datastoreMgr = (DatastoreManager) storeMgr;
   }
 
   public void close() {}
@@ -206,8 +207,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   public void insertObject(ObjectProvider op) {
     // Make sure writes are permitted
-    storeMgr.assertReadOnlyForUpdateOfObject(op);
-    storeMgr.validateMetaDataForClass(op.getClassMetaData());
+    assertReadOnlyForUpdateOfObject(op);
+    datastoreMgr.validateMetaDataForClass(op.getClassMetaData());
 
     // If we're in the middle of a batch operation just register the ObjectProvider that needs the insertion
     BatchPutManager batchPutMgr = getBatchPutManager(op.getExecutionContext());
@@ -245,9 +246,9 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Object assignedParentPk = fieldMgr.establishEntityGroup();
       Entity entity = fieldMgr.getEntity();
 
-      if (!storeMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
+      if (!datastoreMgr.storageVersionAtLeast(StorageVersion.READ_OWNED_CHILD_KEYS_FROM_PARENTS)) {
         // Older storage versions : store list positions in the element
-        DatastoreTable table = storeMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
+        DatastoreTable table = datastoreMgr.getDatastoreClass(op.getClassMetaData().getFullClassName(),
             ec.getClassLoaderResolver());
         Collection<JavaTypeMapping> orderMappings = table.getExternalOrderMappings().values();
         for (JavaTypeMapping orderMapping : orderMappings) {
@@ -271,7 +272,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       if (op.getClassMetaData().hasDiscriminatorStrategy()) {
         DiscriminatorMetaData dismd = op.getClassMetaData().getDiscriminatorMetaDataRoot();
         EntityUtils.setEntityProperty(entity, dismd, 
-            EntityUtils.getDiscriminatorPropertyName(storeMgr.getIdentifierFactory(), dismd), 
+            EntityUtils.getDiscriminatorPropertyName(datastoreMgr.getIdentifierFactory(), dismd), 
             op.getClassMetaData().getDiscriminatorValue());
       }
 
@@ -287,7 +288,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       }
 
       // Update parent PK field on pojo
-      AbstractMemberMetaData parentPkMmd = storeMgr.getMetaDataForParentPK(cmd);
+      AbstractMemberMetaData parentPkMmd = datastoreMgr.getMetaDataForParentPK(cmd);
       if (assignedParentPk != null) {
         // we automatically assigned a parent to the entity so make sure that makes it back on to the pojo
         op.replaceField(parentPkMmd.getAbsoluteFieldNumber(), assignedParentPk);
@@ -304,7 +305,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       List<Entity> entityList = Utils.newArrayList();
       for (PutState putState : putStateList) {
         if (txn == null) {
-          txn = storeMgr.getDatastoreTransaction(ec);
+          txn = datastoreMgr.getDatastoreTransaction(ec);
         }
         if (acmd == null) {
           acmd = putState.op.getClassMetaData();
@@ -391,8 +392,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     // Make sure writes are permitted
-    storeMgr.assertReadOnlyForUpdateOfObject(op);
-    storeMgr.validateMetaDataForClass(op.getClassMetaData());
+    assertReadOnlyForUpdateOfObject(op);
+    datastoreMgr.validateMetaDataForClass(op.getClassMetaData());
 
     AbstractClassMetaData cmd = op.getClassMetaData();
     long startTime = System.currentTimeMillis();
@@ -409,11 +410,11 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     ExecutionContext ec = op.getExecutionContext();
-    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(ec));
+    Entity entity = (Entity) op.getAssociatedValue(datastoreMgr.getDatastoreTransaction(ec));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = EntityUtils.getPkAsKey(op);
-      entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, key);
+      entity = EntityUtils.getEntityFromDatastore(datastoreMgr.getDatastoreServiceForReads(ec), op, key);
     }
 
     // Update the Entity with the specified fields
@@ -447,8 +448,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    */
   public void deleteObject(ObjectProvider op) {
     // Make sure writes are permitted
-    storeMgr.assertReadOnlyForUpdateOfObject(op);
-    storeMgr.validateMetaDataForClass(op.getClassMetaData());
+    assertReadOnlyForUpdateOfObject(op);
+    datastoreMgr.validateMetaDataForClass(op.getClassMetaData());
 
     long startTime = System.currentTimeMillis();
     if (NucleusLogger.DATASTORE_PERSIST.isDebugEnabled()) {
@@ -457,14 +458,14 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     ExecutionContext ec = op.getExecutionContext();
-    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(ec));
+    Entity entity = (Entity) op.getAssociatedValue(datastoreMgr.getDatastoreTransaction(ec));
     if (entity == null) {
       // Corresponding entity hasn't been fetched yet, so get it.
       Key key = EntityUtils.getPkAsKey(op);
-      entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, key);
+      entity = EntityUtils.getEntityFromDatastore(datastoreMgr.getDatastoreServiceForReads(ec), op, key);
     }
 
-    DatastoreTransaction txn = storeMgr.getDatastoreTransaction(ec);
+    DatastoreTransaction txn = datastoreMgr.getDatastoreTransaction(ec);
     if (txn != null) {
       txn.addDeletedKey(entity.getKey());
     }
@@ -474,7 +475,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
     // first handle any dependent deletes that need deleting before we delete this object
     ClassLoaderResolver clr = ec.getClassLoaderResolver();
-    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
+    DatastoreClass dc = datastoreMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
     DependentDeleteRequest req = new DependentDeleteRequest(dc, op.getClassMetaData(), clr);
     Set relatedObjectsToDelete = req.execute(op, entity);
 
@@ -532,16 +533,16 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     }
 
     AbstractClassMetaData cmd = op.getClassMetaData();
-    storeMgr.validateMetaDataForClass(cmd);
+    datastoreMgr.validateMetaDataForClass(cmd);
 
     // We always fetch the entire object, so if the state manager
     // already has an associated Entity we know that associated
     // Entity has all the fields.
     ExecutionContext ec = op.getExecutionContext();
-    Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(ec));
+    Entity entity = (Entity) op.getAssociatedValue(datastoreMgr.getDatastoreTransaction(ec));
     if (entity == null) {
       Key pk = EntityUtils.getPkAsKey(op);
-      entity = EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(ec), op, pk); // Throws NucleusObjectNotFoundException if necessary
+      entity = EntityUtils.getEntityFromDatastore(datastoreMgr.getDatastoreServiceForReads(ec), op, pk); // Throws NucleusObjectNotFoundException if necessary
     }
 
     if (NucleusLogger.DATASTORE_RETRIEVE.isDebugEnabled()) {
@@ -570,7 +571,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     // Refresh version in case not yet set (e.g created HOLLOW object, and this is first fetch)
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
-      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd));
+      Object versionValue = entity.getProperty(EntityUtils.getVersionPropertyName(datastoreMgr.getIdentifierFactory(), vmd));
       if (vmd.getVersionStrategy() == VersionStrategy.DATE_TIME) {
         versionValue = new Timestamp((Long)versionValue);
       }
@@ -583,7 +584,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       fmds[i] = op.getClassMetaData().getMetaDataForManagedMemberAtAbsolutePosition(fieldNumbers[i]);
     }
     ClassLoaderResolver clr = ec.getClassLoaderResolver();
-    DatastoreClass dc = storeMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
+    DatastoreClass dc = datastoreMgr.getDatastoreClass(op.getObject().getClass().getName(), clr);
     FetchMappingConsumer consumer = new FetchMappingConsumer(op.getClassMetaData());
     dc.provideMappingsForMembers(consumer, fmds, true);
     dc.provideDatastoreIdMappings(consumer);
@@ -628,7 +629,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
       Key key = EntityUtils.getPkAsKey(ops[i]);
       keysToLocate.add(key);
     }
-    EntityUtils.getEntitiesFromDatastore(storeMgr.getDatastoreServiceForReads(ops[0].getExecutionContext()),
+    EntityUtils.getEntitiesFromDatastore(datastoreMgr.getDatastoreServiceForReads(ops[0].getExecutionContext()),
         keysToLocate, ops[0].getExecutionContext());
   }
 
@@ -638,8 +639,8 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
    * @throws NucleusObjectNotFoundException if the object isn't found in the datastore
    */
   public void locateObject(ObjectProvider op) {
-    storeMgr.validateMetaDataForClass(op.getClassMetaData());
-    EntityUtils.getEntityFromDatastore(storeMgr.getDatastoreServiceForReads(op.getExecutionContext()), op, 
+    datastoreMgr.validateMetaDataForClass(op.getClassMetaData());
+    EntityUtils.getEntityFromDatastore(datastoreMgr.getDatastoreServiceForReads(op.getExecutionContext()), op, 
         EntityUtils.getPkAsKey(op));
   }
 
@@ -665,7 +666,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
     VersionMetaData vmd = cmd.getVersionMetaDataForClass();
     if (cmd.isVersioned()) {
       ExecutionContext ec = op.getExecutionContext();
-      String versionPropertyName = EntityUtils.getVersionPropertyName(storeMgr.getIdentifierFactory(), vmd);
+      String versionPropertyName = EntityUtils.getVersionPropertyName(datastoreMgr.getIdentifierFactory(), vmd);
       Object curVersion = op.getVersion();
       if (curVersion != null) {
         // Fetch the latest and greatest version of the entity from the datastore
@@ -679,7 +680,7 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
           if (ec.getStatistics() != null) {
             ec.getStatistics().incrementNumReads();
           }
-          refreshedEntity = storeMgr.getDatastoreServiceForReads(op.getExecutionContext()).get(entity.getKey());
+          refreshedEntity = datastoreMgr.getDatastoreServiceForReads(op.getExecutionContext()).get(entity.getKey());
         } catch (EntityNotFoundException e) {
           // someone deleted out from under us
           throw new NucleusOptimisticException(GAE_LOCALISER.msg("AppEngine.OptimisticError.EntityHasBeenDeleted", operation,
