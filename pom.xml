@@ -3,7 +3,7 @@
     <modelVersion>4.0.0</modelVersion>
     <name>Google AppEngine DataNucleus plugin</name>
     <description>
-        Plugin for DataNucleus providing persistence to the Google AppEngine BigTable datastore
+        Plugin for DataNucleus providing persistence to Google AppEngine/Datastore.
     </description>
     <groupId>com.google.appengine.orm</groupId>
     <artifactId>datanucleus-appengine</artifactId>
@@ -18,13 +18,14 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <!--repository>
+        <!-- Comment this out and remove SNAPSHOTs from deps before release -->
+        <repository>
             <id>DataNucleus_Nightly</id>
             <url>http://www.datanucleus.org/downloads/maven2-nightly</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository-->
+        </repository>
     </repositories>
 
     <pluginRepositories>
@@ -43,7 +44,7 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
-            <version>[3.2.0-m3, )</version>
+            <version>[3.2.0-m4-SNAPSHOT, )</version>
         </dependency>
 
         <dependency>
@@ -61,13 +62,13 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jdo</artifactId>
-            <version>[3.2.0-m3, )</version>
+            <version>[3.2.0-m4-SNAPSHOT, )</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jpa</artifactId>
-            <version>[3.2.0-m3, )</version>
+            <version>[3.2.0-m4-SNAPSHOT, )</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -171,7 +172,15 @@
             <plugin>
                 <groupId>org.datanucleus</groupId>
                 <artifactId>datanucleus-maven-plugin</artifactId>
-                <version>3.2.0-m2</version>
+                <version>3.2.0-m3</version>
+                <dependencies>
+                    <dependency>
+                        <!-- Force the enhancer to use the same version of core that's already on the classpath -->
+                        <groupId>org.datanucleus</groupId>
+                        <artifactId>datanucleus-core</artifactId>
+                        <version>3.2.0-m4-SNAPSHOT</version>
+                    </dependency>
+                </dependencies>
                 <configuration>
                     <metadataDirectory>${project.build.testOutputDirectory}</metadataDirectory>
                     <metadataIncludes>**/test/**/*.class</metadataIncludes>

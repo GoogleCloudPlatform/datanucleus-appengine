@@ -288,7 +288,10 @@ public class MetaDataValidator {
       // Look for "eager" relationships.  Not supported but not necessarily an error
       // since we can always fall back to "lazy."
       if (ammd.isDefaultFetchGroup() && !ammd.isEmbedded()) {
-        handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
+          warn(String.format(
+              "Meta-data warning for %s.%s: %s  %s  %s",
+              acmd.getFullClassName(), ammd.getName(), GAE_LOCALISER.msg("AppEngine.MetaData.JoinsNotSupported", ammd.getFullFieldName()), "The field will be fetched lazily on first access.", ADJUST_WARNING_MSG));
+//        handleIgnorableMapping(acmd, ammd, "AppEngine.MetaData.JoinsNotSupported", "The field will be fetched lazily on first access.");
       }
 
       if (ammd.getRelationType(clr) == RelationType.MANY_TO_MANY_BI && MetaDataUtils.isOwnedRelation(ammd, storeMgr)) {
@@ -447,7 +450,8 @@ public class MetaDataValidator {
           throw new InvalidMetaDataException(GAE_LOCALISER, localiserKey, acmd.getFullClassName());
         }
         throw new InvalidMetaDataException(GAE_LOCALISER, localiserKey, ammd.getFullFieldName());
-      // We swallow both null and NONE
+      case NONE:
+        // Do nothing
     }
   }
 

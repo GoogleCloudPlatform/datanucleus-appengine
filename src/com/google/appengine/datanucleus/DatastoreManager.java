@@ -25,7 +25,6 @@ import com.google.appengine.datanucleus.scostore.FKListStore;
 import com.google.appengine.datanucleus.scostore.FKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.FetchPlan;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.PropertyNames;
@@ -52,9 +51,7 @@ import org.datanucleus.store.mapped.DatastoreContainerObject;
 import org.datanucleus.store.mapped.MappedStoreData;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.mapped.StatementClassMapping;
-import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
-import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.store.scostore.ListStore;
 import org.datanucleus.store.scostore.SetStore;
 import org.datanucleus.util.ClassUtils;
@@ -453,11 +450,6 @@ public class DatastoreManager extends MappedStoreManager {
   }
 
   @Override
-  public boolean insertValuesOnInsert(DatastoreMapping datastoreMapping) {
-    return true;
-  }
-
-  @Override
   public boolean allowsBatching() {
     return false;
   }
@@ -480,16 +472,6 @@ public class DatastoreManager extends MappedStoreManager {
     // Need to provide this to the field manager in the form of the pk
     // of the type: Key, Long, encoded String, or unencoded String
     return new KeyOnlyFieldManager(internalKey);
-  }
-
-  public FieldManager getFieldManagerForStatementGeneration(ObjectProvider op, Object stmt,
-      StatementClassMapping stmtMappings, boolean checkNonNullable) {
-    return null;
-  }
-
-  public ResultObjectFactory newResultObjectFactory(AbstractClassMetaData acmd,
-      StatementClassMapping mappingDefinition, boolean ignoreCache, FetchPlan fetchPlan, Class persistentClass) {
-    return null;
   }
 
   protected ListStore newFKListStore(AbstractMemberMetaData ammd, ClassLoaderResolver clr) {
@@ -724,5 +706,4 @@ public class DatastoreManager extends MappedStoreManager {
     }
     return txnOpts;
   }
-
 }

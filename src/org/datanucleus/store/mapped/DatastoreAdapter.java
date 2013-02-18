@@ -18,13 +18,9 @@ Contributors:
 **********************************************************************/
 package org.datanucleus.store.mapped;
 
-import java.sql.Timestamp;
 import java.util.Collection;
-import java.util.Map;
 
-import org.datanucleus.store.connection.ManagedConnection;
 import org.datanucleus.store.mapped.mapping.MappingManager;
-import org.datanucleus.store.schema.StoreSchemaHandler;
 
 /**
  * Definition of a datastore adapter.
@@ -101,45 +97,6 @@ public interface DatastoreAdapter
     MappingManager getMappingManager(MappedStoreManager storeMgr);
 
     /**
-     * Accessor for the Vendor ID for this datastore.
-     * @return Vendor id for this datastore
-     */
-    String getVendorID();
-
-    /**
-     * Initialise the types for this datastore.
-     * @param handler SchemaHandler that we initialise the types for
-     * @param mconn Managed connection to use
-     */
-    void initialiseTypes(StoreSchemaHandler handler, ManagedConnection mconn);
-
-    /**
-     * Set any properties controlling how the adapter is configured.
-     * @param props The properties
-     */
-    void setProperties(Map<String, Object> props);
-
-    /**
-     * Remove all mappings from the mapping manager that don't have a datastore type initialised.
-     * @param handler Schema handler
-     * @param mconn Managed connection to use
-     */
-    void removeUnsupportedMappings(StoreSchemaHandler handler, ManagedConnection mconn);
-
-    /**
-     * Method to check if a word is reserved for this datastore.
-     * @param word The word
-     * @return Whether it is reserved
-     */
-    boolean isReservedKeyword(String word);
-
-    /**
-     * Creates the auxiliary functions/procedures in the datastore 
-     * @param conn the connection to the datastore
-     */
-    void initialiseDatastore(Object conn);
-
-    /**
      * Accessor for the quote string to use when quoting identifiers.
      * @return The quote string for the identifier
      */
@@ -150,44 +107,6 @@ public interface DatastoreAdapter
      * @return Catalog separator string.
      */
     String getCatalogSeparator();
-
-    /**
-     * Utility to return the adapter time in case there are rounding issues with millisecs etc.
-     * @param time The timestamp
-     * @return The time in millisecs
-     */
-    long getAdapterTime(Timestamp time);
-
-    /**
-     * Accessor for the datastore product name.
-     * @return product name
-     */
-    String getDatastoreProductName();
-
-    /**
-     * Accessor for the datastore product version.
-     * @return product version
-     */
-    String getDatastoreProductVersion();
-
-    /**
-     * Accessor for the datastore driver name.
-     * @return product name
-     */
-    String getDatastoreDriverName();
-
-    /**
-     * Accessor for the datastore driver version.
-     * @return driver version
-     */
-    String getDatastoreDriverVersion();
-
-    /**
-     * Verifies if the given <code>columnDef</code> is an identity field type for the datastore.
-     * @param columnDef the datastore type name
-     * @return true when the <code>columnDef</code> has values for identity generation in the datastore
-     **/
-    boolean isIdentityFieldDataType(String columnDef);
 
     /**
      * Method to return the maximum length of a datastore identifier of the specified type.
@@ -208,13 +127,6 @@ public interface DatastoreAdapter
      * @return Max number of indices
      */
     int getMaxIndexes();
-
-    /**
-     * Whether the datastore will support setting the query fetch size to the supplied value.
-     * @param size The value to set to
-     * @return Whether it is supported.
-     */
-    boolean supportsQueryFetchSize(int size);
 
     /**
      * Method to return this object as a string.

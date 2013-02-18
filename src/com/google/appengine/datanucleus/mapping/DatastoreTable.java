@@ -735,8 +735,7 @@ public class DatastoreTable implements DatastoreClass {
   }
 
   private void initializePK() {
-    AbstractMemberMetaData[] fieldsToAdd = new AbstractMemberMetaData[cmd
-        .getNoOfPrimaryKeyMembers()];
+    AbstractMemberMetaData[] fieldsToAdd = new AbstractMemberMetaData[cmd.getNoOfPrimaryKeyMembers()];
 
     // Initialise Primary Key mappings for application id with PK fields in this class
     int pkFieldNum = 0;
@@ -750,7 +749,7 @@ public class DatastoreTable implements DatastoreClass {
         AbstractClassMetaData baseCmd = cmd.getBaseAbstractClassMetaData();
         fieldCount = baseCmd.getNoOfManagedMembers();
         for (int relFieldNum = 0; relFieldNum < fieldCount; ++relFieldNum) {
-          AbstractMemberMetaData mmd = baseCmd.getMetaDataForManagedMemberAtPosition(relFieldNum);
+          AbstractMemberMetaData mmd = baseCmd.getMetaDataForManagedMemberAtRelativePosition(relFieldNum);
           if (mmd.isPrimaryKey()) {
             if (mmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
               fieldsToAdd[pkFieldNum++] = mmd;
@@ -762,7 +761,7 @@ public class DatastoreTable implements DatastoreClass {
         }
       } else {
         for (int relFieldNum = 0; relFieldNum < fieldCount; ++relFieldNum) {
-          AbstractMemberMetaData fmd = cmd.getMetaDataForManagedMemberAtPosition(relFieldNum);
+          AbstractMemberMetaData fmd = cmd.getMetaDataForManagedMemberAtRelativePosition(relFieldNum);
           if (fmd.isPrimaryKey()) {
             if (fmd.getPersistenceModifier() == FieldPersistenceModifier.PERSISTENT) {
               fieldsToAdd[pkFieldNum++] = fmd;

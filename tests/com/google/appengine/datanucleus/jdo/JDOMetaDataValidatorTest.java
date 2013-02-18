@@ -17,9 +17,6 @@ package com.google.appengine.datanucleus.jdo;
 
 import com.google.appengine.datanucleus.test.jdo.IgnorableMappingsJDO.HasUniqueConstraint;
 import com.google.appengine.datanucleus.test.jdo.IgnorableMappingsJDO.HasUniqueConstraints;
-import com.google.appengine.datanucleus.test.jdo.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChild;
-import com.google.appengine.datanucleus.test.jdo.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedChildList;
-import com.google.appengine.datanucleus.test.jdo.IgnorableMappingsJDO.OneToManyParentWithEagerlyFetchedEmbeddedChild;
 import com.google.appengine.datanucleus.test.jdo.IllegalMappingsJDO.EncodedPkOnNonPrimaryKeyField;
 import com.google.appengine.datanucleus.test.jdo.IllegalMappingsJDO.EncodedPkOnNonStringPrimaryKeyField;
 import com.google.appengine.datanucleus.test.jdo.IllegalMappingsJDO.HasLongPkWithKeyAncestor;
@@ -233,17 +230,6 @@ public class JDOMetaDataValidatorTest extends JDOTestCase {
 
   public void testAncestorOfIllegalType() {
     assertMetaDataException(new LongParent());
-  }
-
-  public void testOneToManyWithEagerlyFetchedChildList() {
-    assertMetaDataException(new OneToManyParentWithEagerlyFetchedChildList());
-  }
-
-  public void testOneToManyWithEagerlyFetchedChild() {
-    assertMetaDataException(new OneToManyParentWithEagerlyFetchedChild());
-    beginTxn();
-    pm.makePersistent(new OneToManyParentWithEagerlyFetchedEmbeddedChild());
-    commitTxn();
   }
 
   public void testUniqueConstraint() {

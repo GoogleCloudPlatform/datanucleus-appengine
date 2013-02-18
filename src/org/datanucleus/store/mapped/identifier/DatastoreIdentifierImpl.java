@@ -180,27 +180,17 @@ public class DatastoreIdentifierImpl implements DatastoreIdentifier
         if (toString == null)
         {
             String identifierQuoteString = dba.getIdentifierQuoteString();
-    
-            // Note that by adding on the quotes here we assume that the limits on the size of
-            // the SQLIdentifier are not including the quotes. This may or may not be correct
-            if (dba.isReservedKeyword(identifierName))
+
+            if (factory.getIdentifierCase() == IdentifierCase.LOWER_CASE_QUOTED ||
+                factory.getIdentifierCase() == IdentifierCase.MIXED_CASE_QUOTED ||
+                factory.getIdentifierCase() == IdentifierCase.UPPER_CASE_QUOTED)
             {
-                // Identifier should be quoted since its a SQL keyword
-                toString = identifierQuoteString + identifierName + identifierQuoteString;
+              // Identifier should be quoted since our case requires it
+              toString = identifierQuoteString + identifierName + identifierQuoteString;
             }
             else
             {
-                if (factory.getIdentifierCase() == IdentifierCase.LOWER_CASE_QUOTED ||
-                    factory.getIdentifierCase() == IdentifierCase.MIXED_CASE_QUOTED ||
-                    factory.getIdentifierCase() == IdentifierCase.UPPER_CASE_QUOTED)
-                {
-                    // Identifier should be quoted since our case requires it
-                    toString = identifierQuoteString + identifierName + identifierQuoteString;
-                }
-                else
-                {
-                    toString = identifierName;
-                }
+              toString = identifierName;
             }
         }
         return toString;

@@ -29,7 +29,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.datanucleus.ClassConstants;
 import org.datanucleus.ClassLoaderResolver;
 import org.datanucleus.ExecutionContext;
-import org.datanucleus.FetchPlan;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.PropertyNames;
 import org.datanucleus.api.ApiAdapter;
@@ -38,7 +37,6 @@ import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.metadata.AbstractClassMetaData;
 import org.datanucleus.metadata.AbstractMemberMetaData;
 import org.datanucleus.metadata.InheritanceStrategy;
-import org.datanucleus.state.ActivityState;
 import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.AbstractStoreManager;
 import org.datanucleus.store.BackedSCOStoreManager;
@@ -47,12 +45,10 @@ import org.datanucleus.store.fieldmanager.FieldManager;
 import org.datanucleus.store.mapped.exceptions.NoTableManagedException;
 import org.datanucleus.store.mapped.mapping.ArrayMapping;
 import org.datanucleus.store.mapped.mapping.CollectionMapping;
-import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.store.mapped.mapping.JavaTypeMapping;
 import org.datanucleus.store.mapped.mapping.MapMapping;
 import org.datanucleus.store.mapped.mapping.MappingManager;
 import org.datanucleus.store.mapped.mapping.PersistableMapping;
-import org.datanucleus.store.query.ResultObjectFactory;
 import org.datanucleus.store.scostore.ArrayStore;
 import org.datanucleus.store.scostore.CollectionStore;
 import org.datanucleus.store.scostore.ListStore;
@@ -661,25 +657,6 @@ public abstract class MappedStoreManager extends AbstractStoreManager implements
     }
 
     /**
-     * Method to set that the specified object is inserted down to the defined datastore class.
-     * When the object is fully inserted (the table is the primary table for this object type)
-     * it is removed from the map of objects being inserted.
-     * @param sm StateManager for the object
-     * @param table Table to which it is now inserted
-     */
-    public void setObjectIsInsertedToLevel(ObjectProvider sm, DatastoreClass table)
-    {
-        insertedDatastoreClassByStateManager.put(sm, table);
-
-        if (table.managesClass(sm.getClassMetaData().getFullClassName()))
-        {
-            // Full insertion has just completed so update activity state in StateManager
-            sm.changeActivityState(ActivityState.INSERTING_CALLBACKS);
-            insertedDatastoreClassByStateManager.remove(sm);
-        }
-    }
-
-    /**
      * Accessor for the backing store for the specified member.
      * @param clr The ClassLoaderResolver
      * @param mmd metadata for the member to be persisted by this Store
@@ -899,17 +876,6 @@ public abstract class MappedStoreManager extends AbstractStoreManager implements
             StatementClassMapping resultMappings, AbstractClassMetaData cmd);
 
     /**
-     * Method to return a FieldManager for populating information in statements.
-     * @param sm The state manager for the object.
-     * @param stmt The input Statement to set values on.
-     * @param stmtMappings Mappings of the input parameters
-     * @param checkNonNullable Whether to check for nullability
-     * @return The FieldManager to use
-     */
-    public abstract FieldManager getFieldManagerForStatementGeneration(ObjectProvider sm, Object stmt,
-            StatementClassMapping stmtMappings, boolean checkNonNullable);
-
-    /**
      * Method to return the value from the results at the specified position.
      * @param resultSet The results
      * @param mapping The mapping
@@ -919,29 +885,10 @@ public abstract class MappedStoreManager extends AbstractStoreManager implements
     public abstract Object getResultValueAtPosition(Object resultSet, JavaTypeMapping mapping, int position);
 
     /**
-     * Accessor for whether this mapping requires values inserting on an INSERT.
-     * @param datastoreMapping The datastore mapping
-     * @return Whether values are to be inserted into this mapping on an INSERT
-     */
-    public abstract boolean insertValuesOnInsert(DatastoreMapping datastoreMapping);
-
-    /**
      * Convenience method to return if the datastore supports batching and the user wants batching.
      * @return If batching of statements is permissible
      */
     public abstract boolean allowsBatching();
-
-    /**
-     * Factory method for allocating a {@link ResultObjectFactory} of the appropriate concrete type.
-     * @param acmd MetaData for the class
-     * @param mappingDefinition Mapping of the class from the result set
-     * @param ignoreCache Whether to ignore the cache
-     * @param fetchPlan the Fetch Plan
-     * @param persistentClass Class that this factory will create instances of (or subclasses)
-     */
-    public abstract ResultObjectFactory newResultObjectFactory(AbstractClassMetaData acmd,
-        StatementClassMapping mappingDefinition, boolean ignoreCache, FetchPlan fetchPlan,
-        Class persistentClass);
 
     /**
      * Method to create a backing store for an array managed via FK.

@@ -17,8 +17,6 @@ package com.google.appengine.datanucleus.jpa;
 
 import com.google.appengine.datanucleus.test.jpa.IgnorableMappingsJPA.HasInitialSequenceValue;
 import com.google.appengine.datanucleus.test.jpa.IgnorableMappingsJPA.HasUniqueConstraint;
-import com.google.appengine.datanucleus.test.jpa.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChild;
-import com.google.appengine.datanucleus.test.jpa.IgnorableMappingsJPA.OneToManyParentWithEagerlyFetchedChildList;
 import com.google.appengine.datanucleus.test.jpa.IllegalMappingsJPA.EncodedPkOnNonPrimaryKeyField;
 import com.google.appengine.datanucleus.test.jpa.IllegalMappingsJPA.EncodedPkOnNonStringPrimaryKeyField;
 import com.google.appengine.datanucleus.test.jpa.IllegalMappingsJPA.HasLongPkWithStringAncestor;
@@ -181,16 +179,6 @@ public class JPAMetaDataValidatorTest extends JPATestCase {
   }
   public void testAncestorOfIllegalType_Long() {
     LongParent pojo = new LongParent();
-    assertMetaDataException(pojo);
-  }
-
-  public void testOneToManyWithEagerlyFetchedChildList() {
-    OneToManyParentWithEagerlyFetchedChildList pojo = new OneToManyParentWithEagerlyFetchedChildList();
-    assertMetaDataException(pojo);
-  }
-
-  public void testOneToManyWithEagerlyFetchedChild() {
-    OneToManyParentWithEagerlyFetchedChild pojo = new OneToManyParentWithEagerlyFetchedChild();
     assertMetaDataException(pojo);
   }
 
