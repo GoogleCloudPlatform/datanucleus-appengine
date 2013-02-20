@@ -18,14 +18,13 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <!-- Comment this out and remove SNAPSHOTs from deps before release -->
-        <repository>
+        <!--repository>
             <id>DataNucleus_Nightly</id>
             <url>http://www.datanucleus.org/downloads/maven2-nightly</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository-->
     </repositories>
 
     <pluginRepositories>
@@ -39,12 +38,12 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-1.0-sdk</artifactId>
-            <version>1.7.3</version>
+            <version>1.7.5</version>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
-            <version>[3.2.0-m4-SNAPSHOT, )</version>
+            <version>3.2.0-m4</version>
         </dependency>
 
         <dependency>
@@ -62,13 +61,13 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jdo</artifactId>
-            <version>[3.2.0-m4-SNAPSHOT, )</version>
+            <version>3.2.0-m4</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jpa</artifactId>
-            <version>[3.2.0-m4-SNAPSHOT, )</version>
+            <version>3.2.0-m4</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -93,13 +92,13 @@
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-api-stubs</artifactId>
-            <version>1.7.3</version>
+            <version>1.7.5</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.google.appengine</groupId>
             <artifactId>appengine-testing</artifactId>
-            <version>1.7.3</version>
+            <version>1.7.5</version>
             <scope>test</scope>
         </dependency>
         <!--dependency>
@@ -178,7 +177,7 @@
                         <!-- Force the enhancer to use the same version of core that's already on the classpath -->
                         <groupId>org.datanucleus</groupId>
                         <artifactId>datanucleus-core</artifactId>
-                        <version>3.2.0-m4-SNAPSHOT</version>
+                        <version>3.2.0-m4</version>
                     </dependency>
                 </dependencies>
                 <configuration>
