@@ -21,6 +21,8 @@ package org.datanucleus.store.mapped.exceptions;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.util.Localiser;
 
+import com.google.appengine.datanucleus.DatastoreManager;
+
 /**
  * A <tt>NoSuchPersistentFieldException</tt> is thrown if a reference is made
  * somewhere, such as in a query filter string, to a field that either doesn't
@@ -29,7 +31,7 @@ import org.datanucleus.util.Localiser;
 public class NoSuchPersistentFieldException extends NucleusUserException
 {
     protected static final Localiser LOCALISER=Localiser.getInstance(
-        "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+        "org.datanucleus.store.mapped.Localisation", DatastoreManager.class.getClassLoader());
 
     /**
      * Constructs a no such persistent field exception.

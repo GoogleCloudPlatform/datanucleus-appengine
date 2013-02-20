@@ -22,6 +22,8 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 import org.datanucleus.store.mapped.DatastoreAdapter;
 import org.datanucleus.util.Localiser;
 
+import com.google.appengine.datanucleus.DatastoreManager;
+
 /**
  * A <tt>TooManyIndicesException</tt> is thrown when trying to add an index
  * to a table and the table already has the maximum allowed number of indices.
@@ -29,7 +31,7 @@ import org.datanucleus.util.Localiser;
 public class TooManyIndicesException extends NucleusDataStoreException
 {
     protected static final Localiser LOCALISER=Localiser.getInstance(
-        "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+        "org.datanucleus.store.mapped.Localisation", DatastoreManager.class.getClassLoader());
 
     /**
      * Constructs a too-many-indices exception.

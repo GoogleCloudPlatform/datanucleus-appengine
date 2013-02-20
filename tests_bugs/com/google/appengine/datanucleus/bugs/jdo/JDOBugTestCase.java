@@ -24,7 +24,7 @@ import com.google.appengine.datanucleus.Utils;
 
 import org.datanucleus.api.jdo.JDOPersistenceManager;
 import org.datanucleus.metadata.MetaDataManager;
-import org.datanucleus.store.ExecutionContext;
+import org.datanucleus.ExecutionContext;
 import org.datanucleus.util.NucleusLogger;
 
 import java.util.Map;

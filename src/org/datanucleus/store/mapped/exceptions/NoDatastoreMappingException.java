@@ -20,6 +20,7 @@ Contributors:
 package org.datanucleus.store.mapped.exceptions;
 
 import org.datanucleus.exceptions.NucleusUserException;
+import org.datanucleus.store.mapped.mapping.DatastoreMapping;
 import org.datanucleus.util.Localiser;
 
 /**
@@ -30,7 +31,7 @@ import org.datanucleus.util.Localiser;
 public class NoDatastoreMappingException extends NucleusUserException
 {
     protected static final Localiser LOCALISER=Localiser.getInstance(
-        "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+        "org.datanucleus.store.mapped.Localisation", DatastoreMapping.class.getClassLoader());
 
     /**
      * Constructs a no datastore mapping exception.

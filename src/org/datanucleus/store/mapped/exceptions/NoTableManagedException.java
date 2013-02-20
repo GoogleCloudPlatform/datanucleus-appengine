@@ -20,6 +20,8 @@ package org.datanucleus.store.mapped.exceptions;
 import org.datanucleus.exceptions.NucleusUserException;
 import org.datanucleus.util.Localiser;
 
+import com.google.appengine.datanucleus.DatastoreManager;
+
 /**
  * A <tt>NoTableManagedException</tt> is thrown if an attempt is made to perform an
  * operation using a class that is not backed by an table or view
@@ -29,8 +31,8 @@ import org.datanucleus.util.Localiser;
  */
 public class NoTableManagedException extends NucleusUserException
 {
-    protected static final Localiser LOCALISER=Localiser.getInstance("org.datanucleus.Localisation",
-        org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+    protected static final Localiser LOCALISER=Localiser.getInstance("org.datanucleus.store.mapped.Localisation",
+        DatastoreManager.class.getClassLoader());
 
     /**
      * Constructs a no table managed exception.

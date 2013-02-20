@@ -266,7 +266,7 @@ public class PersistableMapping extends MultiMapping implements MappingCallbacks
                 else
                 {
                     return ClassUtils.getValueOfMethodByReflection(value,
-                        ClassUtils.getJavaBeanGetterName(mmd.getName(), false), null);
+                        ClassUtils.getJavaBeanGetterName(mmd.getName(), false), (Object[])null);
                 }
             }
 

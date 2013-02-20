@@ -21,6 +21,8 @@ import org.datanucleus.exceptions.NucleusException;
 import org.datanucleus.store.mapped.DatastoreField;
 import org.datanucleus.util.Localiser;
 
+import com.google.appengine.datanucleus.DatastoreManager;
+
 /**
  * A <tt>DuplicateDatastoreFieldException</tt> is thrown if an attempt is made to
  * add a column to a table with a name already in-use by an existing column.
@@ -28,7 +30,7 @@ import org.datanucleus.util.Localiser;
 public class DuplicateDatastoreFieldException extends NucleusException
 {
     private static final Localiser LOCALISER=Localiser.getInstance(
-        "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+        "org.datanucleus.store.mapped.Localisation", DatastoreManager.class.getClassLoader());
 
     /** Column that cannot be created because it conflicts with existing column with same identifier. */
     private DatastoreField conflictingColumn;

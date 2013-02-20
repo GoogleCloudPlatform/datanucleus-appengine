@@ -49,7 +49,7 @@ import org.datanucleus.util.NucleusLogger;
 public abstract class AbstractMappingManager implements MappingManager
 {
     protected static final Localiser LOCALISER = Localiser.getInstance(
-        "org.datanucleus.Localisation", org.datanucleus.ClassConstants.NUCLEUS_CONTEXT_LOADER);
+        "org.datanucleus.store.mapped.Localisation", MappingManager.class.getClassLoader());
 
     /** Store Manager that this relates to. */
     protected final MappedStoreManager storeMgr;
