@@ -174,7 +174,6 @@ public class UnidirectionalSuperclassTableChildJDO {
   
   @PersistenceCapable
   public static class UnidirTopWithOverriddenIdColumn {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY, column = "something_else")
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value="true")

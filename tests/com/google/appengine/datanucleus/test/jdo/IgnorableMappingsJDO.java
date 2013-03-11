@@ -38,7 +38,6 @@ public class IgnorableMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     public Long id;
 
-    @SuppressWarnings("unused")
     @Persistent(defaultFetchGroup = "true")
     @Element(dependent = "true")
     private List<HasKeyPkJDO> children;
@@ -50,7 +49,6 @@ public class IgnorableMappingsJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     public Long id;
 
-    @SuppressWarnings("unused")
     @Persistent(dependent = "true", defaultFetchGroup = "true")
     private HasKeyPkJDO child;
   }
@@ -62,7 +60,6 @@ public class IgnorableMappingsJDO {
     public Long id;
 
     // this is actually ok because it's embedded
-    @SuppressWarnings("unused")
     @Persistent(dependent = "true", defaultFetchGroup = "true")
     @Embedded
     private HasKeyPkJDO child;

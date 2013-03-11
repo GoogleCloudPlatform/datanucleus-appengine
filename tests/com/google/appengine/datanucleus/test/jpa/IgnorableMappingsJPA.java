@@ -40,7 +40,6 @@ public class IgnorableMappingsJPA {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     public Long id;
 
-    @SuppressWarnings("unused")
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private List<HasKeyPkJPA> children;
   }
@@ -51,7 +50,6 @@ public class IgnorableMappingsJPA {
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     public Long id;
 
-    @SuppressWarnings("unused")
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private HasKeyPkJPA child;
   }
@@ -69,7 +67,6 @@ public class IgnorableMappingsJPA {
 
   @Entity
   public static class HasInitialSequenceValue {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "yar")
     @SequenceGenerator(name = "yar", initialValue = 5)

@@ -56,7 +56,6 @@ public class HasLongPkOneToManyBidirChildrenJPA {
   @Entity
   public static class ChildA {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Key key;

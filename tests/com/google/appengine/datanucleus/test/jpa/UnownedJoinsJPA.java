@@ -48,7 +48,6 @@ public class UnownedJoinsJPA {
     @Basic
     private List<Key> courses = new ArrayList<Key>();
 
-    @SuppressWarnings("unused")
     @OneToMany
     @Column(name = "courses", insertable = false, updatable = false)
     private List<Course> coursesAlias;
@@ -56,7 +55,6 @@ public class UnownedJoinsJPA {
     @Basic
     private Key major;
 
-    @SuppressWarnings("unused")
     @OneToOne(fetch = FetchType.LAZY)
     @Column(name = "major", insertable = false, updatable = false)
     private Major majorAlias;

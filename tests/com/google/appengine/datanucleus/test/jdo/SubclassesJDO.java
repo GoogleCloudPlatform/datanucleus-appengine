@@ -403,7 +403,6 @@ public class SubclassesJDO {
     @Persistent
     private String aString;
 
-    @SuppressWarnings("unused")
     @Persistent
     private String overriddenString;
 

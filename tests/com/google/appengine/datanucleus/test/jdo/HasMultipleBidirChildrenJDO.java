@@ -71,7 +71,6 @@ public class HasMultipleBidirChildrenJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private HasMultipleBidirChildrenJDO parent;
 
@@ -90,7 +89,6 @@ public class HasMultipleBidirChildrenJDO {
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private HasMultipleBidirChildrenJDO parent;
 

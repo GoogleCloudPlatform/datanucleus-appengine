@@ -54,7 +54,6 @@ public class HasLongPkOneToManyBidirChildrenJDO {
   @PersistenceCapable(detachable = "true")
   public static class ChildA {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key key;

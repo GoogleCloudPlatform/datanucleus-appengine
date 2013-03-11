@@ -43,7 +43,6 @@ public class BidirectionalChildListJPA implements BidirectionalChildJPA {
   @ManyToOne(fetch = FetchType.LAZY)
   private HasOneToManyListJPA parent;
 
-  @SuppressWarnings("unused")
   @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
   private List<BidirectionalGrandchildListJPA> bidirGrandchildren = Utils.newArrayList();
 

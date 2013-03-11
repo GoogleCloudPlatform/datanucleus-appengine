@@ -46,12 +46,10 @@ public class IllegalMappingsJPA {
   @Entity
   public static class HasLongPkWithStringAncestor {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String illegal;
   }
@@ -62,7 +60,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String illegal;
   }
@@ -70,17 +67,14 @@ public class IllegalMappingsJPA {
   @Entity
   public static class HasMultiplePkNameFields {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String secondIsIllegal;
   }
@@ -88,17 +82,14 @@ public class IllegalMappingsJPA {
   @Entity
   public static class HasMultiplePkIdFields {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long secondIsIllegal;
   }
@@ -106,17 +97,14 @@ public class IllegalMappingsJPA {
   @Entity
   public static class MultipleAncestors {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     private String secondIsIllegal;
   }
@@ -127,7 +115,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String illegal;
   }
@@ -135,7 +122,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class EncodedPkOnNonStringPrimaryKeyField {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
@@ -145,13 +131,11 @@ public class IllegalMappingsJPA {
   @Entity
   public static class PkNameOnNonStringField {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private Long illegal;
   }
@@ -159,13 +143,11 @@ public class IllegalMappingsJPA {
   @Entity
   public static class PkIdOnNonLongField {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private String illegal;
   }
@@ -173,7 +155,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class PkMarkedAsAncestor {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extensions({
@@ -186,7 +167,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class PkMarkedAsPkId {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
@@ -196,7 +176,6 @@ public class IllegalMappingsJPA {
   @Entity
   public static class PkMarkedAsPkName {
 
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
@@ -209,7 +188,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
   }
@@ -220,7 +198,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
   }
@@ -230,7 +207,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToMany(cascade = CascadeType.ALL)
     private List<HasLongPkJPA> uniChildren = new ArrayList<HasLongPkJPA>();
   }
@@ -240,19 +216,16 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<RootOnlyLongBiOneToManyChild> biChildren = new ArrayList<RootOnlyLongBiOneToManyChild>();
   }
 
   @Entity
   public static class RootOnlyLongBiOneToManyChild {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @ManyToOne(fetch = FetchType.LAZY)
     private OneToManyParentWithRootOnlyLongBiChild parent;
   }
@@ -262,7 +235,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToMany(cascade = CascadeType.ALL)
     private List<HasUnencodedStringPkJPA> uniChildren = new ArrayList<HasUnencodedStringPkJPA>();
   }
@@ -272,18 +244,15 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToMany(mappedBy = "parent", cascade = CascadeType.ALL)
     private List<RootOnlyStringBiOneToManyChild> biChildren = new ArrayList<RootOnlyStringBiOneToManyChild>();
   }
 
   @Entity
   public static class RootOnlyStringBiOneToManyChild {
-    @SuppressWarnings("unused")
     @Id
     private String id;
 
-    @SuppressWarnings("unused")
     @ManyToOne(fetch = FetchType.EAGER)
     private OneToManyParentWithRootOnlyStringBiChild parent;
   }
@@ -293,7 +262,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private HasLongPkJPA uniChild;
   }
@@ -303,19 +271,16 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToOne(fetch = FetchType.LAZY)
     private RootOnlyLongBiOneToOneChild biChild;
   }
 
   @Entity
   public static class RootOnlyLongBiOneToOneChild {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private OneToOneParentWithRootOnlyLongBiChild parent;
   }
@@ -325,7 +290,6 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToOne(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private HasUnencodedStringPkJPA uniChild;
   }
@@ -335,61 +299,51 @@ public class IllegalMappingsJPA {
     @Id
     public String id;
 
-    @SuppressWarnings("unused")
     @OneToOne(fetch = FetchType.LAZY)
     private RootOnlyStringBiOneToOneChild biChild;
   }
 
   @Entity
   public static class RootOnlyStringBiOneToOneChild {
-    @SuppressWarnings("unused")
     @Id
     private String id;
 
-    @SuppressWarnings("unused")
     @OneToOne(mappedBy = "biChild", cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private OneToOneParentWithRootOnlyStringBiChild parent;
   }
 
   @Entity
   public static class LongParent {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
     private Long illegal;
   }
 
   @Entity
   public static class ManyToMany1 {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @ManyToMany(mappedBy = "manyToMany")
     private List<ManyToMany2> manyToMany;
   }
 
   @Entity
   public static class ManyToMany2 {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @ManyToMany
     private List<ManyToMany1> manyToMany;
   }
 
   @Entity
   public static class SequenceOnEncodedStringPk {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.SEQUENCE)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
@@ -398,7 +352,6 @@ public class IllegalMappingsJPA {
 
   @Entity
   public static class SequenceOnKeyPk {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy=GenerationType.SEQUENCE)
     private Key id;
@@ -407,48 +360,39 @@ public class IllegalMappingsJPA {
   // TODO This uses a JDO model class but JPA doesn't support that!
   @Entity
   public static class Has2CollectionsOfSameType {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Flight> flights1;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Flight> flights2;
   }
 
   @Entity
   public static class Has2OneToOnesOfSameType {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private Flight f1;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private Flight f2;
   }
 
   @Entity
   public static class HasOneToOneAndOneToManyOfSameType {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Flight> flights;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private Flight f2;
   }
@@ -456,19 +400,16 @@ public class IllegalMappingsJPA {
   @Entity
   @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
   public static class Has2CollectionsOfSameTypeParent {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Flight> flights1;
   }
 
   @Entity
   public static class Has2CollectionsOfSameTypeChild extends Has2CollectionsOfSameTypeParent {
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Flight> flights2;
   }
@@ -476,7 +417,6 @@ public class IllegalMappingsJPA {
   @Entity
   @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
   public static class Has2CollectionsOfAssignableBaseTypeSuper {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
@@ -490,16 +430,13 @@ public class IllegalMappingsJPA {
 
   @Entity
   public static class Has2CollectionsOfAssignableType {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
   }
@@ -507,31 +444,26 @@ public class IllegalMappingsJPA {
   @Entity
   @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
   public static class Has2CollectionsOfAssignableTypeSuper {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
   }
 
   @Entity
   public static class Has2CollectionsOfAssignableTypeSub extends Has2CollectionsOfAssignableTypeSuper {
-    @SuppressWarnings("unused")
     @OneToMany
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
   }
 
   @Entity
   public static class HasPkIdSortOnOneToMany {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     @OrderBy("id")
     private List<HasEncodedStringPkSeparateIdFieldJPA> list;
@@ -539,12 +471,10 @@ public class IllegalMappingsJPA {
 
   @Entity
   public static class HasPkNameSortOnOneToMany {
-    @SuppressWarnings("unused")
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @OneToMany
     @OrderBy("name")
     private List<HasEncodedStringPkSeparateNameFieldJPA> list;

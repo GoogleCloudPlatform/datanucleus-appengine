@@ -25,7 +25,6 @@ import com.google.appengine.api.datastore.Key;
 
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class EmbeddedParentPC {
-  @SuppressWarnings("unused")
   @PrimaryKey 
   @Persistent(valueStrategy=IdGeneratorStrategy.IDENTITY)
   private Key primaryKey;

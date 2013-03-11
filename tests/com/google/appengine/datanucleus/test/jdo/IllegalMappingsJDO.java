@@ -38,12 +38,10 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasLongPkWithKeyAncestor {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private Key illegal;
@@ -52,12 +50,10 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasLongPkWithStringAncestor {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String illegal;
@@ -69,7 +65,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private Key illegal;
@@ -81,7 +76,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String illegal;
@@ -90,18 +84,15 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasMultiplePkNameFields {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     @Persistent
     private String firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     @Persistent
     private String secondIsIllegal;
@@ -110,18 +101,15 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasMultiplePkIdFields {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     @Persistent
     private Long firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     @Persistent
     private Long secondIsIllegal;
@@ -130,18 +118,15 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class MultipleAncestors {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String firstIsOk;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.parent-pk", value = "true")
     @Persistent
     private String secondIsIllegal;
@@ -153,7 +138,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     @Persistent
     private String illegal;
@@ -162,7 +146,6 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class EncodedPkOnNonStringPrimaryKeyField {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
@@ -172,13 +155,11 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class PkNameOnNonStringField {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private Long illegal;
@@ -187,13 +168,11 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class PkIdOnNonLongField {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
     private String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private String illegal;
@@ -202,7 +181,6 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class PkMarkedAsAncestor {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extensions({
@@ -215,7 +193,6 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class PkMarkedAsPkId {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
@@ -225,7 +202,6 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class PkMarkedAsPkName {
 
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
@@ -238,7 +214,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-id", value = "true")
     private Long illegal;
@@ -250,7 +225,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Extension(vendorName = "datanucleus", key = "gae.pk-name", value = "true")
     private String illegal;
@@ -261,7 +235,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private List<HasLongPkJDO> uniChildren = new ArrayList<HasLongPkJDO>();
   }
@@ -271,12 +244,10 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "parent")
     private List<RootOnlyLongBiOneToManyChild> biChildren = new ArrayList<RootOnlyLongBiOneToManyChild>();
   }
 
-  @SuppressWarnings("unused")
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class RootOnlyLongBiOneToManyChild {
     @PrimaryKey
@@ -292,7 +263,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private List<HasUnencodedStringPkJDO> uniChildren = new ArrayList<HasUnencodedStringPkJDO>();
   }
@@ -302,7 +272,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "parent")
     private List<RootOnlyStringBiOneToManyChild> biChildren = new ArrayList<RootOnlyStringBiOneToManyChild>();
   }
@@ -312,7 +281,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private OneToManyParentWithRootOnlyStringBiChild parent;
   }
@@ -322,7 +290,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private HasLongPkJDO uniChild;
   }
@@ -338,12 +305,10 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class RootOnlyLongBiOneToOneChild {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "biChild")
     private OneToOneParentWithRootOnlyLongBiChild parent;
   }
@@ -353,7 +318,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private HasUnencodedStringPkJDO uniChild;
   }
@@ -363,7 +327,6 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private RootOnlyStringBiOneToManyChild biChild;
   }
@@ -373,19 +336,16 @@ public class IllegalMappingsJDO {
     @PrimaryKey
     public String id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "biChild")
     private OneToOneParentWithRootOnlyStringBiChild parent;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class LongParent {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Extension(vendorName = "datanucleus", key="gae.parent-pk", value="true")
     private Long illegal;
@@ -393,31 +353,26 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class ManyToMany1 {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "manyToMany")
     private List<ManyToMany2> manyToMany;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class ManyToMany2 {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent(mappedBy = "manyToMany")
     private List<ManyToMany1> manyToMany;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class SequenceOnEncodedStringPk {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
     @Extension(vendorName = "datanucleus", key = "gae.encoded-pk", value = "true")
@@ -426,7 +381,6 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class SequenceOnKeyPk {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.SEQUENCE)
     private Key id;
@@ -434,48 +388,39 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class Has2CollectionsOfSameType {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private List<Flight> flights1;
 
-    @SuppressWarnings("unused")
     @Persistent
     private List<Flight> flights2;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class Has2OneToOnesOfSameType {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private Flight f1;
 
-    @SuppressWarnings("unused")
     @Persistent
     private Flight f2;
   }
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasOneToOneAndOneToManyOfSameType {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private List<Flight> flights;
 
-    @SuppressWarnings("unused")
     @Persistent
     private Flight f2;
   }
@@ -483,12 +428,10 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(customStrategy = "complete-table")
   public static class Has2CollectionsOfSameTypeParent {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Flight> flights1;
@@ -496,7 +439,6 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class Has2CollectionsOfSameTypeChild extends Has2CollectionsOfSameTypeParent {
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Flight> flights2;
@@ -505,12 +447,10 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(customStrategy = "complete-table")
   public static class Has2CollectionsOfAssignableBaseTypeSuper {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     private String name;
   }
@@ -523,17 +463,14 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class Has2CollectionsOfAssignableType {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
@@ -542,12 +479,10 @@ public class IllegalMappingsJDO {
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   @Inheritance(customStrategy = "complete-table")
   public static class Has2CollectionsOfAssignableTypeSuper {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Has2CollectionsOfAssignableBaseTypeSuper> superList;
@@ -555,7 +490,6 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class Has2CollectionsOfAssignableTypeSub extends Has2CollectionsOfAssignableTypeSuper {
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name DESC"))
     private List<Has2CollectionsOfAssignableBaseTypeSub> subList;
@@ -563,7 +497,6 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasTwoOneToOnesWithSharedBaseClass {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Long id;
@@ -593,7 +526,6 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public abstract static class SharedBaseClass {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
@@ -616,12 +548,10 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasPkIdSortOnOneToMany {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="id"))
     private List<HasEncodedStringPkSeparateIdFieldJDO> list;
@@ -629,12 +559,10 @@ public class IllegalMappingsJDO {
 
   @PersistenceCapable(identityType = IdentityType.APPLICATION)
   public static class HasPkNameSortOnOneToMany {
-    @SuppressWarnings("unused")
     @PrimaryKey
     @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
     private Key id;
 
-    @SuppressWarnings("unused")
     @Persistent
     @Order(extensions = @Extension(vendorName = "datanucleus", key="list-ordering", value="name"))
     private List<HasEncodedStringPkSeparateNameFieldJDO> list;

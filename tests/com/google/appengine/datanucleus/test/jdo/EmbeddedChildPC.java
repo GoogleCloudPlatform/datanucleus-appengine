@@ -26,13 +26,11 @@ import javax.jdo.annotations.PrimaryKey;
 
 @PersistenceCapable(identityType = IdentityType.APPLICATION)
 public class EmbeddedChildPC implements Serializable, Comparable<EmbeddedChildPC> {
-  @SuppressWarnings("unused")
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY)
   @Extension(vendorName="datanucleus", key="gae.encoded-pk", value="true")    
   private String embeddedObjKey;
 
-  @SuppressWarnings("unused")
   @Persistent
   @Extension(vendorName="datanucleus", key="gae.pk-id", value="true")
   private Long embeddedObjId;

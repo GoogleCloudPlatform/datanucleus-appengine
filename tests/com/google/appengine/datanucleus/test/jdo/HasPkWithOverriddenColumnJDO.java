@@ -27,7 +27,6 @@ import javax.jdo.annotations.PrimaryKey;
  */
 @PersistenceCapable
 public class HasPkWithOverriddenColumnJDO {
-  @SuppressWarnings("unused")
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.IDENTITY, column = "something_else")
   private Key key;
