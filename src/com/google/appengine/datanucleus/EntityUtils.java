@@ -235,12 +235,12 @@ public final class EntityUtils {
   public static Key getKeyForObject(Object pc, ExecutionContext ec) {
     AbstractClassMetaData cmd = ec.getMetaDataManager().getMetaDataForClass(pc.getClass(), ec.getClassLoaderResolver());
     if (cmd.getIdentityType() == IdentityType.DATASTORE) {
-      OID oid = (OID)ec.getApiAdapter().getIdForObject(pc);
-      if (oid == null) {
+      Object intId = ec.getApiAdapter().getIdForObject(pc);
+      if (intId == null || !(intId instanceof OID)) {
         // Not yet persistent, so return null
         return null;
       }
-      Object keyValue = oid.getKeyValue();
+      Object keyValue = ((OID)intId).getKeyValue();
       return EntityUtils.getPkAsKey(keyValue, cmd, ec);
     } else {
       // TODO Cater for composite identity
@@ -256,8 +256,12 @@ public final class EntityUtils {
 
   public static Key getPkAsKey(ObjectProvider op) {
     if (op.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
-      OID oid = (OID)op.getInternalObjectId();
-      Object keyValue = oid.getKeyValue();
+      Object intId = op.getInternalObjectId();
+      if (intId == null || !(intId instanceof OID)) {
+        // Not yet persistent so return null
+        return null;
+      }
+      Object keyValue = ((OID)intId).getKeyValue();
       return EntityUtils.getPkAsKey(keyValue, op.getClassMetaData(), op.getExecutionContext());
     } else {
       // TODO Support composite PK
@@ -490,8 +494,12 @@ public final class EntityUtils {
 
   public static Key getPrimaryKeyAsKey(ApiAdapter apiAdapter, ObjectProvider op) {
     if (op.getClassMetaData().getIdentityType() == IdentityType.DATASTORE) {
-      OID oid = (OID)op.getInternalObjectId();
-      Object keyValue = oid.getKeyValue();
+      Object intId = op.getInternalObjectId();
+      if (intId == null || !(intId instanceof OID)) {
+        // Not yet persistent so return null
+        return null;
+      }
+      Object keyValue = ((OID)intId).getKeyValue();
       return getPrimaryKeyAsKey(keyValue, op.getExecutionContext(), op.getClassMetaData());
     } else {
       Object primaryKey = apiAdapter.getTargetKeyForSingleFieldIdentity(op.getInternalObjectId());
@@ -912,8 +920,8 @@ public final class EntityUtils {
 
     Key key = null;
     if (childCmd.getIdentityType() == IdentityType.DATASTORE) {
-      OID oid = (OID)childOP.getInternalObjectId();
-      if (oid == null) {
+      Object intId = childOP.getInternalObjectId();
+      if (intId == null || !(intId instanceof OID)) {
         // Not yet persistent, so return null
         return null;
       }

@@ -516,7 +516,7 @@ public class StoreFieldManager extends DatastoreFieldManager {
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
     if (!mmd.getType().equals(String.class)) {
       throw new NucleusFatalUserException(
-          "Field with \"" + DatastoreManager.PK_ID + "\" extension must be of type String");
+          "Field with \"" + DatastoreManager.PK_NAME + "\" extension must be of type String");
     }
     Key key = null;
     if (value != null) {

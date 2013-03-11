@@ -33,9 +33,9 @@ import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.exceptions.ReachableObjectNotCascadedException;
 import org.datanucleus.store.mapped.MappedStoreManager;
 import org.datanucleus.store.scostore.MapStore;
+import org.datanucleus.store.types.backed.BackedSCO;
 import org.datanucleus.store.types.SCO;
 import org.datanucleus.store.types.SCOContainer;
-import org.datanucleus.store.types.SCOMap;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.util.NucleusLogger;
 
@@ -180,7 +180,7 @@ public class MapMapping extends AbstractContainerMapping implements MappingCallb
             if (ownerOP.getObject() == sco.getOwner() && mmd.getName().equals(sco.getFieldName()))
             {
                 // Flush any outstanding updates
-                sco.flush();
+                ownerOP.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)sco).getBackingStore(), ownerOP);
 
                 return;
             }
@@ -249,6 +249,8 @@ public class MapMapping extends AbstractContainerMapping implements MappingCallb
             value = (java.util.Map)sm.wrapSCOField(mmd.getAbsoluteFieldNumber(), value, false, false, true);
         }
         value.clear();
-        ((SCOMap)value).flush();
+
+        // Flush any outstanding updates
+        sm.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)value).getBackingStore(), sm);
     }
 }

@@ -162,6 +162,10 @@ public abstract class AbstractFKStore {
     return storeMgr;
   }
 
+  public AbstractMemberMetaData getOwnerMemberMetaData() {
+    return ownerMemberMetaData;
+  }
+
   protected Entity getOwnerEntity(ObjectProvider op) {
     Entity entity = (Entity) op.getAssociatedValue(storeMgr.getDatastoreTransaction(op.getExecutionContext()));
     if (entity == null) {

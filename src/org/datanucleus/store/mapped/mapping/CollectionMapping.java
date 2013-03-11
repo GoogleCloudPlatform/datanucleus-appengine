@@ -32,7 +32,7 @@ import org.datanucleus.state.ObjectProvider;
 import org.datanucleus.store.exceptions.ReachableObjectNotCascadedException;
 import org.datanucleus.store.scostore.CollectionStore;
 import org.datanucleus.store.types.SCO;
-import org.datanucleus.store.types.SCOCollection;
+import org.datanucleus.store.types.backed.BackedSCO;
 import org.datanucleus.store.types.SCOContainer;
 import org.datanucleus.store.types.SCOUtils;
 import org.datanucleus.util.NucleusLogger;
@@ -182,7 +182,7 @@ public class CollectionMapping extends AbstractContainerMapping implements Mappi
             if (ownerOP.getObject() == sco.getOwner() && mmd.getName().equals(sco.getFieldName()))
             {
                 // Flush any outstanding updates
-                sco.flush();
+                ownerOP.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)sco).getBackingStore(), ownerOP);
 
                 return;
             }
@@ -283,7 +283,9 @@ public class CollectionMapping extends AbstractContainerMapping implements Mappi
                 value = (Collection)sm.wrapSCOField(getAbsoluteFieldNumber(), value, false, false, true);
             }
             value.clear();
-            ((SCOCollection)value).flush();
+
+            // Flush any outstanding updates
+            sm.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)value).getBackingStore(), sm);
         }
     }
 }
