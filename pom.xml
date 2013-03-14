@@ -18,13 +18,13 @@
                 <enabled>false</enabled>
             </snapshots>
         </repository>
-        <repository>
+        <!--repository>
             <id>DataNucleus_Nightly</id>
             <url>http://www.datanucleus.org/downloads/maven2-nightly</url>
             <snapshots>
                 <enabled>true</enabled>
             </snapshots>
-        </repository>
+        </repository-->
     </repositories>
 
     <pluginRepositories>
@@ -33,6 +33,12 @@
             <url>http://www.datanucleus.org/downloads/maven2/</url>
         </pluginRepository>
     </pluginRepositories>
+
+    <properties>
+        <datanucleus.core.version>3.2.1</datanucleus.core.version>
+        <datanucleus.api.jdo.version>3.2.0-release</datanucleus.api.jdo.version>
+        <datanucleus.api.jpa.version>3.2.0-release</datanucleus.api.jpa.version>
+    </properties>
 
     <dependencies>
         <dependency>
@@ -43,7 +49,7 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-core</artifactId>
-            <version>3.2.0-release</version>
+            <version>${datanucleus.core.version}</version>
         </dependency>
 
         <dependency>
@@ -61,13 +67,13 @@
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jdo</artifactId>
-            <version>3.2.0-release</version>
+            <version>${datanucleus.api.jdo.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
             <groupId>org.datanucleus</groupId>
             <artifactId>datanucleus-api-jpa</artifactId>
-            <version>3.2.0-release</version>
+            <version>${datanucleus.api.jpa.version}</version>
             <optional>true</optional>
         </dependency>
         <dependency>
@@ -177,7 +183,7 @@
                         <!-- Force the enhancer to use the same version of core that's already on the classpath -->
                         <groupId>org.datanucleus</groupId>
                         <artifactId>datanucleus-core</artifactId>
-                        <version>3.2.0-release</version>
+                        <version>${datanucleus.core.version}</version>
                     </dependency>
                 </dependencies>
                 <configuration>
@@ -214,11 +220,18 @@
             </plugin>
             <plugin>
                 <artifactId>maven-jar-plugin</artifactId>
-                <version>2.3.2</version>
+                <version>2.4</version>
                 <configuration>
                     <archive>
                         <manifestFile>src/META-INF/MANIFEST.MF</manifestFile>
                     </archive>
+                    <executions>
+                        <execution>
+                           <goals>
+                             <goal>test-jar</goal>
+                           </goals>
+                        </execution>
+                   </executions>
                 </configuration>
             </plugin>
             <plugin>
@@ -275,18 +288,6 @@
                         </goals>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>2.4</version>
-                    <executions>
-                        <execution>
-                           <goals>
-                             <goal>test-jar</goal>
-                           </goals>
-                        </execution>
-                   </executions>
             </plugin>
         </plugins>
         <pluginManagement>
