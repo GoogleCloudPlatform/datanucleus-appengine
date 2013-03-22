@@ -52,9 +52,11 @@ public class JPAStorageVersionTest extends JPATestCase {
     props.put(StorageVersion.STORAGE_VERSION_PROPERTY, "does not exist");
     try {
       emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
-    } catch (PersistenceException e) {
+    } catch (Exception e) {
+      // not all Persistence impls wrap EMF creation exception into PersistenceException
+      Throwable cause = (e instanceof PersistenceException) ? e.getCause() : e;
       // good
-      assertTrue(e.getCause().getMessage().startsWith("'does not exist'"));
+      assertTrue(cause.getMessage().startsWith("'does not exist'"));
     }
   }
 }

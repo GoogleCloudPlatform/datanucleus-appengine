@@ -59,6 +59,8 @@ public class JPADatastoreBridgeTest extends JPATestCase {
     beginTxn();
     Book f = em.find(Book.class, id);
     assertEquals("different title", f.getTitle());
+    commitTxn();
+    deleteAll();
   }
 
   public void testConvertQueryResultIterable() {
@@ -80,6 +82,8 @@ public class JPADatastoreBridgeTest extends JPATestCase {
     beginTxn();
     Book f = em.find(Book.class, id);
     assertEquals("different title", f.getTitle());
+    commitTxn();
+    deleteAll();
   }
 
   public void testAccessResultsAfterClose() {
@@ -95,6 +99,7 @@ public class JPADatastoreBridgeTest extends JPATestCase {
     commitTxn();
     em.close();
     assertEquals(3, books.size());
+    deleteAll();
   }
 
 }

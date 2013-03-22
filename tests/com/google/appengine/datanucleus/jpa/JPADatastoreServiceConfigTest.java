@@ -93,9 +93,11 @@ public class JPADatastoreServiceConfigTest extends JPATestCase {
     props.put(DatastoreManager.DATASTORE_READ_CONSISTENCY_PROPERTY, "dne");
     try {
       emf = Persistence.createEntityManagerFactory(getEntityManagerFactoryName().name(), props);
-    } catch (PersistenceException e) {
+    } catch (Exception e) {
+      // not all Persistence impls wrap EMF creation exception into PersistenceException
+      Throwable cause = (e instanceof PersistenceException) ? e.getCause() : e;
       // good
-      assertTrue(e.getCause().getMessage().startsWith("Illegal value for"));
+      assertTrue(cause.getMessage().startsWith("Illegal value for"));
     }
   }
 }

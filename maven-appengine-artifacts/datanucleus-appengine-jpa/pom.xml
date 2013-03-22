@@ -7,7 +7,7 @@
     <groupId>com.google.appengine.orm</groupId>
     <artifactId>datanucleus-appengine-jpa</artifactId>
     <packaging>pom</packaging>
-    <version>2.1.2-SNAPSHOT</version>
+    <version>3.0.0-SNAPSHOT</version>
     <name>AppEngine DataNucleus JPA artifact</name>
     <description>AppEngine DataNucleus plugin plus relevant jars for JPA usage</description>
 
@@ -22,7 +22,7 @@
         <dependency>
             <groupId>com.google.appengine.orm</groupId>
             <artifactId>datanucleus-appengine</artifactId>
-            <version>2.1.2-SNAPSHOT</version>
+            <version>3.0.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>javax.jdo</groupId>

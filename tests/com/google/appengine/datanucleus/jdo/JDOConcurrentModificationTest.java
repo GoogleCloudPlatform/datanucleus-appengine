@@ -19,6 +19,7 @@ package com.google.appengine.datanucleus.jdo;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
+import com.google.appengine.datanucleus.Inner;
 import com.google.appengine.datanucleus.test.jdo.Flight;
 
 import java.util.ConcurrentModificationException;
@@ -30,6 +31,7 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 /**
  * @author Max Ross <maxr@google.com>
  */
+@Inner
 public class JDOConcurrentModificationTest extends JDOTestCase {
 
   public void testInsertCollides() {

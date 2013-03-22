@@ -19,6 +19,7 @@ package com.google.appengine.datanucleus.jpa;
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.datanucleus.CollisionDatastoreDelegate;
 import com.google.appengine.datanucleus.ExceptionThrowingDatastoreDelegate;
+import com.google.appengine.datanucleus.Inner;
 import com.google.appengine.datanucleus.test.jpa.Book;
 
 import java.util.ConcurrentModificationException;
@@ -31,6 +32,7 @@ import org.datanucleus.exceptions.NucleusDataStoreException;
 /**
  * @author Max Ross <maxr@google.com>
  */
+@Inner
 public class JPAConcurrentModificationTest extends JPATestCase {
 
   public void testInsertCollides() {

@@ -15,8 +15,7 @@ limitations under the License.
 **********************************************************************/
 package com.google.appengine.datanucleus.jdo;
 
-import com.google.appengine.api.datastore.DatastoreService;
-import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.*;
 import com.google.appengine.datanucleus.DatastoreManager;
 import com.google.appengine.datanucleus.DatastoreTestCase;
 import com.google.appengine.datanucleus.EntityUtils;
@@ -28,6 +27,7 @@ import org.datanucleus.metadata.MetaDataManager;
 import org.datanucleus.ExecutionContext;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.jdo.JDOHelper;
@@ -168,6 +168,13 @@ public class JDOTestCase extends DatastoreTestCase {
     String kind = kindForClass(clazz);
     return ds.prepare(
         new com.google.appengine.api.datastore.Query(kind)).countEntities();
+  }
+
+  protected void deleteAll() {
+    List<Entity> entities = ds.prepare(new Query().setKeysOnly()).asList(FetchOptions.Builder.withDefaults());
+    for (Entity entity : entities) {
+      ds.delete(entity.getKey());
+    }
   }
 
   protected String kindForClass(Class<?> clazz) {

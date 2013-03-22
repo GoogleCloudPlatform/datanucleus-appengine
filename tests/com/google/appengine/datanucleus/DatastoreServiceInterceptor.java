@@ -48,11 +48,8 @@ public final class DatastoreServiceInterceptor {
         method.setAccessible(true);
         return method.invoke(delegate, params);
       } catch (InvocationTargetException ite) {
-        if (ite.getTargetException() instanceof RuntimeException) {
-          throw (RuntimeException) ite.getTargetException();
-        } else {
-          throw ite;
-        }
+        // Always throw the real cause.
+        throw ite.getTargetException();
       }
     }
   }

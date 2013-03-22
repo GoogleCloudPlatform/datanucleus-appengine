@@ -30,11 +30,16 @@ import java.util.*;
  * Base class for all tests that access the datastore.
  *
  * @author Max Ross <max.ross@gmail.com>
+ * @author Ales Justin <ales.justin@jboss.org>
  */
 public class DatastoreTestCase extends TestCase {
+  /**
+   * Adding a flag to potentially disable helper usage;
+   * e.g. running this same tests in-container; GAE, CapeDwarf, etc
+   */
+  private boolean useHelper = true;
 
-  private final LocalServiceTestHelper helper = new LocalServiceTestHelper(
-      newLocalDatastoreServiceTestConfig()).setEnvAppId(getAppId());
+  private LocalServiceTestHelper helper;
 
   protected LocalDatastoreServiceTestConfig newLocalDatastoreServiceTestConfig() {
     return new LocalDatastoreServiceTestConfig();
@@ -43,6 +48,13 @@ public class DatastoreTestCase extends TestCase {
   // TODO(maxr): Put this back once we have a maven project for cloudcover
 //  private final CloudCoverLocalServiceTestHelper helper = new CloudCoverLocalServiceTestHelper(
 //      new LocalDatastoreServiceTestConfig());
+
+  private synchronized LocalServiceTestHelper getHelper() {
+    if (helper == null) {
+      helper = new LocalServiceTestHelper(newLocalDatastoreServiceTestConfig()).setEnvAppId(getAppId());
+    }
+    return helper;
+  }
 
   @Override
   protected void setUp() throws Exception {
@@ -56,12 +68,16 @@ public class DatastoreTestCase extends TestCase {
       }
     }
 
-    helper.setUp();
+    if (isUseHelper()) {
+      getHelper().setUp();
+    }
   }
 
   @Override
   protected void tearDown() throws Exception {
-    helper.tearDown();
+    if (isUseHelper()) {
+      getHelper().tearDown();
+    }
     super.tearDown();
   }
 
@@ -79,7 +95,15 @@ public class DatastoreTestCase extends TestCase {
     return "DNTest";
   }
 
-  /**
+  protected boolean isUseHelper() {
+    return useHelper;
+  }
+
+  protected void setUseHelper(boolean useHelper) {
+    this.useHelper = useHelper;
+  }
+
+    /**
    * A bizarro custom map implementation that we inject into the jdo
    * implementation to get around a concurrent modification bug.
    * Methods that are supposed to return views instead return copies.  This is

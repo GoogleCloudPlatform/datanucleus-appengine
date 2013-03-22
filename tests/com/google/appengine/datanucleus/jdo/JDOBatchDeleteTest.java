@@ -134,8 +134,11 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
     } catch (JDOUserException e) {
       // good
     }
+    rollbackTxn();
     assertEquals(4, countForClass(Flight.class));
     assertEquals(0, batchRecorder.batchOps);
+    // cleanup outside tx
+    pm.deletePersistentAll(Utils.newArrayList(f1, f2, f3, f4));
   }
 
   public void testDeletePersistentAll_Txn_OneEntityGroup() {
@@ -205,9 +208,12 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
     } catch (JDOUserException e) {
       // good
     }
+    rollbackTxn();
     assertEquals(2, countForClass(HasOneToOneJDO.class));
     assertEquals(2, countForClass(Flight.class));
     assertEquals(1, batchRecorder.batchOps);
+    // cleanup outside tx
+    pm.deletePersistentAll(parent1, parent2);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToOne_OneEntityGroup_Txn() {
@@ -324,10 +330,13 @@ public class JDOBatchDeleteTest extends JDOBatchTestCase {
     } catch (JDOUserException e) {
       // good
     }
+    rollbackTxn();
     assertEquals(2, countForClass(HasOneToManyListJDO.class));
     assertEquals(4, countForClass(Flight.class));
     assertEquals(4, countForClass(BidirectionalChildListJDO.class));
     assertEquals(1, batchRecorder.batchOps);
+    // cleanup outside tx
+    pm.deletePersistentAll(parent1, parent2);
   }
 
   public void testDeletePersistentAll_CascadeDelete_OneToMany_OneEntityGroup_Txn() {

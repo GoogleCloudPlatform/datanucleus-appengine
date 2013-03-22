@@ -59,6 +59,8 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, id);
     assertEquals("lax", f.getOrigin());
+    commitTxn();
+    deleteAll();
   }
 
   public void testConvertQueryResultIterable() {
@@ -80,6 +82,8 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
     beginTxn();
     Flight f = pm.getObjectById(Flight.class, id);
     assertEquals("lax", f.getOrigin());
+    commitTxn();
+    deleteAll();
   }
 
   public void testAccessResultsAfterClose() {
@@ -95,6 +99,7 @@ public class JDODatastoreBridgeTest extends JDOTestCase {
     commitTxn();
     pm.close();
     assertEquals(3, flights.size());
+    deleteAll();
   }
 
 }

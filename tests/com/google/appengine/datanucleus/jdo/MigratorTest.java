@@ -22,6 +22,7 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.PersistenceManagerFactory;
 import javax.jdo.identity.ObjectIdentity;
 
+import com.google.appengine.datanucleus.Inner;
 import org.datanucleus.api.jdo.JDOPersistenceManagerFactory;
 
 import com.google.appengine.api.datastore.Entity;
@@ -37,6 +38,7 @@ import com.google.appengine.datanucleus.test.jdo.MigratorOneToOneParent;
  * Some simple tests for the Migrator that was written to migrate data from the StorageVersion
  * "PARENTS_DO_NOT_REFER_TO_CHILDREN" across to "READ_OWNED_CHILD_KEYS_FROM_PARENTS".
  */
+@Inner("Solve the problem of lazy loading of classes; e.g. no SuperclassTableInheritanceJDO#ChildToParentWithoutDiscriminator")
 public class MigratorTest extends JDOTestCase {
 
   public void testMigrateOneToOneUni() {
