@@ -35,9 +35,9 @@
     </pluginRepositories>
 
     <properties>
-        <datanucleus.core.version>3.2.1</datanucleus.core.version>
-        <datanucleus.api.jdo.version>3.2.0-release</datanucleus.api.jdo.version>
-        <datanucleus.api.jpa.version>3.2.0-release</datanucleus.api.jpa.version>
+        <datanucleus.core.version>3.2.2</datanucleus.core.version>
+        <datanucleus.api.jdo.version>3.2.1</datanucleus.api.jdo.version>
+        <datanucleus.api.jpa.version>3.2.1</datanucleus.api.jpa.version>
     </properties>
 
     <dependencies>

@@ -148,13 +148,6 @@ public class DatastorePersistenceHandler extends AbstractPersistenceHandler {
 
   public void close() {}
 
-  @Override
-  public boolean useReferentialIntegrity() {
-    // This informs DataNucleus that the store requires ordered flushes, so the order of receiving dirty
-    // requests is preserved when flushing them
-    return true;
-  }
-
   protected BatchPutManager getBatchPutManager(ExecutionContext ec) {
     BatchPutManager putMgr = batchPutManagerByExecutionContext.get(ec);
     if (putMgr == null) {
