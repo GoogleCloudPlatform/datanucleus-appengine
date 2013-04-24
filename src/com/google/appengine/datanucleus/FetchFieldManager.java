@@ -244,7 +244,6 @@ public class FetchFieldManager extends DatastoreFieldManager
     AbstractMemberMetaData mmd = getMetaData(fieldNumber);
     ClassLoaderResolver clr = getClassLoaderResolver();
     RelationType relationType = mmd.getRelationType(clr);
-
     if (mmd.getEmbeddedMetaData() != null && RelationType.isRelationSingleValued(relationType)) {
       // Embedded persistable object
       ObjectProvider embeddedOP = getEmbeddedObjectProvider(mmd.getType(), fieldNumber, null);
@@ -287,7 +286,7 @@ public class FetchFieldManager extends DatastoreFieldManager
       // Embedded container
       if (mmd.hasCollection()) {
         // Embedded collections
-        String collPropName = getPropertyNameForMember(mmd) + ".size";;
+        String collPropName = getPropertyNameForMember(mmd) + ".size";
         Long collSize = (Long)datastoreEntity.getProperty(collPropName);
         if (collSize == null || collSize == -1) {
           // Size of collection not stored or stored as -1, so null on persist
@@ -342,10 +341,10 @@ public class FetchFieldManager extends DatastoreFieldManager
           }
           coll.add(embeddedOP.getObject());
         }
-        return coll;
+        return getObjectProvider().wrapSCOField(fieldNumber, coll, false, false, true);
       } else if (mmd.hasArray()) {
         // Embedded arrays
-        String arrPropName = getPropertyNameForMember(mmd) + ".size";;
+        String arrPropName = getPropertyNameForMember(mmd) + ".size";
         Long arrSize = (Long)datastoreEntity.getProperty(arrPropName);
         if (arrSize == null || arrSize == -1) {
           // Size of array not stored or stored as -1, so null on persist

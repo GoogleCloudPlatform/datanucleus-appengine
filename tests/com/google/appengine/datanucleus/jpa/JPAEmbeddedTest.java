@@ -16,11 +16,14 @@
  * **********************************************************************/
 package com.google.appengine.datanucleus.jpa;
 
+import java.util.Set;
+
 import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.EntityNotFoundException;
 import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.datanucleus.Utils;
 import com.google.appengine.datanucleus.test.jpa.EmbeddableJPA;
+import com.google.appengine.datanucleus.test.jpa.HasEmbeddableCollection;
 import com.google.appengine.datanucleus.test.jpa.HasEmbeddedJPA;
 
 /**
@@ -98,5 +101,30 @@ public class JPAEmbeddedTest extends JPATestCase {
     assertNotNull(pojo.getEmbeddable2());
     assertEquals("yar2", pojo.getEmbeddable2().getEmbeddedString());
     commitTxn();
+  }
+
+  public void testEmbeddedCollectionOfEmbeddables() {
+    HasEmbeddableCollection pojo = new HasEmbeddableCollection();
+    EmbeddableJPA emb1 = new EmbeddableJPA();
+    emb1.setEmbeddedString("The String1");
+    pojo.getTheSet().add(emb1);
+    EmbeddableJPA emb2 = new EmbeddableJPA();
+    emb2.setEmbeddedString("The String2");
+    pojo.getTheSet().add(emb2);
+    beginTxn();
+    em.persist(pojo);
+    commitTxn();
+    Long pk = pojo.getId();
+    em.close();
+
+    em = emf.createEntityManager();
+    beginTxn();
+    HasEmbeddableCollection thePojo = em.find(HasEmbeddableCollection.class, pk);
+    assertNotNull(thePojo);
+    Set<EmbeddableJPA> theEmbColl = thePojo.getTheSet();
+    assertNotNull(thePojo);
+    assertEquals("size of embedded collection is wrong", 2, theEmbColl.size());
+    commitTxn();
+    em.close();
   }
 }

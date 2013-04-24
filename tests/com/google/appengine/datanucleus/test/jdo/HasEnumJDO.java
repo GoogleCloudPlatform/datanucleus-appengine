@@ -72,5 +72,5 @@ public class HasEnumJDO {
     this.myEnumList = myEnumList;
   }
 
-  public enum MyEnum {V1, V2};
+  public enum MyEnum {V1, V2}
 }
