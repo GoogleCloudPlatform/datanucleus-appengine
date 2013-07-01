@@ -973,9 +973,6 @@ public final class EntityUtils {
     if (fetchPlan != null) {
       // candidate select : load all fetch plan fields from the Entity
 
-      // Make sure this class is managed in the FetchPlan
-      fetchPlan.manageFetchPlanForClass(acmd);
-
       final int[] fieldsToFetch = fetchPlan.getFetchPlanForClass(acmd).getMemberNumbers();
       fv = new FieldValues() {
         public void fetchFields(ObjectProvider op) {

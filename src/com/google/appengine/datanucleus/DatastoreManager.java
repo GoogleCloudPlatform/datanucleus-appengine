@@ -25,7 +25,7 @@ import com.google.appengine.datanucleus.scostore.FKListStore;
 import com.google.appengine.datanucleus.scostore.FKSetStore;
 
 import org.datanucleus.ClassLoaderResolver;
-import org.datanucleus.FlushOrdered;
+import org.datanucleus.flush.FlushOrdered;
 import org.datanucleus.NucleusContext;
 import org.datanucleus.PersistenceConfiguration;
 import org.datanucleus.PropertyNames;

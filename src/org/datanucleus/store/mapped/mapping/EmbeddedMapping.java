@@ -702,7 +702,7 @@ public abstract class EmbeddedMapping extends SingleFieldMapping
         // Register our owner now that we have our values set
         if (value != null && ownerSM != null)
         {
-            embSM.addEmbeddedOwner(ownerSM, ownerFieldNumber);
+            ec.registerEmbeddedRelation(ownerSM, ownerFieldNumber, embSM);
         }
 
         return value;

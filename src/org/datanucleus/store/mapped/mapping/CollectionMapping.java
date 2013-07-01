@@ -182,7 +182,7 @@ public class CollectionMapping extends AbstractContainerMapping implements Mappi
             if (ownerOP.getObject() == sco.getOwner() && mmd.getName().equals(sco.getFieldName()))
             {
                 // Flush any outstanding updates
-                ownerOP.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)sco).getBackingStore(), ownerOP);
+                ownerOP.getExecutionContext().flushOperationsForBackingStore(((BackedSCO)sco).getBackingStore(), ownerOP);
 
                 return;
             }
@@ -285,7 +285,7 @@ public class CollectionMapping extends AbstractContainerMapping implements Mappi
             value.clear();
 
             // Flush any outstanding updates
-            sm.getExecutionContext().flushSCOOperationsForBackingStore(((BackedSCO)value).getBackingStore(), sm);
+            sm.getExecutionContext().flushOperationsForBackingStore(((BackedSCO)value).getBackingStore(), sm);
         }
     }
 }
