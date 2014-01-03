@@ -35,9 +35,9 @@
     </pluginRepositories>
 
     <properties>
-        <datanucleus.core.version>3.2.5</datanucleus.core.version>
-        <datanucleus.api.jdo.version>3.2.4</datanucleus.api.jdo.version>
-        <datanucleus.api.jpa.version>3.2.4</datanucleus.api.jpa.version>
+        <datanucleus.core.version>3.2.11</datanucleus.core.version>
+        <datanucleus.api.jdo.version>3.2.7</datanucleus.api.jdo.version>
+        <datanucleus.api.jpa.version>3.3.6</datanucleus.api.jpa.version>
     </properties>
 
     <dependencies>
@@ -55,14 +55,12 @@
         <dependency>
             <groupId>javax.jdo</groupId>
             <artifactId>jdo-api</artifactId>
-            <!--<version>3.1-SNAPSHOT-20120609</version>-->
             <version>[3.0, 4.0)</version>
         </dependency>
-        <!-- Swap this for org.eclipse.persistence javax.persistence 2.1 with DN3.3 -->
         <dependency>
-            <groupId>org.apache.geronimo.specs</groupId>
-            <artifactId>geronimo-jpa_2.0_spec</artifactId>
-            <version>1.0</version>
+            <groupId>org.eclipse.persistence</groupId>
+            <artifactId>javax.persistence</artifactId>
+            <version>2.1.0</version>
             <optional>true</optional>
         </dependency>
         <dependency>
