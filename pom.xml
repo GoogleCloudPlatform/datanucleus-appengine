@@ -13,7 +13,7 @@
     <repositories>
         <repository>
             <id>DataNucleus</id>
-            <url>http://www.datanucleus.org/downloads/maven2</url>
+            <url>https://www.datanucleus.org/downloads/maven2</url>
             <snapshots>
                 <enabled>false</enabled>
             </snapshots>
@@ -30,7 +30,7 @@
     <pluginRepositories>
         <pluginRepository>
             <id>DataNucleus_2</id>
-            <url>http://www.datanucleus.org/downloads/maven2/</url>
+            <url>https://www.datanucleus.org/downloads/maven2/</url>
         </pluginRepository>
     </pluginRepositories>
 
